@@ -43,7 +43,7 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="en" className="dark">
+    <html lang="en" suppressHydrationWarning>
       <head>
         {/* iOS PWA — splash / status bar */}
         <meta name="apple-mobile-web-app-capable"           content="yes" />

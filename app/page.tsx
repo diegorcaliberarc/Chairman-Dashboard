@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useRef, useCallback, useMemo } from "react";
 import { useSession, signIn, signOut } from "next-auth/react";
+import { useTheme } from "next-themes";
 import {
   CheckCircle2,
   Circle,
@@ -19,6 +20,8 @@ import {
   AlertTriangle,
   X,
   CalendarDays,
+  Sun,
+  Moon,
 } from "lucide-react";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
@@ -824,6 +827,8 @@ function DeepWorkMode({
 export default function ChairmanDashboard() {
   const { data: session } = useSession();
   const calConnected = !!(session as any)?.accessToken;
+  const { resolvedTheme, setTheme } = useTheme();
+  const user = session?.user;
 
   const [activeTab,    setActiveTab]    = useState<TabId>("MASTER");
   const [deepWork,     setDeepWork]     = useState(false);
@@ -1082,6 +1087,107 @@ export default function ChairmanDashboard() {
                 <CalendarDays size={11} />
                 {calConnected ? "Cal · Live" : "Connect Cal"}
               </button>
+
+              <div style={{ width: 1, height: 28, backgroundColor: "#1E1F24" }} />
+
+              {/* Theme toggle */}
+              <button
+                onClick={() => setTheme(resolvedTheme === "dark" ? "light" : "dark")}
+                title="Toggle theme"
+                style={{
+                  display:         "flex",
+                  alignItems:      "center",
+                  justifyContent:  "center",
+                  width:           30,
+                  height:          30,
+                  borderRadius:    6,
+                  backgroundColor: "transparent",
+                  border:          "1px solid #1E1F24",
+                  color:           "#3B4558",
+                  cursor:          "pointer",
+                  transition:      "all 0.2s ease",
+                  flexShrink:      0,
+                }}
+                onMouseEnter={(e) => {
+                  (e.currentTarget as HTMLButtonElement).style.borderColor = "rgba(201,169,97,0.35)";
+                  (e.currentTarget as HTMLButtonElement).style.color       = "#C9A961";
+                }}
+                onMouseLeave={(e) => {
+                  (e.currentTarget as HTMLButtonElement).style.borderColor = "#1E1F24";
+                  (e.currentTarget as HTMLButtonElement).style.color       = "#3B4558";
+                }}
+              >
+                {resolvedTheme === "dark" ? <Sun size={13} /> : <Moon size={13} />}
+              </button>
+
+              {/* User avatar / sign-in */}
+              {user ? (
+                <button
+                  onClick={() => signOut({ callbackUrl: "/auth/signin" })}
+                  title={`Signed in as ${user.email ?? user.name} · Click to sign out`}
+                  style={{
+                    flexShrink:      0,
+                    display:         "flex",
+                    alignItems:      "center",
+                    gap:             7,
+                    padding:         "4px 10px 4px 4px",
+                    borderRadius:    20,
+                    backgroundColor: "transparent",
+                    border:          "1px solid #1E1F24",
+                    cursor:          "pointer",
+                    transition:      "all 0.2s ease",
+                  }}
+                  onMouseEnter={(e) => {
+                    (e.currentTarget as HTMLButtonElement).style.borderColor = "rgba(201,169,97,0.35)";
+                  }}
+                  onMouseLeave={(e) => {
+                    (e.currentTarget as HTMLButtonElement).style.borderColor = "#1E1F24";
+                  }}
+                >
+                  {user.image ? (
+                    <img
+                      src={user.image}
+                      alt={user.name ?? "User"}
+                      width={22}
+                      height={22}
+                      style={{ borderRadius: "50%", display: "block" }}
+                    />
+                  ) : (
+                    <div style={{ width: 22, height: 22, borderRadius: "50%", backgroundColor: "rgba(201,169,97,0.2)", display: "flex", alignItems: "center", justifyContent: "center" }}>
+                      <span style={{ fontSize: 9, color: "#C9A961", fontWeight: 700 }}>
+                        {(user.name ?? "C")[0].toUpperCase()}
+                      </span>
+                    </div>
+                  )}
+                  <span style={{ fontSize: 9, color: "#3B4558", letterSpacing: "0.1em", textTransform: "uppercase", whiteSpace: "nowrap" }}>
+                    {user.name?.split(" ")[0] ?? "Chairman"}
+                  </span>
+                </button>
+              ) : (
+                <button
+                  onClick={() => signIn("google")}
+                  style={{
+                    flexShrink:      0,
+                    display:         "flex",
+                    alignItems:      "center",
+                    gap:             6,
+                    padding:         "6px 12px",
+                    borderRadius:    6,
+                    backgroundColor: "transparent",
+                    border:          "1px solid #1E1F24",
+                    color:           "#3B4558",
+                    fontSize:        9,
+                    fontWeight:      700,
+                    letterSpacing:   "0.18em",
+                    textTransform:   "uppercase",
+                    cursor:          "pointer",
+                    transition:      "all 0.2s ease",
+                    whiteSpace:      "nowrap",
+                  }}
+                >
+                  Sign In
+                </button>
+              )}
 
               <div style={{ width: 1, height: 28, backgroundColor: "#1E1F24" }} />
 
