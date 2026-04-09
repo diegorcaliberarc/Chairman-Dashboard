@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useRef, useCallback } from "react";
+import { useState, useEffect, useRef, useCallback, useMemo } from "react";
 import { useSession, signIn, signOut } from "next-auth/react";
 import {
   CheckCircle2,
@@ -32,108 +32,49 @@ interface CalendarEvent {
   end?:   { dateTime?: string; date?: string };
 }
 
-interface TaskItem { text: string; done: boolean }
+interface DbTask {
+  id:          string;
+  title:       string;
+  pillar:      string;   // "BUSINESS" | "PERSONAL"
+  agentId:     string;
+  status:      string;   // "PENDING" | "DONE"
+  isDelegated: boolean;
+  createdAt:   string;
+}
 
 interface Agent {
-  id: string;
+  id:    string;
   title: string;
-  role: string;
+  role:  string;
   color: string;
-  tasks: TaskItem[];
+  tasks: DbTask[];
 }
 
 interface RoadmapNode {
-  id: number;
-  label: string;
+  id:     number;
+  label:  string;
   status: "completed" | "active" | "next" | "planned" | "target";
-  x: number;
-  y: number;
-  color: string;
+  x:      number;
+  y:      number;
+  color:  string;
 }
 
-// ─── Data ─────────────────────────────────────────────────────────────────────
+// ─── Agent Metadata (tasks come from Supabase) ────────────────────────────────
 
-const RAW_BUSINESS = [
-  {
-    id: "ceo", title: "CEO", role: "Vision & Strategy", color: "#C9A961",
-    tasks: [
-      "Review High-Ticket AI Agency metrics",
-      "Analyze market positioning",
-    ],
-  },
-  {
-    id: "coo", title: "COO", role: "Ops & Execution", color: "#7B9EA8",
-    tasks: [
-      "Caliber Arc: Finalize UI & send to Sebastian",
-      "Rebuild Trading Spotter Gem & tune dope card",
-      "Fleet Nodes: Map revenue ways",
-    ],
-  },
-  {
-    id: "cmo", title: "CMO", role: "Growth & Sales", color: "#A87B9E",
-    tasks: [
-      "Fitness: Execute Brandon Carter roadmap",
-      "Audit agency outreach pipeline",
-    ],
-  },
-  {
-    id: "cfo", title: "CFO", role: "Finance & Cash", color: "#8BA87B",
-    tasks: [
-      "Update financial models",
-      "Review balance sheet",
-    ],
-  },
-  {
-    id: "cto", title: "CTO", role: "APIs & Claude Pipelines", color: "#4A90E2",
-    tasks: [
-      "Monitor Claude Agent task delegation",
-      "Audit API webhook failure rates",
-    ],
-  },
-  {
-    id: "cpo", title: "CPO", role: "Product & UX", color: "#F39C12",
-    tasks: [
-      "Review Caliber Arc user drop-off",
-      "Design Fitness app onboarding flow",
-    ],
-  },
+const AGENT_META_BUSINESS = [
+  { id: "ceo", title: "CEO", role: "Vision & Strategy",      color: "#C9A961" },
+  { id: "coo", title: "COO", role: "Ops & Execution",        color: "#7B9EA8" },
+  { id: "cmo", title: "CMO", role: "Growth & Sales",         color: "#A87B9E" },
+  { id: "cfo", title: "CFO", role: "Finance & Cash",         color: "#8BA87B" },
+  { id: "cto", title: "CTO", role: "APIs & Claude Pipelines",color: "#4A90E2" },
+  { id: "cpo", title: "CPO", role: "Product & UX",           color: "#F39C12" },
 ];
 
-const RAW_PERSONAL = [
-  {
-    id: "wealth", title: "WEALTH", role: "Income & Freedom", color: "#D4AF37",
-    tasks: [
-      "Execute Dan Martell Time/Energy Audit",
-      "Time block all new objectives",
-    ],
-  },
-  {
-    id: "health", title: "HEALTH", role: "Training & Energy", color: "#E05A3A",
-    tasks: [
-      "Update training & nutrition menu via Viscero Gem",
-      "Lock workout stack into Google Calendar",
-    ],
-  },
-  {
-    id: "relate", title: "RELATE", role: "Legacy & Pack", color: "#5B8FB9",
-    tasks: [
-      "Maximiliano: Straight A's missing assignment system",
-      "Maximiliano: Daily Spanish speaking immersion",
-      "Maximiliano: Music block (Piano, Guitar, DJ)",
-      "Maximiliano: Unreal Engine short film via studio feedback",
-    ],
-  },
-  {
-    id: "joy", title: "JOY", role: "Foundation & Operations", color: "#B388EB",
-    tasks: [
-      "Set up daily 4-Hour Blocks",
-      "Household: Assemble the Grill & Order food from Walmart",
-      "Household: Organize rooms & zero out laundry",
-      "Household: Verify Healthcare.gov status",
-      "Pack: Shower Nova, Astro, and Comet",
-      "Pack: Clean Nova's teeth",
-    ],
-  },
+const AGENT_META_PERSONAL = [
+  { id: "wealth", title: "WEALTH", role: "Income & Freedom",        color: "#D4AF37" },
+  { id: "health", title: "HEALTH", role: "Training & Energy",       color: "#E05A3A" },
+  { id: "relate", title: "RELATE", role: "Legacy & Pack",           color: "#5B8FB9" },
+  { id: "joy",    title: "JOY",    role: "Foundation & Operations", color: "#B388EB" },
 ];
 
 const ROADMAP_NODES: RoadmapNode[] = [
@@ -147,36 +88,15 @@ const ROADMAP_NODES: RoadmapNode[] = [
 // ─── KPI Data ─────────────────────────────────────────────────────────────────
 
 const KPI_DATA = [
-  {
-    label: "AI Agency CAC",
-    value: "$342",
-    sub: "Cost Per Acquisition",
-    trend: "down",
-    trendLabel: "Trending Down",
-    color: "#8BA87B",
-  },
-  {
-    label: "Caliber Arc Churn",
-    value: "4.2%",
-    sub: "Monthly Rate",
-    trend: "stable",
-    trendLabel: "Stable",
-    color: "#C9A961",
-  },
-  {
-    label: "NQ Market Pulse",
-    value: "VOLATILE",
-    sub: "Range-Bound",
-    trend: "alert",
-    trendLabel: "Volatility High",
-    color: "#E05A3A",
-  },
+  { label: "AI Agency CAC",    value: "$342",    sub: "Cost Per Acquisition", trend: "down",   trendLabel: "Trending Down",    color: "#8BA87B" },
+  { label: "Caliber Arc Churn",value: "4.2%",    sub: "Monthly Rate",         trend: "stable", trendLabel: "Stable",           color: "#C9A961" },
+  { label: "NQ Market Pulse",  value: "VOLATILE",sub: "Range-Bound",          trend: "alert",  trendLabel: "Volatility High",  color: "#E05A3A" },
 ];
 
 // ─── EA Delegation Classifier ─────────────────────────────────────────────────
 
 const DELEGATE_KEYWORDS = [
-  "scrape","email","send","schedule","book","fetch","ping","notify","remind",
+  "scrape","email","send","fetch","ping","notify","remind",
   "download","upload","sync","query","search","look up","find","automate",
   "draft","compile","report","pull","push","run","execute","api","webhook",
   "database","message","post","tweet","slack","log","backup","monitor",
@@ -197,14 +117,14 @@ function classifyTask(text: string): "schedule" | "delegate" | "assign" {
 function getHighestPriorityTask(
   business: Agent[],
   personal: Agent[]
-): { task: TaskItem; taskIdx: number; agent: Agent; isBiz: boolean } | null {
+): { task: DbTask; agent: Agent; isBiz: boolean } | null {
   for (const agent of business) {
-    const idx = agent.tasks.findIndex((t) => !t.done);
-    if (idx !== -1) return { task: agent.tasks[idx], taskIdx: idx, agent, isBiz: true };
+    const t = agent.tasks.find((t) => t.status !== "DONE");
+    if (t) return { task: t, agent, isBiz: true };
   }
   for (const agent of personal) {
-    const idx = agent.tasks.findIndex((t) => !t.done);
-    if (idx !== -1) return { task: agent.tasks[idx], taskIdx: idx, agent, isBiz: false };
+    const t = agent.tasks.find((t) => t.status !== "DONE");
+    if (t) return { task: t, agent, isBiz: false };
   }
   return null;
 }
@@ -307,12 +227,6 @@ const KEYFRAMES = `
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
-type RawAgent = { id: string; title: string; role: string; color: string; tasks: string[] };
-
-function initAgents(raw: RawAgent[]): Agent[] {
-  return raw.map((a) => ({ ...a, tasks: a.tasks.map((t) => ({ text: t, done: false })) }));
-}
-
 function getWeekDays() {
   const today = new Date();
   const dow   = today.getDay();
@@ -324,12 +238,12 @@ function getWeekDays() {
     const d = new Date(mon);
     d.setDate(mon.getDate() + i);
     return {
-      name:        NAMES[i],
-      date:        d.getDate(),
-      month:       d.toLocaleDateString("en-US", { month: "short" }).toUpperCase(),
-      isToday:     d.toDateString() === today.toDateString(),
-      isWeekend:   i >= 5,
-      dateString:  d.toDateString(),
+      name:       NAMES[i],
+      date:       d.getDate(),
+      month:      d.toLocaleDateString("en-US", { month: "short" }).toUpperCase(),
+      isToday:    d.toDateString() === today.toDateString(),
+      isWeekend:  i >= 5,
+      dateString: d.toDateString(),
     };
   });
 }
@@ -378,9 +292,9 @@ function WeeklyCalendar({
   calConnected,
   calLoading,
 }: {
-  events: CalendarEvent[];
+  events:       CalendarEvent[];
   calConnected: boolean;
-  calLoading: boolean;
+  calLoading:   boolean;
 }) {
   const days = getWeekDays();
 
@@ -591,7 +505,7 @@ function MiniAgentGrid({ business, personal }: { business: Agent[]; personal: Ag
       <SectionLabel>All Agents · Live Status</SectionLabel>
       <div className="grid grid-cols-2 sm:grid-cols-5 lg:grid-cols-10 gap-2 mt-3">
         {[...business, ...personal].map((a) => {
-          const done  = a.tasks.filter((t) => t.done).length;
+          const done  = a.tasks.filter((t) => t.status === "DONE").length;
           const total = a.tasks.length;
           return (
             <div key={a.id} className="rounded-lg p-3" style={{ backgroundColor: "#0C0D10", border: "1px solid #1E1F24" }}>
@@ -613,7 +527,7 @@ function MiniAgentGrid({ business, personal }: { business: Agent[]; personal: Ag
 // ─── Agent Card ───────────────────────────────────────────────────────────────
 
 function AgentCard({ agent, selected, onClick }: { agent: Agent; selected: boolean; onClick: () => void }) {
-  const done  = agent.tasks.filter((t) => t.done).length;
+  const done  = agent.tasks.filter((t) => t.status === "DONE").length;
   const total = agent.tasks.length;
   return (
     <button
@@ -650,8 +564,8 @@ function AgentCard({ agent, selected, onClick }: { agent: Agent; selected: boole
 
 // ─── Task Panel ───────────────────────────────────────────────────────────────
 
-function TaskPanel({ agent, onToggle }: { agent: Agent; onToggle: (idx: number) => void }) {
-  const done = agent.tasks.filter((t) => t.done).length;
+function TaskPanel({ agent, onToggle }: { agent: Agent; onToggle: (taskId: string) => void }) {
+  const done = agent.tasks.filter((t) => t.status === "DONE").length;
   return (
     <div className="rounded-xl" style={{ backgroundColor: "#0C0D10", border: `1px solid ${agent.color}30`, padding: "24px", animation: "fade-up 0.22s ease-out" }}>
       <div className="flex items-center gap-3 mb-5">
@@ -662,22 +576,30 @@ function TaskPanel({ agent, onToggle }: { agent: Agent; onToggle: (idx: number) 
         <span className="text-[10px] tracking-widest uppercase" style={{ color: "#252836" }}>{done} of {agent.tasks.length} complete</span>
       </div>
       <div className="space-y-1.5">
-        {agent.tasks.map((task, i) => (
-          <button key={i} onClick={() => onToggle(i)}
-            className="w-full text-left flex items-start gap-3 rounded-lg transition-all duration-150 focus:outline-none"
-            style={{ padding: "10px 12px", backgroundColor: task.done ? `${agent.color}0A` : "transparent", border: `1px solid ${task.done ? `${agent.color}22` : "transparent"}` }}
-          >
-            <div className="shrink-0 mt-0.5" style={{ color: task.done ? agent.color : "#252836" }}>
-              {task.done ? <CheckCircle2 size={14} /> : <Circle size={14} />}
-            </div>
-            <div className="shrink-0 text-[10px] font-mono tracking-wider mt-0.5" style={{ color: task.done ? agent.color : "#2A3040" }}>
-              {String(i + 1).padStart(2, "0")}
-            </div>
-            <span className="text-sm leading-relaxed" style={{ color: task.done ? "#3B4558" : "#7A8599", textDecoration: task.done ? "line-through" : "none", textDecorationColor: agent.color, textDecorationThickness: "1px" }}>
-              {task.text}
-            </span>
-          </button>
-        ))}
+        {agent.tasks.map((task, i) => {
+          const isDone = task.status === "DONE";
+          return (
+            <button key={task.id} onClick={() => onToggle(task.id)}
+              className="w-full text-left flex items-start gap-3 rounded-lg transition-all duration-150 focus:outline-none"
+              style={{ padding: "10px 12px", backgroundColor: isDone ? `${agent.color}0A` : "transparent", border: `1px solid ${isDone ? `${agent.color}22` : "transparent"}` }}
+            >
+              <div className="shrink-0 mt-0.5" style={{ color: isDone ? agent.color : "#252836" }}>
+                {isDone ? <CheckCircle2 size={14} /> : <Circle size={14} />}
+              </div>
+              <div className="shrink-0 text-[10px] font-mono tracking-wider mt-0.5" style={{ color: isDone ? agent.color : "#2A3040" }}>
+                {String(i + 1).padStart(2, "0")}
+              </div>
+              <span className="text-sm leading-relaxed" style={{ color: isDone ? "#3B4558" : "#7A8599", textDecoration: isDone ? "line-through" : "none", textDecorationColor: agent.color, textDecorationThickness: "1px" }}>
+                {task.title}
+              </span>
+            </button>
+          );
+        })}
+        {agent.tasks.length === 0 && (
+          <div className="text-center py-6" style={{ color: "#252836", fontSize: 11, letterSpacing: "0.1em" }}>
+            No tasks yet — add one via the command bar
+          </div>
+        )}
       </div>
     </div>
   );
@@ -702,7 +624,7 @@ function KPIBlock({ label, value, sub, trend, trendLabel, color }: typeof KPI_DA
 
 // ─── Business Tab ─────────────────────────────────────────────────────────────
 
-function BusinessTab({ agents, onToggle }: { agents: Agent[]; onToggle: (id: string, idx: number) => void }) {
+function BusinessTab({ agents, onToggle }: { agents: Agent[]; onToggle: (agentId: string, taskId: string) => void }) {
   const [selectedId, setSelectedId] = useState<string>("ceo");
   const active = agents.find((a) => a.id === selectedId) ?? null;
 
@@ -715,7 +637,7 @@ function BusinessTab({ agents, onToggle }: { agents: Agent[]; onToggle: (id: str
             onClick={() => setSelectedId(a.id === selectedId ? "" : a.id)} />
         ))}
       </div>
-      {active && <TaskPanel agent={active} onToggle={(i) => onToggle(active.id, i)} />}
+      {active && <TaskPanel agent={active} onToggle={(taskId) => onToggle(active.id, taskId)} />}
 
       {/* KPI Row */}
       <div>
@@ -730,7 +652,7 @@ function BusinessTab({ agents, onToggle }: { agents: Agent[]; onToggle: (id: str
 
 // ─── Personal Tab ─────────────────────────────────────────────────────────────
 
-function PersonalTab({ agents, onToggle }: { agents: Agent[]; onToggle: (id: string, idx: number) => void }) {
+function PersonalTab({ agents, onToggle }: { agents: Agent[]; onToggle: (agentId: string, taskId: string) => void }) {
   const [selectedId, setSelectedId] = useState<string>("wealth");
   const active = agents.find((a) => a.id === selectedId) ?? null;
 
@@ -743,7 +665,7 @@ function PersonalTab({ agents, onToggle }: { agents: Agent[]; onToggle: (id: str
             onClick={() => setSelectedId(a.id === selectedId ? "" : a.id)} />
         ))}
       </div>
-      {active && <TaskPanel agent={active} onToggle={(i) => onToggle(active.id, i)} />}
+      {active && <TaskPanel agent={active} onToggle={(taskId) => onToggle(active.id, taskId)} />}
     </div>
   );
 }
@@ -757,11 +679,11 @@ function MasterViewTab({
   calConnected,
   calLoading,
 }: {
-  business: Agent[];
-  personal: Agent[];
-  calEvents: CalendarEvent[];
+  business:     Agent[];
+  personal:     Agent[];
+  calEvents:    CalendarEvent[];
   calConnected: boolean;
-  calLoading: boolean;
+  calLoading:   boolean;
 }) {
   return (
     <div className="space-y-8" style={{ animation: "tab-in 0.22s ease-out" }}>
@@ -780,10 +702,10 @@ function DeepWorkMode({
   onComplete,
   onExit,
 }: {
-  business: Agent[];
-  personal: Agent[];
-  onComplete: (agentId: string, taskIdx: number, isBiz: boolean) => void;
-  onExit: () => void;
+  business:   Agent[];
+  personal:   Agent[];
+  onComplete: (taskId: string) => void;
+  onExit:     () => void;
 }) {
   const priority = getHighestPriorityTask(business, personal);
 
@@ -835,13 +757,13 @@ function DeepWorkMode({
             letterSpacing: "-0.01em",
             marginBottom:  56,
           }}>
-            {priority.task.text}
+            {priority.task.title}
             <span style={{ animation: "deep-cursor 1s step-end infinite", color: priority.agent.color }}>_</span>
           </div>
 
           {/* Complete button */}
           <button
-            onClick={() => onComplete(priority.agent.id, priority.taskIdx, priority.isBiz)}
+            onClick={() => onComplete(priority.task.id)}
             style={{
               display:         "inline-flex",
               alignItems:      "center",
@@ -877,7 +799,7 @@ function DeepWorkMode({
 
           {/* Task position */}
           <div style={{ marginTop: 32, fontSize: 10, letterSpacing: "0.15em", color: "#1A1A1A", textTransform: "uppercase" }}>
-            {business.concat(personal).reduce((s, a) => s + a.tasks.filter(t => !t.done).length, 0)} tasks remaining across all agents
+            {business.concat(personal).reduce((s, a) => s + a.tasks.filter(t => t.status !== "DONE").length, 0)} tasks remaining across all agents
           </div>
         </div>
       ) : (
@@ -904,27 +826,35 @@ export default function ChairmanDashboard() {
   const calConnected = !!(session as any)?.accessToken;
 
   const [activeTab,    setActiveTab]    = useState<TabId>("MASTER");
-  const [business,     setBusiness]     = useState<Agent[]>(() => initAgents(RAW_BUSINESS));
-  const [personal,     setPersonal]     = useState<Agent[]>(() => initAgents(RAW_PERSONAL));
   const [deepWork,     setDeepWork]     = useState(false);
 
-  // Google Calendar
-  const [calEvents,    setCalEvents]    = useState<CalendarEvent[]>([]);
-  const [calLoading,   setCalLoading]   = useState(false);
+  // ── Supabase task state ────────────────────────────────────────────────────
+  const [dbTasks,      setDbTasks]      = useState<DbTask[]>([]);
+  const [tasksLoading, setTasksLoading] = useState(true);
 
-  // Command bar
-  const [cmdValue,     setCmdValue]     = useState("");
-  const [isProcessing, setIsProcessing] = useState(false);
-  const [processingMsg,setProcessingMsg]= useState("");
-  const [cmdFocused,   setCmdFocused]   = useState(false);
-  const [memoryOn,     setMemoryOn]     = useState(false);
-  const inputRef = useRef<HTMLInputElement>(null);
+  // Derive agents with live tasks from DB
+  const business = useMemo(
+    () => AGENT_META_BUSINESS.map((a) => ({ ...a, tasks: dbTasks.filter((t) => t.agentId === a.id) })),
+    [dbTasks]
+  );
+  const personal = useMemo(
+    () => AGENT_META_PERSONAL.map((a) => ({ ...a, tasks: dbTasks.filter((t) => t.agentId === a.id) })),
+    [dbTasks]
+  );
 
-  // Toasts (primary + memory)
-  const [toast,        setToast]        = useState<{ msg: string; type: "assign" | "delegate" | "schedule" | "memory" } | null>(null);
-  const [memToast,     setMemToast]     = useState(false);
+  // Load tasks on mount
+  useEffect(() => {
+    fetch("/api/tasks")
+      .then((r) => r.json())
+      .then((data) => { if (data.tasks) setDbTasks(data.tasks); })
+      .catch(() => {})
+      .finally(() => setTasksLoading(false));
+  }, []);
 
-  // Fetch calendar events when connected
+  // ── Google Calendar state ──────────────────────────────────────────────────
+  const [calEvents,  setCalEvents]  = useState<CalendarEvent[]>([]);
+  const [calLoading, setCalLoading] = useState(false);
+
   useEffect(() => {
     if (!calConnected) { setCalEvents([]); return; }
     setCalLoading(true);
@@ -935,13 +865,18 @@ export default function ChairmanDashboard() {
       .finally(() => setCalLoading(false));
   }, [calConnected]);
 
-  // Progress
-  const allAgents  = [...business, ...personal];
-  const totalTasks = allAgents.reduce((s, a) => s + a.tasks.length, 0);
-  const doneTasks  = allAgents.reduce((s, a) => s + a.tasks.filter((t) => t.done).length, 0);
-  const overallPct = totalTasks > 0 ? doneTasks / totalTasks : 0;
+  // ── Command bar ────────────────────────────────────────────────────────────
+  const [cmdValue,      setCmdValue]      = useState("");
+  const [isProcessing,  setIsProcessing]  = useState(false);
+  const [processingMsg, setProcessingMsg] = useState("");
+  const [cmdFocused,    setCmdFocused]    = useState(false);
+  const [memoryOn,      setMemoryOn]      = useState(false);
+  const inputRef = useRef<HTMLInputElement>(null);
 
-  // Toast lifecycle
+  // ── Toasts ─────────────────────────────────────────────────────────────────
+  const [toast,    setToast]    = useState<{ msg: string; type: "assign" | "delegate" | "schedule" | "memory" } | null>(null);
+  const [memToast, setMemToast] = useState(false);
+
   useEffect(() => {
     if (!toast) return;
     const id = setTimeout(() => setToast(null), 4500);
@@ -954,22 +889,35 @@ export default function ChairmanDashboard() {
     return () => clearTimeout(id);
   }, [memToast]);
 
-  const toggleBusiness = (id: string, idx: number) =>
-    setBusiness((prev) =>
-      prev.map((a) => a.id !== id ? a : { ...a, tasks: a.tasks.map((t, i) => i === idx ? { ...t, done: !t.done } : t) })
-    );
+  // ── Progress ───────────────────────────────────────────────────────────────
+  const totalTasks = dbTasks.length;
+  const doneTasks  = dbTasks.filter((t) => t.status === "DONE").length;
+  const overallPct = totalTasks > 0 ? doneTasks / totalTasks : 0;
 
-  const togglePersonal = (id: string, idx: number) =>
-    setPersonal((prev) =>
-      prev.map((a) => a.id !== id ? a : { ...a, tasks: a.tasks.map((t, i) => i === idx ? { ...t, done: !t.done } : t) })
-    );
+  // ── Toggle task via PATCH ──────────────────────────────────────────────────
+  const toggleTask = useCallback(async (taskId: string) => {
+    const task = dbTasks.find((t) => t.id === taskId);
+    if (!task) return;
+    const newStatus = task.status === "DONE" ? "PENDING" : "DONE";
 
-  const handleDeepWorkComplete = (agentId: string, taskIdx: number, isBiz: boolean) => {
-    if (isBiz) toggleBusiness(agentId, taskIdx);
-    else        togglePersonal(agentId, taskIdx);
-  };
+    // Optimistic update
+    setDbTasks((prev) => prev.map((t) => t.id === taskId ? { ...t, status: newStatus } : t));
 
-  // Cognitive Command Submit
+    try {
+      await fetch("/api/tasks", {
+        method:  "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body:    JSON.stringify({ id: taskId, status: newStatus }),
+      });
+    } catch {
+      // Revert on failure
+      setDbTasks((prev) => prev.map((t) => t.id === taskId ? { ...t, status: task.status } : t));
+    }
+  }, [dbTasks]);
+
+  const handleDeepWorkComplete = (taskId: string) => toggleTask(taskId);
+
+  // ── Command submit ─────────────────────────────────────────────────────────
   const handleSubmit = useCallback(() => {
     const text = cmdValue.trim();
     if (!text || isProcessing) return;
@@ -996,7 +944,6 @@ export default function ChairmanDashboard() {
               headers: { "Content-Type": "application/json" },
               body:    JSON.stringify({ title: text, start: start.toISOString(), end: end.toISOString() }),
             });
-            // Refresh events
             const res  = await fetch("/api/calendar");
             const data = await res.json();
             if (data.events) setCalEvents(data.events);
@@ -1007,33 +954,59 @@ export default function ChairmanDashboard() {
         } else {
           setToast({ msg: "Connect Google Calendar in the header to auto-schedule.", type: "assign" });
         }
+
       } else if (classification === "delegate") {
-        setToast({ msg: "Task delegated to Claude Autonomous Agent. Removed from Chairman's queue.", type: "delegate" });
+        // Optimistically add as delegated task under CEO
+        const tempId = `temp-${Date.now()}`;
+        const optimistic: DbTask = {
+          id: tempId, title: text, pillar: "BUSINESS", agentId: "ceo",
+          status: "PENDING", isDelegated: true, createdAt: new Date().toISOString(),
+        };
+        setDbTasks((prev) => [...prev, optimistic]);
+        setToast({ msg: "Task delegated to Claude Autonomous Agent.", type: "delegate" });
+        try {
+          const res  = await fetch("/api/tasks", {
+            method:  "POST",
+            headers: { "Content-Type": "application/json" },
+            body:    JSON.stringify({ title: text, pillar: "BUSINESS", agentId: "ceo", status: "PENDING", isDelegated: true }),
+          });
+          const data = await res.json();
+          if (data.task) setDbTasks((prev) => prev.map((t) => t.id === tempId ? data.task : t));
+        } catch {
+          setDbTasks((prev) => prev.filter((t) => t.id !== tempId));
+        }
+
       } else {
+        // Assign to a random agent in scope
         const bizPool = business.map((a) => ({ agent: a, pool: "biz" as const }));
         const perPool = personal.map((a) => ({ agent: a, pool: "per" as const }));
         const candidates = activeTab === "BUSINESS" ? bizPool
                          : activeTab === "PERSONAL" ? perPool
                          : [...bizPool, ...perPool];
 
-        const pick    = candidates[Math.floor(Math.random() * candidates.length)];
-        const newTask = { text, done: false };
-
-        if (pick.pool === "biz") {
-          setBusiness((prev) =>
-            prev.map((a) => a.id !== pick.agent.id ? a : { ...a, tasks: [...a.tasks, newTask] })
-          );
-        } else {
-          setPersonal((prev) =>
-            prev.map((a) => a.id !== pick.agent.id ? a : { ...a, tasks: [...a.tasks, newTask] })
-          );
+        const pick   = candidates[Math.floor(Math.random() * candidates.length)];
+        const pillar = pick.pool === "biz" ? "BUSINESS" : "PERSONAL";
+        const tempId = `temp-${Date.now()}`;
+        const optimistic: DbTask = {
+          id: tempId, title: text, pillar, agentId: pick.agent.id,
+          status: "PENDING", isDelegated: false, createdAt: new Date().toISOString(),
+        };
+        setDbTasks((prev) => [...prev, optimistic]);
+        setToast({ msg: `Assigned to ${pick.agent.title} · saving to Supabase…`, type: "assign" });
+        try {
+          const res  = await fetch("/api/tasks", {
+            method:  "POST",
+            headers: { "Content-Type": "application/json" },
+            body:    JSON.stringify({ title: text, pillar, agentId: pick.agent.id, status: "PENDING", isDelegated: false }),
+          });
+          const data = await res.json();
+          if (data.task) setDbTasks((prev) => prev.map((t) => t.id === tempId ? data.task : t));
+        } catch {
+          setDbTasks((prev) => prev.filter((t) => t.id !== tempId));
         }
-
-        setToast({ msg: `Assigned to ${pick.agent.title} — queued for Calendar Sync`, type: "assign" });
       }
 
       if (saveToMemory) setTimeout(() => setMemToast(true), 400);
-
       setIsProcessing(false);
       setProcessingMsg("");
     };
@@ -1073,7 +1046,7 @@ export default function ChairmanDashboard() {
                   Pristine Designs
                 </h1>
                 <div className="text-[9px] tracking-widest uppercase" style={{ color: "#252836" }}>
-                  Executive Command · Claude Agent Stack · V6
+                  Executive Command · Claude Agent Stack · V6 · Supabase
                 </div>
               </div>
               <div className="header-divider-ea" style={{ width: 1, height: 24, backgroundColor: "#1E1F24", marginLeft: 4 }} />
@@ -1141,7 +1114,9 @@ export default function ChairmanDashboard() {
 
               {/* Progress */}
               <div className="text-right select-none">
-                <div className="text-[9px] tracking-widest uppercase mb-1" style={{ color: "#252836" }}>Mission Progress</div>
+                <div className="text-[9px] tracking-widest uppercase mb-1" style={{ color: "#252836" }}>
+                  {tasksLoading ? "Syncing…" : "Mission Progress"}
+                </div>
                 <div className="text-lg font-bold" style={{ color: "#C9A961", fontVariantNumeric: "tabular-nums" }}>
                   {doneTasks}<span className="text-xs font-normal" style={{ color: "#3B4558" }}>/{totalTasks}</span>
                 </div>
@@ -1155,7 +1130,7 @@ export default function ChairmanDashboard() {
             </div>
           </div>
 
-          {/* Tab nav — scrollable on mobile */}
+          {/* Tab nav */}
           <div className="flex items-center gap-1 overflow-x-auto scrollbar-none" style={{ scrollbarWidth: "none" }}>
             {TABS.map((tab) => {
               const isActive = activeTab === tab.id;
@@ -1190,14 +1165,14 @@ export default function ChairmanDashboard() {
       {/* ── MAIN ──────────────────────────────────────────────────────────── */}
       <main className="main-px max-w-[1440px] mx-auto px-4 md:px-8 py-6 md:py-8" style={{ paddingBottom: 148 }}>
         {activeTab === "MASTER"   && <MasterViewTab key="master"   business={business} personal={personal} calEvents={calEvents} calConnected={calConnected} calLoading={calLoading} />}
-        {activeTab === "BUSINESS" && <BusinessTab   key="business" agents={business}  onToggle={toggleBusiness} />}
-        {activeTab === "PERSONAL" && <PersonalTab   key="personal" agents={personal}  onToggle={togglePersonal} />}
+        {activeTab === "BUSINESS" && <BusinessTab   key="business" agents={business}  onToggle={(_, taskId) => toggleTask(taskId)} />}
+        {activeTab === "PERSONAL" && <PersonalTab   key="personal" agents={personal}  onToggle={(_, taskId) => toggleTask(taskId)} />}
       </main>
 
       {/* ── FOOTER ────────────────────────────────────────────────────────── */}
       <div style={{ borderTop: "1px solid #111218" }}>
         <div className="max-w-[1440px] mx-auto px-8 py-3 flex items-center justify-between">
-          <span className="text-[9px] tracking-widest uppercase" style={{ color: "#111218" }}>Pristine Designs · Executive Command · V6 · Claude Agent Stack</span>
+          <span className="text-[9px] tracking-widest uppercase" style={{ color: "#111218" }}>Pristine Designs · Executive Command · V6 · Claude Agent Stack · Supabase</span>
           <span className="text-[9px] tracking-widest uppercase" style={{ color: "#111218" }}>One Step Closer · 2026</span>
         </div>
       </div>
@@ -1205,7 +1180,7 @@ export default function ChairmanDashboard() {
       {/* ── TOAST (primary) ───────────────────────────────────────────────── */}
       {toast && (
         <div style={{ position: "fixed", bottom: 96, left: "50%", zIndex: 60, animation: "toast-slide 0.28s ease-out", pointerEvents: "none" }}>
-          <div style={{ transform: "translateX(-50%)", backgroundColor: "#0E0F14", border: `1px solid ${toast.type === "delegate" ? "rgba(74,144,226,0.35)" : toast.type === "schedule" ? "rgba(74,144,226,0.35)" : "rgba(201,169,97,0.32)"}`, borderRadius: 8, padding: "11px 18px", display: "flex", alignItems: "center", gap: 10, boxShadow: "0 8px 40px rgba(0,0,0,0.7)", whiteSpace: "nowrap" }}>
+          <div style={{ transform: "translateX(-50%)", backgroundColor: "#0E0F14", border: `1px solid ${toast.type === "delegate" || toast.type === "schedule" ? "rgba(74,144,226,0.35)" : "rgba(201,169,97,0.32)"}`, borderRadius: 8, padding: "11px 18px", display: "flex", alignItems: "center", gap: 10, boxShadow: "0 8px 40px rgba(0,0,0,0.7)", whiteSpace: "nowrap" }}>
             {toast.type === "delegate" || toast.type === "schedule"
               ? <CalendarDays size={13} style={{ color: "#4A90E2", flexShrink: 0 }} />
               : <CheckCheck size={13} style={{ color: "#C9A961", flexShrink: 0 }} />
@@ -1257,7 +1232,7 @@ export default function ChairmanDashboard() {
 
             <div style={{ width: 1, height: 18, backgroundColor: "#1E1F24", flexShrink: 0 }} />
 
-            {/* Input field */}
+            {/* Input */}
             <input
               ref={inputRef}
               value={cmdValue}
