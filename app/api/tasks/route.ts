@@ -16,7 +16,10 @@ export async function GET() {
   try {
     const tasks = await prisma.task.findMany({
       where:   userId ? { userId } : { userId: null },
-      orderBy: { createdAt: "asc" },
+      orderBy: [
+        { priority:  "asc"  },  // 1=HIGH first, 3=LOW last
+        { createdAt: "desc" },  // newest first within same priority
+      ],
     });
     return NextResponse.json({ tasks });
   } catch (err) {
@@ -34,12 +37,14 @@ export async function POST(req: NextRequest) {
 
   try {
     const body = await req.json();
-    const { title, pillar, agentId, status, isDelegated } = body as {
+    const { title, pillar, agentId, status, isDelegated, priority, dueDate } = body as {
       title:        string;
       pillar:       string;
       agentId:      string;
       status?:      string;
       isDelegated?: boolean;
+      priority?:    number;   // 1=HIGH 2=MEDIUM 3=LOW
+      dueDate?:     string;
     };
 
     if (!title || !pillar || !agentId) {
@@ -53,6 +58,8 @@ export async function POST(req: NextRequest) {
         agentId,
         status:      status      ?? "PENDING",
         isDelegated: isDelegated ?? false,
+        priority:    priority    ?? 2,
+        dueDate:     dueDate     ? new Date(dueDate) : null,
         userId:      userId      ?? null,
       },
     });
@@ -73,17 +80,17 @@ export async function PATCH(req: NextRequest) {
 
   try {
     const body = await req.json();
-    const { id, status, isDelegated } = body as {
+    const { id, status, isDelegated, priority } = body as {
       id:           string;
       status?:      string;
       isDelegated?: boolean;
+      priority?:    number;
     };
 
     if (!id) {
       return NextResponse.json({ error: "id required" }, { status: 400 });
     }
 
-    // Verify ownership before updating
     const existing = await prisma.task.findUnique({ where: { id } });
     if (!existing) {
       return NextResponse.json({ error: "Task not found" }, { status: 404 });
@@ -92,9 +99,10 @@ export async function PATCH(req: NextRequest) {
       return NextResponse.json({ error: "Forbidden" }, { status: 403 });
     }
 
-    const data: { status?: string; isDelegated?: boolean } = {};
+    const data: { status?: string; isDelegated?: boolean; priority?: number } = {};
     if (status      !== undefined) data.status      = status;
     if (isDelegated !== undefined) data.isDelegated = isDelegated;
+    if (priority    !== undefined) data.priority    = priority;
 
     const task = await prisma.task.update({ where: { id }, data });
     return NextResponse.json({ task });

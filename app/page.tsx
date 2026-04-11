@@ -43,6 +43,8 @@ interface DbTask {
   status:      string;   // "PENDING" | "DONE"
   isDelegated: boolean;
   createdAt:   string;
+  priority:    number;   // 1=HIGH 2=MEDIUM 3=LOW
+  dueDate?:    string | null;
 }
 
 interface Agent {
@@ -115,6 +117,16 @@ function classifyTask(text: string): "schedule" | "delegate" | "assign" {
   if (SCHEDULE_KEYWORDS.some((k) => lower.includes(k))) return "schedule";
   if (DELEGATE_KEYWORDS.some((k) => lower.includes(k))) return "delegate";
   return "assign";
+}
+
+const HIGH_PRIORITY_KEYWORDS = ["urgent","asap","critical","immediately","top priority","high priority","now","emergency","rush"];
+const LOW_PRIORITY_KEYWORDS  = ["low priority","whenever","no rush","eventually","someday","low urgency"];
+
+function detectPriority(text: string): number {
+  const lower = text.toLowerCase();
+  if (HIGH_PRIORITY_KEYWORDS.some((k) => lower.includes(k))) return 1;
+  if (LOW_PRIORITY_KEYWORDS.some((k)  => lower.includes(k))) return 3;
+  return 2;
 }
 
 function getHighestPriorityTask(
@@ -592,9 +604,18 @@ function TaskPanel({ agent, onToggle }: { agent: Agent; onToggle: (taskId: strin
               <div className="shrink-0 text-[10px] font-mono tracking-wider mt-0.5" style={{ color: isDone ? agent.color : "#2A3040" }}>
                 {String(i + 1).padStart(2, "0")}
               </div>
-              <span className="text-sm leading-relaxed" style={{ color: isDone ? "#3B4558" : "#7A8599", textDecoration: isDone ? "line-through" : "none", textDecorationColor: agent.color, textDecorationThickness: "1px" }}>
+              <span className="text-sm leading-relaxed flex-1" style={{ color: isDone ? "#3B4558" : "#7A8599", textDecoration: isDone ? "line-through" : "none", textDecorationColor: agent.color, textDecorationThickness: "1px" }}>
                 {task.title}
               </span>
+              {!isDone && (
+                <span className="shrink-0 self-center text-[8px] font-mono tracking-widest uppercase px-1.5 py-0.5 rounded" style={{
+                  backgroundColor: task.priority === 1 ? "rgba(224,90,58,0.12)" : task.priority === 3 ? "rgba(59,69,88,0.15)" : "rgba(201,169,97,0.10)",
+                  border:          `1px solid ${task.priority === 1 ? "rgba(224,90,58,0.35)" : task.priority === 3 ? "#1E1F24" : "rgba(201,169,97,0.25)"}`,
+                  color:           task.priority === 1 ? "#E05A3A"              : task.priority === 3 ? "#3B4558"  : "#C9A961",
+                }}>
+                  {task.priority === 1 ? "HIGH" : task.priority === 3 ? "LOW" : "MED"}
+                </span>
+              )}
             </button>
           );
         })}
@@ -962,10 +983,11 @@ export default function ChairmanDashboard() {
 
       } else if (classification === "delegate") {
         // Optimistically add as delegated task under CEO
+        const taskPriority = detectPriority(text);
         const tempId = `temp-${Date.now()}`;
         const optimistic: DbTask = {
           id: tempId, title: text, pillar: "BUSINESS", agentId: "ceo",
-          status: "PENDING", isDelegated: true, createdAt: new Date().toISOString(),
+          status: "PENDING", isDelegated: true, createdAt: new Date().toISOString(), priority: taskPriority,
         };
         setDbTasks((prev) => [...prev, optimistic]);
         setToast({ msg: "Task delegated to Claude Autonomous Agent.", type: "delegate" });
@@ -973,7 +995,7 @@ export default function ChairmanDashboard() {
           const res  = await fetch("/api/tasks", {
             method:  "POST",
             headers: { "Content-Type": "application/json" },
-            body:    JSON.stringify({ title: text, pillar: "BUSINESS", agentId: "ceo", status: "PENDING", isDelegated: true }),
+            body:    JSON.stringify({ title: text, pillar: "BUSINESS", agentId: "ceo", status: "PENDING", isDelegated: true, priority: taskPriority }),
           });
           const data = await res.json();
           if (data.task) setDbTasks((prev) => prev.map((t) => t.id === tempId ? data.task : t));
@@ -991,10 +1013,11 @@ export default function ChairmanDashboard() {
 
         const pick   = candidates[Math.floor(Math.random() * candidates.length)];
         const pillar = pick.pool === "biz" ? "BUSINESS" : "PERSONAL";
+        const taskPriority = detectPriority(text);
         const tempId = `temp-${Date.now()}`;
         const optimistic: DbTask = {
           id: tempId, title: text, pillar, agentId: pick.agent.id,
-          status: "PENDING", isDelegated: false, createdAt: new Date().toISOString(),
+          status: "PENDING", isDelegated: false, createdAt: new Date().toISOString(), priority: taskPriority,
         };
         setDbTasks((prev) => [...prev, optimistic]);
         setToast({ msg: `Assigned to ${pick.agent.title} · saving to Supabase…`, type: "assign" });
@@ -1002,7 +1025,7 @@ export default function ChairmanDashboard() {
           const res  = await fetch("/api/tasks", {
             method:  "POST",
             headers: { "Content-Type": "application/json" },
-            body:    JSON.stringify({ title: text, pillar, agentId: pick.agent.id, status: "PENDING", isDelegated: false }),
+            body:    JSON.stringify({ title: text, pillar, agentId: pick.agent.id, status: "PENDING", isDelegated: false, priority: taskPriority }),
           });
           const data = await res.json();
           if (data.task) setDbTasks((prev) => prev.map((t) => t.id === tempId ? data.task : t));

@@ -67,13 +67,16 @@ model VerificationToken {
 // ─── Chairman Task Model ──────────────────────────────────────────────────────
 
 model Task {
-  id          String   @id @default(uuid())
+  id          String    @id @default(uuid())
   title       String
   pillar      String
   agentId     String
   status      String
-  isDelegated Boolean  @default(false)
-  createdAt   DateTime @default(now())
+  isDelegated Boolean   @default(false)
+  createdAt   DateTime  @default(now())
+  dueDate     DateTime?
+  // 1 = HIGH · 2 = MEDIUM · 3 = LOW — lower rank sorts first (highest priority first)
+  priority    Int       @default(2)
   userId      String?
-  user        User?    @relation(fields: [userId], references: [id], onDelete: Cascade)
+  user        User?     @relation(fields: [userId], references: [id], onDelete: Cascade)
 }
