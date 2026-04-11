@@ -543,8 +543,9 @@ function CalendarFeed({ calConnected }: { calConnected: boolean }) {
   const todayEvts = eventsForDay(todayStr);
   const modalEvts = modalDay ? eventsForDay(modalDay.dateString) : [];
 
+  // Outer panel (CAL_PANEL) handles overflow — no height constraints inside
   return (
-    <div style={{ height: "100%", display: "flex", flexDirection: "column", position: "relative" }}>
+    <div style={{ display: "flex", flexDirection: "column", gap: 0, position: "relative" }}>
       {/* Header */}
       <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 10 }}>
         <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
@@ -597,8 +598,8 @@ function CalendarFeed({ calConnected }: { calConnected: boolean }) {
         Today · {new Date().toLocaleDateString("en-US", { weekday: "long", month: "long", day: "numeric" })}
       </div>
 
-      {/* Today's events */}
-      <div style={{ flex: 1, overflowY: "auto", display: "flex", flexDirection: "column", gap: 4 }}>
+      {/* Today's events — no inner scroll; parent panel scrolls instead */}
+      <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
         {todayEvts.length === 0 ? (
           <div style={{ fontSize: 10, color: "#1C1E2A", letterSpacing: "0.08em", padding: "10px 0" }}>
             {calConnected ? "No events scheduled today." : "Connect Google Calendar to see your schedule."}
@@ -606,13 +607,21 @@ function CalendarFeed({ calConnected }: { calConnected: boolean }) {
         ) : (
           todayEvts.map((ev) => {
             const dt      = ev.start?.dateTime;
+            const endDt   = ev.end?.dateTime;
             const timeStr = dt
               ? new Date(dt).toLocaleTimeString("en-US", { hour: "numeric", minute: "2-digit", hour12: true })
               : "All day";
+            const endStr = endDt
+              ? new Date(endDt).toLocaleTimeString("en-US", { hour: "numeric", minute: "2-digit", hour12: true })
+              : null;
             return (
-              <div key={ev.id} style={{ display: "flex", gap: 10, alignItems: "center", padding: "6px 10px", borderRadius: 6, backgroundColor: "rgba(201,169,97,0.04)", border: "1px solid rgba(201,169,97,0.10)" }}>
-                <span style={{ fontSize: 9, color: "#C9A961", fontVariantNumeric: "tabular-nums", whiteSpace: "nowrap", flexShrink: 0 }}>{timeStr}</span>
-                <span style={{ fontSize: 11, color: "#7A8599", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{ev.summary ?? "Event"}</span>
+              <div key={ev.id} style={{ display: "flex", gap: 10, alignItems: "center", padding: "7px 10px", borderRadius: 6, backgroundColor: "rgba(201,169,97,0.04)", border: "1px solid rgba(201,169,97,0.10)" }}>
+                <div style={{ flexShrink: 0, textAlign: "right" }}>
+                  <div style={{ fontSize: 9, color: "#C9A961", fontVariantNumeric: "tabular-nums", whiteSpace: "nowrap" }}>{timeStr}</div>
+                  {endStr && <div style={{ fontSize: 8, color: "#3B4558", fontVariantNumeric: "tabular-nums", whiteSpace: "nowrap" }}>{endStr}</div>}
+                </div>
+                <div style={{ width: 1, height: "100%", minHeight: 24, backgroundColor: "rgba(201,169,97,0.18)", flexShrink: 0 }} />
+                <span style={{ fontSize: 11, color: "#7A8599", flex: 1, lineHeight: 1.4 }}>{ev.summary ?? "Event"}</span>
               </div>
             );
           })
@@ -1044,12 +1053,14 @@ function MasterViewTab({
     minHeight:       0,
     minWidth:        0,
   };
+  // Calendar panel scrolls at panel level so events aren't trapped in a tiny inner div
+  const CAL_PANEL: React.CSSProperties = { ...PANEL, overflowY: "auto" };
 
-  // Row proportions: Feeds 28% · Personal 44% · C-Suite 28%
+  // Row proportions: Feeds 38% · Personal 38% · C-Suite 24%
   return (
     <div style={{
       display:             "grid",
-      gridTemplateRows:    "28fr 44fr 28fr",
+      gridTemplateRows:    "38fr 38fr 24fr",
       gridTemplateColumns: "100%",
       gap:                 10,
       flex:                1,
@@ -1058,7 +1069,7 @@ function MasterViewTab({
     }}>
       {/* ── Row 1: Calendar + Priority Strikes ─────────────────────────── */}
       <div style={{ display: "grid", gridTemplateColumns: "3fr 2fr", gap: 10, minHeight: 0, overflow: "hidden" }}>
-        <div style={PANEL}><CalendarFeed calConnected={calConnected} /></div>
+        <div style={CAL_PANEL}><CalendarFeed calConnected={calConnected} /></div>
         <div style={PANEL}><PriorityStrikes business={business} personal={personal} onToggle={onToggle} onDelete={onDelete} /></div>
       </div>
 
@@ -1365,10 +1376,12 @@ export default function ChairmanDashboard() {
           setDbTasks((prev) => [...prev, data.task]);
           setToast({ msg: `Saved to ${cat.label}`, type: "assign" });
         } else {
-          setToast({ msg: data.error ?? "Save failed — check your session.", type: "assign" });
+          const errMsg = data.detail ? `${data.error}: ${data.detail}` : (data.error ?? "Save failed — check Vercel logs.");
+          setToast({ msg: errMsg, type: "schedule" });
         }
-      } catch {
-        setToast({ msg: "Network error — task not saved.", type: "assign" });
+      } catch (fetchErr) {
+        console.error("Task POST fetch error:", fetchErr);
+        setToast({ msg: "Network error — task not saved.", type: "schedule" });
       }
       setIsProcessing(false);
       setProcessingMsg("");

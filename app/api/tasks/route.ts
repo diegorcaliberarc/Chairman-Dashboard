@@ -22,37 +22,48 @@ export async function GET() {
       ],
     });
     return NextResponse.json({ tasks });
-  } catch (err) {
+  } catch (err: any) {
     console.error("Tasks GET error:", err);
-    return NextResponse.json({ error: "Failed to fetch tasks" }, { status: 500 });
+    return NextResponse.json({ error: "Failed to fetch tasks", detail: err?.message ?? String(err) }, { status: 500 });
   }
 }
 
 export async function POST(req: NextRequest) {
   const session = await getSession();
   if (!session) {
+    console.error("Tasks POST: no session — user not authenticated");
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
   const userId = (session as any)?.userId as string | undefined;
+  console.log("Tasks POST: userId =", userId);
+
+  let body: any;
+  try {
+    body = await req.json();
+  } catch (parseErr) {
+    console.error("Tasks POST: failed to parse request body:", parseErr);
+    return NextResponse.json({ error: "Invalid JSON body" }, { status: 400 });
+  }
+
+  const { title, pillar, agentId, category, status, isDelegated, priority, dueDate, parentId } = body as {
+    title:        string;
+    pillar:       string;
+    agentId:      string;
+    category?:    string;
+    status?:      string;
+    isDelegated?: boolean;
+    priority?:    number;
+    dueDate?:     string;
+    parentId?:    string;
+  };
+
+  console.log("Tasks POST body:", { title, pillar, agentId, category, status, priority, parentId });
+
+  if (!title || !pillar || !agentId) {
+    return NextResponse.json({ error: "title, pillar, agentId required" }, { status: 400 });
+  }
 
   try {
-    const body = await req.json();
-    const { title, pillar, agentId, category, status, isDelegated, priority, dueDate, parentId } = body as {
-      title:        string;
-      pillar:       string;
-      agentId:      string;
-      category?:    string;
-      status?:      string;
-      isDelegated?: boolean;
-      priority?:    number;
-      dueDate?:     string;
-      parentId?:    string;
-    };
-
-    if (!title || !pillar || !agentId) {
-      return NextResponse.json({ error: "title, pillar, agentId required" }, { status: 400 });
-    }
-
     const task = await prisma.task.create({
       data: {
         title,
@@ -68,10 +79,12 @@ export async function POST(req: NextRequest) {
       },
     });
 
+    console.log("Tasks POST: created task id =", task.id);
     return NextResponse.json({ task });
-  } catch (err) {
-    console.error("Tasks POST error:", err);
-    return NextResponse.json({ error: "Failed to create task" }, { status: 500 });
+  } catch (err: any) {
+    console.error("Tasks POST error — full detail:", err);
+    const detail = err?.message ?? String(err);
+    return NextResponse.json({ error: "Failed to create task", detail }, { status: 500 });
   }
 }
 
