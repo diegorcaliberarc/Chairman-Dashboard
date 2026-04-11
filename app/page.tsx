@@ -13,11 +13,7 @@ import {
   ChevronRight,
   CheckCheck,
   Brain,
-  Archive,
   Bot,
-  TrendingDown,
-  Minus,
-  AlertTriangle,
   X,
   CalendarDays,
   Sun,
@@ -91,14 +87,6 @@ const CATEGORIES: Record<string, { label: string; color: string; pillar: string;
   Relate: { label: "RELATE", color: "#5B8FB9", pillar: "PERSONAL", agentId: "relate" },
   Joy:    { label: "JOY",    color: "#B388EB", pillar: "PERSONAL", agentId: "joy"    },
 };
-
-// ─── KPI Data ─────────────────────────────────────────────────────────────────
-
-const KPI_DATA = [
-  { label: "AI Agency CAC",    value: "$342",    sub: "Cost Per Acquisition", trend: "down",   trendLabel: "Trending Down",    color: "#8BA87B" },
-  { label: "Caliber Arc Churn",value: "4.2%",    sub: "Monthly Rate",         trend: "stable", trendLabel: "Stable",           color: "#C9A961" },
-  { label: "NQ Market Pulse",  value: "VOLATILE",sub: "Range-Bound",          trend: "alert",  trendLabel: "Volatility High",  color: "#E05A3A" },
-];
 
 
 
@@ -370,15 +358,14 @@ function TaskPanel({
                 <span className="text-sm leading-relaxed flex-1" style={{ color: isDone ? "#3B4558" : "#7A8599", textDecoration: isDone ? "line-through" : "none", textDecorationColor: agent.color, textDecorationThickness: "1px" }}>
                   {task.title}
                 </span>
-                {/* Priority badge */}
+                {/* Priority dot */}
                 {!isDone && (
-                  <span className="shrink-0 self-center text-[8px] font-mono tracking-widest uppercase px-1.5 py-0.5 rounded" style={{
-                    backgroundColor: task.priority === 1 ? "rgba(224,90,58,0.12)" : task.priority === 3 ? "rgba(59,69,88,0.15)" : "rgba(201,169,97,0.10)",
-                    border:  `1px solid ${task.priority === 1 ? "rgba(224,90,58,0.35)" : task.priority === 3 ? "#1E1F24" : "rgba(201,169,97,0.25)"}`,
-                    color:   task.priority === 1 ? "#E05A3A" : task.priority === 3 ? "#3B4558" : "#C9A961",
-                  }}>
-                    {task.priority === 1 ? "HIGH" : task.priority === 3 ? "LOW" : "MED"}
-                  </span>
+                  <div className="shrink-0 self-center" style={{
+                    width: 6, height: 6, borderRadius: "50%",
+                    backgroundColor: task.priority === 1 ? "#E05A3A" : task.priority === 3 ? "#3B4558" : "#C9A961",
+                    opacity: task.priority === 3 ? 0.5 : 0.85,
+                    flexShrink: 0,
+                  }} />
                 )}
                 {/* Expand subtasks */}
                 <button
@@ -451,22 +438,7 @@ function TaskPanel({
   );
 }
 
-// ─── KPI Block ────────────────────────────────────────────────────────────────
 
-function KPIBlock({ label, value, sub, trend, trendLabel, color }: typeof KPI_DATA[0]) {
-  const Icon = trend === "down" ? TrendingDown : trend === "stable" ? Minus : AlertTriangle;
-  return (
-    <div className="rounded-xl p-5" style={{ backgroundColor: "#0C0D10", border: "1px solid #1E1F24", flex: 1 }}>
-      <div className="text-[9px] tracking-widest uppercase mb-3" style={{ color: "#3B4558" }}>{label}</div>
-      <div style={{ fontFamily: "Georgia, serif", fontSize: 26, fontWeight: 700, color, lineHeight: 1, letterSpacing: "-0.01em" }}>{value}</div>
-      <div className="text-[9px] tracking-wider mt-1" style={{ color: "#2D3242" }}>{sub}</div>
-      <div className="flex items-center gap-1.5 mt-3 pt-3" style={{ borderTop: "1px solid #1E1F24" }}>
-        <Icon size={11} style={{ color, flexShrink: 0 }} />
-        <span className="text-[10px] tracking-wider" style={{ color }}>{trendLabel}</span>
-      </div>
-    </div>
-  );
-}
 
 // ─── Business Tab ─────────────────────────────────────────────────────────────
 
@@ -498,14 +470,6 @@ function BusinessTab({ agents, subtasksMap, onToggle, onDelete, onAddSubtask }: 
           onAddSubtask={onAddSubtask}
         />
       )}
-
-      {/* KPI Row */}
-      <div>
-        <SectionLabel>Market & Acquisition KPIs</SectionLabel>
-        <div className="kpi-row flex flex-col sm:flex-row gap-3 mt-3">
-          {KPI_DATA.map((k) => <KPIBlock key={k.label} {...k} />)}
-        </div>
-      </div>
     </div>
   );
 }
@@ -936,49 +900,125 @@ function HappinessBlock({ tasks, onToggle, onDelete }: { tasks: DbTask[]; onTogg
 
 // ─── C-Suite Command Card ─────────────────────────────────────────────────────
 
-function CSuiteCard({ agent }: { agent: Agent }) {
-  const pending = agent.tasks.filter((t) => t.status !== "DONE");
-  const done    = agent.tasks.filter((t) => t.status === "DONE").length;
-  const total   = agent.tasks.length;
-  const pct     = total > 0 ? (done / total) * 100 : 0;
-  const topTask = pending[0];
+function CSuiteCard({
+  agent, onToggle, onDelete,
+}: { agent: Agent; onToggle: (id: string) => void; onDelete: (id: string) => void }) {
+  const [isOpen, setIsOpen] = useState(false);
+  const pending   = agent.tasks.filter((t) => t.status !== "DONE");
+  const done      = agent.tasks.filter((t) => t.status === "DONE").length;
+  const total     = agent.tasks.length;
+  const pct       = total > 0 ? (done / total) * 100 : 0;
+  const previewTasks = pending.slice(0, 3);
 
   return (
-    <div style={{ height: "100%", display: "flex", flexDirection: "column", overflow: "hidden" }}>
-      <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", marginBottom: 6 }}>
-        <div>
-          <div style={{ fontFamily: "Georgia, serif", fontSize: 16, color: agent.color, lineHeight: 1 }}>{agent.title}</div>
-          <div style={{ fontSize: 7, letterSpacing: "0.16em", textTransform: "uppercase", color: "#252836", marginTop: 3 }}>{agent.role}</div>
+    <>
+      {/* ── Card (clickable) ── */}
+      <button
+        onClick={() => setIsOpen(true)}
+        style={{
+          height: "100%", width: "100%", textAlign: "left",
+          display: "flex", flexDirection: "column", overflow: "hidden",
+          background: "none", border: "none", cursor: "pointer", padding: 0,
+        }}
+      >
+        <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", marginBottom: 6 }}>
+          <div>
+            <div style={{ fontFamily: "Georgia, serif", fontSize: 16, color: agent.color, lineHeight: 1 }}>{agent.title}</div>
+            <div style={{ fontSize: 7, letterSpacing: "0.16em", textTransform: "uppercase", color: "#252836", marginTop: 3 }}>{agent.role}</div>
+          </div>
+          <div style={{ textAlign: "right" }}>
+            <span style={{ fontSize: 16, color: agent.color, fontVariantNumeric: "tabular-nums", fontFamily: "Georgia, serif" }}>{done}</span>
+            <span style={{ fontSize: 9, color: "#252836" }}>/{total}</span>
+          </div>
         </div>
-        <div style={{ textAlign: "right" }}>
-          <span style={{ fontSize: 16, color: agent.color, fontVariantNumeric: "tabular-nums", fontFamily: "Georgia, serif" }}>{done}</span>
-          <span style={{ fontSize: 9, color: "#252836" }}>/{total}</span>
+        <div style={{ height: 1.5, backgroundColor: "#1E1F24", borderRadius: 2, marginBottom: 8 }}>
+          <div style={{ height: "100%", width: `${pct}%`, backgroundColor: agent.color, borderRadius: 2, opacity: 0.65, transition: "width 0.6s ease" }} />
         </div>
-      </div>
-      <div style={{ height: 1.5, backgroundColor: "#1E1F24", borderRadius: 2, marginBottom: 8 }}>
-        <div style={{ height: "100%", width: `${pct}%`, backgroundColor: agent.color, borderRadius: 2, opacity: 0.65, transition: "width 0.6s ease" }} />
-      </div>
-      <div style={{ flex: 1, overflow: "hidden" }}>
-        {topTask ? (
-          <div style={{ backgroundColor: "#080A0D", border: `1px solid ${agent.color}15`, borderRadius: 6, padding: "7px 9px", height: "100%", boxSizing: "border-box", overflow: "hidden" }}>
-            <div style={{ fontSize: 7, letterSpacing: "0.16em", textTransform: "uppercase", color: "#252836", marginBottom: 4 }}>Top Strike</div>
-            <div style={{ fontSize: 10, color: "#7A8599", lineHeight: 1.5, overflow: "hidden", display: "-webkit-box", WebkitLineClamp: 3, WebkitBoxOrient: "vertical" as any }}>
-              {topTask.title}
+        <div style={{ flex: 1, overflow: "hidden", display: "flex", flexDirection: "column", gap: 3 }}>
+          {previewTasks.length > 0 ? previewTasks.map((t) => (
+            <div key={t.id} style={{ display: "flex", alignItems: "center", gap: 5, padding: "4px 7px", borderRadius: 5, backgroundColor: "#080A0D", border: `1px solid ${agent.color}10` }}>
+              <div style={{ width: 4, height: 4, borderRadius: "50%", backgroundColor: t.priority === 1 ? "#E05A3A" : t.priority === 3 ? "#3B4558" : "#C9A961", flexShrink: 0 }} />
+              <span style={{ fontSize: 9, color: "#7A8599", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", flex: 1 }}>{t.title}</span>
             </div>
-            {topTask.priority === 1 && (
-              <div style={{ marginTop: 5, fontSize: 7, letterSpacing: "0.14em", color: "#E05A3A", textTransform: "uppercase" }}>⚡ HIGH</div>
-            )}
+          )) : (
+            <div style={{ display: "flex", alignItems: "center", justifyContent: "center", flex: 1 }}>
+              <span style={{ fontSize: 9, color: "#1A1C28", letterSpacing: "0.1em" }}>All clear</span>
+            </div>
+          )}
+        </div>
+        <div style={{ marginTop: 6, fontSize: 7, letterSpacing: "0.12em", textTransform: "uppercase", color: "#1E2030" }}>
+          {pending.length} pending · {pct.toFixed(0)}% done
+        </div>
+      </button>
+
+      {/* ── Task Modal ── */}
+      {isOpen && (
+        <div
+          style={{ position: "fixed", inset: 0, backgroundColor: "rgba(0,0,0,0.72)", zIndex: 100, display: "flex", alignItems: "center", justifyContent: "center", padding: 24 }}
+          onClick={() => setIsOpen(false)}
+        >
+          <div
+            style={{ backgroundColor: "#0C0D10", border: `1px solid ${agent.color}30`, borderRadius: 14, padding: "28px 32px", minWidth: 420, maxWidth: 560, width: "100%", boxShadow: "0 24px 80px rgba(0,0,0,0.8)", animation: "fade-up 0.18s ease-out", maxHeight: "80vh", display: "flex", flexDirection: "column" }}
+            onClick={(e) => e.stopPropagation()}
+          >
+            {/* Modal header */}
+            <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", marginBottom: 20, flexShrink: 0 }}>
+              <div>
+                <div style={{ fontFamily: "Georgia, serif", fontSize: 22, color: agent.color, lineHeight: 1 }}>{agent.title}</div>
+                <div style={{ fontSize: 9, letterSpacing: "0.18em", textTransform: "uppercase", color: "#3B4558", marginTop: 5 }}>{agent.role} · {total} task{total !== 1 ? "s" : ""}</div>
+              </div>
+              <button
+                onClick={() => setIsOpen(false)}
+                style={{ background: "none", border: "1px solid #1E1F24", cursor: "pointer", color: "#3B4558", borderRadius: 6, padding: "5px 8px", display: "flex", alignItems: "center", transition: "all 0.15s" }}
+                onMouseEnter={(e) => { (e.currentTarget as HTMLButtonElement).style.borderColor = `${agent.color}55`; (e.currentTarget as HTMLButtonElement).style.color = agent.color; }}
+                onMouseLeave={(e) => { (e.currentTarget as HTMLButtonElement).style.borderColor = "#1E1F24"; (e.currentTarget as HTMLButtonElement).style.color = "#3B4558"; }}
+              >
+                <X size={13} />
+              </button>
+            </div>
+
+            {/* Progress bar */}
+            <div style={{ height: 2, backgroundColor: "#1E1F24", borderRadius: 2, marginBottom: 20, flexShrink: 0 }}>
+              <div style={{ height: "100%", width: `${pct}%`, backgroundColor: agent.color, borderRadius: 2, opacity: 0.7, transition: "width 0.6s ease" }} />
+            </div>
+
+            {/* All tasks */}
+            <div style={{ flex: 1, overflowY: "auto", display: "flex", flexDirection: "column", gap: 6 }}>
+              {agent.tasks.length === 0 ? (
+                <div style={{ padding: "32px 0", textAlign: "center", fontSize: 11, color: "#252836", letterSpacing: "0.1em" }}>
+                  No tasks assigned. Add one via the command bar.
+                </div>
+              ) : (
+                agent.tasks.map((t) => {
+                  const isDone = t.status === "DONE";
+                  return (
+                    <div key={t.id} style={{ display: "flex", alignItems: "center", gap: 10, padding: "10px 14px", borderRadius: 8, backgroundColor: isDone ? `${agent.color}08` : "#080A0D", border: `1px solid ${isDone ? `${agent.color}20` : "#111318"}` }}>
+                      <button onClick={() => onToggle(t.id)} style={{ background: "none", border: "none", cursor: "pointer", padding: 0, display: "flex", flexShrink: 0, color: isDone ? agent.color : "#252836" }}>
+                        {isDone ? <CheckCircle2 size={14} /> : <Circle size={14} />}
+                      </button>
+                      <div style={{ width: 5, height: 5, borderRadius: "50%", backgroundColor: t.priority === 1 ? "#E05A3A" : t.priority === 3 ? "#3B4558" : "#C9A961", flexShrink: 0 }} />
+                      <span style={{ flex: 1, fontSize: 12, color: isDone ? "#3B4558" : "#C2C8D4", textDecoration: isDone ? "line-through" : "none", textDecorationColor: agent.color, lineHeight: 1.4 }}>
+                        {t.title}
+                      </span>
+                      <button onClick={() => onDelete(t.id)} style={{ background: "none", border: "none", cursor: "pointer", padding: 0, color: "#1A1C24", display: "flex", flexShrink: 0, transition: "color 0.15s" }}
+                        onMouseEnter={(e) => { (e.currentTarget as HTMLButtonElement).style.color = "#E05A3A"; }}
+                        onMouseLeave={(e) => { (e.currentTarget as HTMLButtonElement).style.color = "#1A1C24"; }}>
+                        <X size={12} />
+                      </button>
+                    </div>
+                  );
+                })
+              )}
+            </div>
+
+            {/* Footer */}
+            <div style={{ marginTop: 16, flexShrink: 0, fontSize: 9, letterSpacing: "0.12em", textTransform: "uppercase", color: "#1E2030", textAlign: "right" }}>
+              {done}/{total} complete · {pct.toFixed(0)}%
+            </div>
           </div>
-        ) : (
-          <div style={{ backgroundColor: "#080A0D", border: "1px solid #111318", borderRadius: 6, padding: "7px 9px", height: "100%", boxSizing: "border-box", display: "flex", alignItems: "center", justifyContent: "center" }}>
-            <span style={{ fontSize: 9, color: "#1A1C28", letterSpacing: "0.1em" }}>All clear</span>
-          </div>
-        )}
-      </div>
-      <div style={{ marginTop: 6, fontSize: 7, letterSpacing: "0.12em", textTransform: "uppercase", color: "#1E2030" }}>
-        {pending.length} pending · {pct.toFixed(0)}% done
-      </div>
-    </div>
+        </div>
+      )}
+    </>
   );
 }
 
@@ -1032,7 +1072,11 @@ function MasterViewTab({
 
       {/* ── Row 3: Business C-Suite (all 6) ────────────────────────────── */}
       <div style={{ display: "grid", gridTemplateColumns: "repeat(6, 1fr)", gap: 10, minHeight: 0, overflow: "hidden" }}>
-        {business.map((a) => <div key={a.id} style={PANEL}><CSuiteCard agent={a} /></div>)}
+        {business.map((a) => (
+          <div key={a.id} style={PANEL}>
+            <CSuiteCard agent={a} onToggle={onToggle} onDelete={onDelete} />
+          </div>
+        ))}
       </div>
     </div>
   );
@@ -1213,24 +1257,16 @@ export default function ChairmanDashboard() {
   const [isProcessing,  setIsProcessing]  = useState(false);
   const [processingMsg, setProcessingMsg] = useState("");
   const [cmdFocused,    setCmdFocused]    = useState(false);
-  const [memoryOn,      setMemoryOn]      = useState(false);
   const inputRef = useRef<HTMLInputElement>(null);
 
   // ── Toasts ─────────────────────────────────────────────────────────────────
-  const [toast,    setToast]    = useState<{ msg: string; type: "assign" | "delegate" | "schedule" | "memory" } | null>(null);
-  const [memToast, setMemToast] = useState(false);
+  const [toast, setToast] = useState<{ msg: string; type: "assign" | "delegate" | "schedule" } | null>(null);
 
   useEffect(() => {
     if (!toast) return;
     const id = setTimeout(() => setToast(null), 4500);
     return () => clearTimeout(id);
   }, [toast]);
-
-  useEffect(() => {
-    if (!memToast) return;
-    const id = setTimeout(() => setMemToast(false), 3800);
-    return () => clearTimeout(id);
-  }, [memToast]);
 
   // ── Progress ───────────────────────────────────────────────────────────────
   const totalTasks = dbTasks.length;
@@ -1302,7 +1338,7 @@ export default function ChairmanDashboard() {
 
   const handleDeepWorkComplete = (taskId: string) => toggleTask(taskId);
 
-  // ── Command submit ─────────────────────────────────────────────────────────
+  // ── Command submit (DB-first: render only after server confirms) ───────────
   const handleSubmit = useCallback(() => {
     const text = cmdValue.trim();
     if (!text || isProcessing) return;
@@ -1311,19 +1347,10 @@ export default function ChairmanDashboard() {
     setIsProcessing(true);
 
     const cat = CATEGORIES[selectedCategory];
-    setProcessingMsg(`Routing to ${cat.label}…`);
+    setProcessingMsg(`Saving to ${cat.label}…`);
 
     const doSubmit = async () => {
       const taskPriority = detectPriority(text);
-      const tempId       = `temp-${Date.now()}`;
-      const optimistic: DbTask = {
-        id: tempId, title: text, pillar: cat.pillar, agentId: cat.agentId,
-        category: selectedCategory, status: "PENDING", isDelegated: false,
-        createdAt: new Date().toISOString(), priority: taskPriority,
-      };
-      setDbTasks((prev) => [...prev, optimistic]);
-      setToast({ msg: `Assigned to ${cat.label} · saving to Supabase…`, type: "assign" });
-
       try {
         const res  = await fetch("/api/tasks", {
           method:  "POST",
@@ -1334,18 +1361,21 @@ export default function ChairmanDashboard() {
           }),
         });
         const data = await res.json();
-        if (data.task) setDbTasks((prev) => prev.map((t) => t.id === tempId ? data.task : t));
+        if (data.task) {
+          setDbTasks((prev) => [...prev, data.task]);
+          setToast({ msg: `Saved to ${cat.label}`, type: "assign" });
+        } else {
+          setToast({ msg: data.error ?? "Save failed — check your session.", type: "assign" });
+        }
       } catch {
-        setDbTasks((prev) => prev.filter((t) => t.id !== tempId));
+        setToast({ msg: "Network error — task not saved.", type: "assign" });
       }
-
-      if (memoryOn) setTimeout(() => setMemToast(true), 400);
       setIsProcessing(false);
       setProcessingMsg("");
     };
 
-    setTimeout(() => { doSubmit(); }, 900);
-  }, [cmdValue, isProcessing, memoryOn, selectedCategory]);
+    doSubmit();
+  }, [cmdValue, isProcessing, selectedCategory]);
 
   const TABS: { id: TabId; label: string }[] = [
     { id: "MASTER",   label: "MASTER VIEW" },
@@ -1647,17 +1677,6 @@ export default function ChairmanDashboard() {
         </div>
       )}
 
-      {/* ── TOAST (memory) ────────────────────────────────────────────────── */}
-      {memToast && (
-        <div style={{ position: "fixed", top: 80, left: "50%", zIndex: 60, animation: "toast-top 0.28s ease-out", pointerEvents: "none" }}>
-          <div style={{ transform: "translateX(-50%)", backgroundColor: "#0E0F14", border: "1px solid rgba(179,136,235,0.35)", borderRadius: 8, padding: "10px 18px", display: "flex", alignItems: "center", gap: 10, boxShadow: "0 8px 40px rgba(0,0,0,0.7)", whiteSpace: "nowrap", animation: "mem-glow 2s ease-in-out infinite" }}>
-            <Archive size={12} style={{ color: "#B388EB", flexShrink: 0 }} />
-            <span style={{ fontSize: 11, color: "#B388EB", letterSpacing: "0.05em", fontWeight: 600 }}>RAG Vault:</span>
-            <span style={{ fontSize: 11, color: "#7A8599" }}>Thought permanently archived in Infinite Memory.</span>
-          </div>
-        </div>
-      )}
-
       {/* ── COGNITIVE COMMAND BAR ─────────────────────────────────────────── */}
       <div style={{
         position:        "fixed",
@@ -1730,31 +1749,6 @@ export default function ChairmanDashboard() {
                 transition:      "opacity 0.2s",
               }}
             />
-
-            {/* Infinite Memory toggle */}
-            <button
-              onClick={() => setMemoryOn((p) => !p)}
-              title="Save to Infinite Memory (RAG Vault)"
-              style={{
-                flexShrink:      0,
-                display:         "flex",
-                alignItems:      "center",
-                gap:             6,
-                padding:         "5px 10px",
-                borderRadius:    20,
-                backgroundColor: memoryOn ? "rgba(179,136,235,0.1)" : "transparent",
-                border:          `1px solid ${memoryOn ? "rgba(179,136,235,0.35)" : "#1E1F24"}`,
-                cursor:          "pointer",
-                transition:      "all 0.2s",
-                animation:       memoryOn ? "mem-glow 2.5s ease-in-out infinite" : "none",
-              }}
-            >
-              <div style={{ width: 7, height: 7, borderRadius: "50%", backgroundColor: memoryOn ? "#B388EB" : "#252836", transition: "all 0.2s", boxShadow: memoryOn ? "0 0 6px #B388EB" : "none" }} />
-              <Archive size={10} style={{ color: memoryOn ? "#B388EB" : "#252836" }} />
-              <span style={{ fontSize: 9, color: memoryOn ? "#B388EB" : "#252836", letterSpacing: "0.12em", textTransform: "uppercase", whiteSpace: "nowrap" }}>
-                ∞ Memory
-              </span>
-            </button>
 
             {/* Processing or Deploy */}
             {isProcessing ? (

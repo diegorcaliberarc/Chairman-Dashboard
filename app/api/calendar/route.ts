@@ -38,7 +38,7 @@ export async function GET() {
       timeMax:      bounds.timeMax,
       singleEvents: true,
       orderBy:      "startTime",
-      maxResults:   50,
+      maxResults:   2500,
     });
 
     return NextResponse.json({ events: res.data.items ?? [] });
