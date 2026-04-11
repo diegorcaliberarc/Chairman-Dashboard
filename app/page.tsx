@@ -694,7 +694,313 @@ function PersonalTab({ agents, onToggle }: { agents: Agent[]; onToggle: (agentId
   );
 }
 
-// ─── Master View Tab ──────────────────────────────────────────────────────────
+// ─── Calendar Feed (compact one-pager) ───────────────────────────────────────
+
+function CalendarFeed({
+  events, calConnected, calLoading,
+}: { events: CalendarEvent[]; calConnected: boolean; calLoading: boolean }) {
+  const days     = getWeekDays();
+  const todayStr = new Date().toDateString();
+  const todayEvts = events
+    .filter((ev) => {
+      const dt = ev.start?.dateTime ?? ev.start?.date;
+      return dt ? new Date(dt).toDateString() === todayStr : false;
+    })
+    .sort((a, b) => {
+      const ta = a.start?.dateTime ?? a.start?.date ?? "";
+      const tb = b.start?.dateTime ?? b.start?.date ?? "";
+      return ta.localeCompare(tb);
+    });
+
+  return (
+    <div style={{ height: "100%", display: "flex", flexDirection: "column" }}>
+      {/* Header */}
+      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 10 }}>
+        <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
+          <CalendarDays size={10} style={{ color: "#C9A961" }} />
+          <span style={{ fontSize: 9, letterSpacing: "0.22em", textTransform: "uppercase", color: "#3B4558" }}>Command Calendar</span>
+        </div>
+        <span style={{ fontSize: 8, letterSpacing: "0.14em", textTransform: "uppercase", color: calLoading ? "#4A90E2" : calConnected ? "#8BA87B" : "#252836" }}>
+          {calLoading ? "Syncing…" : calConnected ? "● Live" : "○ Not connected"}
+        </span>
+      </div>
+
+      {/* Week strip */}
+      <div style={{ display: "grid", gridTemplateColumns: "repeat(7, 1fr)", gap: 3, marginBottom: 8 }}>
+        {days.map((d) => {
+          const dayEvtCount = events.filter((ev) => {
+            const dt = ev.start?.dateTime ?? ev.start?.date;
+            return dt ? new Date(dt).toDateString() === d.dateString : false;
+          }).length;
+          return (
+            <div key={d.name} style={{
+              borderRadius:    5,
+              padding:         "5px 2px",
+              textAlign:       "center",
+              backgroundColor: d.isToday ? "rgba(201,169,97,0.06)" : "transparent",
+              border:          d.isToday ? "1px solid rgba(201,169,97,0.22)" : "1px solid #111318",
+            }}>
+              <div style={{ fontSize: 7, letterSpacing: "0.16em", textTransform: "uppercase", color: d.isToday ? "#C9A961" : "#1A1C28" }}>{d.name}</div>
+              <div style={{ fontFamily: "Georgia, serif", fontSize: 13, color: d.isToday ? "#C9A961" : "#1E2030", marginTop: 2, fontWeight: 700 }}>{d.date}</div>
+              {dayEvtCount > 0 && (
+                <div style={{ marginTop: 3, display: "flex", justifyContent: "center", gap: 2 }}>
+                  {Array.from({ length: Math.min(3, dayEvtCount) }).map((_, i) => (
+                    <div key={i} style={{ width: 3, height: 3, borderRadius: "50%", backgroundColor: d.isToday ? "#C9A961" : "#3B4558" }} />
+                  ))}
+                </div>
+              )}
+            </div>
+          );
+        })}
+      </div>
+
+      {/* Today label */}
+      <div style={{ fontSize: 7, letterSpacing: "0.2em", textTransform: "uppercase", color: "#1E2030", marginBottom: 6 }}>
+        Today · {new Date().toLocaleDateString("en-US", { weekday: "long", month: "long", day: "numeric" })}
+      </div>
+
+      {/* Today's events */}
+      <div style={{ flex: 1, overflowY: "auto", display: "flex", flexDirection: "column", gap: 4 }}>
+        {todayEvts.length === 0 ? (
+          <div style={{ fontSize: 10, color: "#1C1E2A", letterSpacing: "0.08em", padding: "10px 0" }}>
+            {calConnected ? "No events scheduled today." : "Connect Google Calendar to see your schedule."}
+          </div>
+        ) : (
+          todayEvts.map((ev) => {
+            const dt      = ev.start?.dateTime;
+            const timeStr = dt
+              ? new Date(dt).toLocaleTimeString("en-US", { hour: "numeric", minute: "2-digit", hour12: true })
+              : "All day";
+            return (
+              <div key={ev.id} style={{ display: "flex", gap: 10, alignItems: "center", padding: "6px 10px", borderRadius: 6, backgroundColor: "rgba(201,169,97,0.04)", border: "1px solid rgba(201,169,97,0.10)" }}>
+                <span style={{ fontSize: 9, color: "#C9A961", fontVariantNumeric: "tabular-nums", whiteSpace: "nowrap", flexShrink: 0 }}>{timeStr}</span>
+                <span style={{ fontSize: 11, color: "#7A8599", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{ev.summary ?? "Event"}</span>
+              </div>
+            );
+          })
+        )}
+      </div>
+    </div>
+  );
+}
+
+// ─── Priority Strikes ─────────────────────────────────────────────────────────
+
+function PriorityStrikes({
+  business, personal, onToggle,
+}: { business: Agent[]; personal: Agent[]; onToggle: (taskId: string) => void }) {
+  const strikes = [...business, ...personal]
+    .flatMap((a) => a.tasks.filter((t) => t.status !== "DONE").map((t) => ({ task: t, agent: a })))
+    .sort((a, b) => a.task.priority - b.task.priority);
+
+  return (
+    <div style={{ height: "100%", display: "flex", flexDirection: "column" }}>
+      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 10 }}>
+        <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
+          <Crosshair size={10} style={{ color: "#E05A3A" }} />
+          <span style={{ fontSize: 9, letterSpacing: "0.22em", textTransform: "uppercase", color: "#3B4558" }}>Priority Strikes</span>
+        </div>
+        <span style={{ fontSize: 8, letterSpacing: "0.14em", color: "#252836" }}>{strikes.length} pending</span>
+      </div>
+      <div style={{ flex: 1, overflowY: "auto", display: "flex", flexDirection: "column", gap: 3 }}>
+        {strikes.slice(0, 14).map(({ task, agent }) => (
+          <button
+            key={task.id}
+            onClick={() => onToggle(task.id)}
+            style={{ width: "100%", textAlign: "left", display: "flex", alignItems: "center", gap: 8, padding: "6px 9px", borderRadius: 6, backgroundColor: "transparent", border: "1px solid #0F1015", cursor: "pointer", transition: "border-color 0.14s" }}
+            onMouseEnter={(e) => (e.currentTarget.style.borderColor = `${agent.color}28`)}
+            onMouseLeave={(e) => (e.currentTarget.style.borderColor = "#0F1015")}
+          >
+            <div style={{ width: 4, height: 4, borderRadius: "50%", backgroundColor: agent.color, flexShrink: 0 }} />
+            <span style={{ fontSize: 7, letterSpacing: "0.12em", textTransform: "uppercase", color: agent.color, flexShrink: 0, width: 30 }}>{agent.title}</span>
+            <span style={{ fontSize: 11, color: "#7A8599", flex: 1, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{task.title}</span>
+            <span style={{
+              fontSize: 7, letterSpacing: "0.14em", textTransform: "uppercase", padding: "2px 5px", borderRadius: 3, flexShrink: 0,
+              backgroundColor: task.priority === 1 ? "rgba(224,90,58,0.10)" : task.priority === 3 ? "rgba(59,69,88,0.08)" : "rgba(201,169,97,0.07)",
+              border: `1px solid ${task.priority === 1 ? "rgba(224,90,58,0.28)" : task.priority === 3 ? "#1A1C24" : "rgba(201,169,97,0.18)"}`,
+              color: task.priority === 1 ? "#E05A3A" : task.priority === 3 ? "#3B4558" : "#C9A961",
+            }}>
+              {task.priority === 1 ? "HI" : task.priority === 3 ? "LO" : "MD"}
+            </span>
+          </button>
+        ))}
+        {strikes.length === 0 && (
+          <div style={{ textAlign: "center", padding: "20px 0", fontSize: 10, color: "#1C1E2A", letterSpacing: "0.1em" }}>
+            All clear, Chairman.
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
+
+// ─── Personal Life Quadrants ──────────────────────────────────────────────────
+
+function QuadrantHeader({ label, sub, color }: { label: string; sub: string; color: string }) {
+  return (
+    <div style={{ display: "flex", alignItems: "center", gap: 7, marginBottom: 10 }}>
+      <div style={{ width: 5, height: 5, borderRadius: "50%", backgroundColor: color, boxShadow: `0 0 8px ${color}77`, flexShrink: 0 }} />
+      <span style={{ fontFamily: "Georgia, serif", fontSize: 12, color, letterSpacing: "0.04em" }}>{label}</span>
+      <div style={{ flex: 1 }} />
+      <span style={{ fontSize: 7, letterSpacing: "0.16em", textTransform: "uppercase", color: "#252836" }}>{sub}</span>
+    </div>
+  );
+}
+
+function SubPanel({ children }: { children: React.ReactNode }) {
+  return (
+    <div style={{ backgroundColor: "#080A0D", border: "1px solid #111318", borderRadius: 7, padding: "7px 10px" }}>
+      {children}
+    </div>
+  );
+}
+
+function DataRow({ label, value, color }: { label: string; value: string; color?: string }) {
+  return (
+    <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "4px 0", borderBottom: "1px solid #0C0E14" }}>
+      <span style={{ fontSize: 7, letterSpacing: "0.15em", textTransform: "uppercase", color: "#1E2030" }}>{label}</span>
+      <span style={{ fontSize: 11, color: color ?? "#5A6070", fontVariantNumeric: "tabular-nums" }}>{value}</span>
+    </div>
+  );
+}
+
+function WealthBlock() {
+  return (
+    <div style={{ height: "100%", display: "flex", flexDirection: "column", overflow: "hidden" }}>
+      <QuadrantHeader label="WEALTH" sub="Income & Freedom" color="#D4AF37" />
+      <div style={{ flex: 1, display: "flex", flexDirection: "column", gap: 6, overflowY: "auto" }}>
+        <SubPanel>
+          <div style={{ fontSize: 7, letterSpacing: "0.2em", textTransform: "uppercase", color: "#252836", marginBottom: 5 }}>NQ Session Bias</div>
+          <div style={{ fontFamily: "Georgia, serif", fontSize: 13, color: "#C9A961" }}>RANGE-BOUND</div>
+          <div style={{ fontSize: 7, color: "#1C1E26", marginTop: 2 }}>ES / NQ · Watching supply at prior hi</div>
+        </SubPanel>
+        <SubPanel>
+          <div style={{ fontSize: 7, letterSpacing: "0.2em", textTransform: "uppercase", color: "#252836", marginBottom: 6 }}>$ADD / CVD Internals</div>
+          <div style={{ display: "flex", gap: 20 }}>
+            <div><div style={{ fontSize: 7, color: "#1C1E26" }}>$ADD</div><div style={{ fontSize: 13, color: "#D4AF37", fontVariantNumeric: "tabular-nums", marginTop: 2 }}>—</div></div>
+            <div><div style={{ fontSize: 7, color: "#1C1E26" }}>CVD</div><div style={{ fontSize: 13, color: "#D4AF37", fontVariantNumeric: "tabular-nums", marginTop: 2 }}>—</div></div>
+          </div>
+        </SubPanel>
+        <SubPanel>
+          <DataRow label="Account Buffer" value="—" color="#8BA87B" />
+          <DataRow label="Daily P&L" value="—" color="#8BA87B" />
+        </SubPanel>
+      </div>
+    </div>
+  );
+}
+
+function HealthBlock() {
+  return (
+    <div style={{ height: "100%", display: "flex", flexDirection: "column", overflow: "hidden" }}>
+      <QuadrantHeader label="HEALTH" sub="Training & Energy" color="#E05A3A" />
+      <div style={{ flex: 1, display: "flex", flexDirection: "column", gap: 6, overflowY: "auto" }}>
+        <SubPanel>
+          <div style={{ fontSize: 7, letterSpacing: "0.2em", textTransform: "uppercase", color: "#252836", marginBottom: 5 }}>Diet Protocol</div>
+          <DataRow label="Protein Target" value="200g" color="#E05A3A" />
+          <DataRow label="Calories" value="2,800 kcal" color="#E05A3A" />
+          <DataRow label="Water" value="—" />
+        </SubPanel>
+        <SubPanel>
+          <div style={{ fontSize: 7, letterSpacing: "0.2em", textTransform: "uppercase", color: "#252836", marginBottom: 5 }}>Training Block</div>
+          <DataRow label="Today's Session" value="—" color="#E05A3A" />
+          <DataRow label="Recovery State" value="—" />
+          <DataRow label="Sleep" value="—" />
+        </SubPanel>
+      </div>
+    </div>
+  );
+}
+
+function RelationshipsBlock() {
+  return (
+    <div style={{ height: "100%", display: "flex", flexDirection: "column", overflow: "hidden" }}>
+      <QuadrantHeader label="RELATE" sub="Legacy & Pack" color="#5B8FB9" />
+      <div style={{ flex: 1, display: "flex", flexDirection: "column", gap: 6, overflowY: "auto" }}>
+        <SubPanel>
+          <div style={{ fontSize: 7, letterSpacing: "0.2em", textTransform: "uppercase", color: "#252836", marginBottom: 5 }}>Inner Circle</div>
+          <DataRow label="Family" value="—" color="#5B8FB9" />
+          <DataRow label="Antonia" value="—" color="#5B8FB9" />
+          <DataRow label="The Dogs" value="—" color="#5B8FB9" />
+        </SubPanel>
+        <SubPanel>
+          <div style={{ fontSize: 7, letterSpacing: "0.2em", textTransform: "uppercase", color: "#252836", marginBottom: 5 }}>Today's Note</div>
+          <div style={{ fontSize: 10, color: "#2A3245", lineHeight: 1.6 }}>—</div>
+        </SubPanel>
+      </div>
+    </div>
+  );
+}
+
+function HappinessBlock() {
+  return (
+    <div style={{ height: "100%", display: "flex", flexDirection: "column", overflow: "hidden" }}>
+      <QuadrantHeader label="JOY" sub="Foundation & Operations" color="#B388EB" />
+      <div style={{ flex: 1, display: "flex", flexDirection: "column", gap: 6, overflowY: "auto" }}>
+        <div style={{ backgroundColor: "#080A0D", border: "1px solid rgba(179,136,235,0.10)", borderRadius: 7, padding: "10px 12px", flex: 1 }}>
+          <div style={{ fontSize: 7, letterSpacing: "0.2em", textTransform: "uppercase", color: "#252836", marginBottom: 8 }}>Daily Anchor</div>
+          <div style={{ fontFamily: "Georgia, serif", fontSize: 12, color: "#3D2A56", lineHeight: 1.8, fontStyle: "italic" }}>
+            "One step closer."
+          </div>
+        </div>
+        <SubPanel>
+          <DataRow label="State Today" value="—" color="#B388EB" />
+          <DataRow label="Gratitude" value="—" />
+        </SubPanel>
+      </div>
+    </div>
+  );
+}
+
+// ─── C-Suite Command Card ─────────────────────────────────────────────────────
+
+function CSuiteCard({ agent }: { agent: Agent }) {
+  const pending = agent.tasks.filter((t) => t.status !== "DONE");
+  const done    = agent.tasks.filter((t) => t.status === "DONE").length;
+  const total   = agent.tasks.length;
+  const pct     = total > 0 ? (done / total) * 100 : 0;
+  const topTask = pending[0];
+
+  return (
+    <div style={{ height: "100%", display: "flex", flexDirection: "column", overflow: "hidden" }}>
+      <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", marginBottom: 6 }}>
+        <div>
+          <div style={{ fontFamily: "Georgia, serif", fontSize: 16, color: agent.color, lineHeight: 1 }}>{agent.title}</div>
+          <div style={{ fontSize: 7, letterSpacing: "0.16em", textTransform: "uppercase", color: "#252836", marginTop: 3 }}>{agent.role}</div>
+        </div>
+        <div style={{ textAlign: "right" }}>
+          <span style={{ fontSize: 16, color: agent.color, fontVariantNumeric: "tabular-nums", fontFamily: "Georgia, serif" }}>{done}</span>
+          <span style={{ fontSize: 9, color: "#252836" }}>/{total}</span>
+        </div>
+      </div>
+      <div style={{ height: 1.5, backgroundColor: "#1E1F24", borderRadius: 2, marginBottom: 8 }}>
+        <div style={{ height: "100%", width: `${pct}%`, backgroundColor: agent.color, borderRadius: 2, opacity: 0.65, transition: "width 0.6s ease" }} />
+      </div>
+      <div style={{ flex: 1, overflow: "hidden" }}>
+        {topTask ? (
+          <div style={{ backgroundColor: "#080A0D", border: `1px solid ${agent.color}15`, borderRadius: 6, padding: "7px 9px", height: "100%", boxSizing: "border-box", overflow: "hidden" }}>
+            <div style={{ fontSize: 7, letterSpacing: "0.16em", textTransform: "uppercase", color: "#252836", marginBottom: 4 }}>Top Strike</div>
+            <div style={{ fontSize: 10, color: "#7A8599", lineHeight: 1.5, overflow: "hidden", display: "-webkit-box", WebkitLineClamp: 3, WebkitBoxOrient: "vertical" as any }}>
+              {topTask.title}
+            </div>
+            {topTask.priority === 1 && (
+              <div style={{ marginTop: 5, fontSize: 7, letterSpacing: "0.14em", color: "#E05A3A", textTransform: "uppercase" }}>⚡ HIGH</div>
+            )}
+          </div>
+        ) : (
+          <div style={{ backgroundColor: "#080A0D", border: "1px solid #111318", borderRadius: 6, padding: "7px 9px", height: "100%", boxSizing: "border-box", display: "flex", alignItems: "center", justifyContent: "center" }}>
+            <span style={{ fontSize: 9, color: "#1A1C28", letterSpacing: "0.1em" }}>All clear</span>
+          </div>
+        )}
+      </div>
+      <div style={{ marginTop: 6, fontSize: 7, letterSpacing: "0.12em", textTransform: "uppercase", color: "#1E2030" }}>
+        {pending.length} pending · {pct.toFixed(0)}% done
+      </div>
+    </div>
+  );
+}
+
+// ─── Master View Tab (One-Pager Command Center) ───────────────────────────────
 
 function MasterViewTab({
   business,
@@ -702,18 +1008,54 @@ function MasterViewTab({
   calEvents,
   calConnected,
   calLoading,
+  onToggle,
 }: {
   business:     Agent[];
   personal:     Agent[];
   calEvents:    CalendarEvent[];
   calConnected: boolean;
   calLoading:   boolean;
+  onToggle:     (taskId: string) => void;
 }) {
+  const csuite = business.filter((a) => ["ceo", "coo", "cfo", "cto"].includes(a.id));
+
+  const PANEL: React.CSSProperties = {
+    backgroundColor: "#0C0D10",
+    border:          "1px solid #1E1F24",
+    borderRadius:    10,
+    padding:         "14px 16px",
+    overflow:        "hidden",
+    minHeight:       0,
+    minWidth:        0,
+  };
+
   return (
-    <div className="space-y-8" style={{ animation: "tab-in 0.22s ease-out" }}>
-      <WeeklyCalendar events={calEvents} calConnected={calConnected} calLoading={calLoading} />
-      <AnimeRoadmap />
-      <MiniAgentGrid business={business} personal={personal} />
+    <div style={{
+      display:          "grid",
+      gridTemplateRows: "1.9fr 2.2fr 1.5fr",
+      gap:              8,
+      height:           "calc(100vh - 185px)",
+      overflow:         "hidden",
+      animation:        "tab-in 0.22s ease-out",
+    }}>
+      {/* Row 1 — Feeds */}
+      <div style={{ display: "grid", gridTemplateColumns: "1.5fr 1fr", gap: 8, minHeight: 0 }}>
+        <div style={PANEL}><CalendarFeed events={calEvents} calConnected={calConnected} calLoading={calLoading} /></div>
+        <div style={PANEL}><PriorityStrikes business={business} personal={personal} onToggle={onToggle} /></div>
+      </div>
+
+      {/* Row 2 — Personal Quadrants */}
+      <div style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: 8, minHeight: 0 }}>
+        <div style={PANEL}><WealthBlock /></div>
+        <div style={PANEL}><HealthBlock /></div>
+        <div style={PANEL}><RelationshipsBlock /></div>
+        <div style={PANEL}><HappinessBlock /></div>
+      </div>
+
+      {/* Row 3 — C-Suite */}
+      <div style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: 8, minHeight: 0 }}>
+        {csuite.map((a) => <div key={a.id} style={PANEL}><CSuiteCard agent={a} /></div>)}
+      </div>
     </div>
   );
 }
@@ -1292,8 +1634,14 @@ export default function ChairmanDashboard() {
       </header>
 
       {/* ── MAIN ──────────────────────────────────────────────────────────── */}
-      <main className="main-px max-w-[1440px] mx-auto px-4 md:px-8 py-6 md:py-8" style={{ paddingBottom: 148 }}>
-        {activeTab === "MASTER"   && <MasterViewTab key="master"   business={business} personal={personal} calEvents={calEvents} calConnected={calConnected} calLoading={calLoading} />}
+      <main
+        className="main-px max-w-[1440px] mx-auto px-4 md:px-8"
+        style={{
+          paddingTop:    activeTab === "MASTER" ? 10 : 24,
+          paddingBottom: activeTab === "MASTER" ? 0  : 148,
+        }}
+      >
+        {activeTab === "MASTER" && <MasterViewTab key="master" business={business} personal={personal} calEvents={calEvents} calConnected={calConnected} calLoading={calLoading} onToggle={toggleTask} />}
         {activeTab === "BUSINESS" && <BusinessTab   key="business" agents={business}  onToggle={(_, taskId) => toggleTask(taskId)} />}
         {activeTab === "PERSONAL" && <PersonalTab   key="personal" agents={personal}  onToggle={(_, taskId) => toggleTask(taskId)} />}
       </main>
