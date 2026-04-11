@@ -107,7 +107,7 @@ export async function POST(req: NextRequest) {
   const fullSystem = `${systemPrompt}\n\n${context}\n\nRespond in plain text. Be concise and direct. No markdown headers. No bullet introductions like "Here are...". Lead with the most important point.`;
 
   try {
-    const model  = genAI.getGenerativeModel({ model: "gemini-2.0-flash" });
+    const model  = genAI.getGenerativeModel({ model: "gemini-1.5-flash-latest" });
     const result = await model.generateContent([
       { text: fullSystem },
       { text: message },
