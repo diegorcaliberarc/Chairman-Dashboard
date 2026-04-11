@@ -40,12 +40,13 @@ interface DbTask {
   title:       string;
   pillar:      string;   // "BUSINESS" | "PERSONAL"
   agentId:     string;
-  category?:   string;   // Wealth | Health | Relate | Joy | CEO | COO | CFO | CTO
+  category?:   string;   // Wealth | Health | Relate | Joy | CEO | COO | CFO | CTO | CMO | CPO
   status:      string;   // "PENDING" | "DONE"
   isDelegated: boolean;
   createdAt:   string;
   priority:    number;   // 1=HIGH 2=MEDIUM 3=LOW
   dueDate?:    string | null;
+  parentId?:   string | null;
 }
 
 interface Agent {
@@ -69,10 +70,10 @@ const AGENT_META_BUSINESS = [
 ];
 
 const AGENT_META_PERSONAL = [
-  { id: "wealth", title: "WEALTH", role: "Income & Freedom",        color: "#D4AF37" },
-  { id: "health", title: "HEALTH", role: "Training & Energy",       color: "#E05A3A" },
-  { id: "relate", title: "RELATE", role: "Legacy & Pack",           color: "#5B8FB9" },
-  { id: "joy",    title: "JOY",    role: "Foundation & Operations", color: "#B388EB" },
+  { id: "wealth", title: "WEALTH",        role: "Income & Freedom",        color: "#D4AF37" },
+  { id: "health", title: "HEALTH",        role: "Training & Energy",       color: "#E05A3A" },
+  { id: "relate", title: "RELATIONSHIPS", role: "Legacy & Pack",           color: "#5B8FB9" },
+  { id: "joy",    title: "JOY",           role: "Goals & Happiness",       color: "#B388EB" },
 ];
 
 
@@ -81,8 +82,10 @@ const AGENT_META_PERSONAL = [
 const CATEGORIES: Record<string, { label: string; color: string; pillar: string; agentId: string }> = {
   CEO:    { label: "CEO",    color: "#C9A961", pillar: "BUSINESS", agentId: "ceo"    },
   COO:    { label: "COO",    color: "#7B9EA8", pillar: "BUSINESS", agentId: "coo"    },
+  CMO:    { label: "CMO",    color: "#A87B9E", pillar: "BUSINESS", agentId: "cmo"    },
   CFO:    { label: "CFO",    color: "#8BA87B", pillar: "BUSINESS", agentId: "cfo"    },
   CTO:    { label: "CTO",    color: "#4A90E2", pillar: "BUSINESS", agentId: "cto"    },
+  CPO:    { label: "CPO",    color: "#F39C12", pillar: "BUSINESS", agentId: "cpo"    },
   Wealth: { label: "WEALTH", color: "#D4AF37", pillar: "PERSONAL", agentId: "wealth" },
   Health: { label: "HEALTH", color: "#E05A3A", pillar: "PERSONAL", agentId: "health" },
   Relate: { label: "RELATE", color: "#5B8FB9", pillar: "PERSONAL", agentId: "relate" },
@@ -321,8 +324,19 @@ function AgentCard({ agent, selected, onClick }: { agent: Agent; selected: boole
 
 // ─── Task Panel ───────────────────────────────────────────────────────────────
 
-function TaskPanel({ agent, onToggle }: { agent: Agent; onToggle: (taskId: string) => void }) {
+function TaskPanel({
+  agent, subtasksMap, onToggle, onDelete, onAddSubtask,
+}: {
+  agent:          Agent;
+  subtasksMap:    Record<string, DbTask[]>;
+  onToggle:       (taskId: string) => void;
+  onDelete:       (taskId: string) => void;
+  onAddSubtask:   (parentId: string, title: string) => void;
+}) {
+  const [expandedId,   setExpandedId]   = useState<string | null>(null);
+  const [subInputs,    setSubInputs]    = useState<Record<string, string>>({});
   const done = agent.tasks.filter((t) => t.status === "DONE").length;
+
   return (
     <div className="rounded-xl" style={{ backgroundColor: "#0C0D10", border: `1px solid ${agent.color}30`, padding: "24px", animation: "fade-up 0.22s ease-out" }}>
       <div className="flex items-center gap-3 mb-5">
@@ -334,31 +348,97 @@ function TaskPanel({ agent, onToggle }: { agent: Agent; onToggle: (taskId: strin
       </div>
       <div className="space-y-1.5">
         {agent.tasks.map((task, i) => {
-          const isDone = task.status === "DONE";
+          const isDone    = task.status === "DONE";
+          const subs      = subtasksMap[task.id] ?? [];
+          const isExpanded = expandedId === task.id;
           return (
-            <button key={task.id} onClick={() => onToggle(task.id)}
-              className="w-full text-left flex items-start gap-3 rounded-lg transition-all duration-150 focus:outline-none"
-              style={{ padding: "10px 12px", backgroundColor: isDone ? `${agent.color}0A` : "transparent", border: `1px solid ${isDone ? `${agent.color}22` : "transparent"}` }}
-            >
-              <div className="shrink-0 mt-0.5" style={{ color: isDone ? agent.color : "#252836" }}>
-                {isDone ? <CheckCircle2 size={14} /> : <Circle size={14} />}
-              </div>
-              <div className="shrink-0 text-[10px] font-mono tracking-wider mt-0.5" style={{ color: isDone ? agent.color : "#2A3040" }}>
-                {String(i + 1).padStart(2, "0")}
-              </div>
-              <span className="text-sm leading-relaxed flex-1" style={{ color: isDone ? "#3B4558" : "#7A8599", textDecoration: isDone ? "line-through" : "none", textDecorationColor: agent.color, textDecorationThickness: "1px" }}>
-                {task.title}
-              </span>
-              {!isDone && (
-                <span className="shrink-0 self-center text-[8px] font-mono tracking-widest uppercase px-1.5 py-0.5 rounded" style={{
-                  backgroundColor: task.priority === 1 ? "rgba(224,90,58,0.12)" : task.priority === 3 ? "rgba(59,69,88,0.15)" : "rgba(201,169,97,0.10)",
-                  border:          `1px solid ${task.priority === 1 ? "rgba(224,90,58,0.35)" : task.priority === 3 ? "#1E1F24" : "rgba(201,169,97,0.25)"}`,
-                  color:           task.priority === 1 ? "#E05A3A"              : task.priority === 3 ? "#3B4558"  : "#C9A961",
-                }}>
-                  {task.priority === 1 ? "HIGH" : task.priority === 3 ? "LOW" : "MED"}
+            <div key={task.id}>
+              {/* ── Main task row ── */}
+              <div
+                className="flex items-start gap-2 rounded-lg transition-all duration-150"
+                style={{ padding: "9px 10px", backgroundColor: isDone ? `${agent.color}0A` : "transparent", border: `1px solid ${isDone ? `${agent.color}22` : "transparent"}` }}
+              >
+                {/* Toggle */}
+                <button onClick={() => onToggle(task.id)} className="shrink-0 mt-0.5 focus:outline-none" style={{ color: isDone ? agent.color : "#252836", background: "none", border: "none", cursor: "pointer", padding: 0, display: "flex" }}>
+                  {isDone ? <CheckCircle2 size={14} /> : <Circle size={14} />}
+                </button>
+                {/* Index */}
+                <div className="shrink-0 text-[10px] font-mono tracking-wider mt-0.5" style={{ color: isDone ? agent.color : "#2A3040", minWidth: 18 }}>
+                  {String(i + 1).padStart(2, "0")}
+                </div>
+                {/* Title */}
+                <span className="text-sm leading-relaxed flex-1" style={{ color: isDone ? "#3B4558" : "#7A8599", textDecoration: isDone ? "line-through" : "none", textDecorationColor: agent.color, textDecorationThickness: "1px" }}>
+                  {task.title}
                 </span>
+                {/* Priority badge */}
+                {!isDone && (
+                  <span className="shrink-0 self-center text-[8px] font-mono tracking-widest uppercase px-1.5 py-0.5 rounded" style={{
+                    backgroundColor: task.priority === 1 ? "rgba(224,90,58,0.12)" : task.priority === 3 ? "rgba(59,69,88,0.15)" : "rgba(201,169,97,0.10)",
+                    border:  `1px solid ${task.priority === 1 ? "rgba(224,90,58,0.35)" : task.priority === 3 ? "#1E1F24" : "rgba(201,169,97,0.25)"}`,
+                    color:   task.priority === 1 ? "#E05A3A" : task.priority === 3 ? "#3B4558" : "#C9A961",
+                  }}>
+                    {task.priority === 1 ? "HIGH" : task.priority === 3 ? "LOW" : "MED"}
+                  </span>
+                )}
+                {/* Expand subtasks */}
+                <button
+                  onClick={() => setExpandedId(isExpanded ? null : task.id)}
+                  className="shrink-0 self-center focus:outline-none"
+                  title={isExpanded ? "Collapse subtasks" : `${subs.length} subtask${subs.length !== 1 ? "s" : ""} · click to expand`}
+                  style={{ background: "none", border: "none", cursor: "pointer", padding: "2px 4px", borderRadius: 4, color: isExpanded ? agent.color : subs.length > 0 ? "#3B4558" : "#1A1C24", fontSize: 9, display: "flex", alignItems: "center", gap: 2, transition: "color 0.15s" }}
+                >
+                  {subs.length > 0 && <span style={{ fontVariantNumeric: "tabular-nums" }}>{subs.length}</span>}
+                  <ChevronRight size={10} style={{ transform: isExpanded ? "rotate(90deg)" : "none", transition: "transform 0.15s" }} />
+                </button>
+                {/* Delete */}
+                <button
+                  onClick={() => onDelete(task.id)}
+                  className="shrink-0 self-center focus:outline-none"
+                  title="Delete task"
+                  style={{ background: "none", border: "none", cursor: "pointer", padding: "2px 3px", borderRadius: 3, color: "#1A1C24", display: "flex", transition: "color 0.15s" }}
+                  onMouseEnter={(e) => { (e.currentTarget as HTMLButtonElement).style.color = "#E05A3A"; }}
+                  onMouseLeave={(e) => { (e.currentTarget as HTMLButtonElement).style.color = "#1A1C24"; }}
+                >
+                  <X size={11} />
+                </button>
+              </div>
+
+              {/* ── Subtasks area ── */}
+              {isExpanded && (
+                <div style={{ marginLeft: 24, marginTop: 3, display: "flex", flexDirection: "column", gap: 2 }}>
+                  {subs.map((sub) => (
+                    <div key={sub.id} style={{ display: "flex", alignItems: "center", gap: 6, padding: "6px 10px", borderRadius: 6, backgroundColor: "#080A0D", border: "1px solid #111318" }}>
+                      <button onClick={() => onToggle(sub.id)} style={{ background: "none", border: "none", cursor: "pointer", padding: 0, display: "flex", flexShrink: 0, color: sub.status === "DONE" ? agent.color : "#252836" }}>
+                        {sub.status === "DONE" ? <CheckCircle2 size={11} /> : <Circle size={11} />}
+                      </button>
+                      <span style={{ flex: 1, fontSize: 11, color: sub.status === "DONE" ? "#3B4558" : "#7A8599", textDecoration: sub.status === "DONE" ? "line-through" : "none", textDecorationColor: agent.color }}>{sub.title}</span>
+                      <button onClick={() => onDelete(sub.id)} style={{ background: "none", border: "none", cursor: "pointer", padding: 0, color: "#1A1C24", display: "flex", flexShrink: 0, transition: "color 0.15s" }}
+                        onMouseEnter={(e) => { (e.currentTarget as HTMLButtonElement).style.color = "#E05A3A"; }}
+                        onMouseLeave={(e) => { (e.currentTarget as HTMLButtonElement).style.color = "#1A1C24"; }}>
+                        <X size={9} />
+                      </button>
+                    </div>
+                  ))}
+                  {/* Add subtask input */}
+                  <div style={{ display: "flex", alignItems: "center", gap: 6, padding: "5px 10px", borderRadius: 6, backgroundColor: "#080A0D", border: `1px solid ${agent.color}18` }}>
+                    <div style={{ width: 11, height: 11, flexShrink: 0 }} />
+                    <input
+                      value={subInputs[task.id] ?? ""}
+                      onChange={(e) => setSubInputs((p) => ({ ...p, [task.id]: e.target.value }))}
+                      onKeyDown={(e) => {
+                        if (e.key === "Enter") {
+                          const val = (subInputs[task.id] ?? "").trim();
+                          if (val) { onAddSubtask(task.id, val); setSubInputs((p) => ({ ...p, [task.id]: "" })); }
+                        }
+                        if (e.key === "Escape") setExpandedId(null);
+                      }}
+                      placeholder="+ Add subtask  ↵"
+                      style={{ flex: 1, background: "none", border: "none", outline: "none", fontSize: 11, color: "#7A8599", fontFamily: "inherit", opacity: 0.7 }}
+                    />
+                  </div>
+                </div>
               )}
-            </button>
+            </div>
           );
         })}
         {agent.tasks.length === 0 && (
@@ -390,7 +470,13 @@ function KPIBlock({ label, value, sub, trend, trendLabel, color }: typeof KPI_DA
 
 // ─── Business Tab ─────────────────────────────────────────────────────────────
 
-function BusinessTab({ agents, onToggle }: { agents: Agent[]; onToggle: (agentId: string, taskId: string) => void }) {
+function BusinessTab({ agents, subtasksMap, onToggle, onDelete, onAddSubtask }: {
+  agents:        Agent[];
+  subtasksMap:   Record<string, DbTask[]>;
+  onToggle:      (agentId: string, taskId: string) => void;
+  onDelete:      (taskId: string) => void;
+  onAddSubtask:  (parentId: string, title: string) => void;
+}) {
   const [selectedId, setSelectedId] = useState<string>("ceo");
   const active = agents.find((a) => a.id === selectedId) ?? null;
 
@@ -403,7 +489,15 @@ function BusinessTab({ agents, onToggle }: { agents: Agent[]; onToggle: (agentId
             onClick={() => setSelectedId(a.id === selectedId ? "" : a.id)} />
         ))}
       </div>
-      {active && <TaskPanel agent={active} onToggle={(taskId) => onToggle(active.id, taskId)} />}
+      {active && (
+        <TaskPanel
+          agent={active}
+          subtasksMap={subtasksMap}
+          onToggle={(taskId) => onToggle(active.id, taskId)}
+          onDelete={onDelete}
+          onAddSubtask={onAddSubtask}
+        />
+      )}
 
       {/* KPI Row */}
       <div>
@@ -418,20 +512,34 @@ function BusinessTab({ agents, onToggle }: { agents: Agent[]; onToggle: (agentId
 
 // ─── Personal Tab ─────────────────────────────────────────────────────────────
 
-function PersonalTab({ agents, onToggle }: { agents: Agent[]; onToggle: (agentId: string, taskId: string) => void }) {
+function PersonalTab({ agents, subtasksMap, onToggle, onDelete, onAddSubtask }: {
+  agents:        Agent[];
+  subtasksMap:   Record<string, DbTask[]>;
+  onToggle:      (agentId: string, taskId: string) => void;
+  onDelete:      (taskId: string) => void;
+  onAddSubtask:  (parentId: string, title: string) => void;
+}) {
   const [selectedId, setSelectedId] = useState<string>("wealth");
   const active = agents.find((a) => a.id === selectedId) ?? null;
 
   return (
     <div className="space-y-5" style={{ animation: "tab-in 0.22s ease-out" }}>
-      <SectionLabel>Tai Lopez · 4-Hour Power Blocks</SectionLabel>
+      <SectionLabel>Personal Power Blocks · 4 Domains</SectionLabel>
       <div className="grid grid-cols-2 gap-3">
         {agents.map((a) => (
           <AgentCard key={a.id} agent={a} selected={selectedId === a.id}
             onClick={() => setSelectedId(a.id === selectedId ? "" : a.id)} />
         ))}
       </div>
-      {active && <TaskPanel agent={active} onToggle={(taskId) => onToggle(active.id, taskId)} />}
+      {active && (
+        <TaskPanel
+          agent={active}
+          subtasksMap={subtasksMap}
+          onToggle={(taskId) => onToggle(active.id, taskId)}
+          onDelete={onDelete}
+          onAddSubtask={onAddSubtask}
+        />
+      )}
     </div>
   );
 }
@@ -439,8 +547,9 @@ function PersonalTab({ agents, onToggle }: { agents: Agent[]; onToggle: (agentId
 // ─── Calendar Feed (compact one-pager) ───────────────────────────────────────
 
 function CalendarFeed({ calConnected }: { calConnected: boolean }) {
-  const [events,     setEvents]     = useState<CalendarEvent[]>([]);
-  const [calLoading, setCalLoading] = useState(false);
+  const [events,      setEvents]      = useState<CalendarEvent[]>([]);
+  const [calLoading,  setCalLoading]  = useState(false);
+  const [modalDay,    setModalDay]    = useState<{ name: string; date: number; month: string; dateString: string } | null>(null);
 
   useEffect(() => {
     if (!calConnected) { setEvents([]); return; }
@@ -454,19 +563,24 @@ function CalendarFeed({ calConnected }: { calConnected: boolean }) {
 
   const days     = getWeekDays();
   const todayStr = new Date().toDateString();
-  const todayEvts = events
-    .filter((ev) => {
-      const dt = ev.start?.dateTime ?? ev.start?.date;
-      return dt ? new Date(dt).toDateString() === todayStr : false;
-    })
-    .sort((a, b) => {
-      const ta = a.start?.dateTime ?? a.start?.date ?? "";
-      const tb = b.start?.dateTime ?? b.start?.date ?? "";
-      return ta.localeCompare(tb);
-    });
+
+  const eventsForDay = (dateString: string) =>
+    events
+      .filter((ev) => {
+        const dt = ev.start?.dateTime ?? ev.start?.date;
+        return dt ? new Date(dt).toDateString() === dateString : false;
+      })
+      .sort((a, b) => {
+        const ta = a.start?.dateTime ?? a.start?.date ?? "";
+        const tb = b.start?.dateTime ?? b.start?.date ?? "";
+        return ta.localeCompare(tb);
+      });
+
+  const todayEvts = eventsForDay(todayStr);
+  const modalEvts = modalDay ? eventsForDay(modalDay.dateString) : [];
 
   return (
-    <div style={{ height: "100%", display: "flex", flexDirection: "column" }}>
+    <div style={{ height: "100%", display: "flex", flexDirection: "column", position: "relative" }}>
       {/* Header */}
       <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 10 }}>
         <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
@@ -478,31 +592,38 @@ function CalendarFeed({ calConnected }: { calConnected: boolean }) {
         </span>
       </div>
 
-      {/* Week strip */}
+      {/* Week strip — each day is clickable */}
       <div style={{ display: "grid", gridTemplateColumns: "repeat(7, 1fr)", gap: 3, marginBottom: 8 }}>
         {days.map((d) => {
-          const dayEvtCount = events.filter((ev) => {
-            const dt = ev.start?.dateTime ?? ev.start?.date;
-            return dt ? new Date(dt).toDateString() === d.dateString : false;
-          }).length;
+          const dayEvts = eventsForDay(d.dateString);
+          const isToday = d.isToday;
           return (
-            <div key={d.name} style={{
-              borderRadius:    5,
-              padding:         "5px 2px",
-              textAlign:       "center",
-              backgroundColor: d.isToday ? "rgba(201,169,97,0.06)" : "transparent",
-              border:          d.isToday ? "1px solid rgba(201,169,97,0.22)" : "1px solid #111318",
-            }}>
-              <div style={{ fontSize: 7, letterSpacing: "0.16em", textTransform: "uppercase", color: d.isToday ? "#C9A961" : "#1A1C28" }}>{d.name}</div>
-              <div style={{ fontFamily: "Georgia, serif", fontSize: 13, color: d.isToday ? "#C9A961" : "#1E2030", marginTop: 2, fontWeight: 700 }}>{d.date}</div>
-              {dayEvtCount > 0 && (
+            <button
+              key={d.name}
+              onClick={() => setModalDay(d)}
+              style={{
+                borderRadius:    5,
+                padding:         "5px 2px",
+                textAlign:       "center",
+                backgroundColor: isToday ? "rgba(201,169,97,0.06)" : "transparent",
+                border:          isToday ? "1px solid rgba(201,169,97,0.22)" : "1px solid #111318",
+                cursor:          "pointer",
+                transition:      "border-color 0.15s, background-color 0.15s",
+                background:      "none",
+              }}
+              onMouseEnter={(e) => { (e.currentTarget as HTMLButtonElement).style.borderColor = isToday ? "rgba(201,169,97,0.45)" : "rgba(74,144,226,0.25)"; }}
+              onMouseLeave={(e) => { (e.currentTarget as HTMLButtonElement).style.borderColor = isToday ? "rgba(201,169,97,0.22)" : "#111318"; }}
+            >
+              <div style={{ fontSize: 7, letterSpacing: "0.16em", textTransform: "uppercase", color: isToday ? "#C9A961" : "#1A1C28" }}>{d.name}</div>
+              <div style={{ fontFamily: "Georgia, serif", fontSize: 13, color: isToday ? "#C9A961" : "#1E2030", marginTop: 2, fontWeight: 700 }}>{d.date}</div>
+              {dayEvts.length > 0 && (
                 <div style={{ marginTop: 3, display: "flex", justifyContent: "center", gap: 2 }}>
-                  {Array.from({ length: Math.min(3, dayEvtCount) }).map((_, i) => (
-                    <div key={i} style={{ width: 3, height: 3, borderRadius: "50%", backgroundColor: d.isToday ? "#C9A961" : "#3B4558" }} />
+                  {Array.from({ length: Math.min(3, dayEvts.length) }).map((_, i) => (
+                    <div key={i} style={{ width: 3, height: 3, borderRadius: "50%", backgroundColor: isToday ? "#C9A961" : "#3B4558" }} />
                   ))}
                 </div>
               )}
-            </div>
+            </button>
           );
         })}
       </div>
@@ -533,6 +654,72 @@ function CalendarFeed({ calConnected }: { calConnected: boolean }) {
           })
         )}
       </div>
+
+      {/* ── Day Modal ─────────────────────────────────────────────────────── */}
+      {modalDay && (
+        <div
+          style={{ position: "fixed", inset: 0, backgroundColor: "rgba(0,0,0,0.72)", zIndex: 100, display: "flex", alignItems: "center", justifyContent: "center", padding: 24 }}
+          onClick={() => setModalDay(null)}
+        >
+          <div
+            style={{ backgroundColor: "#0C0D10", border: "1px solid rgba(201,169,97,0.22)", borderRadius: 14, padding: "28px 32px", minWidth: 380, maxWidth: 520, width: "100%", boxShadow: "0 24px 80px rgba(0,0,0,0.8)", animation: "fade-up 0.18s ease-out" }}
+            onClick={(e) => e.stopPropagation()}
+          >
+            {/* Modal header */}
+            <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", marginBottom: 20 }}>
+              <div>
+                <div style={{ fontFamily: "Georgia, serif", fontSize: 22, color: "#C9A961", lineHeight: 1 }}>
+                  {modalDay.name} {modalDay.date}
+                </div>
+                <div style={{ fontSize: 9, letterSpacing: "0.2em", textTransform: "uppercase", color: "#3B4558", marginTop: 5 }}>
+                  {modalDay.month} · {modalEvts.length} event{modalEvts.length !== 1 ? "s" : ""}
+                </div>
+              </div>
+              <button
+                onClick={() => setModalDay(null)}
+                style={{ background: "none", border: "1px solid #1E1F24", cursor: "pointer", color: "#3B4558", borderRadius: 6, padding: "5px 8px", display: "flex", alignItems: "center", transition: "all 0.15s" }}
+                onMouseEnter={(e) => { (e.currentTarget as HTMLButtonElement).style.borderColor = "rgba(201,169,97,0.35)"; (e.currentTarget as HTMLButtonElement).style.color = "#C9A961"; }}
+                onMouseLeave={(e) => { (e.currentTarget as HTMLButtonElement).style.borderColor = "#1E1F24"; (e.currentTarget as HTMLButtonElement).style.color = "#3B4558"; }}
+              >
+                <X size={13} />
+              </button>
+            </div>
+
+            {/* Events list */}
+            <div style={{ display: "flex", flexDirection: "column", gap: 8, maxHeight: 400, overflowY: "auto" }}>
+              {modalEvts.length === 0 ? (
+                <div style={{ padding: "24px 0", textAlign: "center", fontSize: 11, color: "#252836", letterSpacing: "0.1em" }}>
+                  {calConnected ? "No events on this day." : "Connect Google Calendar to see events."}
+                </div>
+              ) : (
+                modalEvts.map((ev) => {
+                  const startDt  = ev.start?.dateTime;
+                  const endDt    = ev.end?.dateTime;
+                  const timeStr  = startDt
+                    ? new Date(startDt).toLocaleTimeString("en-US", { hour: "numeric", minute: "2-digit", hour12: true })
+                    : "All day";
+                  const endStr   = endDt
+                    ? new Date(endDt).toLocaleTimeString("en-US", { hour: "numeric", minute: "2-digit", hour12: true })
+                    : null;
+                  return (
+                    <div key={ev.id} style={{ padding: "12px 16px", borderRadius: 8, backgroundColor: "#080A0D", border: "1px solid rgba(201,169,97,0.10)" }}>
+                      <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: ev.summary ? 6 : 0 }}>
+                        <div style={{ width: 3, height: 3, borderRadius: "50%", backgroundColor: "#C9A961", flexShrink: 0 }} />
+                        <span style={{ fontSize: 9, color: "#C9A961", fontVariantNumeric: "tabular-nums", flexShrink: 0 }}>
+                          {timeStr}{endStr ? ` — ${endStr}` : ""}
+                        </span>
+                      </div>
+                      <div style={{ fontSize: 13, color: "#C2C8D4", lineHeight: 1.4, paddingLeft: 13 }}>
+                        {ev.summary ?? "Untitled Event"}
+                      </div>
+                    </div>
+                  );
+                })
+              )}
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
@@ -540,8 +727,8 @@ function CalendarFeed({ calConnected }: { calConnected: boolean }) {
 // ─── Priority Strikes ─────────────────────────────────────────────────────────
 
 function PriorityStrikes({
-  business, personal, onToggle,
-}: { business: Agent[]; personal: Agent[]; onToggle: (taskId: string) => void }) {
+  business, personal, onToggle, onDelete,
+}: { business: Agent[]; personal: Agent[]; onToggle: (taskId: string) => void; onDelete: (taskId: string) => void }) {
   const strikes = [...business, ...personal]
     .flatMap((a) => a.tasks.filter((t) => t.status !== "DONE").map((t) => ({ task: t, agent: a })))
     .sort((a, b) => a.task.priority - b.task.priority);
@@ -557,15 +744,17 @@ function PriorityStrikes({
       </div>
       <div style={{ flex: 1, overflowY: "auto", display: "flex", flexDirection: "column", gap: 3 }}>
         {strikes.slice(0, 14).map(({ task, agent }) => (
-          <button
+          <div
             key={task.id}
-            onClick={() => onToggle(task.id)}
-            style={{ width: "100%", textAlign: "left", display: "flex", alignItems: "center", gap: 8, padding: "6px 9px", borderRadius: 6, backgroundColor: "transparent", border: "1px solid #0F1015", cursor: "pointer", transition: "border-color 0.14s" }}
+            style={{ display: "flex", alignItems: "center", gap: 6, padding: "5px 9px", borderRadius: 6, backgroundColor: "transparent", border: "1px solid #0F1015", transition: "border-color 0.14s" }}
             onMouseEnter={(e) => (e.currentTarget.style.borderColor = `${agent.color}28`)}
             onMouseLeave={(e) => (e.currentTarget.style.borderColor = "#0F1015")}
           >
+            <button onClick={() => onToggle(task.id)} style={{ background: "none", border: "none", cursor: "pointer", padding: 0, display: "flex", flexShrink: 0, color: "#252836" }}>
+              <Circle size={9} />
+            </button>
             <div style={{ width: 4, height: 4, borderRadius: "50%", backgroundColor: agent.color, flexShrink: 0 }} />
-            <span style={{ fontSize: 7, letterSpacing: "0.12em", textTransform: "uppercase", color: agent.color, flexShrink: 0, width: 30 }}>{agent.title}</span>
+            <span style={{ fontSize: 7, letterSpacing: "0.12em", textTransform: "uppercase", color: agent.color, flexShrink: 0, width: 28 }}>{agent.title}</span>
             <span style={{ fontSize: 11, color: "#7A8599", flex: 1, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{task.title}</span>
             <span style={{
               fontSize: 7, letterSpacing: "0.14em", textTransform: "uppercase", padding: "2px 5px", borderRadius: 3, flexShrink: 0,
@@ -575,7 +764,12 @@ function PriorityStrikes({
             }}>
               {task.priority === 1 ? "HI" : task.priority === 3 ? "LO" : "MD"}
             </span>
-          </button>
+            <button onClick={() => onDelete(task.id)} style={{ background: "none", border: "none", cursor: "pointer", padding: 0, color: "#1A1C24", display: "flex", flexShrink: 0, transition: "color 0.15s" }}
+              onMouseEnter={(e) => { (e.currentTarget as HTMLButtonElement).style.color = "#E05A3A"; }}
+              onMouseLeave={(e) => { (e.currentTarget as HTMLButtonElement).style.color = "#1A1C24"; }}>
+              <X size={9} />
+            </button>
+          </div>
         ))}
         {strikes.length === 0 && (
           <div style={{ textAlign: "center", padding: "20px 0", fontSize: 10, color: "#1C1E2A", letterSpacing: "0.1em" }}>
@@ -623,20 +817,19 @@ function WealthBlock() {
       <QuadrantHeader label="WEALTH" sub="Income & Freedom" color="#D4AF37" />
       <div style={{ flex: 1, display: "flex", flexDirection: "column", gap: 6, overflowY: "auto" }}>
         <SubPanel>
+          <div style={{ fontSize: 7, letterSpacing: "0.2em", textTransform: "uppercase", color: "#252836", marginBottom: 6 }}>Income Targets</div>
+          <DataRow label="Current Income"  value="—" color="#D4AF37" />
+          <DataRow label="Target Income"   value="—" color="#8BA87B" />
+          <DataRow label="Gap to Target"   value="—" color="#E05A3A" />
+        </SubPanel>
+        <SubPanel>
           <div style={{ fontSize: 7, letterSpacing: "0.2em", textTransform: "uppercase", color: "#252836", marginBottom: 5 }}>NQ Session Bias</div>
           <div style={{ fontFamily: "Georgia, serif", fontSize: 13, color: "#C9A961" }}>RANGE-BOUND</div>
           <div style={{ fontSize: 7, color: "#1C1E26", marginTop: 2 }}>ES / NQ · Watching supply at prior hi</div>
         </SubPanel>
         <SubPanel>
-          <div style={{ fontSize: 7, letterSpacing: "0.2em", textTransform: "uppercase", color: "#252836", marginBottom: 6 }}>$ADD / CVD Internals</div>
-          <div style={{ display: "flex", gap: 20 }}>
-            <div><div style={{ fontSize: 7, color: "#1C1E26" }}>$ADD</div><div style={{ fontSize: 13, color: "#D4AF37", fontVariantNumeric: "tabular-nums", marginTop: 2 }}>—</div></div>
-            <div><div style={{ fontSize: 7, color: "#1C1E26" }}>CVD</div><div style={{ fontSize: 13, color: "#D4AF37", fontVariantNumeric: "tabular-nums", marginTop: 2 }}>—</div></div>
-          </div>
-        </SubPanel>
-        <SubPanel>
           <DataRow label="Account Buffer" value="—" color="#8BA87B" />
-          <DataRow label="Daily P&L" value="—" color="#8BA87B" />
+          <DataRow label="Daily P&L"      value="—" color="#8BA87B" />
         </SubPanel>
       </div>
     </div>
@@ -649,16 +842,16 @@ function HealthBlock() {
       <QuadrantHeader label="HEALTH" sub="Training & Energy" color="#E05A3A" />
       <div style={{ flex: 1, display: "flex", flexDirection: "column", gap: 6, overflowY: "auto" }}>
         <SubPanel>
-          <div style={{ fontSize: 7, letterSpacing: "0.2em", textTransform: "uppercase", color: "#252836", marginBottom: 5 }}>Diet Protocol</div>
-          <DataRow label="Protein Target" value="200g" color="#E05A3A" />
-          <DataRow label="Calories" value="2,800 kcal" color="#E05A3A" />
-          <DataRow label="Water" value="—" />
+          <div style={{ fontSize: 7, letterSpacing: "0.2em", textTransform: "uppercase", color: "#252836", marginBottom: 6 }}>Body Metrics</div>
+          <DataRow label="Current Weight"  value="—" color="#E05A3A" />
+          <DataRow label="Activity Level"  value="—" color="#E05A3A" />
+          <DataRow label="Sleep Hours"     value="—" />
         </SubPanel>
         <SubPanel>
-          <div style={{ fontSize: 7, letterSpacing: "0.2em", textTransform: "uppercase", color: "#252836", marginBottom: 5 }}>Training Block</div>
-          <DataRow label="Today's Session" value="—" color="#E05A3A" />
-          <DataRow label="Recovery State" value="—" />
-          <DataRow label="Sleep" value="—" />
+          <div style={{ fontSize: 7, letterSpacing: "0.2em", textTransform: "uppercase", color: "#252836", marginBottom: 5 }}>Today's Session</div>
+          <DataRow label="Workout Type"    value="—" color="#E05A3A" />
+          <DataRow label="Protein Target"  value="200g" color="#8BA87B" />
+          <DataRow label="Calories"        value="2,800 kcal" color="#8BA87B" />
         </SubPanel>
       </div>
     </div>
@@ -668,37 +861,73 @@ function HealthBlock() {
 function RelationshipsBlock() {
   return (
     <div style={{ height: "100%", display: "flex", flexDirection: "column", overflow: "hidden" }}>
-      <QuadrantHeader label="RELATE" sub="Legacy & Pack" color="#5B8FB9" />
-      <div style={{ flex: 1, display: "flex", flexDirection: "column", gap: 6, overflowY: "auto" }}>
+      <QuadrantHeader label="RELATIONSHIPS" sub="Legacy & Pack" color="#5B8FB9" />
+      <div style={{ flex: 1, display: "flex", flexDirection: "column", gap: 5, overflowY: "auto" }}>
         <SubPanel>
-          <div style={{ fontSize: 7, letterSpacing: "0.2em", textTransform: "uppercase", color: "#252836", marginBottom: 5 }}>Inner Circle</div>
-          <DataRow label="Family" value="—" color="#5B8FB9" />
-          <DataRow label="Antonia" value="—" color="#5B8FB9" />
-          <DataRow label="The Dogs" value="—" color="#5B8FB9" />
+          <div style={{ fontSize: 7, letterSpacing: "0.18em", textTransform: "uppercase", color: "#5B8FB9", marginBottom: 5, opacity: 0.7 }}>Antonia</div>
+          <DataRow label="Last Quality Time" value="—" color="#5B8FB9" />
+          <DataRow label="Next Commitment"   value="—" color="#5B8FB9" />
         </SubPanel>
         <SubPanel>
-          <div style={{ fontSize: 7, letterSpacing: "0.2em", textTransform: "uppercase", color: "#252836", marginBottom: 5 }}>Today's Note</div>
-          <div style={{ fontSize: 10, color: "#2A3245", lineHeight: 1.6 }}>—</div>
+          <div style={{ fontSize: 7, letterSpacing: "0.18em", textTransform: "uppercase", color: "#5B8FB9", marginBottom: 5, opacity: 0.7 }}>Maximiliano</div>
+          <DataRow label="Last Quality Time" value="—" color="#5B8FB9" />
+          <DataRow label="Next Commitment"   value="—" color="#5B8FB9" />
+        </SubPanel>
+        <SubPanel>
+          <div style={{ fontSize: 7, letterSpacing: "0.18em", textTransform: "uppercase", color: "#5B8FB9", marginBottom: 5, opacity: 0.7 }}>The Pack</div>
+          <DataRow label="Nova"   value="—" color="#3B6A8A" />
+          <DataRow label="Astro"  value="—" color="#3B6A8A" />
+          <DataRow label="Comet"  value="—" color="#3B6A8A" />
         </SubPanel>
       </div>
     </div>
   );
 }
 
-function HappinessBlock() {
+function HappinessBlock({ tasks, onToggle, onDelete }: { tasks: DbTask[]; onToggle: (id: string) => void; onDelete: (id: string) => void }) {
+  const pending = tasks.filter((t) => t.status !== "DONE");
+  const done    = tasks.filter((t) => t.status === "DONE");
   return (
     <div style={{ height: "100%", display: "flex", flexDirection: "column", overflow: "hidden" }}>
-      <QuadrantHeader label="JOY" sub="Foundation & Operations" color="#B388EB" />
-      <div style={{ flex: 1, display: "flex", flexDirection: "column", gap: 6, overflowY: "auto" }}>
-        <div style={{ backgroundColor: "#080A0D", border: "1px solid rgba(179,136,235,0.10)", borderRadius: 7, padding: "10px 12px", flex: 1 }}>
-          <div style={{ fontSize: 7, letterSpacing: "0.2em", textTransform: "uppercase", color: "#252836", marginBottom: 8 }}>Daily Anchor</div>
-          <div style={{ fontFamily: "Georgia, serif", fontSize: 12, color: "#3D2A56", lineHeight: 1.8, fontStyle: "italic" }}>
-            "One step closer."
-          </div>
+      <QuadrantHeader label="JOY" sub="Goals & Happiness" color="#B388EB" />
+      <div style={{ flex: 1, display: "flex", flexDirection: "column", gap: 5, overflowY: "auto", minHeight: 0 }}>
+        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "0 2px" }}>
+          <span style={{ fontSize: 7, letterSpacing: "0.18em", textTransform: "uppercase", color: "#252836" }}>Areas of Happiness · Targets</span>
+          <span style={{ fontSize: 7, color: "#252836" }}>{done.length}/{tasks.length}</span>
+        </div>
+        <div style={{ flex: 1, overflowY: "auto", display: "flex", flexDirection: "column", gap: 3 }}>
+          {pending.map((t) => (
+            <div key={t.id} style={{ display: "flex", alignItems: "center", gap: 6, padding: "5px 8px", borderRadius: 5, backgroundColor: "rgba(179,136,235,0.04)", border: "1px solid rgba(179,136,235,0.09)" }}>
+              <button onClick={() => onToggle(t.id)} style={{ background: "none", border: "none", cursor: "pointer", padding: 0, color: "#4A3060", flexShrink: 0, display: "flex" }}>
+                <Circle size={10} />
+              </button>
+              <span style={{ flex: 1, fontSize: 10, color: "#7A8599", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{t.title}</span>
+              <button onClick={() => onDelete(t.id)} style={{ background: "none", border: "none", cursor: "pointer", padding: 0, color: "#252836", display: "flex", flexShrink: 0 }}
+                onMouseEnter={(e) => { (e.currentTarget as HTMLButtonElement).style.color = "#E05A3A"; }}
+                onMouseLeave={(e) => { (e.currentTarget as HTMLButtonElement).style.color = "#252836"; }}>
+                <X size={9} />
+              </button>
+            </div>
+          ))}
+          {done.map((t) => (
+            <div key={t.id} style={{ display: "flex", alignItems: "center", gap: 6, padding: "5px 8px", borderRadius: 5, opacity: 0.4 }}>
+              <button onClick={() => onToggle(t.id)} style={{ background: "none", border: "none", cursor: "pointer", padding: 0, color: "#B388EB", flexShrink: 0, display: "flex" }}>
+                <CheckCircle2 size={10} />
+              </button>
+              <span style={{ flex: 1, fontSize: 10, color: "#3B4558", textDecoration: "line-through", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{t.title}</span>
+              <button onClick={() => onDelete(t.id)} style={{ background: "none", border: "none", cursor: "pointer", padding: 0, color: "#252836", display: "flex", flexShrink: 0 }}>
+                <X size={9} />
+              </button>
+            </div>
+          ))}
+          {tasks.length === 0 && (
+            <div style={{ fontSize: 9, color: "#1C1E2A", padding: "8px 0", letterSpacing: "0.08em" }}>
+              Add goals via Joy category in the command bar.
+            </div>
+          )}
         </div>
         <SubPanel>
-          <DataRow label="State Today" value="—" color="#B388EB" />
-          <DataRow label="Gratitude" value="—" />
+          <DataRow label="Daily Anchor" value='"One step closer."' color="#B388EB" />
         </SubPanel>
       </div>
     </div>
@@ -756,17 +985,15 @@ function CSuiteCard({ agent }: { agent: Agent }) {
 // ─── Master View Tab (One-Pager Command Center) ───────────────────────────────
 
 function MasterViewTab({
-  business,
-  personal,
-  calConnected,
-  onToggle,
+  business, personal, calConnected, onToggle, onDelete,
 }: {
   business:     Agent[];
   personal:     Agent[];
   calConnected: boolean;
   onToggle:     (taskId: string) => void;
+  onDelete:     (taskId: string) => void;
 }) {
-  const csuite = business.filter((a) => ["ceo", "coo", "cfo", "cto"].includes(a.id));
+  const joyTasks = personal.find((a) => a.id === "joy")?.tasks ?? [];
 
   const PANEL: React.CSSProperties = {
     backgroundColor: "#0C0D10",
@@ -778,21 +1005,21 @@ function MasterViewTab({
     minWidth:        0,
   };
 
-  // Row proportions: Feeds 30% · Personal 45% · C-Suite 25%
+  // Row proportions: Feeds 28% · Personal 44% · C-Suite 28%
   return (
     <div style={{
-      display:          "grid",
-      gridTemplateRows: "30fr 45fr 25fr",
+      display:             "grid",
+      gridTemplateRows:    "28fr 44fr 28fr",
       gridTemplateColumns: "100%",
-      gap:              10,
-      flex:             1,
-      minHeight:        0,
-      overflow:         "hidden",
+      gap:                 10,
+      flex:                1,
+      minHeight:           0,
+      overflow:            "hidden",
     }}>
       {/* ── Row 1: Calendar + Priority Strikes ─────────────────────────── */}
       <div style={{ display: "grid", gridTemplateColumns: "3fr 2fr", gap: 10, minHeight: 0, overflow: "hidden" }}>
         <div style={PANEL}><CalendarFeed calConnected={calConnected} /></div>
-        <div style={PANEL}><PriorityStrikes business={business} personal={personal} onToggle={onToggle} /></div>
+        <div style={PANEL}><PriorityStrikes business={business} personal={personal} onToggle={onToggle} onDelete={onDelete} /></div>
       </div>
 
       {/* ── Row 2: Personal Quadrants ──────────────────────────────────── */}
@@ -800,12 +1027,12 @@ function MasterViewTab({
         <div style={PANEL}><WealthBlock /></div>
         <div style={PANEL}><HealthBlock /></div>
         <div style={PANEL}><RelationshipsBlock /></div>
-        <div style={PANEL}><HappinessBlock /></div>
+        <div style={PANEL}><HappinessBlock tasks={joyTasks} onToggle={onToggle} onDelete={onDelete} /></div>
       </div>
 
-      {/* ── Row 3: Business C-Suite ────────────────────────────────────── */}
-      <div style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: 10, minHeight: 0, overflow: "hidden" }}>
-        {csuite.map((a) => <div key={a.id} style={PANEL}><CSuiteCard agent={a} /></div>)}
+      {/* ── Row 3: Business C-Suite (all 6) ────────────────────────────── */}
+      <div style={{ display: "grid", gridTemplateColumns: "repeat(6, 1fr)", gap: 10, minHeight: 0, overflow: "hidden" }}>
+        {business.map((a) => <div key={a.id} style={PANEL}><CSuiteCard agent={a} /></div>)}
       </div>
     </div>
   );
@@ -951,15 +1178,25 @@ export default function ChairmanDashboard() {
   const [dbTasks,      setDbTasks]      = useState<DbTask[]>([]);
   const [tasksLoading, setTasksLoading] = useState(true);
 
-  // Derive agents with live tasks from DB
+  // Top-level tasks only (parentId is null/undefined) for agent task lists
   const business = useMemo(
-    () => AGENT_META_BUSINESS.map((a) => ({ ...a, tasks: dbTasks.filter((t) => t.agentId === a.id) })),
+    () => AGENT_META_BUSINESS.map((a) => ({ ...a, tasks: dbTasks.filter((t) => t.agentId === a.id && !t.parentId) })),
     [dbTasks]
   );
   const personal = useMemo(
-    () => AGENT_META_PERSONAL.map((a) => ({ ...a, tasks: dbTasks.filter((t) => t.agentId === a.id) })),
+    () => AGENT_META_PERSONAL.map((a) => ({ ...a, tasks: dbTasks.filter((t) => t.agentId === a.id && !t.parentId) })),
     [dbTasks]
   );
+
+  // Subtasks map: parentId → subtask[]
+  const subtasksMap = useMemo(() => {
+    const map: Record<string, DbTask[]> = {};
+    dbTasks.filter((t) => t.parentId).forEach((t) => {
+      if (!map[t.parentId!]) map[t.parentId!] = [];
+      map[t.parentId!].push(t);
+    });
+    return map;
+  }, [dbTasks]);
 
   // Load tasks on mount
   useEffect(() => {
@@ -1018,6 +1255,48 @@ export default function ChairmanDashboard() {
     } catch {
       // Revert on failure
       setDbTasks((prev) => prev.map((t) => t.id === taskId ? { ...t, status: task.status } : t));
+    }
+  }, [dbTasks]);
+
+  const deleteTask = useCallback(async (taskId: string) => {
+    // Optimistically remove task + its subtasks from state
+    setDbTasks((prev) => prev.filter((t) => t.id !== taskId && t.parentId !== taskId));
+    try {
+      await fetch("/api/tasks", {
+        method:  "DELETE",
+        headers: { "Content-Type": "application/json" },
+        body:    JSON.stringify({ id: taskId }),
+      });
+    } catch {
+      // Silent failure — task already removed from UI
+    }
+  }, []);
+
+  const addSubtask = useCallback(async (parentId: string, title: string) => {
+    const parent = dbTasks.find((t) => t.id === parentId);
+    if (!parent) return;
+    const taskPriority = detectPriority(title);
+    const tempId       = `temp-sub-${Date.now()}`;
+    const optimistic: DbTask = {
+      id: tempId, title, pillar: parent.pillar, agentId: parent.agentId,
+      category: parent.category, status: "PENDING", isDelegated: false,
+      createdAt: new Date().toISOString(), priority: taskPriority, parentId,
+    };
+    setDbTasks((prev) => [...prev, optimistic]);
+    try {
+      const res  = await fetch("/api/tasks", {
+        method:  "POST",
+        headers: { "Content-Type": "application/json" },
+        body:    JSON.stringify({
+          title, pillar: parent.pillar, agentId: parent.agentId,
+          category: parent.category, status: "PENDING", isDelegated: false,
+          priority: taskPriority, parentId,
+        }),
+      });
+      const data = await res.json();
+      if (data.task) setDbTasks((prev) => prev.map((t) => t.id === tempId ? data.task : t));
+    } catch {
+      setDbTasks((prev) => prev.filter((t) => t.id !== tempId));
     }
   }, [dbTasks]);
 
@@ -1337,9 +1616,9 @@ export default function ChairmanDashboard() {
           paddingBottom: 148,
         }}
       >
-        {activeTab === "MASTER" && <MasterViewTab key="master" business={business} personal={personal} calConnected={calConnected} onToggle={toggleTask} />}
-        {activeTab === "BUSINESS" && <BusinessTab   key="business" agents={business}  onToggle={(_, taskId) => toggleTask(taskId)} />}
-        {activeTab === "PERSONAL" && <PersonalTab   key="personal" agents={personal}  onToggle={(_, taskId) => toggleTask(taskId)} />}
+        {activeTab === "MASTER"   && <MasterViewTab key="master"   business={business} personal={personal} calConnected={calConnected} onToggle={toggleTask} onDelete={deleteTask} />}
+        {activeTab === "BUSINESS" && <BusinessTab   key="business" agents={business}  subtasksMap={subtasksMap} onToggle={(_, taskId) => toggleTask(taskId)} onDelete={deleteTask} onAddSubtask={addSubtask} />}
+        {activeTab === "PERSONAL" && <PersonalTab   key="personal" agents={personal}  subtasksMap={subtasksMap} onToggle={(_, taskId) => toggleTask(taskId)} onDelete={deleteTask} onAddSubtask={addSubtask} />}
       </main>
 
       {/* ── FOOTER ────────────────────────────────────────────────────────── */}

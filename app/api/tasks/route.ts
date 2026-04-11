@@ -37,15 +37,16 @@ export async function POST(req: NextRequest) {
 
   try {
     const body = await req.json();
-    const { title, pillar, agentId, category, status, isDelegated, priority, dueDate } = body as {
+    const { title, pillar, agentId, category, status, isDelegated, priority, dueDate, parentId } = body as {
       title:        string;
       pillar:       string;
       agentId:      string;
-      category?:    string;   // Wealth | Health | Relate | Joy | CEO | COO | CFO | CTO
+      category?:    string;
       status?:      string;
       isDelegated?: boolean;
-      priority?:    number;   // 1=HIGH 2=MEDIUM 3=LOW
+      priority?:    number;
       dueDate?:     string;
+      parentId?:    string;
     };
 
     if (!title || !pillar || !agentId) {
@@ -63,6 +64,7 @@ export async function POST(req: NextRequest) {
         priority:    priority    ?? 2,
         dueDate:     dueDate     ? new Date(dueDate) : null,
         userId:      userId      ?? null,
+        parentId:    parentId    ?? null,
       },
     });
 
@@ -70,6 +72,31 @@ export async function POST(req: NextRequest) {
   } catch (err) {
     console.error("Tasks POST error:", err);
     return NextResponse.json({ error: "Failed to create task" }, { status: 500 });
+  }
+}
+
+export async function DELETE(req: NextRequest) {
+  const session = await getSession();
+  if (!session) {
+    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  }
+  const userId = (session as any)?.userId as string | undefined;
+
+  try {
+    const { id } = await req.json() as { id: string };
+    if (!id) return NextResponse.json({ error: "id required" }, { status: 400 });
+
+    const existing = await prisma.task.findUnique({ where: { id } });
+    if (!existing)               return NextResponse.json({ error: "Not found" }, { status: 404 });
+    if (existing.userId && existing.userId !== userId)
+                                 return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+
+    // Cascade deletes subtasks via Prisma self-relation onDelete: Cascade
+    await prisma.task.delete({ where: { id } });
+    return NextResponse.json({ ok: true });
+  } catch (err) {
+    console.error("Tasks DELETE error:", err);
+    return NextResponse.json({ error: "Failed to delete task" }, { status: 500 });
   }
 }
 

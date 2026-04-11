@@ -71,7 +71,7 @@ model Task {
   title       String
   pillar      String
   agentId     String
-  category    String?   // Wealth | Health | Relate | Joy | CEO | COO | CFO | CTO
+  category    String?   // Wealth | Health | Relate | Joy | CEO | COO | CFO | CTO | CMO | CPO
   status      String
   isDelegated Boolean   @default(false)
   createdAt   DateTime  @default(now())
@@ -80,4 +80,8 @@ model Task {
   priority    Int       @default(2)
   userId      String?
   user        User?     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  // Self-relation for subtasks
+  parentId    String?
+  parent      Task?     @relation("SubTasks", fields: [parentId], references: [id], onDelete: Cascade)
+  subtasks    Task[]    @relation("SubTasks")
 }
