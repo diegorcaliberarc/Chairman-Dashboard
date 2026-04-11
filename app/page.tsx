@@ -18,6 +18,8 @@ import {
   CalendarDays,
   Sun,
   Moon,
+  Send,
+  ChevronDown,
 } from "lucide-react";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
@@ -1220,6 +1222,282 @@ function DeepWorkMode({
   );
 }
 
+// ─── Nova Logic Core Panel ────────────────────────────────────────────────────
+
+const NOVA_AGENTS = [
+  "Universal Command",
+  "CEO",
+  "COO",
+  "CMO",
+  "CFO",
+  "CTO",
+  "CPO",
+  "Tactical Spotter (Wealth)",
+  "Health Coach",
+  "Relationships",
+  "Joy",
+];
+
+interface NovaMessage {
+  role:    "user" | "assistant";
+  content: string;
+}
+
+function NovaPanel({
+  open, onClose, tasks, calendarEvents,
+}: {
+  open:           boolean;
+  onClose:        () => void;
+  tasks:          DbTask[];
+  calendarEvents: CalendarEvent[];
+}) {
+  const [agent,    setAgent]    = useState("Universal Command");
+  const [messages, setMessages] = useState<NovaMessage[]>([]);
+  const [input,    setInput]    = useState("");
+  const [loading,  setLoading]  = useState(false);
+  const [showDrop, setShowDrop] = useState(false);
+  const bottomRef = useRef<HTMLDivElement>(null);
+  const inputRef  = useRef<HTMLInputElement>(null);
+
+  // Scroll to bottom on new messages
+  useEffect(() => {
+    bottomRef.current?.scrollIntoView({ behavior: "smooth" });
+  }, [messages, loading]);
+
+  // Focus input when opened
+  useEffect(() => {
+    if (open) setTimeout(() => inputRef.current?.focus(), 120);
+  }, [open]);
+
+  const send = async () => {
+    const text = input.trim();
+    if (!text || loading) return;
+    setInput("");
+    const userMsg: NovaMessage = { role: "user", content: text };
+    setMessages((prev) => [...prev, userMsg]);
+    setLoading(true);
+
+    try {
+      const res  = await fetch("/api/chat", {
+        method:  "POST",
+        headers: { "Content-Type": "application/json" },
+        body:    JSON.stringify({ message: text, agentRole: agent, tasks, calendarEvents }),
+      });
+      const data = await res.json();
+      const reply = data.reply ?? data.error ?? "No response.";
+      setMessages((prev) => [...prev, { role: "assistant", content: reply }]);
+    } catch {
+      setMessages((prev) => [...prev, { role: "assistant", content: "Network error — could not reach Nova." }]);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  if (!open) return null;
+
+  // Agent accent color
+  const agentColor = (() => {
+    const map: Record<string, string> = {
+      "Universal Command": "#C9A961", CEO: "#C9A961", COO: "#7B9EA8", CMO: "#A87B9E",
+      CFO: "#8BA87B", CTO: "#4A90E2", CPO: "#F39C12",
+      "Tactical Spotter (Wealth)": "#D4AF37", "Health Coach": "#E05A3A",
+      "Relationships": "#5B8FB9", "Joy": "#B388EB",
+    };
+    return map[agent] ?? "#C9A961";
+  })();
+
+  return (
+    <div
+      style={{
+        position:        "fixed",
+        top:             0,
+        right:           0,
+        bottom:          0,
+        width:           380,
+        zIndex:          200,
+        display:         "flex",
+        flexDirection:   "column",
+        backgroundColor: "#080A0D",
+        borderLeft:      `1px solid ${agentColor}33`,
+        boxShadow:       "-12px 0 60px rgba(0,0,0,0.7)",
+        animation:       "nova-slide-in 0.22s ease-out",
+      }}
+    >
+      {/* ── Header ──────────────────────────────────────────────────────── */}
+      <div style={{ padding: "14px 16px 12px", borderBottom: `1px solid ${agentColor}22`, flexShrink: 0 }}>
+        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 10 }}>
+          <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+            <Bot size={14} style={{ color: agentColor }} />
+            <span style={{ fontSize: 10, letterSpacing: "0.22em", textTransform: "uppercase", color: agentColor, fontWeight: 700 }}>
+              Nova Logic Core
+            </span>
+          </div>
+          <button
+            onClick={onClose}
+            style={{ background: "none", border: "1px solid #1E1F24", cursor: "pointer", color: "#3B4558", borderRadius: 6, padding: "4px 7px", display: "flex", transition: "all 0.15s" }}
+            onMouseEnter={(e) => { (e.currentTarget as HTMLButtonElement).style.borderColor = `${agentColor}55`; (e.currentTarget as HTMLButtonElement).style.color = agentColor; }}
+            onMouseLeave={(e) => { (e.currentTarget as HTMLButtonElement).style.borderColor = "#1E1F24"; (e.currentTarget as HTMLButtonElement).style.color = "#3B4558"; }}
+          >
+            <X size={12} />
+          </button>
+        </div>
+
+        {/* Agent Selector */}
+        <div style={{ position: "relative" }}>
+          <button
+            onClick={() => setShowDrop((p) => !p)}
+            style={{
+              width:           "100%",
+              display:         "flex",
+              alignItems:      "center",
+              justifyContent:  "space-between",
+              padding:         "8px 12px",
+              backgroundColor: "#0C0D10",
+              border:          `1px solid ${agentColor}44`,
+              borderRadius:    7,
+              cursor:          "pointer",
+              color:           agentColor,
+              fontSize:        11,
+              letterSpacing:   "0.1em",
+              fontWeight:      600,
+              transition:      "border-color 0.15s",
+            }}
+          >
+            <span>{agent}</span>
+            <ChevronDown size={11} style={{ opacity: 0.7, transform: showDrop ? "rotate(180deg)" : "none", transition: "transform 0.2s" }} />
+          </button>
+          {showDrop && (
+            <div style={{ position: "absolute", top: "calc(100% + 4px)", left: 0, right: 0, backgroundColor: "#0C0D10", border: "1px solid #1E1F24", borderRadius: 7, zIndex: 10, overflow: "hidden", boxShadow: "0 8px 32px rgba(0,0,0,0.8)" }}>
+              {NOVA_AGENTS.map((a) => (
+                <button
+                  key={a}
+                  onClick={() => { setAgent(a); setShowDrop(false); }}
+                  style={{
+                    width:           "100%",
+                    padding:         "9px 12px",
+                    backgroundColor: a === agent ? `${agentColor}14` : "transparent",
+                    border:          "none",
+                    cursor:          "pointer",
+                    color:           a === agent ? agentColor : "#5A6070",
+                    fontSize:        11,
+                    textAlign:       "left",
+                    letterSpacing:   "0.06em",
+                    transition:      "background-color 0.12s, color 0.12s",
+                  }}
+                  onMouseEnter={(e) => { if (a !== agent) { (e.currentTarget as HTMLButtonElement).style.backgroundColor = "#141518"; (e.currentTarget as HTMLButtonElement).style.color = "#9CA3AF"; } }}
+                  onMouseLeave={(e) => { if (a !== agent) { (e.currentTarget as HTMLButtonElement).style.backgroundColor = "transparent"; (e.currentTarget as HTMLButtonElement).style.color = "#5A6070"; } }}
+                >
+                  {a}
+                </button>
+              ))}
+            </div>
+          )}
+        </div>
+      </div>
+
+      {/* ── Message History ──────────────────────────────────────────────── */}
+      <div style={{ flex: 1, overflowY: "auto", padding: "14px 16px", display: "flex", flexDirection: "column", gap: 12 }}>
+        {messages.length === 0 && (
+          <div style={{ margin: "auto", textAlign: "center", padding: "40px 20px" }}>
+            <Bot size={28} style={{ color: `${agentColor}44`, margin: "0 auto 12px" }} />
+            <div style={{ fontSize: 11, color: "#252836", letterSpacing: "0.1em", lineHeight: 1.6 }}>
+              {agent} is standing by.<br />
+              <span style={{ fontSize: 10, color: "#1A1C24" }}>Context loaded: {tasks.filter(t => t.status !== "DONE").length} tasks · {calendarEvents.length} events</span>
+            </div>
+          </div>
+        )}
+        {messages.map((msg, i) => (
+          <div
+            key={i}
+            style={{
+              display:      "flex",
+              flexDirection: "column",
+              alignItems:   msg.role === "user" ? "flex-end" : "flex-start",
+            }}
+          >
+            <div style={{
+              maxWidth:        "88%",
+              padding:         "10px 13px",
+              borderRadius:    msg.role === "user" ? "10px 10px 2px 10px" : "10px 10px 10px 2px",
+              backgroundColor: msg.role === "user" ? `${agentColor}18` : "#0C0D10",
+              border:          `1px solid ${msg.role === "user" ? `${agentColor}33` : "#1A1C20"}`,
+              fontSize:        12,
+              lineHeight:      1.55,
+              color:           msg.role === "user" ? "#C2C8D4" : "#9CA3AF",
+              letterSpacing:   "0.01em",
+              whiteSpace:      "pre-wrap",
+              wordBreak:       "break-word",
+            }}>
+              {msg.content}
+            </div>
+            {msg.role === "assistant" && (
+              <span style={{ fontSize: 8, color: "#1E2030", marginTop: 3, letterSpacing: "0.12em", textTransform: "uppercase" }}>{agent}</span>
+            )}
+          </div>
+        ))}
+        {loading && (
+          <div style={{ display: "flex", alignItems: "center", gap: 6, padding: "8px 0" }}>
+            <Loader2 size={11} style={{ color: agentColor }} className="animate-spin" />
+            <span style={{ fontSize: 10, color: "#252836", letterSpacing: "0.1em" }}>Processing…</span>
+          </div>
+        )}
+        <div ref={bottomRef} />
+      </div>
+
+      {/* ── Input ────────────────────────────────────────────────────────── */}
+      <div style={{ padding: "12px 16px", borderTop: `1px solid ${agentColor}18`, flexShrink: 0, backgroundColor: "#060709" }}>
+        <div style={{ display: "flex", alignItems: "center", gap: 8, backgroundColor: "#0C0D10", border: `1px solid #1E1F24`, borderRadius: 8, padding: "8px 12px", transition: "border-color 0.15s" }}
+          onFocusCapture={(e) => (e.currentTarget.style.borderColor = `${agentColor}44`)}
+          onBlurCapture={(e) => (e.currentTarget.style.borderColor = "#1E1F24")}
+        >
+          <input
+            ref={inputRef}
+            value={input}
+            onChange={(e) => setInput(e.target.value)}
+            onKeyDown={(e) => { if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); send(); } }}
+            disabled={loading}
+            placeholder={`Message ${agent}…`}
+            style={{
+              flex:            1,
+              background:      "none",
+              border:          "none",
+              outline:         "none",
+              color:           "#C2C8D4",
+              fontSize:        12,
+              letterSpacing:   "0.02em",
+              fontFamily:      "inherit",
+              opacity:         loading ? 0.4 : 1,
+            }}
+          />
+          <button
+            onClick={send}
+            disabled={!input.trim() || loading}
+            style={{
+              flexShrink:      0,
+              display:         "flex",
+              alignItems:      "center",
+              justifyContent:  "center",
+              width:           28,
+              height:          28,
+              borderRadius:    6,
+              backgroundColor: input.trim() && !loading ? agentColor : "transparent",
+              border:          `1px solid ${input.trim() && !loading ? agentColor : "#1E1F24"}`,
+              color:           input.trim() && !loading ? "#08090C" : "#252836",
+              cursor:          input.trim() && !loading ? "pointer" : "default",
+              transition:      "all 0.15s",
+            }}
+          >
+            <Send size={11} />
+          </button>
+        </div>
+        <div style={{ marginTop: 6, fontSize: 8, color: "#141518", letterSpacing: "0.1em", textAlign: "center" }}>
+          Context: {tasks.filter(t => t.status !== "DONE").length} pending tasks injected · Enter to send
+        </div>
+      </div>
+    </div>
+  );
+}
+
 // ─── Root ─────────────────────────────────────────────────────────────────────
 
 export default function ChairmanDashboard() {
@@ -1230,6 +1508,7 @@ export default function ChairmanDashboard() {
 
   const [activeTab,    setActiveTab]    = useState<TabId>("MASTER");
   const [deepWork,     setDeepWork]     = useState(false);
+  const [novaOpen,     setNovaOpen]     = useState(false);
 
   // ── Calendar state ─────────────────────────────────────────────────────────
   const [calendarEvents, setCalendarEvents] = useState<CalendarEvent[]>([]);
@@ -1489,6 +1768,36 @@ export default function ChairmanDashboard() {
 
               <div style={{ width: 1, height: 28, backgroundColor: "#1E1F24" }} />
 
+              {/* Nova Logic Core toggle */}
+              <button
+                onClick={() => setNovaOpen((p) => !p)}
+                title="Nova Logic Core — AI Agent Array"
+                style={{
+                  display:         "flex",
+                  alignItems:      "center",
+                  gap:             6,
+                  padding:         "7px 12px",
+                  borderRadius:    6,
+                  backgroundColor: novaOpen ? "rgba(201,169,97,0.12)" : "transparent",
+                  border:          `1px solid ${novaOpen ? "rgba(201,169,97,0.45)" : "#1E1F24"}`,
+                  color:           novaOpen ? "#C9A961" : "#3B4558",
+                  fontSize:        9,
+                  fontWeight:      700,
+                  letterSpacing:   "0.18em",
+                  cursor:          "pointer",
+                  transition:      "all 0.2s ease",
+                  textTransform:   "uppercase",
+                  flexShrink:      0,
+                }}
+                onMouseEnter={(e) => { if (!novaOpen) { (e.currentTarget as HTMLButtonElement).style.borderColor = "rgba(201,169,97,0.35)"; (e.currentTarget as HTMLButtonElement).style.color = "#C9A961"; } }}
+                onMouseLeave={(e) => { if (!novaOpen) { (e.currentTarget as HTMLButtonElement).style.borderColor = "#1E1F24"; (e.currentTarget as HTMLButtonElement).style.color = "#3B4558"; } }}
+              >
+                <Bot size={11} />
+                Nova
+              </button>
+
+              <div style={{ width: 1, height: 28, backgroundColor: "#1E1F24" }} />
+
               {/* Theme toggle */}
               <button
                 onClick={() => setTheme(resolvedTheme === "dark" ? "light" : "dark")}
@@ -1717,6 +2026,14 @@ export default function ChairmanDashboard() {
           </div>
         </div>
       )}
+
+      {/* ── NOVA LOGIC CORE PANEL ────────────────────────────────────────── */}
+      <NovaPanel
+        open={novaOpen}
+        onClose={() => setNovaOpen(false)}
+        tasks={dbTasks}
+        calendarEvents={calendarEvents}
+      />
 
       {/* ── COGNITIVE COMMAND BAR ─────────────────────────────────────────── */}
       <div style={{

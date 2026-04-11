@@ -18,15 +18,16 @@ enum Role {
 // ─── NextAuth Models ──────────────────────────────────────────────────────────
 
 model User {
-  id            String    @id @default(cuid())
+  id            String      @id @default(cuid())
   name          String?
-  email         String?   @unique
+  email         String?     @unique
   emailVerified DateTime?
   image         String?
-  role          Role      @default(USER)
+  role          Role        @default(USER)
   accounts      Account[]
   sessions      Session[]
   tasks         Task[]
+  scorecards    Scorecard[]
 }
 
 model Account {
@@ -62,6 +63,19 @@ model VerificationToken {
   expires    DateTime
 
   @@unique([identifier, token])
+}
+
+// ─── Scorecard Model ──────────────────────────────────────────────────────────
+
+model Scorecard {
+  id         String   @id @default(uuid())
+  date       DateTime @default(now())
+  metricName String
+  value      Float
+  target     Float
+  category   String   // Health | Wealth | Joy | Relationships | CEO | COO | CFO | CTO | CMO | CPO
+  userId     String?
+  user       User?    @relation(fields: [userId], references: [id], onDelete: Cascade)
 }
 
 // ─── Chairman Task Model ──────────────────────────────────────────────────────
