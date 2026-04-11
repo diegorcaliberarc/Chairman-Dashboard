@@ -37,10 +37,11 @@ export async function POST(req: NextRequest) {
 
   try {
     const body = await req.json();
-    const { title, pillar, agentId, status, isDelegated, priority, dueDate } = body as {
+    const { title, pillar, agentId, category, status, isDelegated, priority, dueDate } = body as {
       title:        string;
       pillar:       string;
       agentId:      string;
+      category?:    string;   // Wealth | Health | Relate | Joy | CEO | COO | CFO | CTO
       status?:      string;
       isDelegated?: boolean;
       priority?:    number;   // 1=HIGH 2=MEDIUM 3=LOW
@@ -56,6 +57,7 @@ export async function POST(req: NextRequest) {
         title,
         pillar,
         agentId,
+        category:    category    ?? null,
         status:      status      ?? "PENDING",
         isDelegated: isDelegated ?? false,
         priority:    priority    ?? 2,

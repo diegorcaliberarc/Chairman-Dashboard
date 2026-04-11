@@ -40,6 +40,7 @@ interface DbTask {
   title:       string;
   pillar:      string;   // "BUSINESS" | "PERSONAL"
   agentId:     string;
+  category?:   string;   // Wealth | Health | Relate | Joy | CEO | COO | CFO | CTO
   status:      string;   // "PENDING" | "DONE"
   isDelegated: boolean;
   createdAt:   string;
@@ -75,6 +76,19 @@ const AGENT_META_PERSONAL = [
 ];
 
 
+// ─── Category → Agent Routing (hardcoded, no guessing) ───────────────────────
+
+const CATEGORIES: Record<string, { label: string; color: string; pillar: string; agentId: string }> = {
+  CEO:    { label: "CEO",    color: "#C9A961", pillar: "BUSINESS", agentId: "ceo"    },
+  COO:    { label: "COO",    color: "#7B9EA8", pillar: "BUSINESS", agentId: "coo"    },
+  CFO:    { label: "CFO",    color: "#8BA87B", pillar: "BUSINESS", agentId: "cfo"    },
+  CTO:    { label: "CTO",    color: "#4A90E2", pillar: "BUSINESS", agentId: "cto"    },
+  Wealth: { label: "WEALTH", color: "#D4AF37", pillar: "PERSONAL", agentId: "wealth" },
+  Health: { label: "HEALTH", color: "#E05A3A", pillar: "PERSONAL", agentId: "health" },
+  Relate: { label: "RELATE", color: "#5B8FB9", pillar: "PERSONAL", agentId: "relate" },
+  Joy:    { label: "JOY",    color: "#B388EB", pillar: "PERSONAL", agentId: "joy"    },
+};
+
 // ─── KPI Data ─────────────────────────────────────────────────────────────────
 
 const KPI_DATA = [
@@ -83,26 +97,7 @@ const KPI_DATA = [
   { label: "NQ Market Pulse",  value: "VOLATILE",sub: "Range-Bound",          trend: "alert",  trendLabel: "Volatility High",  color: "#E05A3A" },
 ];
 
-// ─── EA Delegation Classifier ─────────────────────────────────────────────────
 
-const DELEGATE_KEYWORDS = [
-  "scrape","email","send","fetch","ping","notify","remind",
-  "download","upload","sync","query","search","look up","find","automate",
-  "draft","compile","report","pull","push","run","execute","api","webhook",
-  "database","message","post","tweet","slack","log","backup","monitor",
-];
-
-const SCHEDULE_KEYWORDS = [
-  "schedule","add to calendar","block time","set meeting","book meeting",
-  "calendar event","meeting at","call at","reminder at","block at",
-];
-
-function classifyTask(text: string): "schedule" | "delegate" | "assign" {
-  const lower = text.toLowerCase();
-  if (SCHEDULE_KEYWORDS.some((k) => lower.includes(k))) return "schedule";
-  if (DELEGATE_KEYWORDS.some((k) => lower.includes(k))) return "delegate";
-  return "assign";
-}
 
 const HIGH_PRIORITY_KEYWORDS = ["urgent","asap","critical","immediately","top priority","high priority","now","emergency","rush"];
 const LOW_PRIORITY_KEYWORDS  = ["low priority","whenever","no rush","eventually","someday","low urgency"];
@@ -443,9 +438,20 @@ function PersonalTab({ agents, onToggle }: { agents: Agent[]; onToggle: (agentId
 
 // ─── Calendar Feed (compact one-pager) ───────────────────────────────────────
 
-function CalendarFeed({
-  events, calConnected, calLoading,
-}: { events: CalendarEvent[]; calConnected: boolean; calLoading: boolean }) {
+function CalendarFeed({ calConnected }: { calConnected: boolean }) {
+  const [events,     setEvents]     = useState<CalendarEvent[]>([]);
+  const [calLoading, setCalLoading] = useState(false);
+
+  useEffect(() => {
+    if (!calConnected) { setEvents([]); return; }
+    setCalLoading(true);
+    fetch("/api/calendar")
+      .then((r) => r.json())
+      .then((data) => { if (data.events) setEvents(data.events); })
+      .catch(() => {})
+      .finally(() => setCalLoading(false));
+  }, [calConnected]);
+
   const days     = getWeekDays();
   const todayStr = new Date().toDateString();
   const todayEvts = events
@@ -752,16 +758,12 @@ function CSuiteCard({ agent }: { agent: Agent }) {
 function MasterViewTab({
   business,
   personal,
-  calEvents,
   calConnected,
-  calLoading,
   onToggle,
 }: {
   business:     Agent[];
   personal:     Agent[];
-  calEvents:    CalendarEvent[];
   calConnected: boolean;
-  calLoading:   boolean;
   onToggle:     (taskId: string) => void;
 }) {
   const csuite = business.filter((a) => ["ceo", "coo", "cfo", "cto"].includes(a.id));
@@ -789,7 +791,7 @@ function MasterViewTab({
     }}>
       {/* ── Row 1: Calendar + Priority Strikes ─────────────────────────── */}
       <div style={{ display: "grid", gridTemplateColumns: "3fr 2fr", gap: 10, minHeight: 0, overflow: "hidden" }}>
-        <div style={PANEL}><CalendarFeed events={calEvents} calConnected={calConnected} calLoading={calLoading} /></div>
+        <div style={PANEL}><CalendarFeed calConnected={calConnected} /></div>
         <div style={PANEL}><PriorityStrikes business={business} personal={personal} onToggle={onToggle} /></div>
       </div>
 
@@ -968,21 +970,8 @@ export default function ChairmanDashboard() {
       .finally(() => setTasksLoading(false));
   }, []);
 
-  // ── Google Calendar state ──────────────────────────────────────────────────
-  const [calEvents,  setCalEvents]  = useState<CalendarEvent[]>([]);
-  const [calLoading, setCalLoading] = useState(false);
-
-  useEffect(() => {
-    if (!calConnected) { setCalEvents([]); return; }
-    setCalLoading(true);
-    fetch("/api/calendar")
-      .then((r) => r.json())
-      .then((data) => { if (data.events) setCalEvents(data.events); })
-      .catch(() => {})
-      .finally(() => setCalLoading(false));
-  }, [calConnected]);
-
   // ── Command bar ────────────────────────────────────────────────────────────
+  const [selectedCategory, setSelectedCategory] = useState<string>("CEO");
   const [cmdValue,      setCmdValue]      = useState("");
   const [isProcessing,  setIsProcessing]  = useState(false);
   const [processingMsg, setProcessingMsg] = useState("");
@@ -1041,97 +1030,43 @@ export default function ChairmanDashboard() {
 
     setCmdValue("");
     setIsProcessing(true);
-    setProcessingMsg("Claude Agent EA analyzing task for delegation...");
+
+    const cat = CATEGORIES[selectedCategory];
+    setProcessingMsg(`Routing to ${cat.label}…`);
 
     const doSubmit = async () => {
-      const classification = classifyTask(text);
-      const saveToMemory   = memoryOn;
+      const taskPriority = detectPriority(text);
+      const tempId       = `temp-${Date.now()}`;
+      const optimistic: DbTask = {
+        id: tempId, title: text, pillar: cat.pillar, agentId: cat.agentId,
+        category: selectedCategory, status: "PENDING", isDelegated: false,
+        createdAt: new Date().toISOString(), priority: taskPriority,
+      };
+      setDbTasks((prev) => [...prev, optimistic]);
+      setToast({ msg: `Assigned to ${cat.label} · saving to Supabase…`, type: "assign" });
 
-      if (classification === "schedule") {
-        if (calConnected) {
-          setProcessingMsg("Posting to Google Calendar...");
-          const start = new Date();
-          start.setMinutes(0, 0, 0);
-          start.setHours(start.getHours() + 1);
-          const end = new Date(start);
-          end.setHours(end.getHours() + 1);
-          try {
-            await fetch("/api/calendar", {
-              method:  "POST",
-              headers: { "Content-Type": "application/json" },
-              body:    JSON.stringify({ title: text, start: start.toISOString(), end: end.toISOString() }),
-            });
-            const res  = await fetch("/api/calendar");
-            const data = await res.json();
-            if (data.events) setCalEvents(data.events);
-            setToast({ msg: "Event added to Google Calendar.", type: "schedule" });
-          } catch {
-            setToast({ msg: "Calendar sync failed — event queued locally.", type: "assign" });
-          }
-        } else {
-          setToast({ msg: "Connect Google Calendar in the header to auto-schedule.", type: "assign" });
-        }
-
-      } else if (classification === "delegate") {
-        // Optimistically add as delegated task under CEO
-        const taskPriority = detectPriority(text);
-        const tempId = `temp-${Date.now()}`;
-        const optimistic: DbTask = {
-          id: tempId, title: text, pillar: "BUSINESS", agentId: "ceo",
-          status: "PENDING", isDelegated: true, createdAt: new Date().toISOString(), priority: taskPriority,
-        };
-        setDbTasks((prev) => [...prev, optimistic]);
-        setToast({ msg: "Task delegated to Claude Autonomous Agent.", type: "delegate" });
-        try {
-          const res  = await fetch("/api/tasks", {
-            method:  "POST",
-            headers: { "Content-Type": "application/json" },
-            body:    JSON.stringify({ title: text, pillar: "BUSINESS", agentId: "ceo", status: "PENDING", isDelegated: true, priority: taskPriority }),
-          });
-          const data = await res.json();
-          if (data.task) setDbTasks((prev) => prev.map((t) => t.id === tempId ? data.task : t));
-        } catch {
-          setDbTasks((prev) => prev.filter((t) => t.id !== tempId));
-        }
-
-      } else {
-        // Assign to a random agent in scope
-        const bizPool = business.map((a) => ({ agent: a, pool: "biz" as const }));
-        const perPool = personal.map((a) => ({ agent: a, pool: "per" as const }));
-        const candidates = activeTab === "BUSINESS" ? bizPool
-                         : activeTab === "PERSONAL" ? perPool
-                         : [...bizPool, ...perPool];
-
-        const pick   = candidates[Math.floor(Math.random() * candidates.length)];
-        const pillar = pick.pool === "biz" ? "BUSINESS" : "PERSONAL";
-        const taskPriority = detectPriority(text);
-        const tempId = `temp-${Date.now()}`;
-        const optimistic: DbTask = {
-          id: tempId, title: text, pillar, agentId: pick.agent.id,
-          status: "PENDING", isDelegated: false, createdAt: new Date().toISOString(), priority: taskPriority,
-        };
-        setDbTasks((prev) => [...prev, optimistic]);
-        setToast({ msg: `Assigned to ${pick.agent.title} · saving to Supabase…`, type: "assign" });
-        try {
-          const res  = await fetch("/api/tasks", {
-            method:  "POST",
-            headers: { "Content-Type": "application/json" },
-            body:    JSON.stringify({ title: text, pillar, agentId: pick.agent.id, status: "PENDING", isDelegated: false, priority: taskPriority }),
-          });
-          const data = await res.json();
-          if (data.task) setDbTasks((prev) => prev.map((t) => t.id === tempId ? data.task : t));
-        } catch {
-          setDbTasks((prev) => prev.filter((t) => t.id !== tempId));
-        }
+      try {
+        const res  = await fetch("/api/tasks", {
+          method:  "POST",
+          headers: { "Content-Type": "application/json" },
+          body:    JSON.stringify({
+            title: text, pillar: cat.pillar, agentId: cat.agentId,
+            category: selectedCategory, status: "PENDING", isDelegated: false, priority: taskPriority,
+          }),
+        });
+        const data = await res.json();
+        if (data.task) setDbTasks((prev) => prev.map((t) => t.id === tempId ? data.task : t));
+      } catch {
+        setDbTasks((prev) => prev.filter((t) => t.id !== tempId));
       }
 
-      if (saveToMemory) setTimeout(() => setMemToast(true), 400);
+      if (memoryOn) setTimeout(() => setMemToast(true), 400);
       setIsProcessing(false);
       setProcessingMsg("");
     };
 
-    setTimeout(() => { doSubmit(); }, 1700);
-  }, [cmdValue, isProcessing, memoryOn, activeTab, business, personal, calConnected]);
+    setTimeout(() => { doSubmit(); }, 900);
+  }, [cmdValue, isProcessing, memoryOn, selectedCategory]);
 
   const TABS: { id: TabId; label: string }[] = [
     { id: "MASTER",   label: "MASTER VIEW" },
@@ -1402,7 +1337,7 @@ export default function ChairmanDashboard() {
           paddingBottom: 148,
         }}
       >
-        {activeTab === "MASTER" && <MasterViewTab key="master" business={business} personal={personal} calEvents={calEvents} calConnected={calConnected} calLoading={calLoading} onToggle={toggleTask} />}
+        {activeTab === "MASTER" && <MasterViewTab key="master" business={business} personal={personal} calConnected={calConnected} onToggle={toggleTask} />}
         {activeTab === "BUSINESS" && <BusinessTab   key="business" agents={business}  onToggle={(_, taskId) => toggleTask(taskId)} />}
         {activeTab === "PERSONAL" && <PersonalTab   key="personal" agents={personal}  onToggle={(_, taskId) => toggleTask(taskId)} />}
       </main>
@@ -1460,12 +1395,35 @@ export default function ChairmanDashboard() {
         <div className="max-w-[1440px] mx-auto px-8" style={{ paddingTop: 11, paddingBottom: 13 }}>
           <div className="flex items-center gap-4">
 
-            {/* Mode badge */}
-            <div style={{ flexShrink: 0, display: "flex", alignItems: "center", gap: 6, padding: "5px 10px", borderRadius: 6, backgroundColor: cmdFocused ? "rgba(201,169,97,0.09)" : "rgba(201,169,97,0.04)", border: `1px solid ${cmdFocused ? "rgba(201,169,97,0.22)" : "rgba(201,169,97,0.09)"}`, transition: "all 0.2s" }}>
-              <Sparkles size={10} style={{ color: "#C9A961" }} />
-              <span style={{ fontSize: 9, fontWeight: 700, letterSpacing: "0.2em", color: "#C9A961", textTransform: "uppercase", whiteSpace: "nowrap" }}>
-                {activeTab === "MASTER" ? "AI Array" : activeTab}
-              </span>
+            {/* Category selector */}
+            <div style={{ flexShrink: 0, display: "flex", alignItems: "center", gap: 5 }}>
+              {Object.entries(CATEGORIES).map(([key, meta]) => {
+                const active = selectedCategory === key;
+                return (
+                  <button
+                    key={key}
+                    onClick={() => setSelectedCategory(key)}
+                    style={{
+                      padding:         "4px 9px",
+                      borderRadius:    5,
+                      fontSize:        8,
+                      fontWeight:      700,
+                      letterSpacing:   "0.16em",
+                      textTransform:   "uppercase",
+                      cursor:          "pointer",
+                      border:          `1px solid ${active ? `${meta.color}55` : "#1A1B22"}`,
+                      backgroundColor: active ? `${meta.color}14` : "transparent",
+                      color:           active ? meta.color : "#2A3040",
+                      transition:      "all 0.15s",
+                      whiteSpace:      "nowrap",
+                    }}
+                    onMouseEnter={(e) => { if (!active) { (e.currentTarget as HTMLButtonElement).style.borderColor = `${meta.color}33`; (e.currentTarget as HTMLButtonElement).style.color = `${meta.color}99`; } }}
+                    onMouseLeave={(e) => { if (!active) { (e.currentTarget as HTMLButtonElement).style.borderColor = "#1A1B22"; (e.currentTarget as HTMLButtonElement).style.color = "#2A3040"; } }}
+                  >
+                    {meta.label}
+                  </button>
+                );
+              })}
             </div>
 
             <div style={{ width: 1, height: 18, backgroundColor: "#1E1F24", flexShrink: 0 }} />

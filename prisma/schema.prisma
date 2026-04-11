@@ -71,6 +71,7 @@ model Task {
   title       String
   pillar      String
   agentId     String
+  category    String?   // Wealth | Health | Relate | Joy | CEO | COO | CFO | CTO
   status      String
   isDelegated Boolean   @default(false)
   createdAt   DateTime  @default(now())
