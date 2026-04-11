@@ -510,20 +510,15 @@ function PersonalTab({ agents, subtasksMap, onToggle, onDelete, onAddSubtask }: 
 
 // ─── Calendar Feed (compact one-pager) ───────────────────────────────────────
 
-function CalendarFeed({ calConnected }: { calConnected: boolean }) {
-  const [events,      setEvents]      = useState<CalendarEvent[]>([]);
-  const [calLoading,  setCalLoading]  = useState(false);
-  const [modalDay,    setModalDay]    = useState<{ name: string; date: number; month: string; dateString: string } | null>(null);
-
-  useEffect(() => {
-    if (!calConnected) { setEvents([]); return; }
-    setCalLoading(true);
-    fetch("/api/calendar")
-      .then((r) => r.json())
-      .then((data) => { if (data.events) setEvents(data.events); })
-      .catch(() => {})
-      .finally(() => setCalLoading(false));
-  }, [calConnected]);
+function CalendarFeed({
+  calConnected, events, calLoading, calError,
+}: {
+  calConnected: boolean;
+  events:       CalendarEvent[];
+  calLoading:   boolean;
+  calError:     string | null;
+}) {
+  const [modalDay, setModalDay] = useState<{ name: string; date: number; month: string; dateString: string } | null>(null);
 
   const days     = getWeekDays();
   const todayStr = new Date().toDateString();
@@ -552,8 +547,8 @@ function CalendarFeed({ calConnected }: { calConnected: boolean }) {
           <CalendarDays size={10} style={{ color: "#C9A961" }} />
           <span style={{ fontSize: 9, letterSpacing: "0.22em", textTransform: "uppercase", color: "#3B4558" }}>Command Calendar</span>
         </div>
-        <span style={{ fontSize: 8, letterSpacing: "0.14em", textTransform: "uppercase", color: calLoading ? "#4A90E2" : calConnected ? "#8BA87B" : "#252836" }}>
-          {calLoading ? "Syncing…" : calConnected ? "● Live" : "○ Not connected"}
+        <span style={{ fontSize: 8, letterSpacing: "0.14em", textTransform: "uppercase", color: calLoading ? "#4A90E2" : calError ? "#E05A3A" : calConnected ? "#8BA87B" : "#252836" }}>
+          {calLoading ? "Syncing…" : calError ? "● Auth error" : calConnected ? "● Live" : "○ Not connected"}
         </span>
       </div>
 
@@ -574,7 +569,6 @@ function CalendarFeed({ calConnected }: { calConnected: boolean }) {
                 border:          isToday ? "1px solid rgba(201,169,97,0.22)" : "1px solid #111318",
                 cursor:          "pointer",
                 transition:      "border-color 0.15s, background-color 0.15s",
-                background:      "none",
               }}
               onMouseEnter={(e) => { (e.currentTarget as HTMLButtonElement).style.borderColor = isToday ? "rgba(201,169,97,0.45)" : "rgba(74,144,226,0.25)"; }}
               onMouseLeave={(e) => { (e.currentTarget as HTMLButtonElement).style.borderColor = isToday ? "rgba(201,169,97,0.22)" : "#111318"; }}
@@ -600,7 +594,12 @@ function CalendarFeed({ calConnected }: { calConnected: boolean }) {
 
       {/* Today's events — no inner scroll; parent panel scrolls instead */}
       <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
-        {todayEvts.length === 0 ? (
+        {calError ? (
+          <div style={{ padding: "10px 12px", borderRadius: 6, backgroundColor: "rgba(224,90,58,0.06)", border: "1px solid rgba(224,90,58,0.18)", display: "flex", alignItems: "center", justifyContent: "space-between", gap: 10 }}>
+            <span style={{ fontSize: 10, color: "#E05A3A", letterSpacing: "0.06em" }}>Google session expired — reconnect to restore events.</span>
+            <a href="/api/auth/signin" style={{ fontSize: 9, letterSpacing: "0.14em", textTransform: "uppercase", color: "#C9A961", textDecoration: "none", flexShrink: 0, padding: "3px 8px", border: "1px solid rgba(201,169,97,0.28)", borderRadius: 4 }}>Reconnect</a>
+          </div>
+        ) : todayEvts.length === 0 ? (
           <div style={{ fontSize: 10, color: "#1C1E2A", letterSpacing: "0.08em", padding: "10px 0" }}>
             {calConnected ? "No events scheduled today." : "Connect Google Calendar to see your schedule."}
           </div>
@@ -662,7 +661,7 @@ function CalendarFeed({ calConnected }: { calConnected: boolean }) {
             <div style={{ display: "flex", flexDirection: "column", gap: 8, maxHeight: 400, overflowY: "auto" }}>
               {modalEvts.length === 0 ? (
                 <div style={{ padding: "24px 0", textAlign: "center", fontSize: 11, color: "#252836", letterSpacing: "0.1em" }}>
-                  {calConnected ? "No events on this day." : "Connect Google Calendar to see events."}
+                  {calError ? "Session expired — reconnect Google Calendar." : calConnected ? "No events on this day." : "Connect Google Calendar to see events."}
                 </div>
               ) : (
                 modalEvts.map((ev) => {
@@ -1034,13 +1033,16 @@ function CSuiteCard({
 // ─── Master View Tab (One-Pager Command Center) ───────────────────────────────
 
 function MasterViewTab({
-  business, personal, calConnected, onToggle, onDelete,
+  business, personal, calConnected, calendarEvents, calLoading, calError, onToggle, onDelete,
 }: {
-  business:     Agent[];
-  personal:     Agent[];
-  calConnected: boolean;
-  onToggle:     (taskId: string) => void;
-  onDelete:     (taskId: string) => void;
+  business:       Agent[];
+  personal:       Agent[];
+  calConnected:   boolean;
+  calendarEvents: CalendarEvent[];
+  calLoading:     boolean;
+  calError:       string | null;
+  onToggle:       (taskId: string) => void;
+  onDelete:       (taskId: string) => void;
 }) {
   const joyTasks = personal.find((a) => a.id === "joy")?.tasks ?? [];
 
@@ -1069,7 +1071,7 @@ function MasterViewTab({
     }}>
       {/* ── Row 1: Calendar + Priority Strikes ─────────────────────────── */}
       <div style={{ display: "grid", gridTemplateColumns: "3fr 2fr", gap: 10, minHeight: 0, overflow: "hidden" }}>
-        <div style={CAL_PANEL}><CalendarFeed calConnected={calConnected} /></div>
+        <div style={CAL_PANEL}><CalendarFeed calConnected={calConnected} events={calendarEvents} calLoading={calLoading} calError={calError} /></div>
         <div style={PANEL}><PriorityStrikes business={business} personal={personal} onToggle={onToggle} onDelete={onDelete} /></div>
       </div>
 
@@ -1228,6 +1230,32 @@ export default function ChairmanDashboard() {
 
   const [activeTab,    setActiveTab]    = useState<TabId>("MASTER");
   const [deepWork,     setDeepWork]     = useState(false);
+
+  // ── Calendar state ─────────────────────────────────────────────────────────
+  const [calendarEvents, setCalendarEvents] = useState<CalendarEvent[]>([]);
+  const [calLoading,     setCalLoading]     = useState(false);
+  const [calError,       setCalError]       = useState<string | null>(null);
+
+  useEffect(() => {
+    if (!calConnected) { setCalendarEvents([]); setCalError(null); return; }
+    setCalLoading(true);
+    setCalError(null);
+    fetch("/api/calendar")
+      .then((r) => {
+        if (!r.ok) throw new Error(`HTTP ${r.status}`);
+        return r.json();
+      })
+      .then((data) => {
+        console.log("Fetched Calendar Data:", data);
+        if (data.error) throw new Error(data.error);
+        setCalendarEvents(data.events ?? []);
+      })
+      .catch((err) => {
+        console.error("Calendar fetch error:", err);
+        setCalError(err?.message ?? "Calendar fetch failed");
+      })
+      .finally(() => setCalLoading(false));
+  }, [calConnected]);
 
   // ── Supabase task state ────────────────────────────────────────────────────
   const [dbTasks,      setDbTasks]      = useState<DbTask[]>([]);
@@ -1659,7 +1687,7 @@ export default function ChairmanDashboard() {
           paddingBottom: 148,
         }}
       >
-        {activeTab === "MASTER"   && <MasterViewTab key="master"   business={business} personal={personal} calConnected={calConnected} onToggle={toggleTask} onDelete={deleteTask} />}
+        {activeTab === "MASTER"   && <MasterViewTab key="master"   business={business} personal={personal} calConnected={calConnected} calendarEvents={calendarEvents} calLoading={calLoading} calError={calError} onToggle={toggleTask} onDelete={deleteTask} />}
         {activeTab === "BUSINESS" && <BusinessTab   key="business" agents={business}  subtasksMap={subtasksMap} onToggle={(_, taskId) => toggleTask(taskId)} onDelete={deleteTask} onAddSubtask={addSubtask} />}
         {activeTab === "PERSONAL" && <PersonalTab   key="personal" agents={personal}  subtasksMap={subtasksMap} onToggle={(_, taskId) => toggleTask(taskId)} onDelete={deleteTask} onAddSubtask={addSubtask} />}
       </main>
