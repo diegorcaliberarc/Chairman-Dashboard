@@ -55,14 +55,6 @@ interface Agent {
   tasks: DbTask[];
 }
 
-interface RoadmapNode {
-  id:     number;
-  label:  string;
-  status: "completed" | "active" | "next" | "planned" | "target";
-  x:      number;
-  y:      number;
-  color:  string;
-}
 
 // ─── Agent Metadata (tasks come from Supabase) ────────────────────────────────
 
@@ -82,13 +74,6 @@ const AGENT_META_PERSONAL = [
   { id: "joy",    title: "JOY",    role: "Foundation & Operations", color: "#B388EB" },
 ];
 
-const ROADMAP_NODES: RoadmapNode[] = [
-  { id: 1, label: "FOUNDATION",      status: "completed", x: 10, y: 80, color: "#4A4940" },
-  { id: 2, label: "EXECUTIVE AI",    status: "active",    x: 30, y: 40, color: "#00FF88" },
-  { id: 3, label: "CALIBER ARC",     status: "next",      x: 50, y: 70, color: "#C9A961" },
-  { id: 4, label: "FITNESS & FLEET", status: "planned",   x: 70, y: 30, color: "#5B8FB9" },
-  { id: 5, label: "2026 EMPIRE",     status: "target",    x: 90, y: 60, color: "#B388EB" },
-];
 
 // ─── KPI Data ─────────────────────────────────────────────────────────────────
 
@@ -300,244 +285,6 @@ function SectionLabel({ children, right }: { children: React.ReactNode; right?: 
   );
 }
 
-// ─── Weekly Calendar ──────────────────────────────────────────────────────────
-
-function WeeklyCalendar({
-  events,
-  calConnected,
-  calLoading,
-}: {
-  events:       CalendarEvent[];
-  calConnected: boolean;
-  calLoading:   boolean;
-}) {
-  const days = getWeekDays();
-
-  const statusLabel = calLoading
-    ? "Syncing…"
-    : calConnected
-    ? "Google Calendar — Live"
-    : "Google Calendar — connect to sync";
-
-  return (
-    <div>
-      <SectionLabel right={statusLabel}>Weekly Command View</SectionLabel>
-      <div className="overflow-x-auto -mx-1 px-1 mt-3">
-        <div className="grid grid-cols-7 gap-2" style={{ minWidth: 420 }}>
-          {days.map((d) => {
-            const dayEvents = events.filter((ev) => {
-              const dt = ev.start?.dateTime ?? ev.start?.date;
-              if (!dt) return false;
-              return new Date(dt).toDateString() === d.dateString;
-            });
-
-            return (
-              <div
-                key={d.name}
-                className="rounded-lg p-3 text-center select-none"
-                style={{
-                  backgroundColor: d.isToday ? "rgba(201,169,97,0.06)" : "#0C0D10",
-                  border:          d.isToday ? "1px solid rgba(201,169,97,0.28)" : "1px solid #1E1F24",
-                }}
-              >
-                <div className="text-[10px] tracking-widest uppercase mb-2"
-                  style={{ color: d.isToday ? "#C9A961" : d.isWeekend ? "#222435" : "#191A25" }}>
-                  {d.name}
-                </div>
-                <div className="text-xl font-bold"
-                  style={{ color: d.isToday ? "#C9A961" : "#28304A", fontFamily: "Georgia, serif" }}>
-                  {d.date}
-                </div>
-                <div className="text-[9px] tracking-widest uppercase mt-1.5"
-                  style={{ color: d.isToday ? "rgba(201,169,97,0.45)" : "#181924" }}>
-                  {d.month}
-                </div>
-                {d.isToday && dayEvents.length === 0 && (
-                  <div className="mt-2 flex justify-center">
-                    <div className="w-1 h-1 rounded-full" style={{ backgroundColor: "#C9A961" }} />
-                  </div>
-                )}
-                {dayEvents.length > 0 && (
-                  <div className="mt-2 space-y-1 text-left">
-                    {dayEvents.slice(0, 3).map((ev) => (
-                      <div
-                        key={ev.id}
-                        className="text-[7px] leading-tight px-1 py-0.5 rounded truncate"
-                        style={{ backgroundColor: "rgba(201,169,97,0.08)", color: "#C9A961", border: "1px solid rgba(201,169,97,0.18)" }}
-                        title={ev.summary ?? "Event"}
-                      >
-                        {ev.summary ?? "Event"}
-                      </div>
-                    ))}
-                    {dayEvents.length > 3 && (
-                      <div className="text-[7px]" style={{ color: "#3B4558" }}>
-                        +{dayEvents.length - 3} more
-                      </div>
-                    )}
-                  </div>
-                )}
-              </div>
-            );
-          })}
-        </div>
-      </div>
-    </div>
-  );
-}
-
-// ─── Magic Circle Node ────────────────────────────────────────────────────────
-
-function MagicCircleNode({ node }: { node: RoadmapNode }) {
-  const isTarget    = node.status === "target";
-  const isActive    = node.status === "active";
-  const isCompleted = node.status === "completed";
-  const isNext      = node.status === "next";
-
-  const outerR = isTarget ? 54 : isActive ? 38 : isNext ? 30 : 24;
-  const midR   = isTarget ? 36 : isActive ? 25 : isNext ? 20 : 15;
-  const coreR  = isTarget ? 16 : isActive ? 9  : isNext ? 6  : 4;
-  const color  = node.color;
-
-  return (
-    <div style={{
-      position:  "absolute",
-      left:      `${node.x}%`,
-      top:       `${node.y}%`,
-      width:     0,
-      height:    0,
-      zIndex:    isTarget ? 20 : isActive ? 15 : 10,
-      animation: isTarget
-        ? "float-y 3s ease-in-out infinite"
-        : isActive ? "float-y 4.5s ease-in-out infinite"
-        : "none",
-    }}>
-      {isTarget && (
-        <>
-          <div style={{ position: "absolute", borderRadius: "50%", width: 160, height: 160, top: -80, left: -80, border: "1px dashed rgba(179,136,235,0.08)", animation: "spin-cw 30s linear infinite" }} />
-          <div style={{ position: "absolute", borderRadius: "50%", width: 120, height: 120, top: -60, left: -60, border: "1px solid rgba(179,136,235,0.06)", animation: "spin-ccw 22s linear infinite" }} />
-          <div style={{ position: "absolute", width: 4, height: 4, borderRadius: "50%", backgroundColor: "#B388EB", boxShadow: "0 0 8px #B388EB", top: -2, left: -2, transformOrigin: "2px 62px", animation: "spin-cw 8s linear infinite" }} />
-        </>
-      )}
-
-      <div style={{ position: "absolute", borderRadius: "50%", width: outerR * 2, height: outerR * 2, top: -outerR, left: -outerR, border: `${isTarget ? 2 : 1.5}px dashed ${isCompleted ? "rgba(74,73,64,0.5)" : color}`, opacity: isCompleted ? 0.3 : 0.65, animation: `spin-cw ${isTarget ? "9s" : isActive ? "12s" : isNext ? "15s" : "20s"} linear infinite` }} />
-
-      <div style={{ position: "absolute", borderRadius: "50%", width: midR * 2, height: midR * 2, top: -midR, left: -midR, border: `${isTarget ? 2 : 1}px solid ${isCompleted ? "rgba(74,73,64,0.4)" : color}`, boxShadow: isCompleted ? "none" : `0 0 ${isTarget ? 30 : 14}px ${color}99, inset 0 0 ${isTarget ? 16 : 6}px ${color}22`, opacity: isCompleted ? 0.2 : 0.9, animation: `spin-ccw ${isTarget ? "6s" : isActive ? "8s" : isNext ? "10s" : "13s"} linear infinite` }} />
-
-      <div style={{ position: "absolute", borderRadius: "50%", width: coreR * 2, height: coreR * 2, top: -coreR, left: -coreR, backgroundColor: isCompleted ? "#2A2A22" : color, filter: `blur(${isTarget ? 7 : isActive ? 3 : 2}px)`, boxShadow: isCompleted ? "none" : `0 0 ${isTarget ? 48 : 20}px ${color}`, animation: isTarget ? "domain-expand 2.8s ease-in-out infinite" : isActive ? "pulse-active 2.2s ease-in-out infinite" : "none" }} />
-
-      {!isCompleted && (
-        <div style={{ position: "absolute", borderRadius: "50%", width: coreR * 0.7, height: coreR * 0.7, top: -(coreR * 0.35), left: -(coreR * 0.35), backgroundColor: "#FFFFFF", opacity: isTarget ? 0.6 : 0.35 }} />
-      )}
-
-      <div style={{ position: "absolute", top: outerR + 10, left: 0, transform: "translateX(-50%)", whiteSpace: "nowrap", textAlign: "center", pointerEvents: "none" }}>
-        <div style={{ fontSize: isTarget ? 8.5 : 7, fontWeight: 700, letterSpacing: "2.5px", color: isCompleted ? "#3A3830" : color, textShadow: isCompleted ? "none" : `0 0 12px ${color}AA`, fontFamily: "monospace", textTransform: "uppercase" }}>
-          {node.label}
-        </div>
-        <div style={{ fontSize: 6, letterSpacing: "1.5px", color: "#252836", marginTop: 3, textTransform: "uppercase" }}>
-          {node.status}
-        </div>
-      </div>
-    </div>
-  );
-}
-
-// ─── Anime 3D Roadmap ─────────────────────────────────────────────────────────
-
-function AnimeRoadmap() {
-  return (
-    <div>
-      <div className="flex items-center gap-3 mb-4">
-        <Zap size={12} style={{ color: "#B388EB" }} />
-        <SectionLabel right={`${ROADMAP_NODES.length} nodes · ${ROADMAP_NODES.length - 1} edges`}>
-          Mission Roadmap — One Step Closer 2026
-        </SectionLabel>
-      </div>
-      <div className="roadmap-outer" style={{ position: "relative", height: 430, overflow: "hidden", borderRadius: 12, border: "1px solid #1E1F24", perspective: "1200px", perspectiveOrigin: "50% 38%", backgroundColor: "#050508" }}>
-        <div style={{ position: "absolute", inset: 0, transform: "rotateX(60deg) rotateZ(-30deg) scale(1.05)", transformOrigin: "50% 50%", transformStyle: "preserve-3d", background: "radial-gradient(ellipse 70% 60% at 42% 55%, #0d0624 0%, #060310 45%, #020105 100%)" }}>
-          <svg style={{ position: "absolute", inset: 0, width: "100%", height: "100%" }} preserveAspectRatio="xMidYMid slice">
-            <defs>
-              <pattern id="vGrid" width="44" height="44" patternUnits="userSpaceOnUse">
-                <path d="M44 0 L0 0 0 44" fill="none" stroke="#2A1650" strokeWidth="0.6" />
-              </pattern>
-              <radialGradient id="gFade" cx="50%" cy="50%" r="50%">
-                <stop offset="20%" stopColor="white" stopOpacity="1" />
-                <stop offset="100%" stopColor="white" stopOpacity="0" />
-              </radialGradient>
-              <mask id="gMask"><rect width="100%" height="100%" fill="url(#gFade)" /></mask>
-            </defs>
-            <rect width="100%" height="100%" fill="url(#vGrid)" mask="url(#gMask)" />
-          </svg>
-
-          <svg style={{ position: "absolute", inset: 0, width: "100%", height: "100%", overflow: "visible" }}>
-            <defs>
-              <filter id="edgeGlow" x="-60%" y="-60%" width="220%" height="220%">
-                <feGaussianBlur stdDeviation="5" result="blur" />
-                <feMerge><feMergeNode in="blur" /><feMergeNode in="SourceGraphic" /></feMerge>
-              </filter>
-              <filter id="softGlow" x="-40%" y="-40%" width="180%" height="180%">
-                <feGaussianBlur stdDeviation="2.5" result="blur" />
-                <feMerge><feMergeNode in="blur" /><feMergeNode in="SourceGraphic" /></feMerge>
-              </filter>
-              {ROADMAP_NODES.slice(0, -1).map((n, i) => {
-                const nx = ROADMAP_NODES[i + 1];
-                return (
-                  <linearGradient key={`eg${i}`} id={`eg${i}`} x1={`${n.x}%`} y1={`${n.y}%`} x2={`${nx.x}%`} y2={`${nx.y}%`} gradientUnits="userSpaceOnUse">
-                    <stop offset="0%"   stopColor={n.color}  stopOpacity="0.9" />
-                    <stop offset="100%" stopColor={nx.color} stopOpacity="0.9" />
-                  </linearGradient>
-                );
-              })}
-            </defs>
-            {ROADMAP_NODES.slice(0, -1).map((n, i) => {
-              const nx  = ROADMAP_NODES[i + 1];
-              const dur = `${1.6 + i * 0.28}s`;
-              return (
-                <g key={`edge${i}`}>
-                  <line x1={`${n.x}%`} y1={`${n.y}%`} x2={`${nx.x}%`} y2={`${nx.y}%`} stroke={`url(#eg${i})`} strokeWidth="6" opacity="0.07" filter="url(#edgeGlow)" />
-                  <line x1={`${n.x}%`} y1={`${n.y}%`} x2={`${nx.x}%`} y2={`${nx.y}%`} stroke={`url(#eg${i})`} strokeWidth="1" opacity="0.22" />
-                  <line x1={`${n.x}%`} y1={`${n.y}%`} x2={`${nx.x}%`} y2={`${nx.y}%`} stroke={`url(#eg${i})`} strokeWidth="1.8" strokeDasharray="9 7" opacity="0.85" filter="url(#softGlow)">
-                    <animate attributeName="stroke-dashoffset" from="0" to="-56" dur={dur} repeatCount="indefinite" />
-                  </line>
-                </g>
-              );
-            })}
-          </svg>
-
-          {ROADMAP_NODES.map((node) => (
-            <MagicCircleNode key={node.id} node={node} />
-          ))}
-        </div>
-      </div>
-    </div>
-  );
-}
-
-// ─── Mini Agent Grid ──────────────────────────────────────────────────────────
-
-function MiniAgentGrid({ business, personal }: { business: Agent[]; personal: Agent[] }) {
-  return (
-    <div>
-      <SectionLabel>All Agents · Live Status</SectionLabel>
-      <div className="grid grid-cols-2 sm:grid-cols-5 lg:grid-cols-10 gap-2 mt-3">
-        {[...business, ...personal].map((a) => {
-          const done  = a.tasks.filter((t) => t.status === "DONE").length;
-          const total = a.tasks.length;
-          return (
-            <div key={a.id} className="rounded-lg p-3" style={{ backgroundColor: "#0C0D10", border: "1px solid #1E1F24" }}>
-              <div className="text-[8px] tracking-widest uppercase mb-2" style={{ color: a.color }}>{a.title}</div>
-              <div className="text-sm font-bold" style={{ color: a.color, fontVariantNumeric: "tabular-nums" }}>
-                {done}<span className="text-xs font-normal" style={{ color: "#252836" }}>/{total}</span>
-              </div>
-              <div className="mt-2 h-px rounded-full" style={{ backgroundColor: "#1E1F24" }}>
-                <div className="h-full rounded-full transition-all duration-700" style={{ width: `${total > 0 ? (done / total) * 100 : 0}%`, backgroundColor: a.color, opacity: 0.6 }} />
-              </div>
-            </div>
-          );
-        })}
-      </div>
-    </div>
-  );
-}
 
 // ─── Agent Card ───────────────────────────────────────────────────────────────
 
@@ -1029,31 +776,33 @@ function MasterViewTab({
     minWidth:        0,
   };
 
+  // Row proportions: Feeds 30% · Personal 45% · C-Suite 25%
   return (
     <div style={{
       display:          "grid",
-      gridTemplateRows: "1.9fr 2.2fr 1.5fr",
-      gap:              8,
-      height:           "calc(100vh - 185px)",
+      gridTemplateRows: "30fr 45fr 25fr",
+      gridTemplateColumns: "100%",
+      gap:              10,
+      flex:             1,
+      minHeight:        0,
       overflow:         "hidden",
-      animation:        "tab-in 0.22s ease-out",
     }}>
-      {/* Row 1 — Feeds */}
-      <div style={{ display: "grid", gridTemplateColumns: "1.5fr 1fr", gap: 8, minHeight: 0 }}>
+      {/* ── Row 1: Calendar + Priority Strikes ─────────────────────────── */}
+      <div style={{ display: "grid", gridTemplateColumns: "3fr 2fr", gap: 10, minHeight: 0, overflow: "hidden" }}>
         <div style={PANEL}><CalendarFeed events={calEvents} calConnected={calConnected} calLoading={calLoading} /></div>
         <div style={PANEL}><PriorityStrikes business={business} personal={personal} onToggle={onToggle} /></div>
       </div>
 
-      {/* Row 2 — Personal Quadrants */}
-      <div style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: 8, minHeight: 0 }}>
+      {/* ── Row 2: Personal Quadrants ──────────────────────────────────── */}
+      <div style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: 10, minHeight: 0, overflow: "hidden" }}>
         <div style={PANEL}><WealthBlock /></div>
         <div style={PANEL}><HealthBlock /></div>
         <div style={PANEL}><RelationshipsBlock /></div>
         <div style={PANEL}><HappinessBlock /></div>
       </div>
 
-      {/* Row 3 — C-Suite */}
-      <div style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: 8, minHeight: 0 }}>
+      {/* ── Row 3: Business C-Suite ────────────────────────────────────── */}
+      <div style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: 10, minHeight: 0, overflow: "hidden" }}>
         {csuite.map((a) => <div key={a.id} style={PANEL}><CSuiteCard agent={a} /></div>)}
       </div>
     </div>
@@ -1635,10 +1384,22 @@ export default function ChairmanDashboard() {
 
       {/* ── MAIN ──────────────────────────────────────────────────────────── */}
       <main
-        className="main-px max-w-[1440px] mx-auto px-4 md:px-8"
-        style={{
-          paddingTop:    activeTab === "MASTER" ? 10 : 24,
-          paddingBottom: activeTab === "MASTER" ? 0  : 148,
+        className="main-px max-w-[1440px] mx-auto"
+        style={activeTab === "MASTER" ? {
+          paddingLeft:    32,
+          paddingRight:   32,
+          paddingTop:     10,
+          paddingBottom:  66,
+          height:         "calc(100vh - 112px)",
+          display:        "flex",
+          flexDirection:  "column",
+          overflow:       "hidden",
+          boxSizing:      "border-box" as const,
+        } : {
+          paddingLeft:   32,
+          paddingRight:  32,
+          paddingTop:    24,
+          paddingBottom: 148,
         }}
       >
         {activeTab === "MASTER" && <MasterViewTab key="master" business={business} personal={personal} calEvents={calEvents} calConnected={calConnected} calLoading={calLoading} onToggle={toggleTask} />}
