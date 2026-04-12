@@ -1506,6 +1506,9 @@ export default function ChairmanDashboard() {
   const { resolvedTheme, setTheme } = useTheme();
   const user = session?.user;
 
+  const [mounted,      setMounted]      = useState(false);
+  useEffect(() => setMounted(true), []);
+
   const [activeTab,    setActiveTab]    = useState<TabId>("MASTER");
   const [deepWork,     setDeepWork]     = useState(false);
   const [novaOpen,     setNovaOpen]     = useState(false);
@@ -1825,7 +1828,7 @@ export default function ChairmanDashboard() {
                   (e.currentTarget as HTMLButtonElement).style.color       = "#3B4558";
                 }}
               >
-                {resolvedTheme === "dark" ? <Sun size={13} /> : <Moon size={13} />}
+                {mounted ? (resolvedTheme === "light" ? <Moon size={13} /> : <Sun size={13} />) : <div style={{ width: 13, height: 13 }} />}
               </button>
 
               {/* User avatar / sign-in */}
