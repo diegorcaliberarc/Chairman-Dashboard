@@ -288,7 +288,7 @@ function AgentCard({ agent, selected, onClick }: { agent: Agent; selected: boole
       className={`w-full text-left rounded-xl p-5 transition-all duration-200 focus:outline-none ${
         selected 
           ? "" 
-          : "bg-white dark:bg-[#0C0D10] border-zinc-200 dark:border-[#1E1F24] shadow-[0_0_30px_rgba(0,0,0,0.03)] dark:shadow-[0_0_30px_rgba(255,255,255,0.02)] hover:shadow-[0_0_40px_rgba(0,0,0,0.06)] dark:hover:shadow-[0_0_40px_rgba(255,255,255,0.04)] transition-shadow duration-500"
+          : "bg-white dark:bg-[#0C0D10] border-zinc-200 dark:border-[#1E1F24] shadow-[0_0_30px_rgba(0,0,0,0.08)] dark:shadow-[0_0_30px_rgba(255,255,255,0.02)] hover:shadow-[0_0_40px_rgba(0,0,0,0.12)] dark:hover:shadow-[0_0_40px_rgba(255,255,255,0.04)] transition-shadow duration-500"
       }`}
       style={{
         backgroundColor: selected ? `${agent.color}0E` : undefined,
@@ -337,7 +337,7 @@ function TaskPanel({
   const done = agent.tasks.filter((t) => t.status === "DONE").length;
 
   return (
-    <div className="rounded-xl bg-slate-50 dark:bg-[#0C0D10] shadow-[0_0_30px_rgba(0,0,0,0.03)] dark:shadow-[0_0_30px_rgba(255,255,255,0.02)] hover:shadow-[0_0_40px_rgba(0,0,0,0.06)] dark:hover:shadow-[0_0_40px_rgba(255,255,255,0.04)] transition-shadow duration-500" style={{ border: `1px solid ${agent.color}30`, padding: "24px", animation: "fade-up 0.22s ease-out" }}>
+    <div className="rounded-xl bg-slate-50 dark:bg-[#0C0D10] shadow-[0_0_30px_rgba(0,0,0,0.08)] dark:shadow-[0_0_30px_rgba(255,255,255,0.02)] hover:shadow-[0_0_40px_rgba(0,0,0,0.12)] dark:hover:shadow-[0_0_40px_rgba(255,255,255,0.04)] transition-shadow duration-500" style={{ border: `1px solid ${agent.color}30`, padding: "24px", animation: "fade-up 0.22s ease-out" }}>
       <div className="flex items-center gap-3 mb-5">
         <span style={{ fontFamily: "Georgia, serif", fontSize: 15, color: agent.color }}>{agent.title}</span>
         <div className="h-3 w-px bg-zinc-300 dark:bg-[#1E1F24]" />
@@ -405,12 +405,12 @@ function TaskPanel({
               {isExpanded && (
                 <div style={{ marginLeft: 24, marginTop: 3, display: "flex", flexDirection: "column", gap: 2 }}>
                   {subs.map((sub) => (
-                    <div key={sub.id} style={{ display: "flex", alignItems: "center", gap: 6, padding: "6px 10px", borderRadius: 6, backgroundColor: "#080A0D", border: "1px solid #111318" }}>
-                      <button onClick={() => onToggle(sub.id)} style={{ background: "none", border: "none", cursor: "pointer", padding: 0, display: "flex", flexShrink: 0, color: sub.status === "DONE" ? agent.color : "#252836" }}>
+                    <div key={sub.id} style={{ display: "flex", alignItems: "center", gap: 6, padding: "6px 10px", borderRadius: 6 }} className="bg-zinc-100 dark:bg-[#080A0D] border border-zinc-200 dark:border-[#111318]">
+                      <button onClick={() => onToggle(sub.id)} style={{ background: "none", border: "none", cursor: "pointer", padding: 0, display: "flex", flexShrink: 0, color: sub.status === "DONE" ? agent.color : undefined }} className={sub.status === "DONE" ? "" : "text-zinc-600 dark:text-[#252836]"}>
                         {sub.status === "DONE" ? <CheckCircle2 size={11} /> : <Circle size={11} />}
                       </button>
-                      <span style={{ flex: 1, fontSize: 11, color: sub.status === "DONE" ? "#3B4558" : "#7A8599", textDecoration: sub.status === "DONE" ? "line-through" : "none", textDecorationColor: agent.color }}>{sub.title}</span>
-                      <button onClick={() => onDelete(sub.id)} style={{ background: "none", border: "none", cursor: "pointer", padding: 0, color: "#1A1C24", display: "flex", flexShrink: 0, transition: "color 0.15s" }}
+                      <span style={{ flex: 1, fontSize: 11, color: sub.status === "DONE" ? undefined : undefined, textDecoration: sub.status === "DONE" ? "line-through" : "none", textDecorationColor: agent.color }} className={sub.status === "DONE" ? "text-zinc-400 dark:text-[#3B4558]" : "text-zinc-700 dark:text-[#7A8599]"}>{sub.title}</span>
+                      <button onClick={() => onDelete(sub.id)} style={{ background: "none", border: "none", cursor: "pointer", padding: 0, display: "flex", flexShrink: 0, transition: "color 0.15s" }} className="text-zinc-400 dark:text-[#1A1C24]"
                         onMouseEnter={(e) => { (e.currentTarget as HTMLButtonElement).style.color = "#E05A3A"; }}
                         onMouseLeave={(e) => { (e.currentTarget as HTMLButtonElement).style.color = "#1A1C24"; }}>
                         <X size={9} />
@@ -418,7 +418,7 @@ function TaskPanel({
                     </div>
                   ))}
                   {/* Add subtask input */}
-                  <div style={{ display: "flex", alignItems: "center", gap: 6, padding: "5px 10px", borderRadius: 6, backgroundColor: "#080A0D", border: `1px solid ${agent.color}18` }}>
+                  <div style={{ display: "flex", alignItems: "center", gap: 6, padding: "5px 10px", borderRadius: 6, border: `1px solid ${agent.color}18` }} className="bg-zinc-100 dark:bg-[#080A0D]">
                     <div style={{ width: 11, height: 11, flexShrink: 0 }} />
                     <input
                       value={subInputs[task.id] ?? ""}
@@ -431,7 +431,8 @@ function TaskPanel({
                         if (e.key === "Escape") setExpandedId(null);
                       }}
                       placeholder="+ Add subtask  ↵"
-                      style={{ flex: 1, background: "none", border: "none", outline: "none", fontSize: 11, color: "#7A8599", fontFamily: "inherit", opacity: 0.7 }}
+                      style={{ flex: 1, background: "none", border: "none", outline: "none", fontSize: 11, fontFamily: "inherit", opacity: 0.7 }}
+                      className="text-zinc-700 dark:text-[#7A8599]"
                     />
                   </div>
                 </div>
@@ -1059,7 +1060,7 @@ function MasterViewTab({
 }) {
   const joyTasks = personal.find((a) => a.id === "joy")?.tasks ?? [];
 
-  const PANEL_CLASS = "bg-white dark:bg-[#0C0D10] border border-zinc-200 dark:border-[#1E1F24] shadow-[0_0_30px_rgba(0,0,0,0.03)] dark:shadow-[0_0_30px_rgba(255,255,255,0.02)] hover:shadow-[0_0_40px_rgba(0,0,0,0.06)] dark:hover:shadow-[0_0_40px_rgba(255,255,255,0.04)] transition-shadow duration-500";
+  const PANEL_CLASS = "bg-white dark:bg-[#0C0D10] border border-zinc-200 dark:border-[#1E1F24] shadow-[0_0_30px_rgba(0,0,0,0.08)] dark:shadow-[0_0_30px_rgba(255,255,255,0.02)] hover:shadow-[0_0_40px_rgba(0,0,0,0.12)] dark:hover:shadow-[0_0_40px_rgba(255,255,255,0.04)] transition-shadow duration-500";
   const PANEL: React.CSSProperties = {
     borderRadius:    10,
     padding:         "14px 16px",
@@ -1980,15 +1981,11 @@ export default function ChairmanDashboard() {
                 <button
                   key={tab.id}
                   onClick={() => setActiveTab(tab.id)}
-                  className="focus:outline-none"
+                  className={`focus:outline-none z-10 ${isActive ? "bg-white dark:bg-[#08090C] border border-zinc-200 dark:border-[#1E1F24] border-b-white dark:border-b-[#08090C] text-zinc-900 dark:text-[#C9A961]" : "text-zinc-500 dark:text-[#3B4558] border border-transparent"}`}
                   style={{
                     padding:         "9px 20px",
                     borderRadius:    "8px 8px 0 0",
-                    backgroundColor: isActive ? "#08090C" : "transparent",
-                    border:          isActive ? "1px solid #1E1F24" : "1px solid transparent",
-                    borderBottom:    isActive ? "1px solid #08090C" : "1px solid transparent",
                     marginBottom:    isActive ? -1 : 0,
-                    color:           isActive ? "#C9A961" : "#3B4558",
                     fontSize:        10,
                     fontWeight:      700,
                     letterSpacing:   "0.18em",
