@@ -129,17 +129,38 @@ export async function POST(req: NextRequest) {
 
   try {
     const model  = genAI.getGenerativeModel({ model: "gemini-2.5-flash", tools: [{ functionDeclarations }] });
-    const result = await model.generateContent([
+    const payload = [
       { text: fullSystem },
       { text: message },
-    ]);
-    const response = result.response;
+    ];
     
-    // Check if the save_roadmap tool was invoked
-    const call = response.functionCalls ? response.functionCalls()[0] : null;
+    console.log("[API /chat] Triggering Gemini generateContent with payload:", JSON.stringify(payload, null, 2));
+    const result = await model.generateContent(payload);
+    console.log("[API /chat] Received raw AI result:", JSON.stringify(result, null, 2));
+    
+    const response = result?.response;
+    if (!response) {
+      console.log("[API /chat] Response object was undefined or empty.");
+      return NextResponse.json({ reply: "I'm sorry, no response was returned by the AI." });
+    }
+    
+    // Safely extract function calls
+    let calls = typeof response.functionCalls === "function" ? response.functionCalls() : response.functionCalls;
+    if (!calls && response.candidates?.[0]?.content?.parts) {
+      const parts = response.candidates[0].content.parts;
+      const functionCallPart = parts.find((p: any) => p.functionCall);
+      if (functionCallPart) {
+        calls = [functionCallPart.functionCall];
+      }
+    }
+    
+    const call = calls?.[0] ?? null;
 
-    if (call && call.name === "save_roadmap") {
-      const { title, mermaid_syntax } = call.args;
+    if (call && call.name === "save_roadmap" && call.args) {
+      const title = call.args.title || "Untitled Roadmap";
+      const mermaid_syntax = call.args.mermaid_syntax || "";
+      
+      console.log("[API /chat] Extracted save_roadmap tool call:", call);
       const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || "";
       const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || "";
       
@@ -147,16 +168,29 @@ export async function POST(req: NextRequest) {
         const { createClient } = await import("@supabase/supabase-js");
         const supabase = createClient(supabaseUrl, supabaseKey);
         await supabase.from("roadmaps").insert([{ title, mermaid_syntax }]);
+        console.log("[API /chat] Inserted roadmap to DB successfully.");
       }
       
       const text = `Strategy saved into the Roadmap Vault:\n\n\`\`\`mermaid\n${mermaid_syntax}\n\`\`\``;
       return NextResponse.json({ reply: text });
     }
 
-    const text = response.text();
+    // Safely extract text
+    let text = "";
+    if (typeof response.text === "function") {
+      try { text = response.text(); } catch (e) { console.error("Error evaluating text():", e); }
+    } else if (response.candidates?.[0]?.content?.parts?.[0]?.text) {
+      text = response.candidates[0].content.parts[0].text;
+    }
+    
+    if (!text) {
+      console.log("[API /chat] No text found in AI response payload.");
+      text = "Received an empty response payload from the AI.";
+    }
+
     return NextResponse.json({ reply: text });
   } catch (err: any) {
-    console.error("Gemini API error:", err);
+    console.error("[API /chat] Gemini API error:", err);
     return NextResponse.json({ error: "AI request failed", detail: err?.message ?? String(err) }, { status: 500 });
   }
 }
