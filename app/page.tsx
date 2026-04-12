@@ -3,6 +3,9 @@
 import { useState, useEffect, useRef, useCallback, useMemo } from "react";
 import { useSession, signIn, signOut } from "next-auth/react";
 import { useTheme } from "next-themes";
+import ReactMarkdown from "react-markdown";
+import remarkGfm from "remark-gfm";
+import MermaidDiagram from "@/components/MermaidDiagram";
 import {
   CheckCircle2,
   Circle,
@@ -282,25 +285,31 @@ function AgentCard({ agent, selected, onClick }: { agent: Agent; selected: boole
   return (
     <button
       onClick={onClick}
-      className="w-full text-left rounded-xl p-5 transition-all duration-200 focus:outline-none"
+      className={`w-full text-left rounded-xl p-5 transition-all duration-200 focus:outline-none ${
+        selected 
+          ? "" 
+          : "bg-white dark:bg-[#0C0D10] border-zinc-200 dark:border-[#1E1F24] shadow-[0_0_30px_rgba(0,0,0,0.03)] dark:shadow-[0_0_30px_rgba(255,255,255,0.02)] hover:shadow-[0_0_40px_rgba(0,0,0,0.06)] dark:hover:shadow-[0_0_40px_rgba(255,255,255,0.04)] transition-shadow duration-500"
+      }`}
       style={{
-        backgroundColor: selected ? `${agent.color}0E` : "#0C0D10",
-        border:          `1px solid ${selected ? `${agent.color}48` : "#1E1F24"}`,
-        boxShadow:        selected ? `0 0 28px ${agent.color}12` : "none",
+        backgroundColor: selected ? `${agent.color}0E` : undefined,
+        border:          selected ? `1px solid ${agent.color}48` : undefined,
+        boxShadow:       selected ? `0 0 28px ${agent.color}12` : "none",
+        borderWidth:     selected ? undefined : 1,
+        borderStyle:     selected ? undefined : "solid",
       }}
     >
       <div className="flex items-start justify-between mb-4">
         <div>
-          <div style={{ fontFamily: "Georgia, serif", fontSize: 19, color: selected ? agent.color : "#4A5068", lineHeight: 1.1, transition: "color 0.2s" }}>
+          <div style={{ fontFamily: "Georgia, serif", fontSize: 19, color: selected ? agent.color : "var(--agent-card-text, #4A5068)", lineHeight: 1.1, transition: "color 0.2s" }} className="text-zinc-600 dark:text-[#4A5068]">
             {agent.title}
           </div>
-          <div className="text-[10px] tracking-widest uppercase mt-1" style={{ color: "#252836" }}>
+          <div className="text-[10px] tracking-widest uppercase mt-1 text-zinc-500 dark:text-[#252836]">
             {agent.role}
           </div>
         </div>
         <div className="flex items-center gap-1.5 mt-0.5">
-          <span className="text-sm font-bold" style={{ color: selected ? agent.color : "#3B4558", fontVariantNumeric: "tabular-nums" }}>
-            {done}<span className="text-xs font-normal" style={{ color: "#252836" }}>/{total}</span>
+          <span className={`text-sm font-bold ${selected ? "" : "text-zinc-700 dark:text-[#3B4558]"}`} style={{ color: selected ? agent.color : undefined, fontVariantNumeric: "tabular-nums" }}>
+            {done}<span className="text-xs font-normal text-zinc-400 dark:text-[#252836]">/{total}</span>
           </span>
           <ChevronRight size={12} style={{ color: selected ? agent.color : "#252836", transform: selected ? "rotate(90deg)" : "none", transition: "transform 0.2s ease" }} />
         </div>
@@ -328,13 +337,13 @@ function TaskPanel({
   const done = agent.tasks.filter((t) => t.status === "DONE").length;
 
   return (
-    <div className="rounded-xl" style={{ backgroundColor: "#0C0D10", border: `1px solid ${agent.color}30`, padding: "24px", animation: "fade-up 0.22s ease-out" }}>
+    <div className="rounded-xl bg-slate-50 dark:bg-[#0C0D10] shadow-[0_0_30px_rgba(0,0,0,0.03)] dark:shadow-[0_0_30px_rgba(255,255,255,0.02)] hover:shadow-[0_0_40px_rgba(0,0,0,0.06)] dark:hover:shadow-[0_0_40px_rgba(255,255,255,0.04)] transition-shadow duration-500" style={{ border: `1px solid ${agent.color}30`, padding: "24px", animation: "fade-up 0.22s ease-out" }}>
       <div className="flex items-center gap-3 mb-5">
         <span style={{ fontFamily: "Georgia, serif", fontSize: 15, color: agent.color }}>{agent.title}</span>
-        <div className="h-3 w-px" style={{ backgroundColor: "#1E1F24" }} />
-        <span className="text-[10px] tracking-widest uppercase" style={{ color: "#3B4558" }}>{agent.role}</span>
+        <div className="h-3 w-px bg-zinc-300 dark:bg-[#1E1F24]" />
+        <span className="text-[10px] tracking-widest uppercase text-zinc-500 dark:text-[#3B4558]">{agent.role}</span>
         <div style={{ flex: 1 }} />
-        <span className="text-[10px] tracking-widest uppercase" style={{ color: "#252836" }}>{done} of {agent.tasks.length} complete</span>
+        <span className="text-[10px] tracking-widest uppercase text-zinc-400 dark:text-[#252836]">{done} of {agent.tasks.length} complete</span>
       </div>
       <div className="space-y-1.5">
         {agent.tasks.map((task, i) => {
@@ -546,8 +555,8 @@ function CalendarFeed({
       {/* Header */}
       <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 10 }}>
         <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
-          <CalendarDays size={10} style={{ color: "#C9A961" }} />
-          <span style={{ fontSize: 9, letterSpacing: "0.22em", textTransform: "uppercase", color: "#3B4558" }}>Command Calendar</span>
+          <CalendarDays size={10} className="text-zinc-500 dark:text-[#C9A961]" />
+          <span style={{ fontSize: 9, letterSpacing: "0.22em", textTransform: "uppercase" }} className="text-zinc-500 dark:text-[#3B4558]">Command Calendar</span>
         </div>
         <span style={{ fontSize: 8, letterSpacing: "0.14em", textTransform: "uppercase", color: calLoading ? "#4A90E2" : calError ? "#E05A3A" : calConnected ? "#8BA87B" : "#252836" }}>
           {calLoading ? "Syncing…" : calError ? "● Auth error" : calConnected ? "● Live" : "○ Not connected"}
@@ -575,8 +584,8 @@ function CalendarFeed({
               onMouseEnter={(e) => { (e.currentTarget as HTMLButtonElement).style.borderColor = isToday ? "rgba(201,169,97,0.45)" : "rgba(74,144,226,0.25)"; }}
               onMouseLeave={(e) => { (e.currentTarget as HTMLButtonElement).style.borderColor = isToday ? "rgba(201,169,97,0.22)" : "#111318"; }}
             >
-              <div style={{ fontSize: 7, letterSpacing: "0.16em", textTransform: "uppercase", color: isToday ? "#C9A961" : "#1A1C28" }}>{d.name}</div>
-              <div style={{ fontFamily: "Georgia, serif", fontSize: 13, color: isToday ? "#C9A961" : "#1E2030", marginTop: 2, fontWeight: 700 }}>{d.date}</div>
+              <div style={{ fontSize: 7, letterSpacing: "0.16em", textTransform: "uppercase", color: isToday ? "var(--color-primary-dark, #C9A961)" : undefined }} className={isToday ? "" : "text-zinc-600 dark:text-[#1A1C28]"}>{d.name}</div>
+              <div style={{ fontFamily: "Georgia, serif", fontSize: 13, color: isToday ? "var(--color-primary-dark, #C9A961)" : undefined, marginTop: 2, fontWeight: 700 }} className={isToday ? "" : "text-zinc-800 dark:text-[#1E2030]"}>{d.date}</div>
               {dayEvts.length > 0 && (
                 <div style={{ marginTop: 3, display: "flex", justifyContent: "center", gap: 2 }}>
                   {Array.from({ length: Math.min(3, dayEvts.length) }).map((_, i) => (
@@ -590,19 +599,19 @@ function CalendarFeed({
       </div>
 
       {/* Today label */}
-      <div style={{ fontSize: 7, letterSpacing: "0.2em", textTransform: "uppercase", color: "#1E2030", marginBottom: 6 }}>
+      <div style={{ fontSize: 7, letterSpacing: "0.2em", textTransform: "uppercase", marginBottom: 6 }} className="text-zinc-600 dark:text-[#1E2030]">
         Today · {new Date().toLocaleDateString("en-US", { weekday: "long", month: "long", day: "numeric" })}
       </div>
 
       {/* Today's events — no inner scroll; parent panel scrolls instead */}
       <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
         {calError ? (
-          <div style={{ padding: "10px 12px", borderRadius: 6, backgroundColor: "rgba(224,90,58,0.06)", border: "1px solid rgba(224,90,58,0.18)", display: "flex", alignItems: "center", justifyContent: "space-between", gap: 10 }}>
-            <span style={{ fontSize: 10, color: "#E05A3A", letterSpacing: "0.06em" }}>Google session expired — reconnect to restore events.</span>
-            <a href="/api/auth/signin" style={{ fontSize: 9, letterSpacing: "0.14em", textTransform: "uppercase", color: "#C9A961", textDecoration: "none", flexShrink: 0, padding: "3px 8px", border: "1px solid rgba(201,169,97,0.28)", borderRadius: 4 }}>Reconnect</a>
+          <div style={{ padding: "10px 12px", borderRadius: 6, display: "flex", alignItems: "center", justifyContent: "space-between", gap: 10 }} className="bg-red-50 dark:bg-[#E05A3A]/10 border border-red-200 dark:border-[#E05A3A]/20">
+            <span style={{ fontSize: 10, letterSpacing: "0.06em" }} className="text-red-600 dark:text-[#E05A3A]">Google session expired — reconnect to restore events.</span>
+            <a href="/api/auth/signin" style={{ fontSize: 9, letterSpacing: "0.14em", textTransform: "uppercase", textDecoration: "none", flexShrink: 0, padding: "3px 8px", borderRadius: 4 }} className="text-zinc-700 dark:text-[#C9A961] border border-zinc-200 dark:border-[#C9A961]/30">Reconnect</a>
           </div>
         ) : todayEvts.length === 0 ? (
-          <div style={{ fontSize: 10, color: "#1C1E2A", letterSpacing: "0.08em", padding: "10px 0" }}>
+          <div style={{ fontSize: 10, letterSpacing: "0.08em", padding: "10px 0" }} className="text-zinc-500 dark:text-[#1C1E2A]">
             {calConnected ? "No events scheduled today." : "Connect Google Calendar to see your schedule."}
           </div>
         ) : (
@@ -616,13 +625,13 @@ function CalendarFeed({
               ? new Date(endDt).toLocaleTimeString("en-US", { hour: "numeric", minute: "2-digit", hour12: true })
               : null;
             return (
-              <div key={ev.id} style={{ display: "flex", gap: 10, alignItems: "center", padding: "7px 10px", borderRadius: 6, backgroundColor: "rgba(201,169,97,0.04)", border: "1px solid rgba(201,169,97,0.10)" }}>
+              <div key={ev.id} style={{ display: "flex", gap: 10, alignItems: "center", padding: "7px 10px", borderRadius: 6 }} className="bg-slate-50 dark:bg-[#C9A961]/5 border border-slate-200 dark:border-[#C9A961]/10">
                 <div style={{ flexShrink: 0, textAlign: "right" }}>
-                  <div style={{ fontSize: 9, color: "#C9A961", fontVariantNumeric: "tabular-nums", whiteSpace: "nowrap" }}>{timeStr}</div>
-                  {endStr && <div style={{ fontSize: 8, color: "#3B4558", fontVariantNumeric: "tabular-nums", whiteSpace: "nowrap" }}>{endStr}</div>}
+                  <div style={{ fontSize: 9, fontVariantNumeric: "tabular-nums", whiteSpace: "nowrap" }} className="text-zinc-700 dark:text-[#C9A961]">{timeStr}</div>
+                  {endStr && <div style={{ fontSize: 8, fontVariantNumeric: "tabular-nums", whiteSpace: "nowrap" }} className="text-zinc-500 dark:text-[#3B4558]">{endStr}</div>}
                 </div>
-                <div style={{ width: 1, height: "100%", minHeight: 24, backgroundColor: "rgba(201,169,97,0.18)", flexShrink: 0 }} />
-                <span style={{ fontSize: 11, color: "#7A8599", flex: 1, lineHeight: 1.4 }}>{ev.summary ?? "Event"}</span>
+                <div style={{ width: 1, height: "100%", minHeight: 24, flexShrink: 0 }} className="bg-slate-200 dark:bg-[#C9A961]/20" />
+                <span style={{ fontSize: 11, flex: 1, lineHeight: 1.4 }} className="text-zinc-600 dark:text-[#7A8599]">{ev.summary ?? "Event"}</span>
               </div>
             );
           })
@@ -711,8 +720,8 @@ function PriorityStrikes({
     <div style={{ height: "100%", display: "flex", flexDirection: "column" }}>
       <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 10 }}>
         <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
-          <Crosshair size={10} style={{ color: "#E05A3A" }} />
-          <span style={{ fontSize: 9, letterSpacing: "0.22em", textTransform: "uppercase", color: "#3B4558" }}>Priority Strikes</span>
+          <Crosshair size={10} className="text-red-500 dark:text-[#E05A3A]" />
+          <span style={{ fontSize: 9, letterSpacing: "0.22em", textTransform: "uppercase" }} className="text-zinc-500 dark:text-[#3B4558]">Priority Strikes</span>
         </div>
         <span style={{ fontSize: 8, letterSpacing: "0.14em", color: "#252836" }}>{strikes.length} pending</span>
       </div>
@@ -720,7 +729,8 @@ function PriorityStrikes({
         {strikes.slice(0, 14).map(({ task, agent }) => (
           <div
             key={task.id}
-            style={{ display: "flex", alignItems: "center", gap: 6, padding: "5px 9px", borderRadius: 6, backgroundColor: "transparent", border: "1px solid #0F1015", transition: "border-color 0.14s" }}
+            style={{ display: "flex", alignItems: "center", gap: 6, padding: "5px 9px", borderRadius: 6, transition: "border-color 0.14s" }}
+            className="bg-transparent border border-zinc-200 dark:border-[#0F1015]"
             onMouseEnter={(e) => (e.currentTarget.style.borderColor = `${agent.color}28`)}
             onMouseLeave={(e) => (e.currentTarget.style.borderColor = "#0F1015")}
           >
@@ -729,7 +739,7 @@ function PriorityStrikes({
             </button>
             <div style={{ width: 4, height: 4, borderRadius: "50%", backgroundColor: agent.color, flexShrink: 0 }} />
             <span style={{ fontSize: 7, letterSpacing: "0.12em", textTransform: "uppercase", color: agent.color, flexShrink: 0, width: 28 }}>{agent.title}</span>
-            <span style={{ fontSize: 11, color: "#7A8599", flex: 1, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{task.title}</span>
+            <span style={{ fontSize: 11, flex: 1, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }} className="text-zinc-600 dark:text-[#7A8599]">{task.title}</span>
             <span style={{
               fontSize: 7, letterSpacing: "0.14em", textTransform: "uppercase", padding: "2px 5px", borderRadius: 3, flexShrink: 0,
               backgroundColor: task.priority === 1 ? "rgba(224,90,58,0.10)" : task.priority === 3 ? "rgba(59,69,88,0.08)" : "rgba(201,169,97,0.07)",
@@ -763,14 +773,14 @@ function QuadrantHeader({ label, sub, color }: { label: string; sub: string; col
       <div style={{ width: 5, height: 5, borderRadius: "50%", backgroundColor: color, boxShadow: `0 0 8px ${color}77`, flexShrink: 0 }} />
       <span style={{ fontFamily: "Georgia, serif", fontSize: 12, color, letterSpacing: "0.04em" }}>{label}</span>
       <div style={{ flex: 1 }} />
-      <span style={{ fontSize: 7, letterSpacing: "0.16em", textTransform: "uppercase", color: "#252836" }}>{sub}</span>
+      <span style={{ fontSize: 7, letterSpacing: "0.16em", textTransform: "uppercase" }} className="text-zinc-400 dark:text-[#252836]">{sub}</span>
     </div>
   );
 }
 
 function SubPanel({ children }: { children: React.ReactNode }) {
   return (
-    <div style={{ backgroundColor: "#080A0D", border: "1px solid #111318", borderRadius: 7, padding: "7px 10px" }}>
+    <div style={{ borderRadius: 7, padding: "7px 10px" }} className="bg-zinc-100 dark:bg-[#080A0D] border border-zinc-200 dark:border-[#111318]">
       {children}
     </div>
   );
@@ -778,9 +788,9 @@ function SubPanel({ children }: { children: React.ReactNode }) {
 
 function DataRow({ label, value, color }: { label: string; value: string; color?: string }) {
   return (
-    <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "4px 0", borderBottom: "1px solid #0C0E14" }}>
-      <span style={{ fontSize: 7, letterSpacing: "0.15em", textTransform: "uppercase", color: "#1E2030" }}>{label}</span>
-      <span style={{ fontSize: 11, color: color ?? "#5A6070", fontVariantNumeric: "tabular-nums" }}>{value}</span>
+    <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "4px 0" }} className="border-b border-zinc-200 dark:border-[#0C0E14]">
+      <span style={{ fontSize: 7, letterSpacing: "0.15em", textTransform: "uppercase" }} className="text-zinc-600 dark:text-[#1E2030]">{label}</span>
+      <span style={{ fontSize: 11, color: color, fontVariantNumeric: "tabular-nums" }} className={color ? "" : "text-zinc-500 dark:text-[#5A6070]"}>{value}</span>
     </div>
   );
 }
@@ -946,9 +956,9 @@ function CSuiteCard({
         </div>
         <div style={{ flex: 1, overflow: "hidden", display: "flex", flexDirection: "column", gap: 3 }}>
           {previewTasks.length > 0 ? previewTasks.map((t) => (
-            <div key={t.id} style={{ display: "flex", alignItems: "center", gap: 5, padding: "4px 7px", borderRadius: 5, backgroundColor: "#080A0D", border: `1px solid ${agent.color}10` }}>
+            <div key={t.id} style={{ display: "flex", alignItems: "center", gap: 5, padding: "4px 7px", borderRadius: 5 }} className="bg-zinc-100 dark:bg-[#080A0D] border border-zinc-200 dark:border-[#1E1F24]">
               <div style={{ width: 4, height: 4, borderRadius: "50%", backgroundColor: t.priority === 1 ? "#E05A3A" : t.priority === 3 ? "#3B4558" : "#C9A961", flexShrink: 0 }} />
-              <span style={{ fontSize: 9, color: "#7A8599", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", flex: 1 }}>{t.title}</span>
+              <span style={{ fontSize: 9, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", flex: 1 }} className="text-zinc-600 dark:text-[#7A8599]">{t.title}</span>
             </div>
           )) : (
             <div style={{ display: "flex", alignItems: "center", justifyContent: "center", flex: 1 }}>
@@ -968,18 +978,19 @@ function CSuiteCard({
           onClick={() => setIsOpen(false)}
         >
           <div
-            style={{ backgroundColor: "#0C0D10", border: `1px solid ${agent.color}30`, borderRadius: 14, padding: "28px 32px", minWidth: 420, maxWidth: 560, width: "100%", boxShadow: "0 24px 80px rgba(0,0,0,0.8)", animation: "fade-up 0.18s ease-out", maxHeight: "80vh", display: "flex", flexDirection: "column" }}
+            style={{ borderRadius: 14, padding: "28px 32px", minWidth: 420, maxWidth: 560, width: "100%", boxShadow: "0 24px 80px rgba(0,0,0,0.8)", animation: "fade-up 0.18s ease-out", maxHeight: "80vh", display: "flex", flexDirection: "column" }} className="bg-white dark:bg-[#0C0D10] border border-zinc-200 dark:border-[#1E1F24]"
             onClick={(e) => e.stopPropagation()}
           >
             {/* Modal header */}
             <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", marginBottom: 20, flexShrink: 0 }}>
               <div>
                 <div style={{ fontFamily: "Georgia, serif", fontSize: 22, color: agent.color, lineHeight: 1 }}>{agent.title}</div>
-                <div style={{ fontSize: 9, letterSpacing: "0.18em", textTransform: "uppercase", color: "#3B4558", marginTop: 5 }}>{agent.role} · {total} task{total !== 1 ? "s" : ""}</div>
+                <div style={{ fontSize: 9, letterSpacing: "0.18em", textTransform: "uppercase", marginTop: 5 }} className="text-zinc-500 dark:text-[#3B4558]">{agent.role} · {total} task{total !== 1 ? "s" : ""}</div>
               </div>
               <button
                 onClick={() => setIsOpen(false)}
                 style={{ background: "none", border: "1px solid #1E1F24", cursor: "pointer", color: "#3B4558", borderRadius: 6, padding: "5px 8px", display: "flex", alignItems: "center", transition: "all 0.15s" }}
+                className="hover:border-zinc-400 dark:hover:border-[#1E1F24]"
                 onMouseEnter={(e) => { (e.currentTarget as HTMLButtonElement).style.borderColor = `${agent.color}55`; (e.currentTarget as HTMLButtonElement).style.color = agent.color; }}
                 onMouseLeave={(e) => { (e.currentTarget as HTMLButtonElement).style.borderColor = "#1E1F24"; (e.currentTarget as HTMLButtonElement).style.color = "#3B4558"; }}
               >
@@ -1002,15 +1013,15 @@ function CSuiteCard({
                 agent.tasks.map((t) => {
                   const isDone = t.status === "DONE";
                   return (
-                    <div key={t.id} style={{ display: "flex", alignItems: "center", gap: 10, padding: "10px 14px", borderRadius: 8, backgroundColor: isDone ? `${agent.color}08` : "#080A0D", border: `1px solid ${isDone ? `${agent.color}20` : "#111318"}` }}>
-                      <button onClick={() => onToggle(t.id)} style={{ background: "none", border: "none", cursor: "pointer", padding: 0, display: "flex", flexShrink: 0, color: isDone ? agent.color : "#252836" }}>
+                    <div key={t.id} style={{ display: "flex", alignItems: "center", gap: 10, padding: "10px 14px", borderRadius: 8, backgroundColor: isDone ? `${agent.color}08` : undefined }} className={isDone ? "border border-zinc-200 dark:border-[#111318]" : "bg-slate-50 dark:bg-[#080A0D] border border-zinc-200 dark:border-[#111318]"}>
+                      <button onClick={() => onToggle(t.id)} style={{ background: "none", border: "none", cursor: "pointer", padding: 0, display: "flex", flexShrink: 0, color: isDone ? agent.color : undefined }} className={isDone ? "" : "text-zinc-400 dark:text-[#252836]"}>
                         {isDone ? <CheckCircle2 size={14} /> : <Circle size={14} />}
                       </button>
                       <div style={{ width: 5, height: 5, borderRadius: "50%", backgroundColor: t.priority === 1 ? "#E05A3A" : t.priority === 3 ? "#3B4558" : "#C9A961", flexShrink: 0 }} />
-                      <span style={{ flex: 1, fontSize: 12, color: isDone ? "#3B4558" : "#C2C8D4", textDecoration: isDone ? "line-through" : "none", textDecorationColor: agent.color, lineHeight: 1.4 }}>
+                      <span style={{ flex: 1, fontSize: 12, color: isDone ? undefined : undefined, textDecoration: isDone ? "line-through" : "none", textDecorationColor: agent.color, lineHeight: 1.4 }} className={isDone ? "text-zinc-400 dark:text-[#3B4558]" : "text-zinc-600 dark:text-[#C2C8D4]"}>
                         {t.title}
                       </span>
-                      <button onClick={() => onDelete(t.id)} style={{ background: "none", border: "none", cursor: "pointer", padding: 0, color: "#1A1C24", display: "flex", flexShrink: 0, transition: "color 0.15s" }}
+                      <button onClick={() => onDelete(t.id)} style={{ background: "none", border: "none", cursor: "pointer", padding: 0, display: "flex", flexShrink: 0, transition: "color 0.15s" }} className="text-zinc-400 dark:text-[#1A1C24]"
                         onMouseEnter={(e) => { (e.currentTarget as HTMLButtonElement).style.color = "#E05A3A"; }}
                         onMouseLeave={(e) => { (e.currentTarget as HTMLButtonElement).style.color = "#1A1C24"; }}>
                         <X size={12} />
@@ -1048,9 +1059,8 @@ function MasterViewTab({
 }) {
   const joyTasks = personal.find((a) => a.id === "joy")?.tasks ?? [];
 
+  const PANEL_CLASS = "bg-white dark:bg-[#0C0D10] border border-zinc-200 dark:border-[#1E1F24] shadow-[0_0_30px_rgba(0,0,0,0.03)] dark:shadow-[0_0_30px_rgba(255,255,255,0.02)] hover:shadow-[0_0_40px_rgba(0,0,0,0.06)] dark:hover:shadow-[0_0_40px_rgba(255,255,255,0.04)] transition-shadow duration-500";
   const PANEL: React.CSSProperties = {
-    backgroundColor: "#0C0D10",
-    border:          "1px solid #1E1F24",
     borderRadius:    10,
     padding:         "14px 16px",
     overflow:        "hidden",
@@ -1073,22 +1083,22 @@ function MasterViewTab({
     }}>
       {/* ── Row 1: Calendar + Priority Strikes ─────────────────────────── */}
       <div style={{ display: "grid", gridTemplateColumns: "3fr 2fr", gap: 10, minHeight: 0, overflow: "hidden" }}>
-        <div style={CAL_PANEL}><CalendarFeed calConnected={calConnected} events={calendarEvents} calLoading={calLoading} calError={calError} /></div>
-        <div style={PANEL}><PriorityStrikes business={business} personal={personal} onToggle={onToggle} onDelete={onDelete} /></div>
+        <div style={CAL_PANEL} className={PANEL_CLASS}><CalendarFeed calConnected={calConnected} events={calendarEvents} calLoading={calLoading} calError={calError} /></div>
+        <div style={PANEL} className={PANEL_CLASS}><PriorityStrikes business={business} personal={personal} onToggle={onToggle} onDelete={onDelete} /></div>
       </div>
 
       {/* ── Row 2: Personal Quadrants ──────────────────────────────────── */}
       <div style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: 10, minHeight: 0, overflow: "hidden" }}>
-        <div style={PANEL}><WealthBlock /></div>
-        <div style={PANEL}><HealthBlock /></div>
-        <div style={PANEL}><RelationshipsBlock /></div>
-        <div style={PANEL}><HappinessBlock tasks={joyTasks} onToggle={onToggle} onDelete={onDelete} /></div>
+        <div style={PANEL} className={PANEL_CLASS}><WealthBlock /></div>
+        <div style={PANEL} className={PANEL_CLASS}><HealthBlock /></div>
+        <div style={PANEL} className={PANEL_CLASS}><RelationshipsBlock /></div>
+        <div style={PANEL} className={PANEL_CLASS}><HappinessBlock tasks={joyTasks} onToggle={onToggle} onDelete={onDelete} /></div>
       </div>
 
       {/* ── Row 3: Business C-Suite (all 6) ────────────────────────────── */}
       <div style={{ display: "grid", gridTemplateColumns: "repeat(6, 1fr)", gap: 10, minHeight: 0, overflow: "hidden" }}>
         {business.map((a) => (
-          <div key={a.id} style={PANEL}>
+          <div key={a.id} style={PANEL} className={PANEL_CLASS}>
             <CSuiteCard agent={a} onToggle={onToggle} onDelete={onDelete} />
           </div>
         ))}
@@ -1116,7 +1126,6 @@ function DeepWorkMode({
     <div style={{
       position:        "fixed",
       inset:           0,
-      backgroundColor: "#000000",
       zIndex:          200,
       display:         "flex",
       flexDirection:   "column",
@@ -1124,7 +1133,7 @@ function DeepWorkMode({
       justifyContent:  "center",
       padding:         40,
       animation:       "deep-enter 0.4s ease-out",
-    }}>
+    }} className="bg-slate-50 dark:bg-[#000000]">
       {/* Exit */}
       <button
         onClick={onExit}
@@ -1138,7 +1147,7 @@ function DeepWorkMode({
       {/* Header badge */}
       <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 56 }}>
         <div style={{ width: 6, height: 6, borderRadius: "50%", backgroundColor: "#C9A961", animation: "deep-cursor 1.2s ease-in-out infinite" }} />
-        <span style={{ fontSize: 10, letterSpacing: "0.35em", color: "#333", textTransform: "uppercase" }}>
+        <span style={{ fontSize: 10, letterSpacing: "0.35em", textTransform: "uppercase" }} className="text-zinc-600 dark:text-[#333]">
           Deep Work · Dopamine Detox Active
         </span>
       </div>
@@ -1317,11 +1326,11 @@ function NovaPanel({
         zIndex:          200,
         display:         "flex",
         flexDirection:   "column",
-        backgroundColor: "#080A0D",
         borderLeft:      `1px solid ${agentColor}33`,
         boxShadow:       "-12px 0 60px rgba(0,0,0,0.7)",
         animation:       "nova-slide-in 0.22s ease-out",
       }}
+      className="bg-slate-50 dark:bg-[#080A0D]"
     >
       {/* ── Header ──────────────────────────────────────────────────────── */}
       <div style={{ padding: "14px 16px 12px", borderBottom: `1px solid ${agentColor}22`, flexShrink: 0 }}>
@@ -1419,16 +1428,37 @@ function NovaPanel({
               maxWidth:        "88%",
               padding:         "10px 13px",
               borderRadius:    msg.role === "user" ? "10px 10px 2px 10px" : "10px 10px 10px 2px",
-              backgroundColor: msg.role === "user" ? `${agentColor}18` : "#0C0D10",
-              border:          `1px solid ${msg.role === "user" ? `${agentColor}33` : "#1A1C20"}`,
+              backgroundColor: msg.role === "user" ? `${agentColor}18` : undefined,
+              border:          msg.role === "user" ? `1px solid ${agentColor}33` : undefined,
               fontSize:        12,
               lineHeight:      1.55,
-              color:           msg.role === "user" ? "#C2C8D4" : "#9CA3AF",
+              color:           msg.role === "user" ? undefined : undefined,
               letterSpacing:   "0.01em",
-              whiteSpace:      "pre-wrap",
+              whiteSpace:      msg.role === "user" ? "pre-wrap" : "normal",
               wordBreak:       "break-word",
-            }}>
-              {msg.content}
+            }} className={msg.role === "user" ? "text-zinc-600 dark:text-[#C2C8D4]" : "bg-zinc-100 dark:bg-[#0C0D10] border border-zinc-200 dark:border-[#1A1C20] text-zinc-500 dark:text-[#9CA3AF]"}>
+              {msg.role === "user" ? (
+                msg.content
+              ) : (
+                <ReactMarkdown
+                  remarkPlugins={[remarkGfm]}
+                  components={{
+                    code({ inline, className, children, ...props }: any) {
+                      const match = /language-(\w+)/.exec(className || "");
+                      if (!inline && match && match[1] === "mermaid") {
+                        return <MermaidDiagram chart={String(children).replace(/\n$/, "")} />;
+                      }
+                      return (
+                        <code className={`${className} bg-black/10 dark:bg-white/10 rounded px-1.5 py-0.5`} {...props}>
+                          {children}
+                        </code>
+                      );
+                    },
+                  }}
+                >
+                  {msg.content}
+                </ReactMarkdown>
+              )}
             </div>
             {msg.role === "assistant" && (
               <span style={{ fontSize: 8, color: "#1E2030", marginTop: 3, letterSpacing: "0.12em", textTransform: "uppercase" }}>{agent}</span>
@@ -1445,8 +1475,9 @@ function NovaPanel({
       </div>
 
       {/* ── Input ────────────────────────────────────────────────────────── */}
-      <div style={{ padding: "12px 16px", borderTop: `1px solid ${agentColor}18`, flexShrink: 0, backgroundColor: "#060709" }}>
-        <div style={{ display: "flex", alignItems: "center", gap: 8, backgroundColor: "#0C0D10", border: `1px solid #1E1F24`, borderRadius: 8, padding: "8px 12px", transition: "border-color 0.15s" }}
+      <div style={{ padding: "12px 16px", borderTop: `1px solid ${agentColor}18`, flexShrink: 0 }} className="bg-slate-50 dark:bg-[#060709]">
+        <div style={{ display: "flex", alignItems: "center", gap: 8, borderRadius: 8, padding: "8px 12px", transition: "border-color 0.15s" }}
+             className="bg-white dark:bg-[#0C0D10] border border-zinc-300 dark:border-[#1E1F24]"
           onFocusCapture={(e) => (e.currentTarget.style.borderColor = `${agentColor}44`)}
           onBlurCapture={(e) => (e.currentTarget.style.borderColor = "#1E1F24")}
         >
@@ -1462,12 +1493,12 @@ function NovaPanel({
               background:      "none",
               border:          "none",
               outline:         "none",
-              color:           "#C2C8D4",
               fontSize:        12,
               letterSpacing:   "0.02em",
               fontFamily:      "inherit",
               opacity:         loading ? 0.4 : 1,
             }}
+            className="text-zinc-600 dark:text-[#C2C8D4]"
           />
           <button
             onClick={send}
@@ -1498,12 +1529,33 @@ function NovaPanel({
   );
 }
 
+// ─── Theme Toggle ─────────────────────────────────────────────────────────────
+
+function ThemeToggle() {
+  const { theme, setTheme } = useTheme();
+  const [mounted, setMounted] = useState(false);
+
+  useEffect(() => setMounted(true), []);
+
+  if (!mounted) return null;
+
+  return (
+    <button
+      onClick={() => setTheme(theme === "dark" ? "light" : "dark")}
+      title="Toggle theme"
+      className="flex items-center justify-center w-[30px] h-[30px] rounded-md bg-transparent border border-zinc-200 dark:border-[#1E1F24] text-zinc-600 dark:text-[#3B4558] hover:border-zinc-400 dark:hover:border-[#C9A961]/35 hover:text-zinc-900 dark:hover:text-[#C9A961] transition-all duration-200 shrink-0"
+    >
+      {theme === "dark" ? <Sun size={13} /> : <Moon size={13} />}
+    </button>
+  );
+}
+
 // ─── Root ─────────────────────────────────────────────────────────────────────
 
 export default function ChairmanDashboard() {
   const { data: session } = useSession();
   const calConnected = !!(session as any)?.accessToken;
-  const { resolvedTheme, setTheme } = useTheme();
+  const { theme, setTheme } = useTheme();
   const user = session?.user;
 
   const [mounted,      setMounted]      = useState(false);
@@ -1707,7 +1759,7 @@ export default function ChairmanDashboard() {
   ];
 
   return (
-    <div className="min-h-screen" style={{ backgroundColor: "#08090C", color: "#7A8599" }}>
+    <div className="min-h-screen bg-slate-50 dark:bg-[#08090C] text-zinc-800 dark:text-[#7A8599]">
       <style>{KEYFRAMES}</style>
 
       {/* ── DEEP WORK OVERLAY ─────────────────────────────────────────────── */}
@@ -1721,7 +1773,7 @@ export default function ChairmanDashboard() {
       )}
 
       {/* ── HEADER ────────────────────────────────────────────────────────── */}
-      <header style={{ position: "sticky", top: 0, zIndex: 40, backgroundColor: "#0C0D10", borderBottom: "1px solid #1E1F24" }}>
+      <header className="sticky top-0 z-40 bg-white dark:bg-[#0C0D10] border-b border-zinc-200 dark:border-[#1E1F24]">
         <div className="max-w-[1440px] mx-auto px-8">
           <div className="flex flex-wrap items-center justify-between gap-y-3 py-4">
             {/* Brand */}
@@ -1802,34 +1854,7 @@ export default function ChairmanDashboard() {
               <div style={{ width: 1, height: 28, backgroundColor: "#1E1F24" }} />
 
               {/* Theme toggle */}
-              <button
-                onClick={() => setTheme(resolvedTheme === "dark" ? "light" : "dark")}
-                title="Toggle theme"
-                style={{
-                  display:         "flex",
-                  alignItems:      "center",
-                  justifyContent:  "center",
-                  width:           30,
-                  height:          30,
-                  borderRadius:    6,
-                  backgroundColor: "transparent",
-                  border:          "1px solid #1E1F24",
-                  color:           "#3B4558",
-                  cursor:          "pointer",
-                  transition:      "all 0.2s ease",
-                  flexShrink:      0,
-                }}
-                onMouseEnter={(e) => {
-                  (e.currentTarget as HTMLButtonElement).style.borderColor = "rgba(201,169,97,0.35)";
-                  (e.currentTarget as HTMLButtonElement).style.color       = "#C9A961";
-                }}
-                onMouseLeave={(e) => {
-                  (e.currentTarget as HTMLButtonElement).style.borderColor = "#1E1F24";
-                  (e.currentTarget as HTMLButtonElement).style.color       = "#3B4558";
-                }}
-              >
-                {mounted ? (resolvedTheme === "light" ? <Moon size={13} /> : <Sun size={13} />) : <div style={{ width: 13, height: 13 }} />}
-              </button>
+              <ThemeToggle />
 
               {/* User avatar / sign-in */}
               {user ? (
@@ -2045,12 +2070,11 @@ export default function ChairmanDashboard() {
         left:            0,
         right:           0,
         zIndex:          50,
-        backgroundColor: "#0a0b0e",
-        borderTop:       `1px solid ${cmdFocused ? "rgba(201,169,97,0.32)" : "#1A1B22"}`,
+        borderTop:       `1px solid ${cmdFocused ? "rgba(201,169,97,0.32)" : "transparent"}`,
         boxShadow:       cmdFocused ? "0 -4px 40px rgba(201,169,97,0.09)" : "none",
         transition:      "border-color 0.25s, box-shadow 0.25s",
         animation:       !cmdFocused ? "cmd-breathe 5s ease-in-out infinite" : "none",
-      }}>
+      }} className={`bg-zinc-100 dark:bg-[#0a0b0e] ${!cmdFocused ? "border-t border-zinc-200 dark:border-[#1A1B22]" : ""}`}>
         <div className="max-w-[1440px] mx-auto px-8" style={{ paddingTop: 11, paddingBottom: 13 }}>
           <div className="flex items-center gap-4">
 

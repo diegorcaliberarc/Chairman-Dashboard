@@ -5,6 +5,27 @@ import { GoogleGenerativeAI } from "@google/generative-ai";
 
 const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY!);
 
+const functionDeclarations = [
+  {
+    name: "save_roadmap",
+    description: "Persists a strategy roadmap flowchart to the database. Use this anytime you generate a map or sequence.",
+    parameters: {
+      type: "OBJECT",
+      properties: {
+        title: {
+          type: "STRING",
+          description: "A short, descriptive title for the roadmap",
+        },
+        mermaid_syntax: {
+          type: "STRING",
+          description: "The raw Mermaid.js syntax (e.g. graph TD...)",
+        },
+      },
+      required: ["title", "mermaid_syntax"],
+    },
+  },
+];
+
 // ── Agent system prompts ──────────────────────────────────────────────────────
 
 const AGENT_PROMPTS: Record<string, string> = {
@@ -104,15 +125,35 @@ export async function POST(req: NextRequest) {
   const systemPrompt = AGENT_PROMPTS[agentRole] ?? AGENT_PROMPTS["Universal Command"];
   const context      = buildContext(tasks, calendarEvents);
 
-  const fullSystem = `${systemPrompt}\n\n${context}\n\nRespond in plain text. Be concise and direct. No markdown headers. No bullet introductions like "Here are...". Lead with the most important point.`;
+  const fullSystem = `${systemPrompt}\n\n${context}\n\nCRITICAL DIRECTIVE:\nWhen the user asks for a roadmap, sequence, blueprint, or map, you MUST output a Mermaid.js flowchart using graph TD syntax. Enclose the mermaid code strictly in standard markdown mermaid code blocks. If the user asks to map a strategy, you must generate the Mermaid syntax AND use the save_roadmap tool to persist it to the database.\n\nRespond in plain text. Be concise and direct. No markdown headers unless outputting Mermaid blocks. No bullet introductions like "Here are...". Lead with the most important point.`;
 
   try {
-    const model  = genAI.getGenerativeModel({ model: "gemini-flash-lite-latest" });
+    const model  = genAI.getGenerativeModel({ model: "gemini-1.5-pro", tools: [{ functionDeclarations }] });
     const result = await model.generateContent([
       { text: fullSystem },
       { text: message },
     ]);
-    const text = result.response.text();
+    const response = result.response;
+    
+    // Check if the save_roadmap tool was invoked
+    const call = response.functionCalls ? response.functionCalls()[0] : null;
+
+    if (call && call.name === "save_roadmap") {
+      const { title, mermaid_syntax } = call.args;
+      const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || "";
+      const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || "";
+      
+      if (supabaseUrl && supabaseKey) {
+        const { createClient } = await import("@supabase/supabase-js");
+        const supabase = createClient(supabaseUrl, supabaseKey);
+        await supabase.from("roadmaps").insert([{ title, mermaid_syntax }]);
+      }
+      
+      const text = `Strategy saved into the Roadmap Vault:\n\n\`\`\`mermaid\n${mermaid_syntax}\n\`\`\``;
+      return NextResponse.json({ reply: text });
+    }
+
+    const text = response.text();
     return NextResponse.json({ reply: text });
   } catch (err: any) {
     console.error("Gemini API error:", err);
