@@ -128,7 +128,7 @@ export async function POST(req: NextRequest) {
   const fullSystem = `${systemPrompt}\n\n${context}\n\nCRITICAL DIRECTIVE:\nWhen the user asks for a roadmap, sequence, blueprint, or map, you MUST output a Mermaid.js flowchart using graph TD syntax. Enclose the mermaid code strictly in standard markdown mermaid code blocks. If the user asks to map a strategy, you must generate the Mermaid syntax AND use the save_roadmap tool to persist it to the database.\n\nRespond in plain text. Be concise and direct. No markdown headers unless outputting Mermaid blocks. No bullet introductions like "Here are...". Lead with the most important point.`;
 
   try {
-    const model  = genAI.getGenerativeModel({ model: "gemini-flash-lite-latest", tools: [{ functionDeclarations }] });
+    const model  = genAI.getGenerativeModel({ model: "gemini-2.5-flash", tools: [{ functionDeclarations }] });
     const result = await model.generateContent([
       { text: fullSystem },
       { text: message },
