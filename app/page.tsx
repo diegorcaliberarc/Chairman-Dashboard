@@ -63,7 +63,7 @@ interface Agent {
 // ─── Agent Metadata (tasks come from Supabase) ────────────────────────────────
 
 const AGENT_META_BUSINESS = [
-  { id: "ceo", title: "CEO", role: "Vision & Strategy",      color: "#C9A961" },
+  { id: "ceo", title: "CEO", role: "Vision & Strategy",      backgroundImage: 'linear-gradient(to right, var(--theme-grad-start), var(--theme-grad-end))', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent', color: 'transparent' },
   { id: "coo", title: "COO", role: "Ops & Execution",        color: "#7B9EA8" },
   { id: "cmo", title: "CMO", role: "Growth & Sales",         color: "#A87B9E" },
   { id: "cfo", title: "CFO", role: "Finance & Cash",         color: "#8BA87B" },
@@ -82,7 +82,7 @@ const AGENT_META_PERSONAL = [
 // ─── Category → Agent Routing (hardcoded, no guessing) ───────────────────────
 
 const CATEGORIES: Record<string, { label: string; color: string; pillar: string; agentId: string }> = {
-  CEO:    { label: "CEO",    color: "#C9A961", pillar: "BUSINESS", agentId: "ceo"    },
+  CEO:    { label: "CEO",    backgroundImage: 'linear-gradient(to right, var(--theme-grad-start), var(--theme-grad-end))', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent', color: 'transparent', pillar: "BUSINESS", agentId: "ceo"    },
   COO:    { label: "COO",    color: "#7B9EA8", pillar: "BUSINESS", agentId: "coo"    },
   CMO:    { label: "CMO",    color: "#A87B9E", pillar: "BUSINESS", agentId: "cmo"    },
   CFO:    { label: "CFO",    color: "#8BA87B", pillar: "BUSINESS", agentId: "cfo"    },
@@ -192,8 +192,8 @@ const KEYFRAMES = `
   }
 
   @keyframes cmd-breathe {
-    0%,100% { box-shadow: 0 -1px 24px rgba(201,169,97,0.03); }
-    50%     { box-shadow: 0 -1px 40px rgba(201,169,97,0.08); }
+    0%,100% { box-shadow: 0 -1px 24px rgba(59,130,246,0.03); }
+    50%     { box-shadow: 0 -1px 40px rgba(59,130,246,0.08); }
   }
 
   @keyframes ea-scan {
@@ -557,7 +557,7 @@ function CalendarFeed({
       {/* Header */}
       <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 10 }}>
         <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
-          <CalendarDays size={10} className="text-zinc-500 dark:text-[#C9A961]" />
+          <CalendarDays size={10} className="text-zinc-500 dark:text-transparent bg-clip-text bg-theme-gradient" />
           <span style={{ fontSize: 9, letterSpacing: "0.22em", textTransform: "uppercase" }} className="text-zinc-500 dark:text-[#3B4558]">Command Calendar</span>
         </div>
         <span style={{ fontSize: 8, letterSpacing: "0.14em", textTransform: "uppercase", color: calLoading ? "#4A90E2" : calError ? "#E05A3A" : calConnected ? "#8BA87B" : "#252836" }}>
@@ -578,13 +578,13 @@ function CalendarFeed({
                 borderRadius:    5,
                 padding:         "5px 2px",
                 textAlign:       "center",
-                backgroundColor: isToday ? "rgba(201,169,97,0.06)" : "transparent",
-                border:          isToday ? "1px solid rgba(201,169,97,0.22)" : "1px solid #111318",
+                backgroundColor: isToday ? "rgba(59,130,246,0.06)" : "transparent",
+                border:          isToday ? "1px solid rgba(59,130,246,0.22)" : "1px solid #111318",
                 cursor:          "pointer",
                 transition:      "border-color 0.15s, background-color 0.15s",
               }}
-              onMouseEnter={(e) => { (e.currentTarget as HTMLButtonElement).style.borderColor = isToday ? "rgba(201,169,97,0.45)" : "rgba(74,144,226,0.25)"; }}
-              onMouseLeave={(e) => { (e.currentTarget as HTMLButtonElement).style.borderColor = isToday ? "rgba(201,169,97,0.22)" : "#111318"; }}
+              onMouseEnter={(e) => { (e.currentTarget as HTMLButtonElement).style.borderColor = isToday ? "rgba(59,130,246,0.45)" : "rgba(74,144,226,0.25)"; }}
+              onMouseLeave={(e) => { (e.currentTarget as HTMLButtonElement).style.borderColor = isToday ? "rgba(59,130,246,0.22)" : "#111318"; }}
             >
               <div style={{ fontSize: 7, letterSpacing: "0.16em", textTransform: "uppercase", color: isToday ? "var(--color-primary-dark, #C9A961)" : undefined }} className={isToday ? "" : "text-zinc-600 dark:text-[#1A1C28]"}>{d.name}</div>
               <div style={{ fontFamily: "Georgia, serif", fontSize: 13, color: isToday ? "var(--color-primary-dark, #C9A961)" : undefined, marginTop: 2, fontWeight: 700 }} className={isToday ? "" : "text-zinc-800 dark:text-[#1E2030]"}>{d.date}</div>
@@ -610,7 +610,7 @@ function CalendarFeed({
         {calError ? (
           <div style={{ padding: "10px 12px", borderRadius: 6, display: "flex", alignItems: "center", justifyContent: "space-between", gap: 10 }} className="bg-red-50 dark:bg-[#E05A3A]/10 border border-red-200 dark:border-[#E05A3A]/20">
             <span style={{ fontSize: 10, letterSpacing: "0.06em" }} className="text-red-600 dark:text-[#E05A3A]">Google session expired — reconnect to restore events.</span>
-            <a href="/api/auth/signin" style={{ fontSize: 9, letterSpacing: "0.14em", textTransform: "uppercase", textDecoration: "none", flexShrink: 0, padding: "3px 8px", borderRadius: 4 }} className="text-zinc-700 dark:text-[#C9A961] border border-zinc-200 dark:border-[#C9A961]/30">Reconnect</a>
+            <a href="/api/auth/signin" style={{ fontSize: 9, letterSpacing: "0.14em", textTransform: "uppercase", textDecoration: "none", flexShrink: 0, padding: "3px 8px", borderRadius: 4 }} className="text-zinc-700 dark:text-transparent bg-clip-text bg-theme-gradient border border-zinc-200 dark:border-transparent [background:linear-gradient(var(--bg-surface),var(--bg-surface))_padding-box,linear-gradient(to_right,var(--theme-grad-start),var(--theme-grad-end))_border-box]/30">Reconnect</a>
           </div>
         ) : todayEvts.length === 0 ? (
           <div style={{ fontSize: 10, letterSpacing: "0.08em", padding: "10px 0" }} className="text-zinc-500 dark:text-[#1C1E2A]">
@@ -627,12 +627,12 @@ function CalendarFeed({
               ? new Date(endDt).toLocaleTimeString("en-US", { hour: "numeric", minute: "2-digit", hour12: true })
               : null;
             return (
-              <div key={ev.id} style={{ display: "flex", gap: 10, alignItems: "center", padding: "7px 10px", borderRadius: 6 }} className="bg-slate-50 dark:bg-[#C9A961]/5 border border-slate-200 dark:border-[#C9A961]/10">
+              <div key={ev.id} style={{ display: "flex", gap: 10, alignItems: "center", padding: "7px 10px", borderRadius: 6 }} className="bg-slate-50 dark:bg-theme-gradient/5 border border-slate-200 dark:border-transparent [background:linear-gradient(var(--bg-surface),var(--bg-surface))_padding-box,linear-gradient(to_right,var(--theme-grad-start),var(--theme-grad-end))_border-box]/10">
                 <div style={{ flexShrink: 0, textAlign: "right" }}>
-                  <div style={{ fontSize: 9, fontVariantNumeric: "tabular-nums", whiteSpace: "nowrap" }} className="text-zinc-700 dark:text-[#C9A961]">{timeStr}</div>
+                  <div style={{ fontSize: 9, fontVariantNumeric: "tabular-nums", whiteSpace: "nowrap" }} className="text-zinc-700 dark:text-transparent bg-clip-text bg-theme-gradient">{timeStr}</div>
                   {endStr && <div style={{ fontSize: 8, fontVariantNumeric: "tabular-nums", whiteSpace: "nowrap" }} className="text-zinc-500 dark:text-[#3B4558]">{endStr}</div>}
                 </div>
-                <div style={{ width: 1, height: "100%", minHeight: 24, flexShrink: 0 }} className="bg-slate-200 dark:bg-[#C9A961]/20" />
+                <div style={{ width: 1, height: "100%", minHeight: 24, flexShrink: 0 }} className="bg-slate-200 dark:bg-theme-gradient/20" />
                 <span style={{ fontSize: 11, flex: 1, lineHeight: 1.4 }} className="text-zinc-600 dark:text-[#7A8599]">{ev.summary ?? "Event"}</span>
               </div>
             );
@@ -647,13 +647,13 @@ function CalendarFeed({
           onClick={() => setModalDay(null)}
         >
           <div
-            style={{ backgroundColor: "#0C0D10", border: "1px solid rgba(201,169,97,0.22)", borderRadius: 14, padding: "28px 32px", minWidth: 380, maxWidth: 520, width: "100%", boxShadow: "0 24px 80px rgba(0,0,0,0.8)", animation: "fade-up 0.18s ease-out" }}
+            style={{ backgroundColor: "#0C0D10", border: "1px solid rgba(59,130,246,0.22)", borderRadius: 14, padding: "28px 32px", minWidth: 380, maxWidth: 520, width: "100%", boxShadow: "0 24px 80px rgba(0,0,0,0.8)", animation: "fade-up 0.18s ease-out" }}
             onClick={(e) => e.stopPropagation()}
           >
             {/* Modal header */}
             <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", marginBottom: 20 }}>
               <div>
-                <div style={{ fontFamily: "Georgia, serif", fontSize: 22, color: "#C9A961", lineHeight: 1 }}>
+                <div style={{ fontFamily: "Georgia, serif", fontSize: 22, backgroundImage: 'linear-gradient(to right, var(--theme-grad-start), var(--theme-grad-end))', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent', color: 'transparent', lineHeight: 1 }}>
                   {modalDay.name} {modalDay.date}
                 </div>
                 <div style={{ fontSize: 9, letterSpacing: "0.2em", textTransform: "uppercase", color: "#3B4558", marginTop: 5 }}>
@@ -663,7 +663,7 @@ function CalendarFeed({
               <button
                 onClick={() => setModalDay(null)}
                 style={{ background: "none", border: "1px solid #1E1F24", cursor: "pointer", color: "#3B4558", borderRadius: 6, padding: "5px 8px", display: "flex", alignItems: "center", transition: "all 0.15s" }}
-                onMouseEnter={(e) => { (e.currentTarget as HTMLButtonElement).style.borderColor = "rgba(201,169,97,0.35)"; (e.currentTarget as HTMLButtonElement).style.color = "#C9A961"; }}
+                onMouseEnter={(e) => { (e.currentTarget as HTMLButtonElement).style.borderColor = "rgba(59,130,246,0.35)"; (e.currentTarget as HTMLButtonElement).style.color = "#C9A961"; }}
                 onMouseLeave={(e) => { (e.currentTarget as HTMLButtonElement).style.borderColor = "#1E1F24"; (e.currentTarget as HTMLButtonElement).style.color = "#3B4558"; }}
               >
                 <X size={13} />
@@ -687,10 +687,10 @@ function CalendarFeed({
                     ? new Date(endDt).toLocaleTimeString("en-US", { hour: "numeric", minute: "2-digit", hour12: true })
                     : null;
                   return (
-                    <div key={ev.id} style={{ padding: "12px 16px", borderRadius: 8, backgroundColor: "#080A0D", border: "1px solid rgba(201,169,97,0.10)" }}>
+                    <div key={ev.id} style={{ padding: "12px 16px", borderRadius: 8, backgroundColor: "#080A0D", border: "1px solid rgba(59,130,246,0.10)" }}>
                       <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: ev.summary ? 6 : 0 }}>
-                        <div style={{ width: 3, height: 3, borderRadius: "50%", backgroundColor: "#C9A961", flexShrink: 0 }} />
-                        <span style={{ fontSize: 9, color: "#C9A961", fontVariantNumeric: "tabular-nums", flexShrink: 0 }}>
+                        <div style={{ width: 3, height: 3, borderRadius: "50%", backgroundImage: 'linear-gradient(to right, var(--theme-grad-start), var(--theme-grad-end))', flexShrink: 0 }} />
+                        <span style={{ fontSize: 9, backgroundImage: 'linear-gradient(to right, var(--theme-grad-start), var(--theme-grad-end))', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent', color: 'transparent', fontVariantNumeric: "tabular-nums", flexShrink: 0 }}>
                           {timeStr}{endStr ? ` — ${endStr}` : ""}
                         </span>
                       </div>
@@ -744,8 +744,8 @@ function PriorityStrikes({
             <span style={{ fontSize: 11, flex: 1, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }} className="text-zinc-600 dark:text-[#7A8599]">{task.title}</span>
             <span style={{
               fontSize: 7, letterSpacing: "0.14em", textTransform: "uppercase", padding: "2px 5px", borderRadius: 3, flexShrink: 0,
-              backgroundColor: task.priority === 1 ? "rgba(224,90,58,0.10)" : task.priority === 3 ? "rgba(59,69,88,0.08)" : "rgba(201,169,97,0.07)",
-              border: `1px solid ${task.priority === 1 ? "rgba(224,90,58,0.28)" : task.priority === 3 ? "#1A1C24" : "rgba(201,169,97,0.18)"}`,
+              backgroundColor: task.priority === 1 ? "rgba(224,90,58,0.10)" : task.priority === 3 ? "rgba(59,69,88,0.08)" : "rgba(59,130,246,0.07)",
+              border: `1px solid ${task.priority === 1 ? "rgba(224,90,58,0.28)" : task.priority === 3 ? "#1A1C24" : "rgba(59,130,246,0.18)"}`,
               color: task.priority === 1 ? "#E05A3A" : task.priority === 3 ? "#3B4558" : "#C9A961",
             }}>
               {task.priority === 1 ? "HI" : task.priority === 3 ? "LO" : "MD"}
@@ -810,7 +810,7 @@ function WealthBlock() {
         </SubPanel>
         <SubPanel>
           <div style={{ fontSize: 7, letterSpacing: "0.2em", textTransform: "uppercase", color: "#252836", marginBottom: 5 }}>NQ Session Bias</div>
-          <div style={{ fontFamily: "Georgia, serif", fontSize: 13, color: "#C9A961" }}>RANGE-BOUND</div>
+          <div style={{ fontFamily: "Georgia, serif", fontSize: 13, backgroundImage: 'linear-gradient(to right, var(--theme-grad-start), var(--theme-grad-end))', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent', color: 'transparent' }}>RANGE-BOUND</div>
           <div style={{ fontSize: 7, color: "#1C1E26", marginTop: 2 }}>ES / NQ · Watching supply at prior hi</div>
         </SubPanel>
         <SubPanel>
@@ -1148,7 +1148,7 @@ function DeepWorkMode({
 
       {/* Header badge */}
       <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 56 }}>
-        <div style={{ width: 6, height: 6, borderRadius: "50%", backgroundColor: "#C9A961", animation: "deep-cursor 1.2s ease-in-out infinite" }} />
+        <div style={{ width: 6, height: 6, borderRadius: "50%", backgroundImage: 'linear-gradient(to right, var(--theme-grad-start), var(--theme-grad-end))', animation: "deep-cursor 1.2s ease-in-out infinite" }} />
         <span style={{ fontSize: 10, letterSpacing: "0.35em", textTransform: "uppercase" }} className="text-zinc-600 dark:text-[#333]">
           Deep Work · Dopamine Detox Active
         </span>
@@ -1218,7 +1218,7 @@ function DeepWorkMode({
         </div>
       ) : (
         <div style={{ textAlign: "center" }}>
-          <div style={{ fontFamily: "Georgia, serif", fontSize: 36, color: "#C9A961", marginBottom: 16 }}>
+          <div style={{ fontFamily: "Georgia, serif", fontSize: 36, backgroundImage: 'linear-gradient(to right, var(--theme-grad-start), var(--theme-grad-end))', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent', color: 'transparent', marginBottom: 16 }}>
             All tasks complete.
           </div>
           <div style={{ fontSize: 12, color: "#333", letterSpacing: "0.1em" }}>
@@ -1545,7 +1545,7 @@ function ThemeToggle() {
     <button
       onClick={() => setTheme(theme === "dark" ? "light" : "dark")}
       title="Toggle theme"
-      className="flex items-center justify-center w-[30px] h-[30px] rounded-md bg-transparent border border-zinc-200 dark:border-[#1E1F24] text-zinc-600 dark:text-[#3B4558] hover:border-zinc-400 dark:hover:border-[#C9A961]/35 hover:text-zinc-900 dark:hover:text-[#C9A961] transition-all duration-200 shrink-0"
+      className="flex items-center justify-center w-[30px] h-[30px] rounded-md bg-transparent border border-zinc-200 dark:border-[#1E1F24] text-zinc-600 dark:text-[#3B4558] hover:border-zinc-400 dark:hover:border-transparent [background:linear-gradient(var(--bg-surface),var(--bg-surface))_padding-box,linear-gradient(to_right,var(--theme-grad-start),var(--theme-grad-end))_border-box]/35 hover:text-zinc-900 dark:hover:text-transparent bg-clip-text bg-theme-gradient transition-all duration-200 shrink-0"
     >
       {theme === "dark" ? <Sun size={13} /> : <Moon size={13} />}
     </button>
@@ -1780,7 +1780,7 @@ export default function ChairmanDashboard() {
           <div className="flex flex-wrap items-center justify-between gap-y-3 py-4">
             {/* Brand */}
             <div className="flex items-center gap-4">
-              <Crosshair size={15} style={{ color: "#C9A961" }} />
+              <Crosshair size={15} style={{ backgroundImage: 'linear-gradient(to right, var(--theme-grad-start), var(--theme-grad-end))', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent', color: 'transparent' }} />
               <div>
                 <h1 style={{ fontFamily: "Georgia, serif", fontSize: 16, color: "#C2C8D4", letterSpacing: "0.04em" }}>
                   Pristine Designs
@@ -1835,8 +1835,8 @@ export default function ChairmanDashboard() {
                   gap:             6,
                   padding:         "7px 12px",
                   borderRadius:    6,
-                  backgroundColor: novaOpen ? "rgba(201,169,97,0.12)" : "transparent",
-                  border:          `1px solid ${novaOpen ? "rgba(201,169,97,0.45)" : "#1E1F24"}`,
+                  backgroundColor: novaOpen ? "rgba(59,130,246,0.12)" : "transparent",
+                  border:          `1px solid ${novaOpen ? "rgba(59,130,246,0.45)" : "#1E1F24"}`,
                   color:           novaOpen ? "#C9A961" : "#3B4558",
                   fontSize:        9,
                   fontWeight:      700,
@@ -1846,7 +1846,7 @@ export default function ChairmanDashboard() {
                   textTransform:   "uppercase",
                   flexShrink:      0,
                 }}
-                onMouseEnter={(e) => { if (!novaOpen) { (e.currentTarget as HTMLButtonElement).style.borderColor = "rgba(201,169,97,0.35)"; (e.currentTarget as HTMLButtonElement).style.color = "#C9A961"; } }}
+                onMouseEnter={(e) => { if (!novaOpen) { (e.currentTarget as HTMLButtonElement).style.borderColor = "rgba(59,130,246,0.35)"; (e.currentTarget as HTMLButtonElement).style.color = "#C9A961"; } }}
                 onMouseLeave={(e) => { if (!novaOpen) { (e.currentTarget as HTMLButtonElement).style.borderColor = "#1E1F24"; (e.currentTarget as HTMLButtonElement).style.color = "#3B4558"; } }}
               >
                 <Bot size={11} />
@@ -1876,7 +1876,7 @@ export default function ChairmanDashboard() {
                     transition:      "all 0.2s ease",
                   }}
                   onMouseEnter={(e) => {
-                    (e.currentTarget as HTMLButtonElement).style.borderColor = "rgba(201,169,97,0.35)";
+                    (e.currentTarget as HTMLButtonElement).style.borderColor = "rgba(59,130,246,0.35)";
                   }}
                   onMouseLeave={(e) => {
                     (e.currentTarget as HTMLButtonElement).style.borderColor = "#1E1F24";
@@ -1891,8 +1891,8 @@ export default function ChairmanDashboard() {
                       style={{ borderRadius: "50%", display: "block" }}
                     />
                   ) : (
-                    <div style={{ width: 22, height: 22, borderRadius: "50%", backgroundColor: "rgba(201,169,97,0.2)", display: "flex", alignItems: "center", justifyContent: "center" }}>
-                      <span style={{ fontSize: 9, color: "#C9A961", fontWeight: 700 }}>
+                    <div style={{ width: 22, height: 22, borderRadius: "50%", backgroundColor: "rgba(59,130,246,0.2)", display: "flex", alignItems: "center", justifyContent: "center" }}>
+                      <span style={{ fontSize: 9, backgroundImage: 'linear-gradient(to right, var(--theme-grad-start), var(--theme-grad-end))', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent', color: 'transparent', fontWeight: 700 }}>
                         {(user.name ?? "C")[0].toUpperCase()}
                       </span>
                     </div>
@@ -1938,8 +1938,8 @@ export default function ChairmanDashboard() {
                   gap:             6,
                   padding:         "7px 14px",
                   borderRadius:    6,
-                  backgroundColor: deepWork ? "rgba(201,169,97,0.14)" : "transparent",
-                  border:          `1px solid ${deepWork ? "rgba(201,169,97,0.45)" : "#1E1F24"}`,
+                  backgroundColor: deepWork ? "rgba(59,130,246,0.14)" : "transparent",
+                  border:          `1px solid ${deepWork ? "rgba(59,130,246,0.45)" : "#1E1F24"}`,
                   color:           deepWork ? "#C9A961" : "#3B4558",
                   fontSize:        9,
                   fontWeight:      700,
@@ -1961,11 +1961,11 @@ export default function ChairmanDashboard() {
                 <div className="text-[9px] tracking-widest uppercase mb-1" style={{ color: "#252836" }}>
                   {tasksLoading ? "Syncing…" : "Mission Progress"}
                 </div>
-                <div className="text-lg font-bold" style={{ color: "#C9A961", fontVariantNumeric: "tabular-nums" }}>
+                <div className="text-lg font-bold" style={{ backgroundImage: 'linear-gradient(to right, var(--theme-grad-start), var(--theme-grad-end))', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent', color: 'transparent', fontVariantNumeric: "tabular-nums" }}>
                   {doneTasks}<span className="text-xs font-normal" style={{ color: "#3B4558" }}>/{totalTasks}</span>
                 </div>
                 <div className="header-progress-bar mt-1.5 rounded-full" style={{ width: 64, height: 2, backgroundColor: "#1E1F24", marginLeft: "auto" }}>
-                  <div className="h-full rounded-full transition-all duration-700" style={{ width: `${overallPct * 100}%`, backgroundColor: "#C9A961", opacity: 0.7 }} />
+                  <div className="h-full rounded-full transition-all duration-700" style={{ width: `${overallPct * 100}%`, backgroundImage: 'linear-gradient(to right, var(--theme-grad-start), var(--theme-grad-end))', opacity: 0.7 }} />
                 </div>
               </div>
 
@@ -1982,7 +1982,7 @@ export default function ChairmanDashboard() {
                 <button
                   key={tab.id}
                   onClick={() => setActiveTab(tab.id)}
-                  className={`focus:outline-none z-10 ${isActive ? "bg-white dark:bg-[#08090C] border border-zinc-200 dark:border-[#1E1F24] border-b-white dark:border-b-[#08090C] text-zinc-900 dark:text-[#C9A961]" : "text-zinc-500 dark:text-[#3B4558] border border-transparent"}`}
+                  className={`focus:outline-none z-10 ${isActive ? "bg-white dark:bg-[#08090C] border border-zinc-200 dark:border-[#1E1F24] border-b-white dark:border-b-[#08090C] text-zinc-900 dark:text-transparent bg-clip-text bg-theme-gradient" : "text-zinc-500 dark:text-[#3B4558] border border-transparent"}`}
                   style={{
                     padding:         "9px 20px",
                     borderRadius:    "8px 8px 0 0",
@@ -2038,10 +2038,10 @@ export default function ChairmanDashboard() {
       {/* ── TOAST (primary) ───────────────────────────────────────────────── */}
       {toast && (
         <div style={{ position: "fixed", bottom: 96, left: "50%", zIndex: 60, animation: "toast-slide 0.28s ease-out", pointerEvents: "none" }}>
-          <div style={{ transform: "translateX(-50%)", backgroundColor: "#0E0F14", border: `1px solid ${toast.type === "delegate" || toast.type === "schedule" ? "rgba(74,144,226,0.35)" : "rgba(201,169,97,0.32)"}`, borderRadius: 8, padding: "11px 18px", display: "flex", alignItems: "center", gap: 10, boxShadow: "0 8px 40px rgba(0,0,0,0.7)", whiteSpace: "nowrap" }}>
+          <div style={{ transform: "translateX(-50%)", backgroundColor: "#0E0F14", border: `1px solid ${toast.type === "delegate" || toast.type === "schedule" ? "rgba(74,144,226,0.35)" : "rgba(59,130,246,0.32)"}`, borderRadius: 8, padding: "11px 18px", display: "flex", alignItems: "center", gap: 10, boxShadow: "0 8px 40px rgba(0,0,0,0.7)", whiteSpace: "nowrap" }}>
             {toast.type === "delegate" || toast.type === "schedule"
               ? <CalendarDays size={13} style={{ color: "#4A90E2", flexShrink: 0 }} />
-              : <CheckCheck size={13} style={{ color: "#C9A961", flexShrink: 0 }} />
+              : <CheckCheck size={13} style={{ backgroundImage: 'linear-gradient(to right, var(--theme-grad-start), var(--theme-grad-end))', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent', color: 'transparent', flexShrink: 0 }} />
             }
             <span style={{ fontSize: 11, color: toast.type === "delegate" || toast.type === "schedule" ? "#4A90E2" : "#C9A961", letterSpacing: "0.05em", fontWeight: 600 }}>
               {toast.type === "delegate" ? "Claude Agent:" : toast.type === "schedule" ? "Google Calendar:" : "Task processed:"}
@@ -2068,8 +2068,8 @@ export default function ChairmanDashboard() {
         left:            0,
         right:           0,
         zIndex:          50,
-        borderTop:       `1px solid ${cmdFocused ? "rgba(201,169,97,0.32)" : "transparent"}`,
-        boxShadow:       cmdFocused ? "0 -4px 40px rgba(201,169,97,0.09)" : "none",
+        borderTop:       `1px solid ${cmdFocused ? "rgba(59,130,246,0.32)" : "transparent"}`,
+        boxShadow:       cmdFocused ? "0 -4px 40px rgba(59,130,246,0.09)" : "none",
         transition:      "border-color 0.25s, box-shadow 0.25s",
         animation:       !cmdFocused ? "cmd-breathe 5s ease-in-out infinite" : "none",
       }} className={`bg-zinc-100 dark:bg-[#0a0b0e] ${!cmdFocused ? "border-t border-zinc-200 dark:border-[#1A1B22]" : ""}`}>
@@ -2152,8 +2152,8 @@ export default function ChairmanDashboard() {
                   gap:             6,
                   padding:         "7px 14px",
                   borderRadius:    6,
-                  backgroundColor: cmdValue.trim() ? "rgba(201,169,97,0.1)"  : "transparent",
-                  border:          `1px solid ${cmdValue.trim() ? "rgba(201,169,97,0.3)" : "#1E1F24"}`,
+                  backgroundColor: cmdValue.trim() ? "rgba(59,130,246,0.1)"  : "transparent",
+                  border:          `1px solid ${cmdValue.trim() ? "rgba(59,130,246,0.3)" : "#1E1F24"}`,
                   color:           cmdValue.trim() ? "#C9A961" : "#252836",
                   fontSize:        10,
                   fontWeight:      700,

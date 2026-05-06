@@ -18,10 +18,9 @@
   --gold:         #9B7B30;
 }
 
-:root[data-theme='default'] {
-  --color-primary: #3b82f6;
-  --color-primary-hover: #2563eb;
-  --color-glow: rgba(59, 130, 246, 0.5);
+:root {
+  --theme-grad-start: #3B82F6;
+  --theme-grad-end: #8B5CF6;
 }
 
 :root[data-theme='crimson'] {

@@ -18,6 +18,9 @@ const config: Config = {
         "primary-hover": "var(--color-primary-hover)",
         glow: "var(--color-glow)",
       },
+      backgroundImage: {
+        "theme-gradient": "linear-gradient(to right, var(--theme-grad-start), var(--theme-grad-end))",
+      },
       fontFamily: {
         mono: ["'JetBrains Mono'", "'Fira Code'", "monospace"],
       },
