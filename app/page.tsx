@@ -768,19 +768,19 @@ function MasterViewTab({
   const CAL_PANEL: React.CSSProperties = { ...PANEL, overflowY: "auto" };
 
   return (
-    <div className="flex flex-col lg:flex-row gap-6 h-full min-h-full items-stretch w-full">
+    <div className="flex flex-col lg:flex-row gap-6 w-full min-h-max">
       {/* ── Left Column ──────────────────────────────────────────────────── */}
-      <div className="flex flex-col w-full lg:w-1/3 h-full gap-4 pb-6 pr-1">
+      <div className="flex flex-col w-full lg:w-1/3 min-h-full gap-4 pb-6 pr-1">
         <div style={{ ...PANEL, maxHeight: "250px", overflowY: "auto", flexShrink: 0 }} className={PANEL_CLASS}>
           <PriorityStrikes business={business} personal={personal} onToggle={onToggle} onDelete={onDelete} onTaskClick={onTaskClick} subtasksMap={subtasksMap} onToggleSubtask={onToggleSubtask} />
         </div>
-        <div style={{ ...CAL_PANEL, minHeight: 0 }} className={`${PANEL_CLASS} flex-1 h-full min-h-[500px] flex flex-col`}>
+        <div style={{ ...CAL_PANEL, minHeight: 0 }} className={`${PANEL_CLASS} flex-1 min-h-[500px] flex flex-col`}>
           <CalendarFeed calConnected={calConnected} events={calendarEvents} calLoading={calLoading} calError={calError} />
         </div>
       </div>
 
       {/* ── Right Column / Grid ────────────────────────────────────────── */}
-      <div className="grid grid-cols-1 xl:grid-cols-2 gap-4 w-full lg:w-2/3 h-full grid-rows-[repeat(5,minmax(220px,1fr))] pb-6 pr-1">
+      <div className="grid grid-cols-1 xl:grid-cols-2 gap-4 w-full lg:w-2/3 pb-8 grid-rows-[repeat(5,minmax(220px,auto))] pr-1">
         {/* Domain Cards */}
         <div style={PANEL} className={`${PANEL_CLASS} h-full w-full flex flex-col`}><DomainBlock label="WEALTH" sub="Income & Freedom" tasks={wealthTasks} color={personal.find(a => a.id === "wealth")?.color || "#C9A961"} onToggle={onToggle} onDelete={onDelete} onTaskClick={onTaskClick} subtasksMap={subtasksMap} onToggleSubtask={onToggleSubtask} /></div>
         <div style={PANEL} className={`${PANEL_CLASS} h-full w-full flex flex-col`}><DomainBlock label="HEALTH" sub="Training & Energy" tasks={healthTasks} color={personal.find(a => a.id === "health")?.color || "#C9A961"} onToggle={onToggle} onDelete={onDelete} onTaskClick={onTaskClick} subtasksMap={subtasksMap} onToggleSubtask={onToggleSubtask} /></div>
@@ -1522,16 +1522,14 @@ export default function ChairmanDashboard() {
 
       {/* ── MAIN ──────────────────────────────────────────────────────────── */}
       <main
-        className="main-px w-full h-full"
+        className="main-px flex-1 h-screen overflow-y-auto overflow-x-hidden relative"
         style={activeTab === "MASTER" ? {
           paddingLeft:    32,
           paddingRight:   32,
           paddingTop:     10,
           paddingBottom:  66,
-          height:         "calc(100vh - 112px)",
           display:        "flex",
           flexDirection:  "column",
-          overflow:       "hidden",
           boxSizing:      "border-box" as const,
         } : {
           paddingLeft:   32,
