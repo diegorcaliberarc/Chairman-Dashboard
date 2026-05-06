@@ -646,30 +646,46 @@ function CSuiteCard({
           const subs = subtasksMap ? subtasksMap[t.id] ?? [] : [];
           const isExpanded = !!expandedIds[t.id];
           return (
-            <div key={t.id} className="flex flex-col gap-1">
-              <div style={{ display: "flex", alignItems: "center", gap: 5, padding: "4px 7px", borderRadius: 5, cursor: "pointer" }} className="bg-white/5 dark:bg-black/20 border border-zinc-200/20 dark:border-white/5 hover:bg-white/10 dark:hover:bg-white/5 transition-colors" onClick={() => onTaskClick(t, agent.color)}>
-                {subs.length > 0 ? (
-                  <button onClick={(e) => { e.stopPropagation(); toggleExpand(t.id); }} className="w-5 h-5 flex items-center justify-center rounded hover:bg-zinc-500/20 text-zinc-400 mr-2 shrink-0">
-                    {isExpanded ? <ChevronDown size={14} /> : <ChevronRight size={14} />}
+            <div key={t.id} className="flex flex-col mb-2 w-full">
+              {/* Parent Task Row */}
+              <div className="flex flex-row items-start gap-2 w-full bg-white/5 dark:bg-black/20 border border-zinc-200/20 dark:border-white/5 hover:bg-white/10 dark:hover:bg-white/5 transition-colors p-1.5 rounded cursor-pointer" onClick={() => onTaskClick(t, agent.color)}>
+                {/* Uncrushable Chevron Box */}
+                <div className="w-6 min-w-[24px] flex items-center justify-center shrink-0 pt-0.5">
+                  {subs.length > 0 ? (
+                    <button 
+                      onClick={(e) => { e.preventDefault(); e.stopPropagation(); toggleExpand(t.id); }}
+                      className="p-1 hover:bg-zinc-500/20 rounded text-zinc-400 cursor-pointer"
+                    >
+                      {isExpanded ? <ChevronDown size={14} /> : <ChevronRight size={14} />}
+                    </button>
+                  ) : (
+                    <div className="w-full h-full" />
+                  )}
+                </div>
+                
+                {/* Checkbox & Title */}
+                <div className="shrink-0 pt-1">
+                  <button onClick={(e) => { e.stopPropagation(); onToggle(t.id); }} className="text-zinc-500 hover:text-[color:var(--theme-grad-start)] transition-colors p-0 border-none bg-none flex shrink-0">
+                    <Circle size={12} />
                   </button>
-                ) : <div className="w-5 mr-2 shrink-0" />}
-                <button onClick={(e) => { e.stopPropagation(); onToggle(t.id); }} className="text-zinc-500 hover:text-[color:var(--theme-grad-start)] transition-colors p-0 border-none bg-none flex shrink-0">
-                  <Circle size={12} />
-                </button>
-                <div style={{ width: 4, height: 4, borderRadius: "50%", backgroundColor: t.priority === 1 ? "#E05A3A" : t.priority === 3 ? "#3B4558" : "#C9A961", flexShrink: 0 }} />
-                <span style={{ fontSize: 11, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", flex: 1 }} className="text-zinc-900 dark:text-white">{t.title}</span>
+                </div>
+                <div className="shrink-0 pt-[6px]">
+                  <div style={{ width: 4, height: 4, borderRadius: "50%", backgroundColor: t.priority === 1 ? "#E05A3A" : t.priority === 3 ? "#3B4558" : "#C9A961", flexShrink: 0 }} />
+                </div>
+                <span className="flex-1 text-sm leading-tight text-zinc-900 dark:text-white pt-[3px]">{t.title}</span>
               </div>
-              {/* Subtasks Accordion */}
+
+              {/* Nested Subtasks */}
               {isExpanded && subs.length > 0 && (
-                <div className="ml-6 pl-4 border-l border-zinc-500/30 flex flex-col gap-2 mt-2">
+                <div className="ml-8 pl-4 border-l border-zinc-500/30 flex flex-col gap-2 mt-2">
                   {subs.map(sub => (
-                    <div key={sub.id} className="flex items-center gap-2 group p-1.5 bg-white/5 dark:bg-black/20 rounded border border-zinc-200/20 dark:border-white/5">
-                      <button onClick={(e) => { e.stopPropagation(); onToggleSubtask && onToggleSubtask(sub.id); }} className="text-zinc-500 hover:text-zinc-900 dark:hover:text-white transition-colors shrink-0">
-                        {sub.status === "DONE" ? <CheckCircle2 size={11} color={agent.color} /> : <Circle size={11} />}
-                      </button>
-                      <span className={`text-[10px] flex-1 truncate ${sub.status === "DONE" ? "line-through text-zinc-500" : "text-zinc-700 dark:text-white"}`}>
-                        {sub.title}
-                      </span>
+                    <div key={sub.id} className="flex flex-row items-start gap-2 group p-1">
+                      <div className="shrink-0 pt-0.5">
+                        <button onClick={(e) => { e.stopPropagation(); onToggleSubtask && onToggleSubtask(sub.id); }} className="text-zinc-500 hover:text-zinc-900 dark:hover:text-white transition-colors shrink-0">
+                          {sub.status === "DONE" ? <CheckCircle2 size={11} color={agent.color} /> : <Circle size={11} />}
+                        </button>
+                      </div>
+                      <span className={`text-sm flex-1 pt-0.5 ${sub.status === "DONE" ? "line-through text-zinc-500" : "text-zinc-700 dark:text-white"}`}>{sub.title}</span>
                       <button onClick={(e) => { e.stopPropagation(); onDeleteSubtask && onDeleteSubtask(sub.id); }} className="opacity-0 group-hover:opacity-100 text-zinc-500 hover:text-red-400 transition-all shrink-0">
                         <X size={10} />
                       </button>
@@ -1285,7 +1301,20 @@ export default function ChairmanDashboard() {
   useEffect(() => {
     fetch("/api/tasks")
       .then((r) => r.json())
-      .then((data) => { if (data.tasks) setDbTasks(data.tasks); })
+      .then((data) => { 
+        if (data.tasks) {
+          const fetchedTasks = data.tasks;
+          const parent = fetchedTasks.find((t: DbTask) => t.title.toLowerCase().includes("getting the second plan")) || fetchedTasks[0];
+          if (parent) {
+            // Inject mock subtasks for demonstration
+            fetchedTasks.push(
+              { id: 'mock-s1', title: 'Review Q3 metrics', pillar: parent.pillar, agentId: parent.agentId, category: parent.category, status: 'PENDING', isDelegated: false, createdAt: new Date().toISOString(), priority: 2, parentId: parent.id },
+              { id: 'mock-s2', title: 'Draft email', pillar: parent.pillar, agentId: parent.agentId, category: parent.category, status: 'PENDING', isDelegated: false, createdAt: new Date().toISOString(), priority: 2, parentId: parent.id }
+            );
+          }
+          setDbTasks(fetchedTasks);
+        }
+      })
       .catch(() => {})
       .finally(() => setTasksLoading(false));
   }, []);
