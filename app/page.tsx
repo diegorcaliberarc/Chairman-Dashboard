@@ -413,7 +413,7 @@ function TaskPanel({
                     </div>
                   ))}
                   {/* Add subtask input */}
-                  <div style={{ display: "flex", alignItems: "center", gap: 6, padding: "5px 10px", borderRadius: 6, border: `1px solid ${agent.color}18` }} className="bg-white/80 dark:bg-black/60 backdrop-blur-xl">
+                  <div style={{ display: "flex", alignItems: "center", gap: 6, padding: "5px 10px", borderRadius: 6, border: `1px solid ${agent.color}18` }} className="bg-white/80 dark:bg-black/60 backdrop-blur-xl border border-zinc-200/50 dark:border-white/10">
                     <div style={{ width: 11, height: 11, flexShrink: 0 }} />
                     <input
                       value={subInputs[task.id] ?? ""}

@@ -149,7 +149,7 @@ export function AppearanceSettings({ onClose }: { onClose: () => void }) {
                 onClick={handleSaveCustom}
                 className="text-xs font-medium text-themeAccent flex items-center gap-1 hover:opacity-80 transition-opacity"
               >
-                <Save size={12} /> Save Theme
+                <Save size={12} /> Save Custom Theme
               </button>
             </div>
             <div className="flex items-center gap-4 p-4 rounded-lg border border-zinc-200/50 dark:border-white/10 bg-zinc-50/50 dark:bg-black/20">
@@ -184,14 +184,14 @@ export function AppearanceSettings({ onClose }: { onClose: () => void }) {
             onClick={handleCancel}
             className="px-4 py-2 text-sm font-medium text-zinc-600 dark:text-zinc-300 hover:text-zinc-900 dark:hover:text-white transition-colors"
           >
-            Cancel
+            Cancel Button
           </button>
           <button 
             onClick={handleApply}
             className="px-5 py-2 text-sm font-bold text-white bg-theme-gradient rounded-lg shadow-lg shadow-themeAccent/20 hover:scale-105 transition-all flex items-center gap-2"
           >
             <Check size={16} />
-            Apply Changes
+            Apply Button
           </button>
         </div>
       </div>
