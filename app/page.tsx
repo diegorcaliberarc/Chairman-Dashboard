@@ -6,6 +6,7 @@ import { useTheme } from "next-themes";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
 import MermaidDiagram from "@/components/MermaidDiagram";
+import { ThemePicker } from "@/components/ThemePicker";
 import {
   CheckCircle2,
   Circle,
@@ -1855,7 +1856,7 @@ export default function ChairmanDashboard() {
               <div style={{ width: 1, height: 28, backgroundColor: "#1E1F24" }} />
 
               {/* Theme toggle */}
-              <ThemeToggle />
+              <ThemePicker />
 
               {/* User avatar / sign-in */}
               {user ? (

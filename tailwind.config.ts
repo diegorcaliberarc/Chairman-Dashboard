@@ -14,6 +14,9 @@ const config: Config = {
         surface: "#0C0D10",
         border: "#1E1F24",
         accent: "#3B82F6",
+        primary: "var(--color-primary)",
+        "primary-hover": "var(--color-primary-hover)",
+        glow: "var(--color-glow)",
       },
       fontFamily: {
         mono: ["'JetBrains Mono'", "'Fira Code'", "monospace"],

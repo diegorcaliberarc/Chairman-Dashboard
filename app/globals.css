@@ -18,6 +18,24 @@
   --gold:         #9B7B30;
 }
 
+:root[data-theme='default'] {
+  --color-primary: #3b82f6;
+  --color-primary-hover: #2563eb;
+  --color-glow: rgba(59, 130, 246, 0.5);
+}
+
+:root[data-theme='crimson'] {
+  --color-primary: #e11d48;
+  --color-primary-hover: #be123c;
+  --color-glow: rgba(225, 29, 72, 0.5);
+}
+
+:root[data-theme='cyber'] {
+  --color-primary: #06b6d4;
+  --color-primary-hover: #0891b2;
+  --color-glow: rgba(6, 182, 212, 0.5);
+}
+
 * {
   box-sizing: border-box;
 }
