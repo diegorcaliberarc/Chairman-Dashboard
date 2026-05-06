@@ -8,6 +8,7 @@ import remarkGfm from "remark-gfm";
 import MermaidDiagram from "@/components/MermaidDiagram";
 import { AppearanceSettings } from "@/components/AppearanceSettings";
 import { Palette } from "lucide-react";
+import { Sidebar } from "@/components/Sidebar";
 import {
   CheckCircle2,
   Circle,
@@ -258,8 +259,8 @@ function LiveClock() {
   }, []);
   return (
     <div className="text-right select-none">
-      <div className="font-mono text-sm tracking-wider" className="text-zinc-900 dark:text-white" style={{ fontVariantNumeric: "tabular-nums" }}>{time}</div>
-      <div className="text-[10px] tracking-wider mt-0.5" className="text-zinc-900 dark:text-white">{date}</div>
+      <div className="font-mono text-sm tracking-wider text-zinc-900 dark:text-white" style={{ fontVariantNumeric: "tabular-nums" }}>{time}</div>
+      <div className="text-[10px] tracking-wider mt-0.5 text-zinc-900 dark:text-white">{date}</div>
     </div>
   );
 }
@@ -269,11 +270,11 @@ function LiveClock() {
 function SectionLabel({ children, right }: { children: React.ReactNode; right?: React.ReactNode }) {
   return (
     <div className="flex items-center gap-3">
-      <span className="text-[10px] tracking-widest uppercase shrink-0" className="text-zinc-900 dark:text-white">
+      <span className="text-[10px] tracking-widest uppercase shrink-0 text-zinc-900 dark:text-white">
         {children}
       </span>
       <div style={{ flex: 1, height: 1, backgroundColor: "#1E1F24" }} />
-      {right && <span className="text-[10px] shrink-0" className="text-zinc-900 dark:text-white">{right}</span>}
+      {right && <span className="text-[10px] shrink-0 text-zinc-900 dark:text-white">{right}</span>}
     </div>
   );
 }
@@ -1756,8 +1757,25 @@ export default function ChairmanDashboard() {
   ];
 
   return (
-    <div className="min-h-screen text-zinc-900 dark:text-white">
+    <div className="min-h-screen text-zinc-900 dark:text-white flex flex-row">
       <style>{KEYFRAMES}</style>
+
+      {/* ── SIDEBAR ───────────────────────────────────────────────────────── */}
+      <Sidebar 
+        activeTab={activeTab} 
+        setActiveTab={setActiveTab} 
+        calConnected={calConnected} 
+        onCalToggle={() => calConnected ? signOut({ redirect: false }) : signIn("google")}
+        appearanceOpen={appearanceOpen} 
+        setAppearanceOpen={setAppearanceOpen} 
+        user={user}
+        deepWork={deepWork}
+        setDeepWork={setDeepWork}
+        novaOpen={novaOpen}
+        setNovaOpen={setNovaOpen}
+      />
+
+      <div className="flex-1 flex flex-col ml-64 min-w-0">
 
       {/* ── DEEP WORK OVERLAY ─────────────────────────────────────────────── */}
       {deepWork && (
@@ -1771,194 +1789,18 @@ export default function ChairmanDashboard() {
 
       {/* ── HEADER ────────────────────────────────────────────────────────── */}
       <header className="sticky top-0 z-40 bg-white/80 dark:bg-black/60 backdrop-blur-xl border-b border-zinc-200/50 dark:border-white/10">
-        <div className="max-w-[1440px] mx-auto px-8">
-          <div className="flex flex-wrap items-center justify-between gap-y-3 py-4">
+        <div className="max-w-[1440px] mx-auto px-6">
+          <div className="flex flex-wrap items-center justify-between gap-y-3 py-3">
             {/* Brand */}
             <div className="flex items-center gap-4">
               <Crosshair size={15} className="text-zinc-900 dark:text-white" />
-              <div>
-                <h1 style={{ fontFamily: "Georgia, serif", fontSize: 16, color: "var(--theme-grad-start)", letterSpacing: "0.04em" }}>
-                  Pristine Designs
-                </h1>
-                <div className="text-[9px] tracking-widest uppercase" className="text-zinc-900 dark:text-white">
-                  Executive Command · Claude Agent Stack · V6 · Supabase
-                </div>
-              </div>
-              <div className="header-divider-ea" style={{ width: 1, height: 24, backgroundColor: "#1E1F24", marginLeft: 4 }} />
-              <div className="header-ea-badge flex items-center gap-1.5">
-                <Bot size={11} className="text-zinc-900 dark:text-white" />
-                <span className="text-[9px] tracking-widest uppercase text-zinc-500 dark:text-zinc-400">EA Buffer Active</span>
-              </div>
+              <h1 style={{ fontFamily: "Georgia, serif", fontSize: 16, color: "var(--theme-grad-start)", letterSpacing: "0.04em" }}>
+                Pristine Designs
+              </h1>
             </div>
 
             {/* Right cluster */}
             <div className="flex items-center gap-6">
-              {/* Google Calendar connect/disconnect */}
-              <button
-                onClick={() => calConnected ? signOut({ redirect: false }) : signIn("google")}
-                style={{
-                  display:         "flex",
-                  alignItems:      "center",
-                  gap:             6,
-                  padding:         "7px 14px",
-                  borderRadius:    6,
-                  backgroundColor: calConnected ? "rgba(var(--theme-grad-start), 0.1)" : "transparent",
-                  border:          `1px solid ${calConnected ? "var(--theme-grad-start)" : "#1E1F24"}`,
-                  color: calConnected ? "var(--theme-grad-start)" : "#3B4558",
-                  fontSize:        9,
-                  fontWeight:      700,
-                  letterSpacing:   "0.18em",
-                  cursor:          "pointer",
-                  transition:      "all 0.2s ease",
-                  textTransform:   "uppercase",
-                  whiteSpace:      "nowrap",
-                }}
-              >
-                <CalendarDays size={11} />
-                {calConnected ? "Cal · Live" : "Connect Cal"}
-              </button>
-
-              <div style={{ width: 1, height: 28, backgroundColor: "#1E1F24" }} />
-
-              {/* Nova Logic Core toggle */}
-              <button
-                onClick={() => setNovaOpen((p) => !p)}
-                title="Nova Logic Core — AI Agent Array"
-                style={{
-                  display:         "flex",
-                  alignItems:      "center",
-                  gap:             6,
-                  padding:         "7px 12px",
-                  borderRadius:    6,
-                  backgroundColor: novaOpen ? "rgba(var(--theme-grad-start), 0.12)" : "transparent",
-                  border:          `1px solid ${novaOpen ? "var(--theme-grad-start)" : "#1E1F24"}`,
-                  color: novaOpen ? "var(--theme-grad-start)" : "#3B4558",
-                  fontSize:        9,
-                  fontWeight:      700,
-                  letterSpacing:   "0.18em",
-                  cursor:          "pointer",
-                  transition:      "all 0.2s ease",
-                  textTransform:   "uppercase",
-                  flexShrink:      0,
-                }}
-                onMouseEnter={(e) => { if (!novaOpen) { (e.currentTarget as HTMLButtonElement).style.borderColor = "rgba(59,130,246,0.35)"; (e.currentTarget as HTMLButtonElement).style.color = "#C9A961"; } }}
-                onMouseLeave={(e) => { if (!novaOpen) { (e.currentTarget as HTMLButtonElement).style.borderColor = "#1E1F24"; (e.currentTarget as HTMLButtonElement).style.color = "#3B4558"; } }}
-              >
-                <Bot size={11} />
-                Nova
-              </button>
-
-              <div style={{ width: 1, height: 28, backgroundColor: "#1E1F24" }} />
-
-              {/* Theme toggle */}
-              <button
-                onClick={() => setAppearanceOpen(true)}
-                className="flex items-center justify-center w-8 h-8 rounded-full border border-zinc-200/50 dark:border-white/10 text-zinc-500 hover:text-zinc-900 dark:hover:text-white transition-colors"
-                title="Appearance Settings"
-              >
-                <Palette size={14} />
-              </button>
-
-              {appearanceOpen && <AppearanceSettings onClose={() => setAppearanceOpen(false)} />}
-
-              {/* User avatar / sign-in */}
-              {user ? (
-                <button
-                  onClick={() => signOut({ callbackUrl: "/auth/signin" })}
-                  title={`Signed in as ${user.email ?? user.name} · Click to sign out`}
-                  style={{
-                    flexShrink:      0,
-                    display:         "flex",
-                    alignItems:      "center",
-                    gap:             7,
-                    padding:         "4px 10px 4px 4px",
-                    borderRadius:    20,
-                    backgroundColor: "transparent",
-                    border:          "1px solid #1E1F24",
-                    cursor:          "pointer",
-                    transition:      "all 0.2s ease",
-                  }}
-                  onMouseEnter={(e) => {
-                    (e.currentTarget as HTMLButtonElement).style.borderColor = "rgba(59,130,246,0.35)";
-                  }}
-                  onMouseLeave={(e) => {
-                    (e.currentTarget as HTMLButtonElement).style.borderColor = "#1E1F24";
-                  }}
-                >
-                  {user.image ? (
-                    <img
-                      src={user.image}
-                      alt={user.name ?? "User"}
-                      width={22}
-                      height={22}
-                      style={{ borderRadius: "50%", display: "block" }}
-                    />
-                  ) : (
-                    <div style={{ width: 22, height: 22, borderRadius: "50%", backgroundColor: "rgba(59,130,246,0.2)", display: "flex", alignItems: "center", justifyContent: "center" }}>
-                      <span style={{ fontSize: 9, color: "var(--theme-grad-start)", fontWeight: 700 }}>
-                        {(user.name ?? "C")[0].toUpperCase()}
-                      </span>
-                    </div>
-                  )}
-                  <span style={{ fontSize: 9, letterSpacing: "0.1em", textTransform: "uppercase", whiteSpace: "nowrap" }} className="text-zinc-900 dark:text-white">
-                    {user.name?.split(" ")[0] ?? "Chairman"}
-                  </span>
-                </button>
-              ) : (
-                <button
-                  onClick={() => signIn("google")}
-                  style={{
-                    flexShrink:      0,
-                    display:         "flex",
-                    alignItems:      "center",
-                    gap:             6,
-                    padding:         "6px 12px",
-                    borderRadius:    6,
-                    backgroundColor: "transparent",
-                    border:          "1px solid #1E1F24",
-                    color: "var(--theme-grad-start)",
-                    fontSize:        9,
-                    fontWeight:      700,
-                    letterSpacing:   "0.18em",
-                    textTransform:   "uppercase",
-                    cursor:          "pointer",
-                    transition:      "all 0.2s ease",
-                    whiteSpace:      "nowrap",
-                  }}
-                >
-                  Sign In
-                </button>
-              )}
-
-              <div style={{ width: 1, height: 28, backgroundColor: "#1E1F24" }} />
-
-              {/* Deep Work toggle */}
-              <button
-                onClick={() => setDeepWork((p) => !p)}
-                style={{
-                  display:         "flex",
-                  alignItems:      "center",
-                  gap:             6,
-                  padding:         "7px 14px",
-                  borderRadius:    6,
-                  backgroundColor: deepWork ? "rgba(59,130,246,0.14)" : "transparent",
-                  border:          `1px solid ${deepWork ? "rgba(59,130,246,0.45)" : "#1E1F24"}`,
-                  color:           deepWork ? "#C9A961" : "#3B4558",
-                  fontSize:        9,
-                  fontWeight:      700,
-                  letterSpacing:   "0.2em",
-                  cursor:          "pointer",
-                  transition:      "all 0.2s ease",
-                  textTransform:   "uppercase",
-                  whiteSpace:      "nowrap",
-                }}
-              >
-                <Brain size={11} />
-                Deep Work {deepWork ? "· ON" : "· OFF"}
-              </button>
-
-              <div style={{ width: 1, height: 28, backgroundColor: "#1E1F24" }} />
-
               {/* Progress */}
               <div className="text-right select-none">
                 <div className="text-[9px] tracking-widest uppercase mb-1 text-zinc-500 dark:text-zinc-400">
@@ -1975,32 +1817,6 @@ export default function ChairmanDashboard() {
               <div className="header-divider-clock" style={{ width: 1, height: 28, backgroundColor: "#1E1F24" }} />
               <div className="header-clock"><LiveClock /></div>
             </div>
-          </div>
-
-          {/* Tab nav */}
-          <div className="flex items-center gap-1 overflow-x-auto scrollbar-none" style={{ scrollbarWidth: "none" }}>
-            {TABS.map((tab) => {
-              const isActive = activeTab === tab.id;
-              return (
-                <button
-                  key={tab.id}
-                  onClick={() => setActiveTab(tab.id)}
-                  className={`focus:outline-none z-10 ${isActive ? "bg-white/80 dark:bg-black/60 backdrop-blur-xl border-t border-l border-r border-zinc-200/50 dark:border-white/10 border-b-2 border-themeAccent text-zinc-900 dark:text-white" : "text-zinc-500 dark:text-zinc-400 border border-transparent border-b-2 border-transparent"}`}
-                  style={{
-                    padding:         "9px 20px",
-                    borderRadius:    "8px 8px 0 0",
-                    marginBottom:    isActive ? -1 : 0,
-                    fontSize:        10,
-                    fontWeight:      700,
-                    letterSpacing:   "0.18em",
-                    transition:      "all 0.18s ease",
-                    cursor:          "pointer",
-                  }}
-                >
-                  {tab.label}
-                </button>
-              );
-            })}
           </div>
         </div>
       </header>
@@ -2068,7 +1884,7 @@ export default function ChairmanDashboard() {
       <div style={{
         position:        "fixed",
         bottom:          0,
-        left:            0,
+        left:            "16rem",
         right:           0,
         zIndex:          50,
         borderTop:       `1px solid ${cmdFocused ? "rgba(59,130,246,0.32)" : "transparent"}`,
@@ -2139,7 +1955,7 @@ export default function ChairmanDashboard() {
             {/* Processing or Deploy */}
             {isProcessing ? (
               <div style={{ flexShrink: 0, display: "flex", alignItems: "center", gap: 8 }}>
-                <Loader2 size={13} className="text-zinc-900 dark:text-white" className="animate-spin" />
+                <Loader2 size={13} className="text-zinc-900 dark:text-white animate-spin" />
                 <span className="cmd-bar-msg text-zinc-500 dark:text-zinc-400" style={{ fontSize: 10, letterSpacing: "0.12em", textTransform: "uppercase", whiteSpace: "nowrap" }}>
                   {processingMsg}
                 </span>
@@ -2173,6 +1989,7 @@ export default function ChairmanDashboard() {
             <span className="text-zinc-500 dark:text-zinc-400" style={{ fontSize: 10, flexShrink: 0, letterSpacing: "0.06em" }}>↵</span>
           </div>
         </div>
+      </div>
       </div>
     </div>
   );
