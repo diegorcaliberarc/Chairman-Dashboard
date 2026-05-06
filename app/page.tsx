@@ -6,7 +6,8 @@ import { useTheme } from "next-themes";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
 import MermaidDiagram from "@/components/MermaidDiagram";
-import { ThemePicker } from "@/components/ThemePicker";
+import { AppearanceSettings } from "@/components/AppearanceSettings";
+import { Palette } from "lucide-react";
 import {
   CheckCircle2,
   Circle,
@@ -257,8 +258,8 @@ function LiveClock() {
   }, []);
   return (
     <div className="text-right select-none">
-      <div className="font-mono text-sm tracking-wider" style={{ color: "var(--theme-grad-start)", fontVariantNumeric: "tabular-nums" }}>{time}</div>
-      <div className="text-[10px] tracking-wider mt-0.5" style={{ color: "var(--theme-grad-start)" }}>{date}</div>
+      <div className="font-mono text-sm tracking-wider" className="text-zinc-900 dark:text-white" style={{ fontVariantNumeric: "tabular-nums" }}>{time}</div>
+      <div className="text-[10px] tracking-wider mt-0.5" className="text-zinc-900 dark:text-white">{date}</div>
     </div>
   );
 }
@@ -268,11 +269,11 @@ function LiveClock() {
 function SectionLabel({ children, right }: { children: React.ReactNode; right?: React.ReactNode }) {
   return (
     <div className="flex items-center gap-3">
-      <span className="text-[10px] tracking-widest uppercase shrink-0" style={{ color: "var(--theme-grad-start)" }}>
+      <span className="text-[10px] tracking-widest uppercase shrink-0" className="text-zinc-900 dark:text-white">
         {children}
       </span>
       <div style={{ flex: 1, height: 1, backgroundColor: "#1E1F24" }} />
-      {right && <span className="text-[10px] shrink-0" style={{ color: "var(--theme-grad-start)" }}>{right}</span>}
+      {right && <span className="text-[10px] shrink-0" className="text-zinc-900 dark:text-white">{right}</span>}
     </div>
   );
 }
@@ -288,13 +289,13 @@ function AgentCard({ agent, selected, onClick }: { agent: Agent; selected: boole
       onClick={onClick}
       className={`w-full text-left rounded-xl p-5 transition-all duration-200 focus:outline-none border border-solid hover:shadow-[0_0_15px_var(--theme-grad-start)] dark:hover:shadow-[0_0_15px_var(--theme-grad-start)] ${
         selected 
-          ? "bg-zinc-50/90 dark:bg-black/60 backdrop-blur-lg border-themeAccent/50 shadow-[0_0_28px_var(--theme-grad-start)]" 
-          : "bg-zinc-50/70 dark:bg-black/40 backdrop-blur-lg border-zinc-200/50 dark:border-white/10 shadow-[0_0_30px_rgba(0,0,0,0.08)] dark:shadow-[0_0_30px_rgba(255,255,255,0.02)]"
+          ? "bg-white/80 dark:bg-black/60 backdrop-blur-xl border-themeAccent/50 shadow-[0_0_28px_var(--theme-grad-start)]" 
+          : "bg-white/80 dark:bg-black/60 backdrop-blur-xl border-zinc-200/50 dark:border-white/10 shadow-[0_0_30px_rgba(0,0,0,0.08)] dark:shadow-[0_0_30px_rgba(255,255,255,0.02)]"
       }`}
     >
       <div className="flex items-start justify-between mb-4">
         <div>
-          <div style={{ fontFamily: "Georgia, serif", fontSize: 19, lineHeight: 1.1 }} className="text-zinc-900 dark:text-zinc-100">
+          <div style={{ fontFamily: "Georgia, serif", fontSize: 19, lineHeight: 1.1 }} className="text-zinc-900 dark:text-white">
             {agent.title}
           </div>
           <div className="text-[10px] tracking-widest uppercase mt-1 text-zinc-500 dark:text-zinc-400">
@@ -302,10 +303,10 @@ function AgentCard({ agent, selected, onClick }: { agent: Agent; selected: boole
           </div>
         </div>
         <div className="flex items-center gap-1.5 mt-0.5">
-          <span className="text-sm font-bold text-zinc-900 dark:text-zinc-100" style={{ fontVariantNumeric: "tabular-nums" }}>
+          <span className="text-sm font-bold text-zinc-900 dark:text-white" style={{ fontVariantNumeric: "tabular-nums" }}>
             {done}<span className="text-xs font-normal text-zinc-500 dark:text-zinc-400">/{total}</span>
           </span>
-          <ChevronRight size={12} className={selected ? "text-themeAccent" : "text-zinc-500 dark:text-zinc-400"} style={{ transform: selected ? "rotate(90deg)" : "none", transition: "transform 0.2s ease" }} />
+          <ChevronRight size={12} className={selected ? "text-zinc-900 dark:text-white" : "text-zinc-500 dark:text-zinc-400"} style={{ transform: selected ? "rotate(90deg)" : "none", transition: "transform 0.2s ease" }} />
         </div>
       </div>
       <div className="h-px rounded-full" style={{ backgroundColor: "#1E1F24" }}>
@@ -331,7 +332,7 @@ function TaskPanel({
   const done = agent.tasks.filter((t) => t.status === "DONE").length;
 
   return (
-    <div className="rounded-xl bg-zinc-50/70 dark:bg-black/40 backdrop-blur-lg shadow-[0_0_30px_rgba(0,0,0,0.08)] dark:shadow-[0_0_30px_rgba(255,255,255,0.02)] hover:shadow-[0_0_40px_rgba(0,0,0,0.12)] dark:hover:shadow-[0_0_40px_rgba(255,255,255,0.04)] transition-shadow duration-500" style={{ border: `1px solid ${agent.color}30`, padding: "24px", animation: "fade-up 0.22s ease-out" }}>
+    <div className="rounded-xl bg-white/80 dark:bg-black/60 backdrop-blur-xl shadow-[0_0_30px_rgba(0,0,0,0.08)] dark:shadow-[0_0_30px_rgba(255,255,255,0.02)] hover:shadow-[0_0_40px_rgba(0,0,0,0.12)] dark:hover:shadow-[0_0_40px_rgba(255,255,255,0.04)] transition-shadow duration-500" style={{ border: `1px solid ${agent.color}30`, padding: "24px", animation: "fade-up 0.22s ease-out" }}>
       <div className="flex items-center gap-3 mb-5">
         <span style={{ fontFamily: "Georgia, serif", fontSize: 15, color: agent.color }}>{agent.title}</span>
         <div className="h-3 w-px bg-zinc-300 dark:bg-[#1E1F24]" />
@@ -399,7 +400,7 @@ function TaskPanel({
               {isExpanded && (
                 <div style={{ marginLeft: 24, marginTop: 3, display: "flex", flexDirection: "column", gap: 2 }}>
                   {subs.map((sub) => (
-                    <div key={sub.id} style={{ display: "flex", alignItems: "center", gap: 6, padding: "6px 10px", borderRadius: 6 }} className="bg-zinc-50/50 dark:bg-black/30 backdrop-blur-md border border-zinc-200/50 dark:border-white/10">
+                    <div key={sub.id} style={{ display: "flex", alignItems: "center", gap: 6, padding: "6px 10px", borderRadius: 6 }} className="bg-white/80 dark:bg-black/60 backdrop-blur-xl border border-zinc-200/50 dark:border-white/10">
                       <button onClick={() => onToggle(sub.id)} style={{ background: "none", border: "none", cursor: "pointer", padding: 0, display: "flex", flexShrink: 0, color: sub.status === "DONE" ? "var(--theme-grad-start)" : undefined }} className={sub.status === "DONE" ? "" : "text-zinc-600 dark:text-[#252836]"}>
                         {sub.status === "DONE" ? <CheckCircle2 size={11} /> : <Circle size={11} />}
                       </button>
@@ -412,7 +413,7 @@ function TaskPanel({
                     </div>
                   ))}
                   {/* Add subtask input */}
-                  <div style={{ display: "flex", alignItems: "center", gap: 6, padding: "5px 10px", borderRadius: 6, border: `1px solid ${agent.color}18` }} className="bg-zinc-50/50 dark:bg-black/30 backdrop-blur-md">
+                  <div style={{ display: "flex", alignItems: "center", gap: 6, padding: "5px 10px", borderRadius: 6, border: `1px solid ${agent.color}18` }} className="bg-white/80 dark:bg-black/60 backdrop-blur-xl">
                     <div style={{ width: 11, height: 11, flexShrink: 0 }} />
                     <input
                       value={subInputs[task.id] ?? ""}
@@ -550,7 +551,7 @@ function CalendarFeed({
       {/* Header */}
       <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 10 }}>
         <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
-          <CalendarDays size={10} className="text-zinc-500 dark:text-zinc-100" />
+          <CalendarDays size={10} className="text-zinc-500 dark:text-white" />
           <span style={{ fontSize: 9, letterSpacing: "0.22em", textTransform: "uppercase" }} className="text-zinc-500 dark:text-zinc-400">Command Calendar</span>
         </div>
         <span style={{ fontSize: 8, letterSpacing: "0.14em", textTransform: "uppercase", color: calLoading ? "#4A90E2" : calError ? "#E05A3A" : calConnected ? "#8BA87B" : "#252836" }}>
@@ -602,8 +603,8 @@ function CalendarFeed({
       <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
         {calError ? (
           <div style={{ padding: "10px 12px", borderRadius: 6, display: "flex", alignItems: "center", justifyContent: "space-between", gap: 10 }} className="bg-red-50 dark:bg-[#E05A3A]/10 border border-red-200 dark:border-[#E05A3A]/20">
-            <span style={{ fontSize: 10, letterSpacing: "0.06em" }} className="text-red-600 dark:text-themeAccent">Google session expired — reconnect to restore events.</span>
-            <a href="/api/auth/signin" style={{ fontSize: 9, letterSpacing: "0.14em", textTransform: "uppercase", textDecoration: "none", flexShrink: 0, padding: "3px 8px", borderRadius: 4 }} className="text-zinc-700 dark:text-zinc-100 border border-zinc-200 dark:border-transparent [background:linear-gradient(var(--bg-zinc-50/50 dark:bg-black/30 backdrop-blur-md),var(--bg-zinc-50/50 dark:bg-black/30 backdrop-blur-md))_padding-box,linear-gradient(to_right,var(--theme-grad-start),var(--theme-grad-end))_border-box]/30">Reconnect</a>
+            <span style={{ fontSize: 10, letterSpacing: "0.06em" }} className="text-red-600 dark:text-zinc-900 dark:text-white">Google session expired — reconnect to restore events.</span>
+            <a href="/api/auth/signin" style={{ fontSize: 9, letterSpacing: "0.14em", textTransform: "uppercase", textDecoration: "none", flexShrink: 0, padding: "3px 8px", borderRadius: 4 }} className="text-zinc-700 dark:text-white border border-zinc-200 dark:border-transparent [background:linear-gradient(var(--bg-white/80 dark:bg-black/60 backdrop-blur-xl),var(--bg-white/80 dark:bg-black/60 backdrop-blur-xl))_padding-box,linear-gradient(to_right,var(--theme-grad-start),var(--theme-grad-end))_border-box]/30">Reconnect</a>
           </div>
         ) : todayEvts.length === 0 ? (
           <div style={{ fontSize: 10, letterSpacing: "0.08em", padding: "10px 0" }} className="text-zinc-500 dark:text-[#1C1E2A]">
@@ -620,13 +621,13 @@ function CalendarFeed({
               ? new Date(endDt).toLocaleTimeString("en-US", { hour: "numeric", minute: "2-digit", hour12: true })
               : null;
             return (
-              <div key={ev.id} style={{ display: "flex", gap: 10, alignItems: "center", padding: "7px 10px", borderRadius: 6 }} className="bg-slate-50 dark:bg-theme-gradient/5 border border-slate-200 dark:border-transparent [background:linear-gradient(var(--bg-zinc-50/50 dark:bg-black/30 backdrop-blur-md),var(--bg-zinc-50/50 dark:bg-black/30 backdrop-blur-md))_padding-box,linear-gradient(to_right,var(--theme-grad-start),var(--theme-grad-end))_border-box]/10">
+              <div key={ev.id} style={{ display: "flex", gap: 10, alignItems: "center", padding: "7px 10px", borderRadius: 6 }} className="bg-slate-50 dark:bg-theme-gradient/5 border border-slate-200 dark:border-transparent [background:linear-gradient(var(--bg-white/80 dark:bg-black/60 backdrop-blur-xl),var(--bg-white/80 dark:bg-black/60 backdrop-blur-xl))_padding-box,linear-gradient(to_right,var(--theme-grad-start),var(--theme-grad-end))_border-box]/10">
                 <div style={{ flexShrink: 0, textAlign: "right" }}>
-                  <div style={{ fontSize: 9, fontVariantNumeric: "tabular-nums", whiteSpace: "nowrap" }} className="text-zinc-700 dark:text-zinc-100">{timeStr}</div>
+                  <div style={{ fontSize: 9, fontVariantNumeric: "tabular-nums", whiteSpace: "nowrap" }} className="text-zinc-700 dark:text-white">{timeStr}</div>
                   {endStr && <div style={{ fontSize: 8, fontVariantNumeric: "tabular-nums", whiteSpace: "nowrap" }} className="text-zinc-500 dark:text-zinc-400">{endStr}</div>}
                 </div>
                 <div style={{ width: 1, height: "100%", minHeight: 24, flexShrink: 0 }} className="bg-slate-200 dark:bg-theme-gradient/20" />
-                <span style={{ fontSize: 11, flex: 1, lineHeight: 1.4 }} className="text-zinc-900 dark:text-zinc-100">{ev.summary ?? "Event"}</span>
+                <span style={{ fontSize: 11, flex: 1, lineHeight: 1.4 }} className="text-zinc-900 dark:text-white">{ev.summary ?? "Event"}</span>
               </div>
             );
           })
@@ -640,7 +641,7 @@ function CalendarFeed({
           onClick={() => setModalDay(null)}
         >
           <div
-            style={{ backgroundColor: "rgba(0,0,0,0.4)", backdropFilter: "blur(16px)", border: "1px solid rgba(59,130,246,0.22)", borderRadius: 14, padding: "28px 32px", minWidth: 380, maxWidth: 520, width: "100%", boxShadow: "0 24px 80px rgba(0,0,0,0.8)", animation: "fade-up 0.18s ease-out" }}
+            style={{ backgroundColor: "rgba(0,0,0,0.6)", backdropFilter: "blur(24px)", border: "1px solid rgba(59,130,246,0.22)", borderRadius: 14, padding: "28px 32px", minWidth: 380, maxWidth: 520, width: "100%", boxShadow: "0 24px 80px rgba(0,0,0,0.8)", animation: "fade-up 0.18s ease-out" }}
             onClick={(e) => e.stopPropagation()}
           >
             {/* Modal header */}
@@ -680,7 +681,7 @@ function CalendarFeed({
                     ? new Date(endDt).toLocaleTimeString("en-US", { hour: "numeric", minute: "2-digit", hour12: true })
                     : null;
                   return (
-                    <div key={ev.id} style={{ padding: "12px 16px", borderRadius: 8, backgroundColor: "rgba(0,0,0,0.3)", backdropFilter: "blur(8px)", border: "1px solid rgba(59,130,246,0.10)" }}>
+                    <div key={ev.id} style={{ padding: "12px 16px", borderRadius: 8, backgroundColor: "rgba(0,0,0,0.4)", backdropFilter: "blur(12px)", border: "1px solid rgba(59,130,246,0.10)" }}>
                       <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: ev.summary ? 6 : 0 }}>
                         <div style={{ width: 3, height: 3, borderRadius: "50%", backgroundImage: 'linear-gradient(to right, var(--theme-grad-start), var(--theme-grad-end))', flexShrink: 0 }} />
                         <span style={{ fontSize: 9, color: "var(--theme-grad-start)", fontVariantNumeric: "tabular-nums", flexShrink: 0 }}>
@@ -715,7 +716,7 @@ function PriorityStrikes({
     <div style={{ height: "100%", display: "flex", flexDirection: "column" }}>
       <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 10 }}>
         <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
-          <Crosshair size={10} className="text-themeAccent dark:text-themeAccent" />
+          <Crosshair size={10} className="text-zinc-900 dark:text-white dark:text-zinc-900 dark:text-white" />
           <span style={{ fontSize: 9, letterSpacing: "0.22em", textTransform: "uppercase" }} className="text-zinc-500 dark:text-zinc-400">Priority Strikes</span>
         </div>
         <span style={{ fontSize: 8, letterSpacing: "0.14em", color: "var(--theme-grad-start)" }}>{strikes.length} pending</span>
@@ -734,7 +735,7 @@ function PriorityStrikes({
             </button>
             <div style={{ width: 4, height: 4, borderRadius: "50%", backgroundColor: agent.color, flexShrink: 0 }} />
             <span style={{ fontSize: 7, letterSpacing: "0.12em", textTransform: "uppercase", color: agent.color, flexShrink: 0, width: 28 }}>{agent.title}</span>
-            <span style={{ fontSize: 11, flex: 1, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }} className="text-zinc-900 dark:text-zinc-100">{task.title}</span>
+            <span style={{ fontSize: 11, flex: 1, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }} className="text-zinc-900 dark:text-white">{task.title}</span>
             <span style={{
               fontSize: 7, letterSpacing: "0.14em", textTransform: "uppercase", padding: "2px 5px", borderRadius: 3, flexShrink: 0,
               backgroundColor: task.priority === 1 ? "rgba(224,90,58,0.10)" : task.priority === 3 ? "rgba(59,69,88,0.08)" : "rgba(59,130,246,0.07)",
@@ -775,7 +776,7 @@ function QuadrantHeader({ label, sub, color }: { label: string; sub: string; col
 
 function SubPanel({ children }: { children: React.ReactNode }) {
   return (
-    <div style={{ borderRadius: 7, padding: "7px 10px" }} className="bg-zinc-50/50 dark:bg-black/30 backdrop-blur-md border border-zinc-200/50 dark:border-white/10">
+    <div style={{ borderRadius: 7, padding: "7px 10px" }} className="bg-white/80 dark:bg-black/60 backdrop-blur-xl border border-zinc-200/50 dark:border-white/10">
       {children}
     </div>
   );
@@ -951,9 +952,9 @@ function CSuiteCard({
         </div>
         <div style={{ flex: 1, overflow: "hidden", display: "flex", flexDirection: "column", gap: 3 }}>
           {previewTasks.length > 0 ? previewTasks.map((t) => (
-            <div key={t.id} style={{ display: "flex", alignItems: "center", gap: 5, padding: "4px 7px", borderRadius: 5 }} className="bg-zinc-50/50 dark:bg-black/30 backdrop-blur-md border border-zinc-200 dark:border-[#1E1F24]">
+            <div key={t.id} style={{ display: "flex", alignItems: "center", gap: 5, padding: "4px 7px", borderRadius: 5 }} className="bg-white/80 dark:bg-black/60 backdrop-blur-xl border border-zinc-200 dark:border-[#1E1F24]">
               <div style={{ width: 4, height: 4, borderRadius: "50%", backgroundColor: t.priority === 1 ? "#E05A3A" : t.priority === 3 ? "#3B4558" : "#C9A961", flexShrink: 0 }} />
-              <span style={{ fontSize: 9, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", flex: 1 }} className="text-zinc-900 dark:text-zinc-100">{t.title}</span>
+              <span style={{ fontSize: 9, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", flex: 1 }} className="text-zinc-900 dark:text-white">{t.title}</span>
             </div>
           )) : (
             <div style={{ display: "flex", alignItems: "center", justifyContent: "center", flex: 1 }}>
@@ -1356,7 +1357,7 @@ function NovaPanel({
               alignItems:      "center",
               justifyContent:  "space-between",
               padding:         "8px 12px",
-              backgroundColor: "rgba(0,0,0,0.4)", backdropFilter: "blur(16px)",
+              backgroundColor: "rgba(0,0,0,0.6)", backdropFilter: "blur(24px)",
               border:          `1px solid ${agentColor}44`,
               borderRadius:    7,
               cursor:          "pointer",
@@ -1371,7 +1372,7 @@ function NovaPanel({
             <ChevronDown size={11} style={{ opacity: 0.7, transform: showDrop ? "rotate(180deg)" : "none", transition: "transform 0.2s" }} />
           </button>
           {showDrop && (
-            <div style={{ position: "absolute", top: "calc(100% + 4px)", left: 0, right: 0, backgroundColor: "rgba(0,0,0,0.4)", backdropFilter: "blur(16px)", border: "1px solid #1E1F24", borderRadius: 7, zIndex: 10, overflow: "hidden", boxShadow: "0 8px 32px rgba(0,0,0,0.8)" }}>
+            <div style={{ position: "absolute", top: "calc(100% + 4px)", left: 0, right: 0, backgroundColor: "rgba(0,0,0,0.6)", backdropFilter: "blur(24px)", border: "1px solid #1E1F24", borderRadius: 7, zIndex: 10, overflow: "hidden", boxShadow: "0 8px 32px rgba(0,0,0,0.8)" }}>
               {NOVA_AGENTS.map((a) => (
                 <button
                   key={a}
@@ -1538,7 +1539,7 @@ function ThemeToggle() {
     <button
       onClick={() => setTheme(theme === "dark" ? "light" : "dark")}
       title="Toggle theme"
-      className="flex items-center justify-center w-[30px] h-[30px] rounded-md bg-transparent border border-zinc-200 dark:border-[#1E1F24] text-zinc-600 dark:text-[#3B4558] hover:border-zinc-400 dark:hover:border-transparent [background:linear-gradient(var(--bg-zinc-50/50 dark:bg-black/30 backdrop-blur-md),var(--bg-zinc-50/50 dark:bg-black/30 backdrop-blur-md))_padding-box,linear-gradient(to_right,var(--theme-grad-start),var(--theme-grad-end))_border-box]/35 hover:text-zinc-900 dark:hover:text-transparent bg-clip-text bg-theme-gradient transition-all duration-200 shrink-0"
+      className="flex items-center justify-center w-[30px] h-[30px] rounded-md bg-transparent border border-zinc-200 dark:border-[#1E1F24] text-zinc-600 dark:text-[#3B4558] hover:border-zinc-400 dark:hover:border-transparent [background:linear-gradient(var(--bg-white/80 dark:bg-black/60 backdrop-blur-xl),var(--bg-white/80 dark:bg-black/60 backdrop-blur-xl))_padding-box,linear-gradient(to_right,var(--theme-grad-start),var(--theme-grad-end))_border-box]/35 hover:text-zinc-900 dark:hover:text-zinc-900 dark:text-white bg-clip-text bg-theme-gradient transition-all duration-200 shrink-0"
     >
       {theme === "dark" ? <Sun size={13} /> : <Moon size={13} />}
     </button>
@@ -1559,6 +1560,7 @@ export default function ChairmanDashboard() {
   const [activeTab,    setActiveTab]    = useState<TabId>("MASTER");
   const [deepWork,     setDeepWork]     = useState(false);
   const [novaOpen,     setNovaOpen]     = useState(false);
+  const [appearanceOpen, setAppearanceOpen] = useState(false);
 
   // ── Calendar state ─────────────────────────────────────────────────────────
   const [calendarEvents, setCalendarEvents] = useState<CalendarEvent[]>([]);
@@ -1754,7 +1756,7 @@ export default function ChairmanDashboard() {
   ];
 
   return (
-    <div className="min-h-screen bg-slate-50 dark:bg-[#08090C] text-zinc-800 dark:text-[#7A8599]">
+    <div className="min-h-screen text-zinc-900 dark:text-white">
       <style>{KEYFRAMES}</style>
 
       {/* ── DEEP WORK OVERLAY ─────────────────────────────────────────────── */}
@@ -1773,18 +1775,18 @@ export default function ChairmanDashboard() {
           <div className="flex flex-wrap items-center justify-between gap-y-3 py-4">
             {/* Brand */}
             <div className="flex items-center gap-4">
-              <Crosshair size={15} style={{ color: "var(--theme-grad-start)" }} />
+              <Crosshair size={15} className="text-zinc-900 dark:text-white" />
               <div>
                 <h1 style={{ fontFamily: "Georgia, serif", fontSize: 16, color: "var(--theme-grad-start)", letterSpacing: "0.04em" }}>
                   Pristine Designs
                 </h1>
-                <div className="text-[9px] tracking-widest uppercase" style={{ color: "var(--theme-grad-start)" }}>
+                <div className="text-[9px] tracking-widest uppercase" className="text-zinc-900 dark:text-white">
                   Executive Command · Claude Agent Stack · V6 · Supabase
                 </div>
               </div>
               <div className="header-divider-ea" style={{ width: 1, height: 24, backgroundColor: "#1E1F24", marginLeft: 4 }} />
               <div className="header-ea-badge flex items-center gap-1.5">
-                <Bot size={11} style={{ color: "var(--theme-grad-start)" }} />
+                <Bot size={11} className="text-zinc-900 dark:text-white" />
                 <span className="text-[9px] tracking-widest uppercase text-zinc-500 dark:text-zinc-400">EA Buffer Active</span>
               </div>
             </div>
@@ -1849,7 +1851,15 @@ export default function ChairmanDashboard() {
               <div style={{ width: 1, height: 28, backgroundColor: "#1E1F24" }} />
 
               {/* Theme toggle */}
-              <ThemePicker />
+              <button
+                onClick={() => setAppearanceOpen(true)}
+                className="flex items-center justify-center w-8 h-8 rounded-full border border-zinc-200/50 dark:border-white/10 text-zinc-500 hover:text-zinc-900 dark:hover:text-white transition-colors"
+                title="Appearance Settings"
+              >
+                <Palette size={14} />
+              </button>
+
+              {appearanceOpen && <AppearanceSettings onClose={() => setAppearanceOpen(false)} />}
 
               {/* User avatar / sign-in */}
               {user ? (
@@ -1890,7 +1900,7 @@ export default function ChairmanDashboard() {
                       </span>
                     </div>
                   )}
-                  <span style={{ fontSize: 9, letterSpacing: "0.1em", textTransform: "uppercase", whiteSpace: "nowrap" }} className="text-zinc-900 dark:text-zinc-100">
+                  <span style={{ fontSize: 9, letterSpacing: "0.1em", textTransform: "uppercase", whiteSpace: "nowrap" }} className="text-zinc-900 dark:text-white">
                     {user.name?.split(" ")[0] ?? "Chairman"}
                   </span>
                 </button>
@@ -1954,7 +1964,7 @@ export default function ChairmanDashboard() {
                 <div className="text-[9px] tracking-widest uppercase mb-1 text-zinc-500 dark:text-zinc-400">
                   {tasksLoading ? "Syncing…" : "Mission Progress"}
                 </div>
-                <div className="text-lg font-bold text-zinc-900 dark:text-zinc-100" style={{ fontVariantNumeric: "tabular-nums" }}>
+                <div className="text-lg font-bold text-zinc-900 dark:text-white" style={{ fontVariantNumeric: "tabular-nums" }}>
                   {doneTasks}<span className="text-xs font-normal text-zinc-500 dark:text-zinc-400">/{totalTasks}</span>
                 </div>
                 <div className="header-progress-bar mt-1.5 rounded-full" style={{ width: 64, height: 2, backgroundColor: "#1E1F24", marginLeft: "auto" }}>
@@ -1975,7 +1985,7 @@ export default function ChairmanDashboard() {
                 <button
                   key={tab.id}
                   onClick={() => setActiveTab(tab.id)}
-                  className={`focus:outline-none z-10 ${isActive ? "bg-zinc-50/90 dark:bg-black/60 backdrop-blur-lg border border-zinc-200 dark:border-[#1E1F24] border-b-transparent text-zinc-900 dark:text-zinc-100" : "text-zinc-500 dark:text-zinc-400 border border-transparent"}`}
+                  className={`focus:outline-none z-10 ${isActive ? "bg-white/80 dark:bg-black/60 backdrop-blur-xl border border-zinc-200 dark:border-[#1E1F24] border-b-transparent text-zinc-900 dark:text-white" : "text-zinc-500 dark:text-zinc-400 border border-transparent"}`}
                   style={{
                     padding:         "9px 20px",
                     borderRadius:    "8px 8px 0 0",
@@ -2129,7 +2139,7 @@ export default function ChairmanDashboard() {
             {/* Processing or Deploy */}
             {isProcessing ? (
               <div style={{ flexShrink: 0, display: "flex", alignItems: "center", gap: 8 }}>
-                <Loader2 size={13} style={{ color: "var(--theme-grad-start)" }} className="animate-spin" />
+                <Loader2 size={13} className="text-zinc-900 dark:text-white" className="animate-spin" />
                 <span className="cmd-bar-msg text-zinc-500 dark:text-zinc-400" style={{ fontSize: 10, letterSpacing: "0.12em", textTransform: "uppercase", whiteSpace: "nowrap" }}>
                   {processingMsg}
                 </span>
