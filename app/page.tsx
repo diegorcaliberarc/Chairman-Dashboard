@@ -974,7 +974,7 @@ function CSuiteCard({
           onClick={() => setIsOpen(false)}
         >
           <div
-            style={{ borderRadius: 14, padding: "28px 32px", minWidth: 420, maxWidth: 560, width: "100%", boxShadow: "0 24px 80px rgba(0,0,0,0.8)", animation: "fade-up 0.18s ease-out", maxHeight: "80vh", display: "flex", flexDirection: "column" }} className="bg-white dark:bg-[#0C0D10] border border-zinc-200 dark:border-[#1E1F24]"
+            style={{ borderRadius: 14, padding: "28px 32px", minWidth: 420, maxWidth: 560, width: "100%", boxShadow: "0 24px 80px rgba(0,0,0,0.8)", animation: "fade-up 0.18s ease-out", maxHeight: "80vh", display: "flex", flexDirection: "column" }} className="bg-white/80 dark:bg-black/60 backdrop-blur-xl border border-zinc-200/50 dark:border-white/10"
             onClick={(e) => e.stopPropagation()}
           >
             {/* Modal header */}
@@ -1009,7 +1009,7 @@ function CSuiteCard({
                 agent.tasks.map((t) => {
                   const isDone = t.status === "DONE";
                   return (
-                    <div key={t.id} style={{ display: "flex", alignItems: "center", gap: 10, padding: "10px 14px", borderRadius: 8, backgroundColor: isDone ? `${agent.color}08` : undefined }} className={isDone ? "border border-zinc-200/50 dark:border-white/10" : "bg-slate-50 dark:bg-[#080A0D] border border-zinc-200/50 dark:border-white/10"}>
+                    <div key={t.id} style={{ display: "flex", alignItems: "center", gap: 10, padding: "10px 14px", borderRadius: 8, backgroundColor: isDone ? `${agent.color}08` : undefined }} className={isDone ? "border border-zinc-200/50 dark:border-white/10" : "bg-white/80 dark:bg-black/60 backdrop-blur-xl border border-zinc-200/50 dark:border-white/10"}>
                       <button onClick={() => onToggle(t.id)} style={{ background: "none", border: "none", cursor: "pointer", padding: 0, display: "flex", flexShrink: 0, color: isDone ? agent.color : undefined }} className={isDone ? "" : "text-zinc-400 dark:text-[#252836]"}>
                         {isDone ? <CheckCircle2 size={14} /> : <Circle size={14} />}
                       </button>
@@ -1055,7 +1055,7 @@ function MasterViewTab({
 }) {
   const joyTasks = personal.find((a) => a.id === "joy")?.tasks ?? [];
 
-  const PANEL_CLASS = "bg-white dark:bg-[#0C0D10] border border-zinc-200 dark:border-[#1E1F24] shadow-[0_0_30px_rgba(0,0,0,0.08)] dark:shadow-[0_0_30px_rgba(255,255,255,0.02)] hover:shadow-[0_0_40px_rgba(0,0,0,0.12)] dark:hover:shadow-[0_0_40px_rgba(255,255,255,0.04)] transition-shadow duration-500";
+  const PANEL_CLASS = "bg-white/80 dark:bg-black/60 backdrop-blur-xl border border-zinc-200/50 dark:border-white/10 shadow-[0_0_30px_rgba(0,0,0,0.08)] dark:shadow-[0_0_30px_rgba(255,255,255,0.02)] hover:shadow-[0_0_40px_rgba(0,0,0,0.12)] dark:hover:shadow-[0_0_40px_rgba(255,255,255,0.04)] transition-shadow duration-500";
   const PANEL: React.CSSProperties = {
     borderRadius:    10,
     padding:         "14px 16px",
@@ -1326,7 +1326,7 @@ function NovaPanel({
         boxShadow:       "-12px 0 60px rgba(0,0,0,0.7)",
         animation:       "nova-slide-in 0.22s ease-out",
       }}
-      className="bg-slate-50 dark:bg-[#080A0D]"
+      className="bg-white/80 dark:bg-black/60 backdrop-blur-xl border border-zinc-200/50 dark:border-white/10"
     >
       {/* ── Header ──────────────────────────────────────────────────────── */}
       <div style={{ padding: "14px 16px 12px", borderBottom: `1px solid ${agentColor}22`, flexShrink: 0 }}>
@@ -1471,9 +1471,9 @@ function NovaPanel({
       </div>
 
       {/* ── Input ────────────────────────────────────────────────────────── */}
-      <div style={{ padding: "12px 16px", borderTop: `1px solid ${agentColor}18`, flexShrink: 0 }} className="bg-slate-50 dark:bg-[#060709]">
+      <div style={{ padding: "12px 16px", borderTop: `1px solid ${agentColor}18`, flexShrink: 0 }} className="bg-white/80 dark:bg-black/60 backdrop-blur-xl border border-zinc-200/50 dark:border-white/10">
         <div style={{ display: "flex", alignItems: "center", gap: 8, borderRadius: 8, padding: "8px 12px", transition: "border-color 0.15s" }}
-             className="bg-white dark:bg-[#0C0D10] border border-zinc-300 dark:border-[#1E1F24]"
+             className="bg-white/80 dark:bg-black/60 backdrop-blur-xl border border-zinc-200/50 dark:border-white/10"
           onFocusCapture={(e) => (e.currentTarget.style.borderColor = `${agentColor}44`)}
           onBlurCapture={(e) => (e.currentTarget.style.borderColor = "#1E1F24")}
         >
@@ -1770,7 +1770,7 @@ export default function ChairmanDashboard() {
       )}
 
       {/* ── HEADER ────────────────────────────────────────────────────────── */}
-      <header className="sticky top-0 z-40 bg-white dark:bg-[#0C0D10] border-b border-zinc-200 dark:border-[#1E1F24]">
+      <header className="sticky top-0 z-40 bg-white/80 dark:bg-black/60 backdrop-blur-xl border-b border-zinc-200/50 dark:border-white/10">
         <div className="max-w-[1440px] mx-auto px-8">
           <div className="flex flex-wrap items-center justify-between gap-y-3 py-4">
             {/* Brand */}
@@ -1985,7 +1985,7 @@ export default function ChairmanDashboard() {
                 <button
                   key={tab.id}
                   onClick={() => setActiveTab(tab.id)}
-                  className={`focus:outline-none z-10 ${isActive ? "bg-white/80 dark:bg-black/60 backdrop-blur-xl border border-zinc-200 dark:border-[#1E1F24] border-b-transparent text-zinc-900 dark:text-white" : "text-zinc-500 dark:text-zinc-400 border border-transparent"}`}
+                  className={`focus:outline-none z-10 ${isActive ? "bg-white/80 dark:bg-black/60 backdrop-blur-xl border-t border-l border-r border-zinc-200/50 dark:border-white/10 border-b-2 border-themeAccent text-zinc-900 dark:text-white" : "text-zinc-500 dark:text-zinc-400 border border-transparent border-b-2 border-transparent"}`}
                   style={{
                     padding:         "9px 20px",
                     borderRadius:    "8px 8px 0 0",
