@@ -768,9 +768,9 @@ function MasterViewTab({
   const CAL_PANEL: React.CSSProperties = { ...PANEL, overflowY: "auto" };
 
   return (
-    <div className="flex flex-col lg:flex-row gap-4 flex-1 h-full min-h-[calc(100vh-6rem)] overflow-hidden">
+    <div className="flex flex-col lg:flex-row gap-4 flex-1 h-full overflow-y-auto hidden-scrollbar items-start">
       {/* ── Left Column ──────────────────────────────────────────────────── */}
-      <div className="w-full lg:w-1/3 flex flex-col gap-4 h-full min-h-0 pb-6 pr-1">
+      <div className="w-full lg:w-1/3 flex flex-col gap-4 sticky top-0 h-[calc(100vh-2rem)] overflow-y-auto hidden-scrollbar pb-6 pr-1">
         <div style={{ ...PANEL, maxHeight: "250px", overflowY: "auto", flexShrink: 0 }} className={PANEL_CLASS}>
           <PriorityStrikes business={business} personal={personal} onToggle={onToggle} onDelete={onDelete} onTaskClick={onTaskClick} subtasksMap={subtasksMap} onToggleSubtask={onToggleSubtask} />
         </div>
@@ -780,16 +780,16 @@ function MasterViewTab({
       </div>
 
       {/* ── Right Column / Grid ────────────────────────────────────────── */}
-      <div className="w-full lg:w-2/3 grid grid-cols-1 md:grid-cols-2 auto-rows-[1fr] gap-4 flex-1 h-full overflow-y-auto pb-6 pr-1">
+      <div className="w-full lg:w-2/3 grid grid-cols-1 xl:grid-cols-2 gap-4 h-max pb-10 pr-1">
         {/* Domain Cards */}
-        <div style={PANEL} className={`${PANEL_CLASS} h-full flex flex-col`}><DomainBlock label="WEALTH" sub="Income & Freedom" tasks={wealthTasks} color={personal.find(a => a.id === "wealth")?.color || "#C9A961"} onToggle={onToggle} onDelete={onDelete} onTaskClick={onTaskClick} subtasksMap={subtasksMap} onToggleSubtask={onToggleSubtask} /></div>
-        <div style={PANEL} className={`${PANEL_CLASS} h-full flex flex-col`}><DomainBlock label="HEALTH" sub="Training & Energy" tasks={healthTasks} color={personal.find(a => a.id === "health")?.color || "#C9A961"} onToggle={onToggle} onDelete={onDelete} onTaskClick={onTaskClick} subtasksMap={subtasksMap} onToggleSubtask={onToggleSubtask} /></div>
-        <div style={PANEL} className={`${PANEL_CLASS} h-full flex flex-col`}><DomainBlock label="RELATIONSHIPS" sub="Legacy & Pack" tasks={relateTasks} color={personal.find(a => a.id === "relate")?.color || "#C9A961"} onToggle={onToggle} onDelete={onDelete} onTaskClick={onTaskClick} subtasksMap={subtasksMap} onToggleSubtask={onToggleSubtask} /></div>
-        <div style={PANEL} className={`${PANEL_CLASS} h-full flex flex-col`}><DomainBlock label="JOY" sub="Goals & Happiness" tasks={joyTasks} color={personal.find(a => a.id === "joy")?.color || "#C9A961"} onToggle={onToggle} onDelete={onDelete} onTaskClick={onTaskClick} subtasksMap={subtasksMap} onToggleSubtask={onToggleSubtask} /></div>
+        <div style={PANEL} className={`${PANEL_CLASS} flex flex-col min-h-[300px] max-h-[400px]`}><DomainBlock label="WEALTH" sub="Income & Freedom" tasks={wealthTasks} color={personal.find(a => a.id === "wealth")?.color || "#C9A961"} onToggle={onToggle} onDelete={onDelete} onTaskClick={onTaskClick} subtasksMap={subtasksMap} onToggleSubtask={onToggleSubtask} /></div>
+        <div style={PANEL} className={`${PANEL_CLASS} flex flex-col min-h-[300px] max-h-[400px]`}><DomainBlock label="HEALTH" sub="Training & Energy" tasks={healthTasks} color={personal.find(a => a.id === "health")?.color || "#C9A961"} onToggle={onToggle} onDelete={onDelete} onTaskClick={onTaskClick} subtasksMap={subtasksMap} onToggleSubtask={onToggleSubtask} /></div>
+        <div style={PANEL} className={`${PANEL_CLASS} flex flex-col min-h-[300px] max-h-[400px]`}><DomainBlock label="RELATIONSHIPS" sub="Legacy & Pack" tasks={relateTasks} color={personal.find(a => a.id === "relate")?.color || "#C9A961"} onToggle={onToggle} onDelete={onDelete} onTaskClick={onTaskClick} subtasksMap={subtasksMap} onToggleSubtask={onToggleSubtask} /></div>
+        <div style={PANEL} className={`${PANEL_CLASS} flex flex-col min-h-[300px] max-h-[400px]`}><DomainBlock label="JOY" sub="Goals & Happiness" tasks={joyTasks} color={personal.find(a => a.id === "joy")?.color || "#C9A961"} onToggle={onToggle} onDelete={onDelete} onTaskClick={onTaskClick} subtasksMap={subtasksMap} onToggleSubtask={onToggleSubtask} /></div>
 
         {/* Executive Suite */}
         {business.map((a) => (
-          <div key={a.id} style={PANEL} className={`${PANEL_CLASS} h-full flex flex-col`}>
+          <div key={a.id} style={PANEL} className={`${PANEL_CLASS} flex flex-col min-h-[300px] max-h-[400px]`}>
             <CSuiteCard agent={a} onToggle={onToggle} onDelete={onDelete} onTaskClick={onTaskClick} subtasksMap={subtasksMap} onToggleSubtask={onToggleSubtask} />
           </div>
         ))}
