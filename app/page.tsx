@@ -288,8 +288,8 @@ function AgentCard({ agent, selected, onClick }: { agent: Agent; selected: boole
       onClick={onClick}
       className={`w-full text-left rounded-xl p-5 transition-all duration-200 focus:outline-none border border-solid hover:shadow-[0_0_15px_var(--theme-grad-start)] dark:hover:shadow-[0_0_15px_var(--theme-grad-start)] ${
         selected 
-          ? "bg-themeAccent/10 dark:bg-themeAccent/20 border-themeAccent/50 shadow-[0_0_28px_var(--theme-grad-start)]" 
-          : "bg-themeAccent/5 dark:bg-themeAccent/10 border-themeAccent/30 shadow-[0_0_30px_rgba(0,0,0,0.08)] dark:shadow-[0_0_30px_rgba(255,255,255,0.02)]"
+          ? "bg-zinc-50/90 dark:bg-black/60 backdrop-blur-lg border-themeAccent/50 shadow-[0_0_28px_var(--theme-grad-start)]" 
+          : "bg-zinc-50/70 dark:bg-black/40 backdrop-blur-lg border-zinc-200/50 dark:border-white/10 shadow-[0_0_30px_rgba(0,0,0,0.08)] dark:shadow-[0_0_30px_rgba(255,255,255,0.02)]"
       }`}
     >
       <div className="flex items-start justify-between mb-4">
@@ -331,7 +331,7 @@ function TaskPanel({
   const done = agent.tasks.filter((t) => t.status === "DONE").length;
 
   return (
-    <div className="rounded-xl bg-slate-50 dark:bg-[#0C0D10] shadow-[0_0_30px_rgba(0,0,0,0.08)] dark:shadow-[0_0_30px_rgba(255,255,255,0.02)] hover:shadow-[0_0_40px_rgba(0,0,0,0.12)] dark:hover:shadow-[0_0_40px_rgba(255,255,255,0.04)] transition-shadow duration-500" style={{ border: `1px solid ${agent.color}30`, padding: "24px", animation: "fade-up 0.22s ease-out" }}>
+    <div className="rounded-xl bg-zinc-50/70 dark:bg-black/40 backdrop-blur-lg shadow-[0_0_30px_rgba(0,0,0,0.08)] dark:shadow-[0_0_30px_rgba(255,255,255,0.02)] hover:shadow-[0_0_40px_rgba(0,0,0,0.12)] dark:hover:shadow-[0_0_40px_rgba(255,255,255,0.04)] transition-shadow duration-500" style={{ border: `1px solid ${agent.color}30`, padding: "24px", animation: "fade-up 0.22s ease-out" }}>
       <div className="flex items-center gap-3 mb-5">
         <span style={{ fontFamily: "Georgia, serif", fontSize: 15, color: agent.color }}>{agent.title}</span>
         <div className="h-3 w-px bg-zinc-300 dark:bg-[#1E1F24]" />
@@ -399,7 +399,7 @@ function TaskPanel({
               {isExpanded && (
                 <div style={{ marginLeft: 24, marginTop: 3, display: "flex", flexDirection: "column", gap: 2 }}>
                   {subs.map((sub) => (
-                    <div key={sub.id} style={{ display: "flex", alignItems: "center", gap: 6, padding: "6px 10px", borderRadius: 6 }} className="bg-zinc-100 dark:bg-[#080A0D] border border-zinc-200 dark:border-[#111318]">
+                    <div key={sub.id} style={{ display: "flex", alignItems: "center", gap: 6, padding: "6px 10px", borderRadius: 6 }} className="bg-zinc-50/50 dark:bg-black/30 backdrop-blur-md border border-zinc-200/50 dark:border-white/10">
                       <button onClick={() => onToggle(sub.id)} style={{ background: "none", border: "none", cursor: "pointer", padding: 0, display: "flex", flexShrink: 0, color: sub.status === "DONE" ? "var(--theme-grad-start)" : undefined }} className={sub.status === "DONE" ? "" : "text-zinc-600 dark:text-[#252836]"}>
                         {sub.status === "DONE" ? <CheckCircle2 size={11} /> : <Circle size={11} />}
                       </button>
@@ -412,7 +412,7 @@ function TaskPanel({
                     </div>
                   ))}
                   {/* Add subtask input */}
-                  <div style={{ display: "flex", alignItems: "center", gap: 6, padding: "5px 10px", borderRadius: 6, border: `1px solid ${agent.color}18` }} className="bg-zinc-100 dark:bg-[#080A0D]">
+                  <div style={{ display: "flex", alignItems: "center", gap: 6, padding: "5px 10px", borderRadius: 6, border: `1px solid ${agent.color}18` }} className="bg-zinc-50/50 dark:bg-black/30 backdrop-blur-md">
                     <div style={{ width: 11, height: 11, flexShrink: 0 }} />
                     <input
                       value={subInputs[task.id] ?? ""}
@@ -603,7 +603,7 @@ function CalendarFeed({
         {calError ? (
           <div style={{ padding: "10px 12px", borderRadius: 6, display: "flex", alignItems: "center", justifyContent: "space-between", gap: 10 }} className="bg-red-50 dark:bg-[#E05A3A]/10 border border-red-200 dark:border-[#E05A3A]/20">
             <span style={{ fontSize: 10, letterSpacing: "0.06em" }} className="text-red-600 dark:text-themeAccent">Google session expired — reconnect to restore events.</span>
-            <a href="/api/auth/signin" style={{ fontSize: 9, letterSpacing: "0.14em", textTransform: "uppercase", textDecoration: "none", flexShrink: 0, padding: "3px 8px", borderRadius: 4 }} className="text-zinc-700 dark:text-zinc-100 border border-zinc-200 dark:border-transparent [background:linear-gradient(var(--bg-surface),var(--bg-surface))_padding-box,linear-gradient(to_right,var(--theme-grad-start),var(--theme-grad-end))_border-box]/30">Reconnect</a>
+            <a href="/api/auth/signin" style={{ fontSize: 9, letterSpacing: "0.14em", textTransform: "uppercase", textDecoration: "none", flexShrink: 0, padding: "3px 8px", borderRadius: 4 }} className="text-zinc-700 dark:text-zinc-100 border border-zinc-200 dark:border-transparent [background:linear-gradient(var(--bg-zinc-50/50 dark:bg-black/30 backdrop-blur-md),var(--bg-zinc-50/50 dark:bg-black/30 backdrop-blur-md))_padding-box,linear-gradient(to_right,var(--theme-grad-start),var(--theme-grad-end))_border-box]/30">Reconnect</a>
           </div>
         ) : todayEvts.length === 0 ? (
           <div style={{ fontSize: 10, letterSpacing: "0.08em", padding: "10px 0" }} className="text-zinc-500 dark:text-[#1C1E2A]">
@@ -620,7 +620,7 @@ function CalendarFeed({
               ? new Date(endDt).toLocaleTimeString("en-US", { hour: "numeric", minute: "2-digit", hour12: true })
               : null;
             return (
-              <div key={ev.id} style={{ display: "flex", gap: 10, alignItems: "center", padding: "7px 10px", borderRadius: 6 }} className="bg-slate-50 dark:bg-theme-gradient/5 border border-slate-200 dark:border-transparent [background:linear-gradient(var(--bg-surface),var(--bg-surface))_padding-box,linear-gradient(to_right,var(--theme-grad-start),var(--theme-grad-end))_border-box]/10">
+              <div key={ev.id} style={{ display: "flex", gap: 10, alignItems: "center", padding: "7px 10px", borderRadius: 6 }} className="bg-slate-50 dark:bg-theme-gradient/5 border border-slate-200 dark:border-transparent [background:linear-gradient(var(--bg-zinc-50/50 dark:bg-black/30 backdrop-blur-md),var(--bg-zinc-50/50 dark:bg-black/30 backdrop-blur-md))_padding-box,linear-gradient(to_right,var(--theme-grad-start),var(--theme-grad-end))_border-box]/10">
                 <div style={{ flexShrink: 0, textAlign: "right" }}>
                   <div style={{ fontSize: 9, fontVariantNumeric: "tabular-nums", whiteSpace: "nowrap" }} className="text-zinc-700 dark:text-zinc-100">{timeStr}</div>
                   {endStr && <div style={{ fontSize: 8, fontVariantNumeric: "tabular-nums", whiteSpace: "nowrap" }} className="text-zinc-500 dark:text-zinc-400">{endStr}</div>}
@@ -640,7 +640,7 @@ function CalendarFeed({
           onClick={() => setModalDay(null)}
         >
           <div
-            style={{ backgroundColor: "#0C0D10", border: "1px solid rgba(59,130,246,0.22)", borderRadius: 14, padding: "28px 32px", minWidth: 380, maxWidth: 520, width: "100%", boxShadow: "0 24px 80px rgba(0,0,0,0.8)", animation: "fade-up 0.18s ease-out" }}
+            style={{ backgroundColor: "rgba(0,0,0,0.4)", backdropFilter: "blur(16px)", border: "1px solid rgba(59,130,246,0.22)", borderRadius: 14, padding: "28px 32px", minWidth: 380, maxWidth: 520, width: "100%", boxShadow: "0 24px 80px rgba(0,0,0,0.8)", animation: "fade-up 0.18s ease-out" }}
             onClick={(e) => e.stopPropagation()}
           >
             {/* Modal header */}
@@ -680,7 +680,7 @@ function CalendarFeed({
                     ? new Date(endDt).toLocaleTimeString("en-US", { hour: "numeric", minute: "2-digit", hour12: true })
                     : null;
                   return (
-                    <div key={ev.id} style={{ padding: "12px 16px", borderRadius: 8, backgroundColor: "#080A0D", border: "1px solid rgba(59,130,246,0.10)" }}>
+                    <div key={ev.id} style={{ padding: "12px 16px", borderRadius: 8, backgroundColor: "rgba(0,0,0,0.3)", backdropFilter: "blur(8px)", border: "1px solid rgba(59,130,246,0.10)" }}>
                       <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: ev.summary ? 6 : 0 }}>
                         <div style={{ width: 3, height: 3, borderRadius: "50%", backgroundImage: 'linear-gradient(to right, var(--theme-grad-start), var(--theme-grad-end))', flexShrink: 0 }} />
                         <span style={{ fontSize: 9, color: "var(--theme-grad-start)", fontVariantNumeric: "tabular-nums", flexShrink: 0 }}>
@@ -775,7 +775,7 @@ function QuadrantHeader({ label, sub, color }: { label: string; sub: string; col
 
 function SubPanel({ children }: { children: React.ReactNode }) {
   return (
-    <div style={{ borderRadius: 7, padding: "7px 10px" }} className="bg-zinc-100 dark:bg-[#080A0D] border border-zinc-200 dark:border-[#111318]">
+    <div style={{ borderRadius: 7, padding: "7px 10px" }} className="bg-zinc-50/50 dark:bg-black/30 backdrop-blur-md border border-zinc-200/50 dark:border-white/10">
       {children}
     </div>
   );
@@ -951,7 +951,7 @@ function CSuiteCard({
         </div>
         <div style={{ flex: 1, overflow: "hidden", display: "flex", flexDirection: "column", gap: 3 }}>
           {previewTasks.length > 0 ? previewTasks.map((t) => (
-            <div key={t.id} style={{ display: "flex", alignItems: "center", gap: 5, padding: "4px 7px", borderRadius: 5 }} className="bg-zinc-100 dark:bg-[#080A0D] border border-zinc-200 dark:border-[#1E1F24]">
+            <div key={t.id} style={{ display: "flex", alignItems: "center", gap: 5, padding: "4px 7px", borderRadius: 5 }} className="bg-zinc-50/50 dark:bg-black/30 backdrop-blur-md border border-zinc-200 dark:border-[#1E1F24]">
               <div style={{ width: 4, height: 4, borderRadius: "50%", backgroundColor: t.priority === 1 ? "#E05A3A" : t.priority === 3 ? "#3B4558" : "#C9A961", flexShrink: 0 }} />
               <span style={{ fontSize: 9, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", flex: 1 }} className="text-zinc-900 dark:text-zinc-100">{t.title}</span>
             </div>
@@ -1008,7 +1008,7 @@ function CSuiteCard({
                 agent.tasks.map((t) => {
                   const isDone = t.status === "DONE";
                   return (
-                    <div key={t.id} style={{ display: "flex", alignItems: "center", gap: 10, padding: "10px 14px", borderRadius: 8, backgroundColor: isDone ? `${agent.color}08` : undefined }} className={isDone ? "border border-zinc-200 dark:border-[#111318]" : "bg-slate-50 dark:bg-[#080A0D] border border-zinc-200 dark:border-[#111318]"}>
+                    <div key={t.id} style={{ display: "flex", alignItems: "center", gap: 10, padding: "10px 14px", borderRadius: 8, backgroundColor: isDone ? `${agent.color}08` : undefined }} className={isDone ? "border border-zinc-200/50 dark:border-white/10" : "bg-slate-50 dark:bg-[#080A0D] border border-zinc-200/50 dark:border-white/10"}>
                       <button onClick={() => onToggle(t.id)} style={{ background: "none", border: "none", cursor: "pointer", padding: 0, display: "flex", flexShrink: 0, color: isDone ? agent.color : undefined }} className={isDone ? "" : "text-zinc-400 dark:text-[#252836]"}>
                         {isDone ? <CheckCircle2 size={14} /> : <Circle size={14} />}
                       </button>
@@ -1356,7 +1356,7 @@ function NovaPanel({
               alignItems:      "center",
               justifyContent:  "space-between",
               padding:         "8px 12px",
-              backgroundColor: "#0C0D10",
+              backgroundColor: "rgba(0,0,0,0.4)", backdropFilter: "blur(16px)",
               border:          `1px solid ${agentColor}44`,
               borderRadius:    7,
               cursor:          "pointer",
@@ -1371,7 +1371,7 @@ function NovaPanel({
             <ChevronDown size={11} style={{ opacity: 0.7, transform: showDrop ? "rotate(180deg)" : "none", transition: "transform 0.2s" }} />
           </button>
           {showDrop && (
-            <div style={{ position: "absolute", top: "calc(100% + 4px)", left: 0, right: 0, backgroundColor: "#0C0D10", border: "1px solid #1E1F24", borderRadius: 7, zIndex: 10, overflow: "hidden", boxShadow: "0 8px 32px rgba(0,0,0,0.8)" }}>
+            <div style={{ position: "absolute", top: "calc(100% + 4px)", left: 0, right: 0, backgroundColor: "rgba(0,0,0,0.4)", backdropFilter: "blur(16px)", border: "1px solid #1E1F24", borderRadius: 7, zIndex: 10, overflow: "hidden", boxShadow: "0 8px 32px rgba(0,0,0,0.8)" }}>
               {NOVA_AGENTS.map((a) => (
                 <button
                   key={a}
@@ -1538,7 +1538,7 @@ function ThemeToggle() {
     <button
       onClick={() => setTheme(theme === "dark" ? "light" : "dark")}
       title="Toggle theme"
-      className="flex items-center justify-center w-[30px] h-[30px] rounded-md bg-transparent border border-zinc-200 dark:border-[#1E1F24] text-zinc-600 dark:text-[#3B4558] hover:border-zinc-400 dark:hover:border-transparent [background:linear-gradient(var(--bg-surface),var(--bg-surface))_padding-box,linear-gradient(to_right,var(--theme-grad-start),var(--theme-grad-end))_border-box]/35 hover:text-zinc-900 dark:hover:text-transparent bg-clip-text bg-theme-gradient transition-all duration-200 shrink-0"
+      className="flex items-center justify-center w-[30px] h-[30px] rounded-md bg-transparent border border-zinc-200 dark:border-[#1E1F24] text-zinc-600 dark:text-[#3B4558] hover:border-zinc-400 dark:hover:border-transparent [background:linear-gradient(var(--bg-zinc-50/50 dark:bg-black/30 backdrop-blur-md),var(--bg-zinc-50/50 dark:bg-black/30 backdrop-blur-md))_padding-box,linear-gradient(to_right,var(--theme-grad-start),var(--theme-grad-end))_border-box]/35 hover:text-zinc-900 dark:hover:text-transparent bg-clip-text bg-theme-gradient transition-all duration-200 shrink-0"
     >
       {theme === "dark" ? <Sun size={13} /> : <Moon size={13} />}
     </button>
@@ -1975,7 +1975,7 @@ export default function ChairmanDashboard() {
                 <button
                   key={tab.id}
                   onClick={() => setActiveTab(tab.id)}
-                  className={`focus:outline-none z-10 ${isActive ? "bg-white dark:bg-[#08090C] border border-zinc-200 dark:border-[#1E1F24] border-b-white dark:border-b-[#08090C] text-zinc-900 dark:text-zinc-100" : "text-zinc-500 dark:text-zinc-400 border border-transparent"}`}
+                  className={`focus:outline-none z-10 ${isActive ? "bg-zinc-50/90 dark:bg-black/60 backdrop-blur-lg border border-zinc-200 dark:border-[#1E1F24] border-b-transparent text-zinc-900 dark:text-zinc-100" : "text-zinc-500 dark:text-zinc-400 border border-transparent"}`}
                   style={{
                     padding:         "9px 20px",
                     borderRadius:    "8px 8px 0 0",
@@ -2065,7 +2065,7 @@ export default function ChairmanDashboard() {
         boxShadow:       cmdFocused ? "0 -4px 40px rgba(59,130,246,0.09)" : "none",
         transition:      "border-color 0.25s, box-shadow 0.25s",
         animation:       !cmdFocused ? "cmd-breathe 5s ease-in-out infinite" : "none",
-      }} className={`bg-zinc-100 dark:bg-[#0a0b0e] ${!cmdFocused ? "border-t border-zinc-200 dark:border-[#1A1B22]" : ""}`}>
+      }} className={`bg-zinc-50/70 dark:bg-black/40 backdrop-blur-xl ${!cmdFocused ? "border-t border-zinc-200 dark:border-[#1A1B22]" : ""}`}>
         <div className="max-w-[1440px] mx-auto px-8" style={{ paddingTop: 11, paddingBottom: 13 }}>
           <div className="flex items-center gap-4">
 

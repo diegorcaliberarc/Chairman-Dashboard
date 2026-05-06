@@ -14,7 +14,7 @@ export function ThemePicker() {
       {/* Mode Toggle */}
       <button
         onClick={() => setMode(mode === "dark" ? "light" : "dark")}
-        className="px-3 py-1.5 rounded-md bg-surface border border-border hover:border-zinc-500 transition-colors text-sm font-medium"
+        className="px-3 py-1.5 rounded-md bg-zinc-50/70 dark:bg-black/40 backdrop-blur-md border border-zinc-200/50 dark:border-white/10 hover:border-zinc-500 transition-colors text-sm font-medium"
         title="Toggle Dark/Light Mode"
       >
         {mode === "dark" ? "🌙 Dark" : "☀️ Light"}
