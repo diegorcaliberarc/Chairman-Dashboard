@@ -286,26 +286,26 @@ function AgentCard({ agent, selected, onClick }: { agent: Agent; selected: boole
   return (
     <button
       onClick={onClick}
-      className={`w-full text-left rounded-xl p-5 transition-all duration-200 focus:outline-none ${
+      className={`w-full text-left rounded-xl p-5 transition-all duration-200 focus:outline-none border border-solid hover:shadow-[0_0_15px_var(--theme-grad-start)] dark:hover:shadow-[0_0_15px_var(--theme-grad-start)] ${
         selected 
-          ? "bg-themeAccent/10 border-themeAccent/50 shadow-[0_0_28px_var(--theme-grad-start)] border border-solid" 
-          : "bg-white dark:bg-[#0C0D10] border-zinc-200 dark:border-[#1E1F24] border border-solid shadow-[0_0_30px_rgba(0,0,0,0.08)] dark:shadow-[0_0_30px_rgba(255,255,255,0.02)] hover:shadow-[0_0_15px_var(--theme-grad-start)] dark:hover:shadow-[0_0_15px_var(--theme-grad-start)] transition-shadow duration-500"
+          ? "bg-themeAccent/10 dark:bg-themeAccent/20 border-themeAccent/50 shadow-[0_0_28px_var(--theme-grad-start)]" 
+          : "bg-themeAccent/5 dark:bg-themeAccent/10 border-themeAccent/30 shadow-[0_0_30px_rgba(0,0,0,0.08)] dark:shadow-[0_0_30px_rgba(255,255,255,0.02)]"
       }`}
     >
       <div className="flex items-start justify-between mb-4">
         <div>
-          <div style={{ fontFamily: "Georgia, serif", fontSize: 19, lineHeight: 1.1, transition: "color 0.2s" }} className={selected ? "text-themeAccent" : "text-zinc-600 dark:text-[#4A5068]"}>
+          <div style={{ fontFamily: "Georgia, serif", fontSize: 19, lineHeight: 1.1 }} className="text-zinc-900 dark:text-zinc-100">
             {agent.title}
           </div>
-          <div className="text-[10px] tracking-widest uppercase mt-1 text-zinc-500 dark:text-[#252836]">
+          <div className="text-[10px] tracking-widest uppercase mt-1 text-zinc-500 dark:text-zinc-400">
             {agent.role}
           </div>
         </div>
         <div className="flex items-center gap-1.5 mt-0.5">
-          <span className={`text-sm font-bold ${selected ? "text-themeAccent" : "text-zinc-700 dark:text-[#3B4558]"}`} style={{ fontVariantNumeric: "tabular-nums" }}>
-            {done}<span className={`text-xs font-normal ${selected ? "text-themeAccent/70" : "text-zinc-400 dark:text-[#252836]"}`}>/{total}</span>
+          <span className="text-sm font-bold text-zinc-900 dark:text-zinc-100" style={{ fontVariantNumeric: "tabular-nums" }}>
+            {done}<span className="text-xs font-normal text-zinc-500 dark:text-zinc-400">/{total}</span>
           </span>
-          <ChevronRight size={12} className={selected ? "text-themeAccent" : "text-[#252836]"} style={{ transform: selected ? "rotate(90deg)" : "none", transition: "transform 0.2s ease" }} />
+          <ChevronRight size={12} className={selected ? "text-themeAccent" : "text-zinc-500 dark:text-zinc-400"} style={{ transform: selected ? "rotate(90deg)" : "none", transition: "transform 0.2s ease" }} />
         </div>
       </div>
       <div className="h-px rounded-full" style={{ backgroundColor: "#1E1F24" }}>
@@ -335,7 +335,7 @@ function TaskPanel({
       <div className="flex items-center gap-3 mb-5">
         <span style={{ fontFamily: "Georgia, serif", fontSize: 15, color: agent.color }}>{agent.title}</span>
         <div className="h-3 w-px bg-zinc-300 dark:bg-[#1E1F24]" />
-        <span className="text-[10px] tracking-widest uppercase text-zinc-500 dark:text-[#3B4558]">{agent.role}</span>
+        <span className="text-[10px] tracking-widest uppercase text-zinc-500 dark:text-zinc-400">{agent.role}</span>
         <div style={{ flex: 1 }} />
         <span className="text-[10px] tracking-widest uppercase text-zinc-400 dark:text-[#252836]">{done} of {agent.tasks.length} complete</span>
       </div>
@@ -550,8 +550,8 @@ function CalendarFeed({
       {/* Header */}
       <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 10 }}>
         <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
-          <CalendarDays size={10} className="text-zinc-500 dark:text-transparent bg-clip-text bg-theme-gradient" />
-          <span style={{ fontSize: 9, letterSpacing: "0.22em", textTransform: "uppercase" }} className="text-zinc-500 dark:text-[#3B4558]">Command Calendar</span>
+          <CalendarDays size={10} className="text-zinc-500 dark:text-zinc-100" />
+          <span style={{ fontSize: 9, letterSpacing: "0.22em", textTransform: "uppercase" }} className="text-zinc-500 dark:text-zinc-400">Command Calendar</span>
         </div>
         <span style={{ fontSize: 8, letterSpacing: "0.14em", textTransform: "uppercase", color: calLoading ? "#4A90E2" : calError ? "#E05A3A" : calConnected ? "#8BA87B" : "#252836" }}>
           {calLoading ? "Syncing…" : calError ? "● Auth error" : calConnected ? "● Live" : "○ Not connected"}
@@ -603,7 +603,7 @@ function CalendarFeed({
         {calError ? (
           <div style={{ padding: "10px 12px", borderRadius: 6, display: "flex", alignItems: "center", justifyContent: "space-between", gap: 10 }} className="bg-red-50 dark:bg-[#E05A3A]/10 border border-red-200 dark:border-[#E05A3A]/20">
             <span style={{ fontSize: 10, letterSpacing: "0.06em" }} className="text-red-600 dark:text-themeAccent">Google session expired — reconnect to restore events.</span>
-            <a href="/api/auth/signin" style={{ fontSize: 9, letterSpacing: "0.14em", textTransform: "uppercase", textDecoration: "none", flexShrink: 0, padding: "3px 8px", borderRadius: 4 }} className="text-zinc-700 dark:text-transparent bg-clip-text bg-theme-gradient border border-zinc-200 dark:border-transparent [background:linear-gradient(var(--bg-surface),var(--bg-surface))_padding-box,linear-gradient(to_right,var(--theme-grad-start),var(--theme-grad-end))_border-box]/30">Reconnect</a>
+            <a href="/api/auth/signin" style={{ fontSize: 9, letterSpacing: "0.14em", textTransform: "uppercase", textDecoration: "none", flexShrink: 0, padding: "3px 8px", borderRadius: 4 }} className="text-zinc-700 dark:text-zinc-100 border border-zinc-200 dark:border-transparent [background:linear-gradient(var(--bg-surface),var(--bg-surface))_padding-box,linear-gradient(to_right,var(--theme-grad-start),var(--theme-grad-end))_border-box]/30">Reconnect</a>
           </div>
         ) : todayEvts.length === 0 ? (
           <div style={{ fontSize: 10, letterSpacing: "0.08em", padding: "10px 0" }} className="text-zinc-500 dark:text-[#1C1E2A]">
@@ -622,11 +622,11 @@ function CalendarFeed({
             return (
               <div key={ev.id} style={{ display: "flex", gap: 10, alignItems: "center", padding: "7px 10px", borderRadius: 6 }} className="bg-slate-50 dark:bg-theme-gradient/5 border border-slate-200 dark:border-transparent [background:linear-gradient(var(--bg-surface),var(--bg-surface))_padding-box,linear-gradient(to_right,var(--theme-grad-start),var(--theme-grad-end))_border-box]/10">
                 <div style={{ flexShrink: 0, textAlign: "right" }}>
-                  <div style={{ fontSize: 9, fontVariantNumeric: "tabular-nums", whiteSpace: "nowrap" }} className="text-zinc-700 dark:text-transparent bg-clip-text bg-theme-gradient">{timeStr}</div>
-                  {endStr && <div style={{ fontSize: 8, fontVariantNumeric: "tabular-nums", whiteSpace: "nowrap" }} className="text-zinc-500 dark:text-[#3B4558]">{endStr}</div>}
+                  <div style={{ fontSize: 9, fontVariantNumeric: "tabular-nums", whiteSpace: "nowrap" }} className="text-zinc-700 dark:text-zinc-100">{timeStr}</div>
+                  {endStr && <div style={{ fontSize: 8, fontVariantNumeric: "tabular-nums", whiteSpace: "nowrap" }} className="text-zinc-500 dark:text-zinc-400">{endStr}</div>}
                 </div>
                 <div style={{ width: 1, height: "100%", minHeight: 24, flexShrink: 0 }} className="bg-slate-200 dark:bg-theme-gradient/20" />
-                <span style={{ fontSize: 11, flex: 1, lineHeight: 1.4 }} className="text-zinc-600 dark:text-[#7A8599]">{ev.summary ?? "Event"}</span>
+                <span style={{ fontSize: 11, flex: 1, lineHeight: 1.4 }} className="text-zinc-900 dark:text-zinc-100">{ev.summary ?? "Event"}</span>
               </div>
             );
           })
@@ -716,7 +716,7 @@ function PriorityStrikes({
       <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 10 }}>
         <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
           <Crosshair size={10} className="text-themeAccent dark:text-themeAccent" />
-          <span style={{ fontSize: 9, letterSpacing: "0.22em", textTransform: "uppercase" }} className="text-zinc-500 dark:text-[#3B4558]">Priority Strikes</span>
+          <span style={{ fontSize: 9, letterSpacing: "0.22em", textTransform: "uppercase" }} className="text-zinc-500 dark:text-zinc-400">Priority Strikes</span>
         </div>
         <span style={{ fontSize: 8, letterSpacing: "0.14em", color: "var(--theme-grad-start)" }}>{strikes.length} pending</span>
       </div>
@@ -734,7 +734,7 @@ function PriorityStrikes({
             </button>
             <div style={{ width: 4, height: 4, borderRadius: "50%", backgroundColor: agent.color, flexShrink: 0 }} />
             <span style={{ fontSize: 7, letterSpacing: "0.12em", textTransform: "uppercase", color: agent.color, flexShrink: 0, width: 28 }}>{agent.title}</span>
-            <span style={{ fontSize: 11, flex: 1, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }} className="text-zinc-600 dark:text-[#7A8599]">{task.title}</span>
+            <span style={{ fontSize: 11, flex: 1, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }} className="text-zinc-900 dark:text-zinc-100">{task.title}</span>
             <span style={{
               fontSize: 7, letterSpacing: "0.14em", textTransform: "uppercase", padding: "2px 5px", borderRadius: 3, flexShrink: 0,
               backgroundColor: task.priority === 1 ? "rgba(224,90,58,0.10)" : task.priority === 3 ? "rgba(59,69,88,0.08)" : "rgba(59,130,246,0.07)",
@@ -785,7 +785,7 @@ function DataRow({ label, value, color }: { label: string; value: string; color?
   return (
     <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "4px 0" }} className="border-b border-zinc-200 dark:border-[#0C0E14]">
       <span style={{ fontSize: 7, letterSpacing: "0.15em", textTransform: "uppercase" }} className="text-zinc-600 dark:text-[#1E2030]">{label}</span>
-      <span style={{ fontSize: 11, color: color, fontVariantNumeric: "tabular-nums" }} className={color ? "" : "text-zinc-500 dark:text-[#5A6070]"}>{value}</span>
+      <span style={{ fontSize: 11, color: color, fontVariantNumeric: "tabular-nums" }} className={color ? "" : "text-zinc-500 dark:text-zinc-400"}>{value}</span>
     </div>
   );
 }
@@ -953,7 +953,7 @@ function CSuiteCard({
           {previewTasks.length > 0 ? previewTasks.map((t) => (
             <div key={t.id} style={{ display: "flex", alignItems: "center", gap: 5, padding: "4px 7px", borderRadius: 5 }} className="bg-zinc-100 dark:bg-[#080A0D] border border-zinc-200 dark:border-[#1E1F24]">
               <div style={{ width: 4, height: 4, borderRadius: "50%", backgroundColor: t.priority === 1 ? "#E05A3A" : t.priority === 3 ? "#3B4558" : "#C9A961", flexShrink: 0 }} />
-              <span style={{ fontSize: 9, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", flex: 1 }} className="text-zinc-600 dark:text-[#7A8599]">{t.title}</span>
+              <span style={{ fontSize: 9, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", flex: 1 }} className="text-zinc-900 dark:text-zinc-100">{t.title}</span>
             </div>
           )) : (
             <div style={{ display: "flex", alignItems: "center", justifyContent: "center", flex: 1 }}>
@@ -980,7 +980,7 @@ function CSuiteCard({
             <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", marginBottom: 20, flexShrink: 0 }}>
               <div>
                 <div style={{ fontFamily: "Georgia, serif", fontSize: 22, color: agent.color, lineHeight: 1 }}>{agent.title}</div>
-                <div style={{ fontSize: 9, letterSpacing: "0.18em", textTransform: "uppercase", marginTop: 5 }} className="text-zinc-500 dark:text-[#3B4558]">{agent.role} · {total} task{total !== 1 ? "s" : ""}</div>
+                <div style={{ fontSize: 9, letterSpacing: "0.18em", textTransform: "uppercase", marginTop: 5 }} className="text-zinc-500 dark:text-zinc-400">{agent.role} · {total} task{total !== 1 ? "s" : ""}</div>
               </div>
               <button
                 onClick={() => setIsOpen(false)}
@@ -1785,7 +1785,7 @@ export default function ChairmanDashboard() {
               <div className="header-divider-ea" style={{ width: 1, height: 24, backgroundColor: "#1E1F24", marginLeft: 4 }} />
               <div className="header-ea-badge flex items-center gap-1.5">
                 <Bot size={11} style={{ color: "var(--theme-grad-start)" }} />
-                <span className="text-[9px] tracking-widest uppercase" style={{ color: "var(--theme-grad-start)" }}>EA Buffer Active</span>
+                <span className="text-[9px] tracking-widest uppercase text-zinc-500 dark:text-zinc-400">EA Buffer Active</span>
               </div>
             </div>
 
@@ -1802,7 +1802,7 @@ export default function ChairmanDashboard() {
                   borderRadius:    6,
                   backgroundColor: calConnected ? "rgba(var(--theme-grad-start), 0.1)" : "transparent",
                   border:          `1px solid ${calConnected ? "var(--theme-grad-start)" : "#1E1F24"}`,
-                  color:           calConnected ? "var(--theme-grad-start)" : "#3B4558",
+                  color: calConnected ? "var(--theme-grad-start)" : "#3B4558",
                   fontSize:        9,
                   fontWeight:      700,
                   letterSpacing:   "0.18em",
@@ -1830,7 +1830,7 @@ export default function ChairmanDashboard() {
                   borderRadius:    6,
                   backgroundColor: novaOpen ? "rgba(var(--theme-grad-start), 0.12)" : "transparent",
                   border:          `1px solid ${novaOpen ? "var(--theme-grad-start)" : "#1E1F24"}`,
-                  color:           novaOpen ? "var(--theme-grad-start)" : "#3B4558",
+                  color: novaOpen ? "var(--theme-grad-start)" : "#3B4558",
                   fontSize:        9,
                   fontWeight:      700,
                   letterSpacing:   "0.18em",
@@ -1890,7 +1890,7 @@ export default function ChairmanDashboard() {
                       </span>
                     </div>
                   )}
-                  <span style={{ fontSize: 9, color: "var(--theme-grad-start)", letterSpacing: "0.1em", textTransform: "uppercase", whiteSpace: "nowrap" }}>
+                  <span style={{ fontSize: 9, letterSpacing: "0.1em", textTransform: "uppercase", whiteSpace: "nowrap" }} className="text-zinc-900 dark:text-zinc-100">
                     {user.name?.split(" ")[0] ?? "Chairman"}
                   </span>
                 </button>
@@ -1951,11 +1951,11 @@ export default function ChairmanDashboard() {
 
               {/* Progress */}
               <div className="text-right select-none">
-                <div className="text-[9px] tracking-widest uppercase mb-1" style={{ color: "var(--theme-grad-start)" }}>
+                <div className="text-[9px] tracking-widest uppercase mb-1 text-zinc-500 dark:text-zinc-400">
                   {tasksLoading ? "Syncing…" : "Mission Progress"}
                 </div>
-                <div className="text-lg font-bold" style={{ color: "var(--theme-grad-start)", fontVariantNumeric: "tabular-nums" }}>
-                  {doneTasks}<span className="text-xs font-normal" style={{ color: "var(--theme-grad-start)" }}>/{totalTasks}</span>
+                <div className="text-lg font-bold text-zinc-900 dark:text-zinc-100" style={{ fontVariantNumeric: "tabular-nums" }}>
+                  {doneTasks}<span className="text-xs font-normal text-zinc-500 dark:text-zinc-400">/{totalTasks}</span>
                 </div>
                 <div className="header-progress-bar mt-1.5 rounded-full" style={{ width: 64, height: 2, backgroundColor: "#1E1F24", marginLeft: "auto" }}>
                   <div className="h-full rounded-full transition-all duration-700" style={{ width: `${overallPct * 100}%`, backgroundImage: 'linear-gradient(to right, var(--theme-grad-start), var(--theme-grad-end))', opacity: 0.7 }} />
@@ -1975,7 +1975,7 @@ export default function ChairmanDashboard() {
                 <button
                   key={tab.id}
                   onClick={() => setActiveTab(tab.id)}
-                  className={`focus:outline-none z-10 ${isActive ? "bg-white dark:bg-[#08090C] border border-zinc-200 dark:border-[#1E1F24] border-b-white dark:border-b-[#08090C] text-zinc-900 dark:text-transparent bg-clip-text bg-theme-gradient" : "text-zinc-500 dark:text-[#3B4558] border border-transparent"}`}
+                  className={`focus:outline-none z-10 ${isActive ? "bg-white dark:bg-[#08090C] border border-zinc-200 dark:border-[#1E1F24] border-b-white dark:border-b-[#08090C] text-zinc-900 dark:text-zinc-100" : "text-zinc-500 dark:text-zinc-400 border border-transparent"}`}
                   style={{
                     padding:         "9px 20px",
                     borderRadius:    "8px 8px 0 0",
@@ -2023,8 +2023,8 @@ export default function ChairmanDashboard() {
       {/* ── FOOTER ────────────────────────────────────────────────────────── */}
       <div style={{ borderTop: "1px solid #111218" }}>
         <div className="max-w-[1440px] mx-auto px-8 py-3 flex items-center justify-between">
-          <span className="text-[9px] tracking-widest uppercase" style={{ color: "var(--theme-grad-start)" }}>Pristine Designs · Executive Command · V6 · Claude Agent Stack · Supabase</span>
-          <span className="text-[9px] tracking-widest uppercase" style={{ color: "var(--theme-grad-start)" }}>One Step Closer · 2026</span>
+          <span className="text-[9px] tracking-widest uppercase text-zinc-500 dark:text-zinc-400">Pristine Designs · Executive Command · V6 · Claude Agent Stack · Supabase</span>
+          <span className="text-[9px] tracking-widest uppercase text-zinc-500 dark:text-zinc-400">One Step Closer · 2026</span>
         </div>
       </div>
 
@@ -2039,7 +2039,7 @@ export default function ChairmanDashboard() {
             <span style={{ fontSize: 11, color: toast.type === "delegate" || toast.type === "schedule" ? "#4A90E2" : "#C9A961", letterSpacing: "0.05em", fontWeight: 600 }}>
               {toast.type === "delegate" ? "Claude Agent:" : toast.type === "schedule" ? "Google Calendar:" : "Task processed:"}
             </span>
-            <span style={{ fontSize: 11, color: "var(--theme-grad-start)", letterSpacing: "0.02em" }}>
+            <span style={{ fontSize: 11, letterSpacing: "0.02em" }} className="text-zinc-500 dark:text-zinc-400">
               {toast.msg}
             </span>
           </div>
@@ -2117,7 +2117,7 @@ export default function ChairmanDashboard() {
                 backgroundColor: "transparent",
                 border:          "none",
                 outline:         "none",
-                color: "var(--theme-grad-start)",
+                color: "#F4F4F5",
                 fontSize:        13,
                 letterSpacing:   "0.02em",
                 fontFamily:      "inherit",
@@ -2130,7 +2130,7 @@ export default function ChairmanDashboard() {
             {isProcessing ? (
               <div style={{ flexShrink: 0, display: "flex", alignItems: "center", gap: 8 }}>
                 <Loader2 size={13} style={{ color: "var(--theme-grad-start)" }} className="animate-spin" />
-                <span className="cmd-bar-msg" style={{ fontSize: 10, letterSpacing: "0.12em", color: "var(--theme-grad-start)", textTransform: "uppercase", whiteSpace: "nowrap" }}>
+                <span className="cmd-bar-msg text-zinc-500 dark:text-zinc-400" style={{ fontSize: 10, letterSpacing: "0.12em", textTransform: "uppercase", whiteSpace: "nowrap" }}>
                   {processingMsg}
                 </span>
               </div>
@@ -2160,7 +2160,7 @@ export default function ChairmanDashboard() {
               </button>
             )}
 
-            <span style={{ fontSize: 10, color: "var(--theme-grad-start)", flexShrink: 0, letterSpacing: "0.06em" }}>↵</span>
+            <span className="text-zinc-500 dark:text-zinc-400" style={{ fontSize: 10, flexShrink: 0, letterSpacing: "0.06em" }}>↵</span>
           </div>
         </div>
       </div>
