@@ -688,11 +688,11 @@ function CSuiteCard({
                         onClick={(e) => { 
                           e.preventDefault(); 
                           e.stopPropagation(); 
-                          onToggleSubtask && onToggleSubtask(t.id, sub.id); 
+                          if (onToggleSubtask) onToggleSubtask(t.id, sub.id); 
                         }} 
-                        className="shrink-0 pt-0.5 cursor-pointer flex items-center justify-center hover:opacity-70 transition-opacity bg-transparent border-none p-0"
+                        className="shrink-0 pt-0.5 cursor-pointer flex items-center justify-center hover:opacity-70 transition-opacity"
                       >
-                        {sub.status === "DONE" ? <CheckCircle2 size={11} color={agent.color} /> : <Circle size={11} className="text-zinc-500" />}
+                        {sub.status === "DONE" ? <CheckCircle2 className="w-4 h-4 text-themeAccent" /> : <Circle className="w-4 h-4 text-zinc-500" />}
                       </button>
                       <span className={`text-sm flex-1 pt-0.5 leading-tight ${sub.status === "DONE" ? "line-through text-zinc-500" : "text-zinc-400"}`}>{sub.title}</span>
                       <button onClick={(e) => { e.stopPropagation(); onDeleteSubtask && onDeleteSubtask(sub.id); }} className="opacity-0 group-hover:opacity-100 text-zinc-500 hover:text-red-400 transition-all shrink-0">
