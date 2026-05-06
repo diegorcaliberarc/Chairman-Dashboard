@@ -56,6 +56,7 @@ export function Sidebar({
     { id: "MASTER", label: "MASTER VIEW" },
     { id: "BUSINESS", label: "BUSINESS" },
     { id: "PERSONAL", label: "PERSONAL" },
+    { id: "KPI", label: "KPIs" },
   ];
 
   return (
