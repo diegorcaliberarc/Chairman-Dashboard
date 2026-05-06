@@ -8,6 +8,7 @@ export function useThemeAccent() {
   const [colorRight, setColorRight] = useState<string>(DEFAULT_RIGHT);
   const [mounted, setMounted] = useState(false);
 
+  // Load initial state
   useEffect(() => {
     setMounted(true);
     const storedLeft = localStorage.getItem('theme-grad-start') || DEFAULT_LEFT;
@@ -15,26 +16,17 @@ export function useThemeAccent() {
     
     setColorLeft(storedLeft);
     setColorRight(storedRight);
-    
-    applyColorsToDOM(storedLeft, storedRight);
   }, []);
 
-  const applyColorsToDOM = (left: string, right: string) => {
-    document.documentElement.style.setProperty('--theme-grad-start', left);
-    document.documentElement.style.setProperty('--theme-grad-end', right);
-  };
+  // DOM Injection and persistence when colors change
+  useEffect(() => {
+    if (mounted) {
+      document.documentElement.style.setProperty('--theme-grad-start', colorLeft);
+      document.documentElement.style.setProperty('--theme-grad-end', colorRight);
+      localStorage.setItem('theme-grad-start', colorLeft);
+      localStorage.setItem('theme-grad-end', colorRight);
+    }
+  }, [colorLeft, colorRight, mounted]);
 
-  const updateColorLeft = (hex: string) => {
-    setColorLeft(hex);
-    localStorage.setItem('theme-grad-start', hex);
-    applyColorsToDOM(hex, colorRight);
-  };
-
-  const updateColorRight = (hex: string) => {
-    setColorRight(hex);
-    localStorage.setItem('theme-grad-end', hex);
-    applyColorsToDOM(colorLeft, hex);
-  };
-
-  return { colorLeft, colorRight, updateColorLeft, updateColorRight, mounted };
+  return { colorLeft, setColorLeft, colorRight, setColorRight, mounted };
 }

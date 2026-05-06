@@ -5,7 +5,7 @@ import { useThemeAccent } from "@/lib/hooks/useThemeAccent";
 
 export function ThemePicker() {
   const { theme: mode, setTheme: setMode } = useTheme();
-  const { colorLeft, colorRight, updateColorLeft, updateColorRight, mounted } = useThemeAccent();
+  const { colorLeft, colorRight, setColorLeft, setColorRight, mounted } = useThemeAccent();
 
   if (!mounted) return null;
 
@@ -29,7 +29,7 @@ export function ThemePicker() {
             <input
               type="color"
               value={colorLeft}
-              onChange={(e) => updateColorLeft(e.target.value)}
+              onChange={(e) => setColorLeft(e.target.value)}
               className="absolute inset-[-10px] w-12 h-12 cursor-pointer opacity-0"
             />
             <div 
@@ -46,7 +46,7 @@ export function ThemePicker() {
             <input
               type="color"
               value={colorRight}
-              onChange={(e) => updateColorRight(e.target.value)}
+              onChange={(e) => setColorRight(e.target.value)}
               className="absolute inset-[-10px] w-12 h-12 cursor-pointer opacity-0"
             />
             <div 
