@@ -272,9 +272,9 @@ function BusinessTab({ agents, onToggle, onDelete, onTaskClick }: {
   const PANEL: React.CSSProperties = { borderRadius: 10, padding: "14px 16px", overflow: "hidden", minHeight: 0, minWidth: 0 };
 
   return (
-    <div className="h-full flex flex-col space-y-6" style={{ animation: "tab-in 0.22s ease-out" }}>
+    <div className="flex flex-col flex-1 h-full min-h-[calc(100vh-6rem)] space-y-6" style={{ animation: "tab-in 0.22s ease-out" }}>
       <SectionLabel>Executive Suite · 6 Agents Active</SectionLabel>
-      <div className="grid grid-cols-1 md:grid-cols-2 grid-rows-3 gap-4 flex-1 min-h-[85vh]">
+      <div className="grid grid-cols-1 md:grid-cols-2 grid-rows-3 gap-4 flex-1 h-full">
         {agents.map((a) => (
           <div key={a.id} style={PANEL} className={`${PANEL_CLASS} h-full flex flex-col`}>
             <CSuiteCard agent={a} onToggle={(taskId) => onToggle(a.id, taskId)} onDelete={onDelete} onTaskClick={onTaskClick} />
@@ -297,9 +297,9 @@ function PersonalTab({ agents, onToggle, onDelete, onTaskClick }: {
   const PANEL: React.CSSProperties = { borderRadius: 10, padding: "14px 16px", overflow: "hidden", minHeight: 0, minWidth: 0 };
 
   return (
-    <div className="h-full flex flex-col space-y-5" style={{ animation: "tab-in 0.22s ease-out" }}>
+    <div className="flex flex-col flex-1 h-full min-h-[calc(100vh-6rem)] space-y-5" style={{ animation: "tab-in 0.22s ease-out" }}>
       <SectionLabel>Personal Power Blocks · 4 Domains</SectionLabel>
-      <div className="grid grid-cols-1 xl:grid-cols-2 gap-6 flex-1 min-h-[85vh]">
+      <div className="grid grid-cols-1 xl:grid-cols-2 gap-6 flex-1 h-full">
         {agents.map((a) => (
           <div key={a.id} style={PANEL} className={`${PANEL_CLASS} h-full flex flex-col`}>
             <DomainBlock label={a.title} sub={a.role} tasks={a.tasks} color={a.color} onToggle={(taskId) => onToggle(a.id, taskId)} onDelete={onDelete} onTaskClick={onTaskClick} />
@@ -648,17 +648,15 @@ function CSuiteCard({
           return (
             <div key={t.id} className="flex flex-col gap-1">
               <div style={{ display: "flex", alignItems: "center", gap: 5, padding: "4px 7px", borderRadius: 5, cursor: "pointer" }} className="bg-white/5 dark:bg-black/20 border border-zinc-200/20 dark:border-white/5 hover:bg-white/10 dark:hover:bg-white/5 transition-colors" onClick={() => onTaskClick(t, agent.color)}>
-                {subs.length > 0 ? (
-                  <button onClick={(e) => { e.stopPropagation(); toggleExpand(t.id); }} className="w-5 h-5 text-zinc-500 hover:bg-zinc-200/20 rounded cursor-pointer flex items-center justify-center transition-colors shrink-0">
-                    {isExpanded ? <ChevronDown size={14} /> : <ChevronRight size={14} />}
-                  </button>
-                ) : (
-                  <div style={{ width: 20 }} className="shrink-0" />
-                )}
                 <button onClick={(e) => { e.stopPropagation(); onToggle(t.id); }} className="text-zinc-500 hover:text-[color:var(--theme-grad-start)] transition-colors p-0 border-none bg-none flex shrink-0">
                   <Circle size={12} />
                 </button>
                 <div style={{ width: 4, height: 4, borderRadius: "50%", backgroundColor: t.priority === 1 ? "#E05A3A" : t.priority === 3 ? "#3B4558" : "#C9A961", flexShrink: 0 }} />
+                {subs.length > 0 && (
+                  <button onClick={(e) => { e.stopPropagation(); toggleExpand(t.id); }} className="mr-1 text-zinc-500 hover:text-zinc-300">
+                    {isExpanded ? <ChevronDown className="w-4 h-4" /> : <ChevronRight className="w-4 h-4" />}
+                  </button>
+                )}
                 <span style={{ fontSize: 11, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", flex: 1 }} className="text-zinc-900 dark:text-white">{t.title}</span>
               </div>
               {/* Subtasks Accordion */}
@@ -701,9 +699,9 @@ function KPITab() {
   const PANEL: React.CSSProperties = { borderRadius: 10, padding: "24px", overflow: "hidden", minHeight: 0, minWidth: 0, display: "flex", flexDirection: "column", height: "100%" };
 
   return (
-    <div className="h-full flex flex-col gap-4" style={{ animation: "tab-in 0.22s ease-out", minHeight: "85vh" }}>
+    <div className="flex flex-col flex-1 h-full min-h-[calc(100vh-6rem)] gap-4" style={{ animation: "tab-in 0.22s ease-out" }}>
       <SectionLabel>Key Performance Indicators</SectionLabel>
-      <div style={PANEL} className={PANEL_CLASS}>
+      <div style={PANEL} className={`${PANEL_CLASS} flex-1`}>
         <div className="flex items-center justify-center h-full">
           <span className="text-sm tracking-widest text-zinc-500 uppercase">KPI Dashboard Coming Soon</span>
         </div>
@@ -743,7 +741,7 @@ function MasterViewTab({
   const CAL_PANEL: React.CSSProperties = { ...PANEL, overflowY: "auto" };
 
   return (
-    <div className="flex flex-col lg:flex-row gap-4 flex-1 h-full min-h-0 overflow-hidden">
+    <div className="flex flex-col lg:flex-row gap-4 flex-1 h-full min-h-[calc(100vh-6rem)] overflow-hidden">
       {/* ── Left Column ──────────────────────────────────────────────────── */}
       <div className="w-full lg:w-1/3 flex flex-col gap-4 h-full min-h-0 pr-1">
         <div style={{ ...PANEL, maxHeight: "250px", overflowY: "auto", flexShrink: 0 }} className={PANEL_CLASS}>
@@ -755,7 +753,7 @@ function MasterViewTab({
       </div>
 
       {/* ── Right Column / Grid ────────────────────────────────────────── */}
-      <div className="w-full lg:w-2/3 grid grid-cols-1 md:grid-cols-2 auto-rows-[1fr] gap-4 h-full overflow-y-auto pr-1">
+      <div className="w-full lg:w-2/3 grid grid-cols-1 md:grid-cols-2 auto-rows-[1fr] gap-4 flex-1 h-full overflow-y-auto pr-1">
         {/* Domain Cards */}
         <div style={PANEL} className={`${PANEL_CLASS} h-full flex flex-col`}><DomainBlock label="WEALTH" sub="Income & Freedom" tasks={wealthTasks} color={personal.find(a => a.id === "wealth")?.color || "#C9A961"} onToggle={onToggle} onDelete={onDelete} onTaskClick={onTaskClick} /></div>
         <div style={PANEL} className={`${PANEL_CLASS} h-full flex flex-col`}><DomainBlock label="HEALTH" sub="Training & Energy" tasks={healthTasks} color={personal.find(a => a.id === "health")?.color || "#C9A961"} onToggle={onToggle} onDelete={onDelete} onTaskClick={onTaskClick} /></div>
