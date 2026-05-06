@@ -63,35 +63,35 @@ interface Agent {
 // ─── Agent Metadata (tasks come from Supabase) ────────────────────────────────
 
 const AGENT_META_BUSINESS = [
-  { id: "ceo", title: "CEO", role: "Vision & Strategy",      backgroundImage: 'linear-gradient(to right, var(--theme-grad-start), var(--theme-grad-end))', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent', color: 'transparent' },
-  { id: "coo", title: "COO", role: "Ops & Execution",        color: "#7B9EA8" },
-  { id: "cmo", title: "CMO", role: "Growth & Sales",         color: "#A87B9E" },
-  { id: "cfo", title: "CFO", role: "Finance & Cash",         color: "#8BA87B" },
-  { id: "cto", title: "CTO", role: "APIs & Claude Pipelines",color: "#4A90E2" },
-  { id: "cpo", title: "CPO", role: "Product & UX",           color: "#F39C12" },
+  { id: "ceo", title: "CEO", role: "Vision & Strategy",      color: "var(--theme-grad-start)" },
+  { id: "coo", title: "COO", role: "Ops & Execution",        color: "var(--theme-grad-start)" },
+  { id: "cmo", title: "CMO", role: "Growth & Sales",         color: "var(--theme-grad-start)" },
+  { id: "cfo", title: "CFO", role: "Finance & Cash",         color: "var(--theme-grad-start)" },
+  { id: "cto", title: "CTO", role: "APIs & Claude Pipelines",color: "var(--theme-grad-start)" },
+  { id: "cpo", title: "CPO", role: "Product & UX",           color: "var(--theme-grad-start)" },
 ];
 
 const AGENT_META_PERSONAL = [
-  { id: "wealth", title: "WEALTH",        role: "Income & Freedom",        color: "#D4AF37" },
-  { id: "health", title: "HEALTH",        role: "Training & Energy",       color: "#E05A3A" },
-  { id: "relate", title: "RELATIONSHIPS", role: "Legacy & Pack",           color: "#5B8FB9" },
-  { id: "joy",    title: "JOY",           role: "Goals & Happiness",       color: "#B388EB" },
+  { id: "wealth", title: "WEALTH",        role: "Income & Freedom",        color: "var(--theme-grad-start)" },
+  { id: "health", title: "HEALTH",        role: "Training & Energy",       color: "var(--theme-grad-start)" },
+  { id: "relate", title: "RELATIONSHIPS", role: "Legacy & Pack",           color: "var(--theme-grad-start)" },
+  { id: "joy",    title: "JOY",           role: "Goals & Happiness",       color: "var(--theme-grad-start)" },
 ];
 
 
 // ─── Category → Agent Routing (hardcoded, no guessing) ───────────────────────
 
 const CATEGORIES: Record<string, { label: string; color: string; pillar: string; agentId: string }> = {
-  CEO:    { label: "CEO",    backgroundImage: 'linear-gradient(to right, var(--theme-grad-start), var(--theme-grad-end))', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent', color: 'transparent', pillar: "BUSINESS", agentId: "ceo"    },
-  COO:    { label: "COO",    color: "#7B9EA8", pillar: "BUSINESS", agentId: "coo"    },
-  CMO:    { label: "CMO",    color: "#A87B9E", pillar: "BUSINESS", agentId: "cmo"    },
-  CFO:    { label: "CFO",    color: "#8BA87B", pillar: "BUSINESS", agentId: "cfo"    },
-  CTO:    { label: "CTO",    color: "#4A90E2", pillar: "BUSINESS", agentId: "cto"    },
-  CPO:    { label: "CPO",    color: "#F39C12", pillar: "BUSINESS", agentId: "cpo"    },
-  Wealth: { label: "WEALTH", color: "#D4AF37", pillar: "PERSONAL", agentId: "wealth" },
-  Health: { label: "HEALTH", color: "#E05A3A", pillar: "PERSONAL", agentId: "health" },
-  Relate: { label: "RELATE", color: "#5B8FB9", pillar: "PERSONAL", agentId: "relate" },
-  Joy:    { label: "JOY",    color: "#B388EB", pillar: "PERSONAL", agentId: "joy"    },
+  CEO:    { label: "CEO",    color: "var(--theme-grad-start)", pillar: "BUSINESS", agentId: "ceo"    },
+  COO:    { label: "COO",    color: "var(--theme-grad-start)", pillar: "BUSINESS", agentId: "coo"    },
+  CMO:    { label: "CMO",    color: "var(--theme-grad-start)", pillar: "BUSINESS", agentId: "cmo"    },
+  CFO:    { label: "CFO",    color: "var(--theme-grad-start)", pillar: "BUSINESS", agentId: "cfo"    },
+  CTO:    { label: "CTO",    color: "var(--theme-grad-start)", pillar: "BUSINESS", agentId: "cto"    },
+  CPO:    { label: "CPO",    color: "var(--theme-grad-start)", pillar: "BUSINESS", agentId: "cpo"    },
+  Wealth: { label: "WEALTH", color: "var(--theme-grad-start)", pillar: "PERSONAL", agentId: "wealth" },
+  Health: { label: "HEALTH", color: "var(--theme-grad-start)", pillar: "PERSONAL", agentId: "health" },
+  Relate: { label: "RELATE", color: "var(--theme-grad-start)", pillar: "PERSONAL", agentId: "relate" },
+  Joy:    { label: "JOY",    color: "var(--theme-grad-start)", pillar: "PERSONAL", agentId: "joy"    },
 };
 
 
@@ -257,8 +257,8 @@ function LiveClock() {
   }, []);
   return (
     <div className="text-right select-none">
-      <div className="font-mono text-sm tracking-wider" style={{ color: "#7A8599", fontVariantNumeric: "tabular-nums" }}>{time}</div>
-      <div className="text-[10px] tracking-wider mt-0.5" style={{ color: "#2D3242" }}>{date}</div>
+      <div className="font-mono text-sm tracking-wider" style={{ color: "var(--theme-grad-start)", fontVariantNumeric: "tabular-nums" }}>{time}</div>
+      <div className="text-[10px] tracking-wider mt-0.5" style={{ color: "var(--theme-grad-start)" }}>{date}</div>
     </div>
   );
 }
@@ -268,11 +268,11 @@ function LiveClock() {
 function SectionLabel({ children, right }: { children: React.ReactNode; right?: React.ReactNode }) {
   return (
     <div className="flex items-center gap-3">
-      <span className="text-[10px] tracking-widest uppercase shrink-0" style={{ color: "#3B4558" }}>
+      <span className="text-[10px] tracking-widest uppercase shrink-0" style={{ color: "var(--theme-grad-start)" }}>
         {children}
       </span>
       <div style={{ flex: 1, height: 1, backgroundColor: "#1E1F24" }} />
-      {right && <span className="text-[10px] shrink-0" style={{ color: "#1E2030" }}>{right}</span>}
+      {right && <span className="text-[10px] shrink-0" style={{ color: "var(--theme-grad-start)" }}>{right}</span>}
     </div>
   );
 }
@@ -288,20 +288,13 @@ function AgentCard({ agent, selected, onClick }: { agent: Agent; selected: boole
       onClick={onClick}
       className={`w-full text-left rounded-xl p-5 transition-all duration-200 focus:outline-none ${
         selected 
-          ? "" 
-          : "bg-white dark:bg-[#0C0D10] border-zinc-200 dark:border-[#1E1F24] shadow-[0_0_30px_rgba(0,0,0,0.08)] dark:shadow-[0_0_30px_rgba(255,255,255,0.02)] hover:shadow-[0_0_40px_rgba(0,0,0,0.12)] dark:hover:shadow-[0_0_40px_rgba(255,255,255,0.04)] transition-shadow duration-500"
+          ? "bg-themeAccent/10 border-themeAccent/50 shadow-[0_0_28px_var(--theme-grad-start)] border border-solid" 
+          : "bg-white dark:bg-[#0C0D10] border-zinc-200 dark:border-[#1E1F24] border border-solid shadow-[0_0_30px_rgba(0,0,0,0.08)] dark:shadow-[0_0_30px_rgba(255,255,255,0.02)] hover:shadow-[0_0_15px_var(--theme-grad-start)] dark:hover:shadow-[0_0_15px_var(--theme-grad-start)] transition-shadow duration-500"
       }`}
-      style={{
-        backgroundColor: selected ? `${agent.color}0E` : undefined,
-        border:          selected ? `1px solid ${agent.color}48` : undefined,
-        boxShadow:       selected ? `0 0 28px ${agent.color}12` : "none",
-        borderWidth:     selected ? undefined : 1,
-        borderStyle:     selected ? undefined : "solid",
-      }}
     >
       <div className="flex items-start justify-between mb-4">
         <div>
-          <div style={{ fontFamily: "Georgia, serif", fontSize: 19, color: selected ? agent.color : "var(--agent-card-text, #4A5068)", lineHeight: 1.1, transition: "color 0.2s" }} className="text-zinc-600 dark:text-[#4A5068]">
+          <div style={{ fontFamily: "Georgia, serif", fontSize: 19, lineHeight: 1.1, transition: "color 0.2s" }} className={selected ? "text-themeAccent" : "text-zinc-600 dark:text-[#4A5068]"}>
             {agent.title}
           </div>
           <div className="text-[10px] tracking-widest uppercase mt-1 text-zinc-500 dark:text-[#252836]">
@@ -309,14 +302,14 @@ function AgentCard({ agent, selected, onClick }: { agent: Agent; selected: boole
           </div>
         </div>
         <div className="flex items-center gap-1.5 mt-0.5">
-          <span className={`text-sm font-bold ${selected ? "" : "text-zinc-700 dark:text-[#3B4558]"}`} style={{ color: selected ? agent.color : undefined, fontVariantNumeric: "tabular-nums" }}>
-            {done}<span className="text-xs font-normal text-zinc-400 dark:text-[#252836]">/{total}</span>
+          <span className={`text-sm font-bold ${selected ? "text-themeAccent" : "text-zinc-700 dark:text-[#3B4558]"}`} style={{ fontVariantNumeric: "tabular-nums" }}>
+            {done}<span className={`text-xs font-normal ${selected ? "text-themeAccent/70" : "text-zinc-400 dark:text-[#252836]"}`}>/{total}</span>
           </span>
-          <ChevronRight size={12} style={{ color: selected ? agent.color : "#252836", transform: selected ? "rotate(90deg)" : "none", transition: "transform 0.2s ease" }} />
+          <ChevronRight size={12} className={selected ? "text-themeAccent" : "text-[#252836]"} style={{ transform: selected ? "rotate(90deg)" : "none", transition: "transform 0.2s ease" }} />
         </div>
       </div>
       <div className="h-px rounded-full" style={{ backgroundColor: "#1E1F24" }}>
-        <div className="h-full rounded-full transition-all duration-700" style={{ width: `${total > 0 ? (done / total) * 100 : 0}%`, backgroundColor: agent.color, opacity: selected ? 0.65 : 0.28 }} />
+        <div className="h-full rounded-full transition-all duration-700 bg-themeAccent" style={{ width: `${total > 0 ? (done / total) * 100 : 0}%`, opacity: selected ? 0.65 : 0.28 }} />
       </div>
     </button>
   );
@@ -359,7 +352,7 @@ function TaskPanel({
                 style={{ padding: "9px 10px", backgroundColor: isDone ? `${agent.color}0A` : "transparent", border: `1px solid ${isDone ? `${agent.color}22` : "transparent"}` }}
               >
                 {/* Toggle */}
-                <button onClick={() => onToggle(task.id)} className="shrink-0 mt-0.5 focus:outline-none" style={{ color: isDone ? agent.color : "#252836", background: "none", border: "none", cursor: "pointer", padding: 0, display: "flex" }}>
+                <button onClick={() => onToggle(task.id)} className="shrink-0 mt-0.5 focus:outline-none" style={{ color: isDone ? "var(--theme-grad-start)" : "#252836", background: "none", border: "none", cursor: "pointer", padding: 0, display: "flex" }}>
                   {isDone ? <CheckCircle2 size={14} /> : <Circle size={14} />}
                 </button>
                 {/* Index */}
@@ -394,7 +387,7 @@ function TaskPanel({
                   onClick={() => onDelete(task.id)}
                   className="shrink-0 self-center focus:outline-none"
                   title="Delete task"
-                  style={{ background: "none", border: "none", cursor: "pointer", padding: "2px 3px", borderRadius: 3, color: "#1A1C24", display: "flex", transition: "color 0.15s" }}
+                  style={{ background: "none", border: "none", cursor: "pointer", padding: "2px 3px", borderRadius: 3, color: "var(--theme-grad-start)", display: "flex", transition: "color 0.15s" }}
                   onMouseEnter={(e) => { (e.currentTarget as HTMLButtonElement).style.color = "#E05A3A"; }}
                   onMouseLeave={(e) => { (e.currentTarget as HTMLButtonElement).style.color = "#1A1C24"; }}
                 >
@@ -407,7 +400,7 @@ function TaskPanel({
                 <div style={{ marginLeft: 24, marginTop: 3, display: "flex", flexDirection: "column", gap: 2 }}>
                   {subs.map((sub) => (
                     <div key={sub.id} style={{ display: "flex", alignItems: "center", gap: 6, padding: "6px 10px", borderRadius: 6 }} className="bg-zinc-100 dark:bg-[#080A0D] border border-zinc-200 dark:border-[#111318]">
-                      <button onClick={() => onToggle(sub.id)} style={{ background: "none", border: "none", cursor: "pointer", padding: 0, display: "flex", flexShrink: 0, color: sub.status === "DONE" ? agent.color : undefined }} className={sub.status === "DONE" ? "" : "text-zinc-600 dark:text-[#252836]"}>
+                      <button onClick={() => onToggle(sub.id)} style={{ background: "none", border: "none", cursor: "pointer", padding: 0, display: "flex", flexShrink: 0, color: sub.status === "DONE" ? "var(--theme-grad-start)" : undefined }} className={sub.status === "DONE" ? "" : "text-zinc-600 dark:text-[#252836]"}>
                         {sub.status === "DONE" ? <CheckCircle2 size={11} /> : <Circle size={11} />}
                       </button>
                       <span style={{ flex: 1, fontSize: 11, color: sub.status === "DONE" ? undefined : undefined, textDecoration: sub.status === "DONE" ? "line-through" : "none", textDecorationColor: agent.color }} className={sub.status === "DONE" ? "text-zinc-400 dark:text-[#3B4558]" : "text-zinc-700 dark:text-[#7A8599]"}>{sub.title}</span>
@@ -442,7 +435,7 @@ function TaskPanel({
           );
         })}
         {agent.tasks.length === 0 && (
-          <div className="text-center py-6" style={{ color: "#252836", fontSize: 11, letterSpacing: "0.1em" }}>
+          <div className="text-center py-6" style={{ color: "var(--theme-grad-start)", fontSize: 11, letterSpacing: "0.1em" }}>
             No tasks yet — add one via the command bar
           </div>
         )}
@@ -609,7 +602,7 @@ function CalendarFeed({
       <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
         {calError ? (
           <div style={{ padding: "10px 12px", borderRadius: 6, display: "flex", alignItems: "center", justifyContent: "space-between", gap: 10 }} className="bg-red-50 dark:bg-[#E05A3A]/10 border border-red-200 dark:border-[#E05A3A]/20">
-            <span style={{ fontSize: 10, letterSpacing: "0.06em" }} className="text-red-600 dark:text-[#E05A3A]">Google session expired — reconnect to restore events.</span>
+            <span style={{ fontSize: 10, letterSpacing: "0.06em" }} className="text-red-600 dark:text-themeAccent">Google session expired — reconnect to restore events.</span>
             <a href="/api/auth/signin" style={{ fontSize: 9, letterSpacing: "0.14em", textTransform: "uppercase", textDecoration: "none", flexShrink: 0, padding: "3px 8px", borderRadius: 4 }} className="text-zinc-700 dark:text-transparent bg-clip-text bg-theme-gradient border border-zinc-200 dark:border-transparent [background:linear-gradient(var(--bg-surface),var(--bg-surface))_padding-box,linear-gradient(to_right,var(--theme-grad-start),var(--theme-grad-end))_border-box]/30">Reconnect</a>
           </div>
         ) : todayEvts.length === 0 ? (
@@ -653,16 +646,16 @@ function CalendarFeed({
             {/* Modal header */}
             <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", marginBottom: 20 }}>
               <div>
-                <div style={{ fontFamily: "Georgia, serif", fontSize: 22, backgroundImage: 'linear-gradient(to right, var(--theme-grad-start), var(--theme-grad-end))', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent', color: 'transparent', lineHeight: 1 }}>
+                <div style={{ fontFamily: "Georgia, serif", fontSize: 22, color: "var(--theme-grad-start)", lineHeight: 1 }}>
                   {modalDay.name} {modalDay.date}
                 </div>
-                <div style={{ fontSize: 9, letterSpacing: "0.2em", textTransform: "uppercase", color: "#3B4558", marginTop: 5 }}>
+                <div style={{ fontSize: 9, letterSpacing: "0.2em", textTransform: "uppercase", color: "var(--theme-grad-start)", marginTop: 5 }}>
                   {modalDay.month} · {modalEvts.length} event{modalEvts.length !== 1 ? "s" : ""}
                 </div>
               </div>
               <button
                 onClick={() => setModalDay(null)}
-                style={{ background: "none", border: "1px solid #1E1F24", cursor: "pointer", color: "#3B4558", borderRadius: 6, padding: "5px 8px", display: "flex", alignItems: "center", transition: "all 0.15s" }}
+                style={{ background: "none", border: "1px solid #1E1F24", cursor: "pointer", color: "var(--theme-grad-start)", borderRadius: 6, padding: "5px 8px", display: "flex", alignItems: "center", transition: "all 0.15s" }}
                 onMouseEnter={(e) => { (e.currentTarget as HTMLButtonElement).style.borderColor = "rgba(59,130,246,0.35)"; (e.currentTarget as HTMLButtonElement).style.color = "#C9A961"; }}
                 onMouseLeave={(e) => { (e.currentTarget as HTMLButtonElement).style.borderColor = "#1E1F24"; (e.currentTarget as HTMLButtonElement).style.color = "#3B4558"; }}
               >
@@ -673,7 +666,7 @@ function CalendarFeed({
             {/* Events list */}
             <div style={{ display: "flex", flexDirection: "column", gap: 8, maxHeight: 400, overflowY: "auto" }}>
               {modalEvts.length === 0 ? (
-                <div style={{ padding: "24px 0", textAlign: "center", fontSize: 11, color: "#252836", letterSpacing: "0.1em" }}>
+                <div style={{ padding: "24px 0", textAlign: "center", fontSize: 11, color: "var(--theme-grad-start)", letterSpacing: "0.1em" }}>
                   {calError ? "Session expired — reconnect Google Calendar." : calConnected ? "No events on this day." : "Connect Google Calendar to see events."}
                 </div>
               ) : (
@@ -690,11 +683,11 @@ function CalendarFeed({
                     <div key={ev.id} style={{ padding: "12px 16px", borderRadius: 8, backgroundColor: "#080A0D", border: "1px solid rgba(59,130,246,0.10)" }}>
                       <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: ev.summary ? 6 : 0 }}>
                         <div style={{ width: 3, height: 3, borderRadius: "50%", backgroundImage: 'linear-gradient(to right, var(--theme-grad-start), var(--theme-grad-end))', flexShrink: 0 }} />
-                        <span style={{ fontSize: 9, backgroundImage: 'linear-gradient(to right, var(--theme-grad-start), var(--theme-grad-end))', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent', color: 'transparent', fontVariantNumeric: "tabular-nums", flexShrink: 0 }}>
+                        <span style={{ fontSize: 9, color: "var(--theme-grad-start)", fontVariantNumeric: "tabular-nums", flexShrink: 0 }}>
                           {timeStr}{endStr ? ` — ${endStr}` : ""}
                         </span>
                       </div>
-                      <div style={{ fontSize: 13, color: "#C2C8D4", lineHeight: 1.4, paddingLeft: 13 }}>
+                      <div style={{ fontSize: 13, color: "var(--theme-grad-start)", lineHeight: 1.4, paddingLeft: 13 }}>
                         {ev.summary ?? "Untitled Event"}
                       </div>
                     </div>
@@ -722,10 +715,10 @@ function PriorityStrikes({
     <div style={{ height: "100%", display: "flex", flexDirection: "column" }}>
       <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 10 }}>
         <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
-          <Crosshair size={10} className="text-red-500 dark:text-[#E05A3A]" />
+          <Crosshair size={10} className="text-themeAccent dark:text-themeAccent" />
           <span style={{ fontSize: 9, letterSpacing: "0.22em", textTransform: "uppercase" }} className="text-zinc-500 dark:text-[#3B4558]">Priority Strikes</span>
         </div>
-        <span style={{ fontSize: 8, letterSpacing: "0.14em", color: "#252836" }}>{strikes.length} pending</span>
+        <span style={{ fontSize: 8, letterSpacing: "0.14em", color: "var(--theme-grad-start)" }}>{strikes.length} pending</span>
       </div>
       <div style={{ flex: 1, overflowY: "auto", display: "flex", flexDirection: "column", gap: 3 }}>
         {strikes.slice(0, 14).map(({ task, agent }) => (
@@ -736,7 +729,7 @@ function PriorityStrikes({
             onMouseEnter={(e) => (e.currentTarget.style.borderColor = `${agent.color}28`)}
             onMouseLeave={(e) => (e.currentTarget.style.borderColor = "#0F1015")}
           >
-            <button onClick={() => onToggle(task.id)} style={{ background: "none", border: "none", cursor: "pointer", padding: 0, display: "flex", flexShrink: 0, color: "#252836" }}>
+            <button onClick={() => onToggle(task.id)} style={{ background: "none", border: "none", cursor: "pointer", padding: 0, display: "flex", flexShrink: 0, color: "var(--theme-grad-start)" }}>
               <Circle size={9} />
             </button>
             <div style={{ width: 4, height: 4, borderRadius: "50%", backgroundColor: agent.color, flexShrink: 0 }} />
@@ -750,7 +743,7 @@ function PriorityStrikes({
             }}>
               {task.priority === 1 ? "HI" : task.priority === 3 ? "LO" : "MD"}
             </span>
-            <button onClick={() => onDelete(task.id)} style={{ background: "none", border: "none", cursor: "pointer", padding: 0, color: "#1A1C24", display: "flex", flexShrink: 0, transition: "color 0.15s" }}
+            <button onClick={() => onDelete(task.id)} style={{ background: "none", border: "none", cursor: "pointer", padding: 0, color: "var(--theme-grad-start)", display: "flex", flexShrink: 0, transition: "color 0.15s" }}
               onMouseEnter={(e) => { (e.currentTarget as HTMLButtonElement).style.color = "#E05A3A"; }}
               onMouseLeave={(e) => { (e.currentTarget as HTMLButtonElement).style.color = "#1A1C24"; }}>
               <X size={9} />
@@ -758,7 +751,7 @@ function PriorityStrikes({
           </div>
         ))}
         {strikes.length === 0 && (
-          <div style={{ textAlign: "center", padding: "20px 0", fontSize: 10, color: "#1C1E2A", letterSpacing: "0.1em" }}>
+          <div style={{ textAlign: "center", padding: "20px 0", fontSize: 10, color: "var(--theme-grad-start)", letterSpacing: "0.1em" }}>
             All clear, Chairman.
           </div>
         )}
@@ -803,15 +796,15 @@ function WealthBlock() {
       <QuadrantHeader label="WEALTH" sub="Income & Freedom" color="#D4AF37" />
       <div style={{ flex: 1, display: "flex", flexDirection: "column", gap: 6, overflowY: "auto" }}>
         <SubPanel>
-          <div style={{ fontSize: 7, letterSpacing: "0.2em", textTransform: "uppercase", color: "#252836", marginBottom: 6 }}>Income Targets</div>
+          <div style={{ fontSize: 7, letterSpacing: "0.2em", textTransform: "uppercase", color: "var(--theme-grad-start)", marginBottom: 6 }}>Income Targets</div>
           <DataRow label="Current Income"  value="—" color="#D4AF37" />
           <DataRow label="Target Income"   value="—" color="#8BA87B" />
           <DataRow label="Gap to Target"   value="—" color="#E05A3A" />
         </SubPanel>
         <SubPanel>
-          <div style={{ fontSize: 7, letterSpacing: "0.2em", textTransform: "uppercase", color: "#252836", marginBottom: 5 }}>NQ Session Bias</div>
-          <div style={{ fontFamily: "Georgia, serif", fontSize: 13, backgroundImage: 'linear-gradient(to right, var(--theme-grad-start), var(--theme-grad-end))', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent', color: 'transparent' }}>RANGE-BOUND</div>
-          <div style={{ fontSize: 7, color: "#1C1E26", marginTop: 2 }}>ES / NQ · Watching supply at prior hi</div>
+          <div style={{ fontSize: 7, letterSpacing: "0.2em", textTransform: "uppercase", color: "var(--theme-grad-start)", marginBottom: 5 }}>NQ Session Bias</div>
+          <div style={{ fontFamily: "Georgia, serif", fontSize: 13, color: "var(--theme-grad-start)" }}>RANGE-BOUND</div>
+          <div style={{ fontSize: 7, color: "var(--theme-grad-start)", marginTop: 2 }}>ES / NQ · Watching supply at prior hi</div>
         </SubPanel>
         <SubPanel>
           <DataRow label="Account Buffer" value="—" color="#8BA87B" />
@@ -828,13 +821,13 @@ function HealthBlock() {
       <QuadrantHeader label="HEALTH" sub="Training & Energy" color="#E05A3A" />
       <div style={{ flex: 1, display: "flex", flexDirection: "column", gap: 6, overflowY: "auto" }}>
         <SubPanel>
-          <div style={{ fontSize: 7, letterSpacing: "0.2em", textTransform: "uppercase", color: "#252836", marginBottom: 6 }}>Body Metrics</div>
+          <div style={{ fontSize: 7, letterSpacing: "0.2em", textTransform: "uppercase", color: "var(--theme-grad-start)", marginBottom: 6 }}>Body Metrics</div>
           <DataRow label="Current Weight"  value="—" color="#E05A3A" />
           <DataRow label="Activity Level"  value="—" color="#E05A3A" />
           <DataRow label="Sleep Hours"     value="—" />
         </SubPanel>
         <SubPanel>
-          <div style={{ fontSize: 7, letterSpacing: "0.2em", textTransform: "uppercase", color: "#252836", marginBottom: 5 }}>Today's Session</div>
+          <div style={{ fontSize: 7, letterSpacing: "0.2em", textTransform: "uppercase", color: "var(--theme-grad-start)", marginBottom: 5 }}>Today's Session</div>
           <DataRow label="Workout Type"    value="—" color="#E05A3A" />
           <DataRow label="Protein Target"  value="200g" color="#8BA87B" />
           <DataRow label="Calories"        value="2,800 kcal" color="#8BA87B" />
@@ -850,17 +843,17 @@ function RelationshipsBlock() {
       <QuadrantHeader label="RELATIONSHIPS" sub="Legacy & Pack" color="#5B8FB9" />
       <div style={{ flex: 1, display: "flex", flexDirection: "column", gap: 5, overflowY: "auto" }}>
         <SubPanel>
-          <div style={{ fontSize: 7, letterSpacing: "0.18em", textTransform: "uppercase", color: "#5B8FB9", marginBottom: 5, opacity: 0.7 }}>Antonia</div>
+          <div style={{ fontSize: 7, letterSpacing: "0.18em", textTransform: "uppercase", color: "var(--theme-grad-start)", marginBottom: 5, opacity: 0.7 }}>Antonia</div>
           <DataRow label="Last Quality Time" value="—" color="#5B8FB9" />
           <DataRow label="Next Commitment"   value="—" color="#5B8FB9" />
         </SubPanel>
         <SubPanel>
-          <div style={{ fontSize: 7, letterSpacing: "0.18em", textTransform: "uppercase", color: "#5B8FB9", marginBottom: 5, opacity: 0.7 }}>Maximiliano</div>
+          <div style={{ fontSize: 7, letterSpacing: "0.18em", textTransform: "uppercase", color: "var(--theme-grad-start)", marginBottom: 5, opacity: 0.7 }}>Maximiliano</div>
           <DataRow label="Last Quality Time" value="—" color="#5B8FB9" />
           <DataRow label="Next Commitment"   value="—" color="#5B8FB9" />
         </SubPanel>
         <SubPanel>
-          <div style={{ fontSize: 7, letterSpacing: "0.18em", textTransform: "uppercase", color: "#5B8FB9", marginBottom: 5, opacity: 0.7 }}>The Pack</div>
+          <div style={{ fontSize: 7, letterSpacing: "0.18em", textTransform: "uppercase", color: "var(--theme-grad-start)", marginBottom: 5, opacity: 0.7 }}>The Pack</div>
           <DataRow label="Nova"   value="—" color="#3B6A8A" />
           <DataRow label="Astro"  value="—" color="#3B6A8A" />
           <DataRow label="Comet"  value="—" color="#3B6A8A" />
@@ -878,17 +871,17 @@ function HappinessBlock({ tasks, onToggle, onDelete }: { tasks: DbTask[]; onTogg
       <QuadrantHeader label="JOY" sub="Goals & Happiness" color="#B388EB" />
       <div style={{ flex: 1, display: "flex", flexDirection: "column", gap: 5, overflowY: "auto", minHeight: 0 }}>
         <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "0 2px" }}>
-          <span style={{ fontSize: 7, letterSpacing: "0.18em", textTransform: "uppercase", color: "#252836" }}>Areas of Happiness · Targets</span>
-          <span style={{ fontSize: 7, color: "#252836" }}>{done.length}/{tasks.length}</span>
+          <span style={{ fontSize: 7, letterSpacing: "0.18em", textTransform: "uppercase", color: "var(--theme-grad-start)" }}>Areas of Happiness · Targets</span>
+          <span style={{ fontSize: 7, color: "var(--theme-grad-start)" }}>{done.length}/{tasks.length}</span>
         </div>
         <div style={{ flex: 1, overflowY: "auto", display: "flex", flexDirection: "column", gap: 3 }}>
           {pending.map((t) => (
             <div key={t.id} style={{ display: "flex", alignItems: "center", gap: 6, padding: "5px 8px", borderRadius: 5, backgroundColor: "rgba(179,136,235,0.04)", border: "1px solid rgba(179,136,235,0.09)" }}>
-              <button onClick={() => onToggle(t.id)} style={{ background: "none", border: "none", cursor: "pointer", padding: 0, color: "#4A3060", flexShrink: 0, display: "flex" }}>
+              <button onClick={() => onToggle(t.id)} style={{ background: "none", border: "none", cursor: "pointer", padding: 0, color: "var(--theme-grad-start)", flexShrink: 0, display: "flex" }}>
                 <Circle size={10} />
               </button>
-              <span style={{ flex: 1, fontSize: 10, color: "#7A8599", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{t.title}</span>
-              <button onClick={() => onDelete(t.id)} style={{ background: "none", border: "none", cursor: "pointer", padding: 0, color: "#252836", display: "flex", flexShrink: 0 }}
+              <span style={{ flex: 1, fontSize: 10, color: "var(--theme-grad-start)", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{t.title}</span>
+              <button onClick={() => onDelete(t.id)} style={{ background: "none", border: "none", cursor: "pointer", padding: 0, color: "var(--theme-grad-start)", display: "flex", flexShrink: 0 }}
                 onMouseEnter={(e) => { (e.currentTarget as HTMLButtonElement).style.color = "#E05A3A"; }}
                 onMouseLeave={(e) => { (e.currentTarget as HTMLButtonElement).style.color = "#252836"; }}>
                 <X size={9} />
@@ -897,17 +890,17 @@ function HappinessBlock({ tasks, onToggle, onDelete }: { tasks: DbTask[]; onTogg
           ))}
           {done.map((t) => (
             <div key={t.id} style={{ display: "flex", alignItems: "center", gap: 6, padding: "5px 8px", borderRadius: 5, opacity: 0.4 }}>
-              <button onClick={() => onToggle(t.id)} style={{ background: "none", border: "none", cursor: "pointer", padding: 0, color: "#B388EB", flexShrink: 0, display: "flex" }}>
+              <button onClick={() => onToggle(t.id)} style={{ background: "none", border: "none", cursor: "pointer", padding: 0, color: "var(--theme-grad-start)", flexShrink: 0, display: "flex" }}>
                 <CheckCircle2 size={10} />
               </button>
-              <span style={{ flex: 1, fontSize: 10, color: "#3B4558", textDecoration: "line-through", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{t.title}</span>
-              <button onClick={() => onDelete(t.id)} style={{ background: "none", border: "none", cursor: "pointer", padding: 0, color: "#252836", display: "flex", flexShrink: 0 }}>
+              <span style={{ flex: 1, fontSize: 10, color: "var(--theme-grad-start)", textDecoration: "line-through", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{t.title}</span>
+              <button onClick={() => onDelete(t.id)} style={{ background: "none", border: "none", cursor: "pointer", padding: 0, color: "var(--theme-grad-start)", display: "flex", flexShrink: 0 }}>
                 <X size={9} />
               </button>
             </div>
           ))}
           {tasks.length === 0 && (
-            <div style={{ fontSize: 9, color: "#1C1E2A", padding: "8px 0", letterSpacing: "0.08em" }}>
+            <div style={{ fontSize: 9, color: "var(--theme-grad-start)", padding: "8px 0", letterSpacing: "0.08em" }}>
               Add goals via Joy category in the command bar.
             </div>
           )}
@@ -946,11 +939,11 @@ function CSuiteCard({
         <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", marginBottom: 6 }}>
           <div>
             <div style={{ fontFamily: "Georgia, serif", fontSize: 16, color: agent.color, lineHeight: 1 }}>{agent.title}</div>
-            <div style={{ fontSize: 7, letterSpacing: "0.16em", textTransform: "uppercase", color: "#252836", marginTop: 3 }}>{agent.role}</div>
+            <div style={{ fontSize: 7, letterSpacing: "0.16em", textTransform: "uppercase", color: "var(--theme-grad-start)", marginTop: 3 }}>{agent.role}</div>
           </div>
           <div style={{ textAlign: "right" }}>
             <span style={{ fontSize: 16, color: agent.color, fontVariantNumeric: "tabular-nums", fontFamily: "Georgia, serif" }}>{done}</span>
-            <span style={{ fontSize: 9, color: "#252836" }}>/{total}</span>
+            <span style={{ fontSize: 9, color: "var(--theme-grad-start)" }}>/{total}</span>
           </div>
         </div>
         <div style={{ height: 1.5, backgroundColor: "#1E1F24", borderRadius: 2, marginBottom: 8 }}>
@@ -964,11 +957,11 @@ function CSuiteCard({
             </div>
           )) : (
             <div style={{ display: "flex", alignItems: "center", justifyContent: "center", flex: 1 }}>
-              <span style={{ fontSize: 9, color: "#1A1C28", letterSpacing: "0.1em" }}>All clear</span>
+              <span style={{ fontSize: 9, color: "var(--theme-grad-start)", letterSpacing: "0.1em" }}>All clear</span>
             </div>
           )}
         </div>
-        <div style={{ marginTop: 6, fontSize: 7, letterSpacing: "0.12em", textTransform: "uppercase", color: "#1E2030" }}>
+        <div style={{ marginTop: 6, fontSize: 7, letterSpacing: "0.12em", textTransform: "uppercase", color: "var(--theme-grad-start)" }}>
           {pending.length} pending · {pct.toFixed(0)}% done
         </div>
       </button>
@@ -991,7 +984,7 @@ function CSuiteCard({
               </div>
               <button
                 onClick={() => setIsOpen(false)}
-                style={{ background: "none", border: "1px solid #1E1F24", cursor: "pointer", color: "#3B4558", borderRadius: 6, padding: "5px 8px", display: "flex", alignItems: "center", transition: "all 0.15s" }}
+                style={{ background: "none", border: "1px solid #1E1F24", cursor: "pointer", color: "var(--theme-grad-start)", borderRadius: 6, padding: "5px 8px", display: "flex", alignItems: "center", transition: "all 0.15s" }}
                 className="hover:border-zinc-400 dark:hover:border-[#1E1F24]"
                 onMouseEnter={(e) => { (e.currentTarget as HTMLButtonElement).style.borderColor = `${agent.color}55`; (e.currentTarget as HTMLButtonElement).style.color = agent.color; }}
                 onMouseLeave={(e) => { (e.currentTarget as HTMLButtonElement).style.borderColor = "#1E1F24"; (e.currentTarget as HTMLButtonElement).style.color = "#3B4558"; }}
@@ -1008,7 +1001,7 @@ function CSuiteCard({
             {/* All tasks */}
             <div style={{ flex: 1, overflowY: "auto", display: "flex", flexDirection: "column", gap: 6 }}>
               {agent.tasks.length === 0 ? (
-                <div style={{ padding: "32px 0", textAlign: "center", fontSize: 11, color: "#252836", letterSpacing: "0.1em" }}>
+                <div style={{ padding: "32px 0", textAlign: "center", fontSize: 11, color: "var(--theme-grad-start)", letterSpacing: "0.1em" }}>
                   No tasks assigned. Add one via the command bar.
                 </div>
               ) : (
@@ -1035,7 +1028,7 @@ function CSuiteCard({
             </div>
 
             {/* Footer */}
-            <div style={{ marginTop: 16, flexShrink: 0, fontSize: 9, letterSpacing: "0.12em", textTransform: "uppercase", color: "#1E2030", textAlign: "right" }}>
+            <div style={{ marginTop: 16, flexShrink: 0, fontSize: 9, letterSpacing: "0.12em", textTransform: "uppercase", color: "var(--theme-grad-start)", textAlign: "right" }}>
               {done}/{total} complete · {pct.toFixed(0)}%
             </div>
           </div>
@@ -1157,7 +1150,7 @@ function DeepWorkMode({
       {priority ? (
         <div style={{ maxWidth: 780, width: "100%", textAlign: "center" }}>
           {/* Agent label */}
-          <div style={{ fontSize: 10, letterSpacing: "0.3em", color: "#2A2A2A", textTransform: "uppercase", marginBottom: 20 }}>
+          <div style={{ fontSize: 10, letterSpacing: "0.3em", color: "var(--theme-grad-start)", textTransform: "uppercase", marginBottom: 20 }}>
             {priority.agent.title} · {priority.agent.role} · Current Priority
           </div>
 
@@ -1166,7 +1159,7 @@ function DeepWorkMode({
             fontFamily:    "Georgia, serif",
             fontSize:      "clamp(28px, 5vw, 56px)",
             fontWeight:    700,
-            color:         "#FFFFFF",
+            color: "var(--theme-grad-start)",
             lineHeight:    1.25,
             letterSpacing: "-0.01em",
             marginBottom:  56,
@@ -1212,13 +1205,13 @@ function DeepWorkMode({
           </button>
 
           {/* Task position */}
-          <div style={{ marginTop: 32, fontSize: 10, letterSpacing: "0.15em", color: "#1A1A1A", textTransform: "uppercase" }}>
+          <div style={{ marginTop: 32, fontSize: 10, letterSpacing: "0.15em", color: "var(--theme-grad-start)", textTransform: "uppercase" }}>
             {business.concat(personal).reduce((s, a) => s + a.tasks.filter(t => t.status !== "DONE").length, 0)} tasks remaining across all agents
           </div>
         </div>
       ) : (
         <div style={{ textAlign: "center" }}>
-          <div style={{ fontFamily: "Georgia, serif", fontSize: 36, backgroundImage: 'linear-gradient(to right, var(--theme-grad-start), var(--theme-grad-end))', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent', color: 'transparent', marginBottom: 16 }}>
+          <div style={{ fontFamily: "Georgia, serif", fontSize: 36, color: "var(--theme-grad-start)", marginBottom: 16 }}>
             All tasks complete.
           </div>
           <div style={{ fontSize: 12, color: "#333", letterSpacing: "0.1em" }}>
@@ -1345,7 +1338,7 @@ function NovaPanel({
           </div>
           <button
             onClick={onClose}
-            style={{ background: "none", border: "1px solid #1E1F24", cursor: "pointer", color: "#3B4558", borderRadius: 6, padding: "4px 7px", display: "flex", transition: "all 0.15s" }}
+            style={{ background: "none", border: "1px solid #1E1F24", cursor: "pointer", color: "var(--theme-grad-start)", borderRadius: 6, padding: "4px 7px", display: "flex", transition: "all 0.15s" }}
             onMouseEnter={(e) => { (e.currentTarget as HTMLButtonElement).style.borderColor = `${agentColor}55`; (e.currentTarget as HTMLButtonElement).style.color = agentColor; }}
             onMouseLeave={(e) => { (e.currentTarget as HTMLButtonElement).style.borderColor = "#1E1F24"; (e.currentTarget as HTMLButtonElement).style.color = "#3B4558"; }}
           >
@@ -1411,9 +1404,9 @@ function NovaPanel({
         {messages.length === 0 && (
           <div style={{ margin: "auto", textAlign: "center", padding: "40px 20px" }}>
             <Bot size={28} style={{ color: `${agentColor}44`, margin: "0 auto 12px" }} />
-            <div style={{ fontSize: 11, color: "#252836", letterSpacing: "0.1em", lineHeight: 1.6 }}>
+            <div style={{ fontSize: 11, color: "var(--theme-grad-start)", letterSpacing: "0.1em", lineHeight: 1.6 }}>
               {agent} is standing by.<br />
-              <span style={{ fontSize: 10, color: "#1A1C24" }}>Context loaded: {tasks.filter(t => t.status !== "DONE").length} tasks · {calendarEvents.length} events</span>
+              <span style={{ fontSize: 10, color: "var(--theme-grad-start)" }}>Context loaded: {tasks.filter(t => t.status !== "DONE").length} tasks · {calendarEvents.length} events</span>
             </div>
           </div>
         )}
@@ -1463,14 +1456,14 @@ function NovaPanel({
               )}
             </div>
             {msg.role === "assistant" && (
-              <span style={{ fontSize: 8, color: "#1E2030", marginTop: 3, letterSpacing: "0.12em", textTransform: "uppercase" }}>{agent}</span>
+              <span style={{ fontSize: 8, color: "var(--theme-grad-start)", marginTop: 3, letterSpacing: "0.12em", textTransform: "uppercase" }}>{agent}</span>
             )}
           </div>
         ))}
         {loading && (
           <div style={{ display: "flex", alignItems: "center", gap: 6, padding: "8px 0" }}>
             <Loader2 size={11} style={{ color: agentColor }} className="animate-spin" />
-            <span style={{ fontSize: 10, color: "#252836", letterSpacing: "0.1em" }}>Processing…</span>
+            <span style={{ fontSize: 10, color: "var(--theme-grad-start)", letterSpacing: "0.1em" }}>Processing…</span>
           </div>
         )}
         <div ref={bottomRef} />
@@ -1523,7 +1516,7 @@ function NovaPanel({
             <Send size={11} />
           </button>
         </div>
-        <div style={{ marginTop: 6, fontSize: 8, color: "#141518", letterSpacing: "0.1em", textAlign: "center" }}>
+        <div style={{ marginTop: 6, fontSize: 8, color: "var(--theme-grad-start)", letterSpacing: "0.1em", textAlign: "center" }}>
           Context: {tasks.filter(t => t.status !== "DONE").length} pending tasks injected · Enter to send
         </div>
       </div>
@@ -1780,19 +1773,19 @@ export default function ChairmanDashboard() {
           <div className="flex flex-wrap items-center justify-between gap-y-3 py-4">
             {/* Brand */}
             <div className="flex items-center gap-4">
-              <Crosshair size={15} style={{ backgroundImage: 'linear-gradient(to right, var(--theme-grad-start), var(--theme-grad-end))', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent', color: 'transparent' }} />
+              <Crosshair size={15} style={{ color: "var(--theme-grad-start)" }} />
               <div>
-                <h1 style={{ fontFamily: "Georgia, serif", fontSize: 16, color: "#C2C8D4", letterSpacing: "0.04em" }}>
+                <h1 style={{ fontFamily: "Georgia, serif", fontSize: 16, color: "var(--theme-grad-start)", letterSpacing: "0.04em" }}>
                   Pristine Designs
                 </h1>
-                <div className="text-[9px] tracking-widest uppercase" style={{ color: "#252836" }}>
+                <div className="text-[9px] tracking-widest uppercase" style={{ color: "var(--theme-grad-start)" }}>
                   Executive Command · Claude Agent Stack · V6 · Supabase
                 </div>
               </div>
               <div className="header-divider-ea" style={{ width: 1, height: 24, backgroundColor: "#1E1F24", marginLeft: 4 }} />
               <div className="header-ea-badge flex items-center gap-1.5">
-                <Bot size={11} style={{ color: "#4A90E2" }} />
-                <span className="text-[9px] tracking-widest uppercase" style={{ color: "#4A90E2" }}>EA Buffer Active</span>
+                <Bot size={11} style={{ color: "var(--theme-grad-start)" }} />
+                <span className="text-[9px] tracking-widest uppercase" style={{ color: "var(--theme-grad-start)" }}>EA Buffer Active</span>
               </div>
             </div>
 
@@ -1807,9 +1800,9 @@ export default function ChairmanDashboard() {
                   gap:             6,
                   padding:         "7px 14px",
                   borderRadius:    6,
-                  backgroundColor: calConnected ? "rgba(74,144,226,0.1)" : "transparent",
-                  border:          `1px solid ${calConnected ? "rgba(74,144,226,0.4)" : "#1E1F24"}`,
-                  color:           calConnected ? "#4A90E2" : "#3B4558",
+                  backgroundColor: calConnected ? "rgba(var(--theme-grad-start), 0.1)" : "transparent",
+                  border:          `1px solid ${calConnected ? "var(--theme-grad-start)" : "#1E1F24"}`,
+                  color:           calConnected ? "var(--theme-grad-start)" : "#3B4558",
                   fontSize:        9,
                   fontWeight:      700,
                   letterSpacing:   "0.18em",
@@ -1835,9 +1828,9 @@ export default function ChairmanDashboard() {
                   gap:             6,
                   padding:         "7px 12px",
                   borderRadius:    6,
-                  backgroundColor: novaOpen ? "rgba(59,130,246,0.12)" : "transparent",
-                  border:          `1px solid ${novaOpen ? "rgba(59,130,246,0.45)" : "#1E1F24"}`,
-                  color:           novaOpen ? "#C9A961" : "#3B4558",
+                  backgroundColor: novaOpen ? "rgba(var(--theme-grad-start), 0.12)" : "transparent",
+                  border:          `1px solid ${novaOpen ? "var(--theme-grad-start)" : "#1E1F24"}`,
+                  color:           novaOpen ? "var(--theme-grad-start)" : "#3B4558",
                   fontSize:        9,
                   fontWeight:      700,
                   letterSpacing:   "0.18em",
@@ -1892,12 +1885,12 @@ export default function ChairmanDashboard() {
                     />
                   ) : (
                     <div style={{ width: 22, height: 22, borderRadius: "50%", backgroundColor: "rgba(59,130,246,0.2)", display: "flex", alignItems: "center", justifyContent: "center" }}>
-                      <span style={{ fontSize: 9, backgroundImage: 'linear-gradient(to right, var(--theme-grad-start), var(--theme-grad-end))', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent', color: 'transparent', fontWeight: 700 }}>
+                      <span style={{ fontSize: 9, color: "var(--theme-grad-start)", fontWeight: 700 }}>
                         {(user.name ?? "C")[0].toUpperCase()}
                       </span>
                     </div>
                   )}
-                  <span style={{ fontSize: 9, color: "#3B4558", letterSpacing: "0.1em", textTransform: "uppercase", whiteSpace: "nowrap" }}>
+                  <span style={{ fontSize: 9, color: "var(--theme-grad-start)", letterSpacing: "0.1em", textTransform: "uppercase", whiteSpace: "nowrap" }}>
                     {user.name?.split(" ")[0] ?? "Chairman"}
                   </span>
                 </button>
@@ -1913,7 +1906,7 @@ export default function ChairmanDashboard() {
                     borderRadius:    6,
                     backgroundColor: "transparent",
                     border:          "1px solid #1E1F24",
-                    color:           "#3B4558",
+                    color: "var(--theme-grad-start)",
                     fontSize:        9,
                     fontWeight:      700,
                     letterSpacing:   "0.18em",
@@ -1958,11 +1951,11 @@ export default function ChairmanDashboard() {
 
               {/* Progress */}
               <div className="text-right select-none">
-                <div className="text-[9px] tracking-widest uppercase mb-1" style={{ color: "#252836" }}>
+                <div className="text-[9px] tracking-widest uppercase mb-1" style={{ color: "var(--theme-grad-start)" }}>
                   {tasksLoading ? "Syncing…" : "Mission Progress"}
                 </div>
-                <div className="text-lg font-bold" style={{ backgroundImage: 'linear-gradient(to right, var(--theme-grad-start), var(--theme-grad-end))', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent', color: 'transparent', fontVariantNumeric: "tabular-nums" }}>
-                  {doneTasks}<span className="text-xs font-normal" style={{ color: "#3B4558" }}>/{totalTasks}</span>
+                <div className="text-lg font-bold" style={{ color: "var(--theme-grad-start)", fontVariantNumeric: "tabular-nums" }}>
+                  {doneTasks}<span className="text-xs font-normal" style={{ color: "var(--theme-grad-start)" }}>/{totalTasks}</span>
                 </div>
                 <div className="header-progress-bar mt-1.5 rounded-full" style={{ width: 64, height: 2, backgroundColor: "#1E1F24", marginLeft: "auto" }}>
                   <div className="h-full rounded-full transition-all duration-700" style={{ width: `${overallPct * 100}%`, backgroundImage: 'linear-gradient(to right, var(--theme-grad-start), var(--theme-grad-end))', opacity: 0.7 }} />
@@ -2030,8 +2023,8 @@ export default function ChairmanDashboard() {
       {/* ── FOOTER ────────────────────────────────────────────────────────── */}
       <div style={{ borderTop: "1px solid #111218" }}>
         <div className="max-w-[1440px] mx-auto px-8 py-3 flex items-center justify-between">
-          <span className="text-[9px] tracking-widest uppercase" style={{ color: "#111218" }}>Pristine Designs · Executive Command · V6 · Claude Agent Stack · Supabase</span>
-          <span className="text-[9px] tracking-widest uppercase" style={{ color: "#111218" }}>One Step Closer · 2026</span>
+          <span className="text-[9px] tracking-widest uppercase" style={{ color: "var(--theme-grad-start)" }}>Pristine Designs · Executive Command · V6 · Claude Agent Stack · Supabase</span>
+          <span className="text-[9px] tracking-widest uppercase" style={{ color: "var(--theme-grad-start)" }}>One Step Closer · 2026</span>
         </div>
       </div>
 
@@ -2040,13 +2033,13 @@ export default function ChairmanDashboard() {
         <div style={{ position: "fixed", bottom: 96, left: "50%", zIndex: 60, animation: "toast-slide 0.28s ease-out", pointerEvents: "none" }}>
           <div style={{ transform: "translateX(-50%)", backgroundColor: "#0E0F14", border: `1px solid ${toast.type === "delegate" || toast.type === "schedule" ? "rgba(74,144,226,0.35)" : "rgba(59,130,246,0.32)"}`, borderRadius: 8, padding: "11px 18px", display: "flex", alignItems: "center", gap: 10, boxShadow: "0 8px 40px rgba(0,0,0,0.7)", whiteSpace: "nowrap" }}>
             {toast.type === "delegate" || toast.type === "schedule"
-              ? <CalendarDays size={13} style={{ color: "#4A90E2", flexShrink: 0 }} />
-              : <CheckCheck size={13} style={{ backgroundImage: 'linear-gradient(to right, var(--theme-grad-start), var(--theme-grad-end))', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent', color: 'transparent', flexShrink: 0 }} />
+              ? <CalendarDays size={13} style={{ color: "var(--theme-grad-start)", flexShrink: 0 }} />
+              : <CheckCheck size={13} style={{ color: "var(--theme-grad-start)", flexShrink: 0 }} />
             }
             <span style={{ fontSize: 11, color: toast.type === "delegate" || toast.type === "schedule" ? "#4A90E2" : "#C9A961", letterSpacing: "0.05em", fontWeight: 600 }}>
               {toast.type === "delegate" ? "Claude Agent:" : toast.type === "schedule" ? "Google Calendar:" : "Task processed:"}
             </span>
-            <span style={{ fontSize: 11, color: "#7A8599", letterSpacing: "0.02em" }}>
+            <span style={{ fontSize: 11, color: "var(--theme-grad-start)", letterSpacing: "0.02em" }}>
               {toast.msg}
             </span>
           </div>
@@ -2124,7 +2117,7 @@ export default function ChairmanDashboard() {
                 backgroundColor: "transparent",
                 border:          "none",
                 outline:         "none",
-                color:           "#9CA3AF",
+                color: "var(--theme-grad-start)",
                 fontSize:        13,
                 letterSpacing:   "0.02em",
                 fontFamily:      "inherit",
@@ -2136,8 +2129,8 @@ export default function ChairmanDashboard() {
             {/* Processing or Deploy */}
             {isProcessing ? (
               <div style={{ flexShrink: 0, display: "flex", alignItems: "center", gap: 8 }}>
-                <Loader2 size={13} style={{ color: "#4A90E2" }} className="animate-spin" />
-                <span className="cmd-bar-msg" style={{ fontSize: 10, letterSpacing: "0.12em", color: "#4A90E2", textTransform: "uppercase", whiteSpace: "nowrap" }}>
+                <Loader2 size={13} style={{ color: "var(--theme-grad-start)" }} className="animate-spin" />
+                <span className="cmd-bar-msg" style={{ fontSize: 10, letterSpacing: "0.12em", color: "var(--theme-grad-start)", textTransform: "uppercase", whiteSpace: "nowrap" }}>
                   {processingMsg}
                 </span>
               </div>
@@ -2167,7 +2160,7 @@ export default function ChairmanDashboard() {
               </button>
             )}
 
-            <span style={{ fontSize: 10, color: "#14151C", flexShrink: 0, letterSpacing: "0.06em" }}>↵</span>
+            <span style={{ fontSize: 10, color: "var(--theme-grad-start)", flexShrink: 0, letterSpacing: "0.06em" }}>↵</span>
           </div>
         </div>
       </div>

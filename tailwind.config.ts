@@ -17,6 +17,7 @@ const config: Config = {
         primary: "var(--color-primary)",
         "primary-hover": "var(--color-primary-hover)",
         glow: "var(--color-glow)",
+        themeAccent: "var(--theme-grad-start)",
       },
       backgroundImage: {
         "theme-gradient": "linear-gradient(to right, var(--theme-grad-start), var(--theme-grad-end))",
