@@ -1,6 +1,6 @@
 "use client";
 
-import { Bot, Brain, CalendarDays, Palette, Map } from "lucide-react";
+import { Bot, Brain, CalendarDays, Palette, Map, LayoutDashboard, Briefcase, User, BarChart } from "lucide-react";
 import { UserAccountModal } from "./UserAccountModal";
 import { useState, useEffect } from "react";
 import { AppearanceSettings } from "./AppearanceSettings";
@@ -53,10 +53,10 @@ export function Sidebar({
   const [accountModalOpen, setAccountModalOpen] = useState(false);
 
   const TABS = [
-    { id: "MASTER", label: "MASTER VIEW" },
-    { id: "BUSINESS", label: "BUSINESS" },
-    { id: "PERSONAL", label: "PERSONAL" },
-    { id: "KPI", label: "KPIs" },
+    { id: "MASTER", label: "MASTER VIEW", icon: <LayoutDashboard size={18} /> },
+    { id: "BUSINESS", label: "BUSINESS", icon: <Briefcase size={18} /> },
+    { id: "PERSONAL", label: "PERSONAL", icon: <User size={18} /> },
+    { id: "KPI", label: "KPIs", icon: <BarChart size={18} /> },
   ];
 
   return (
@@ -66,7 +66,7 @@ export function Sidebar({
         {/* Brand / Header */}
         <div className="p-6 border-b border-zinc-200/50 dark:border-white/10 flex items-center gap-3">
           <Map size={18} className="text-[color:var(--theme-grad-start)] shrink-0" />
-          <h1 style={{ fontFamily: "Georgia, serif", fontSize: 16, color: "var(--theme-grad-start)", letterSpacing: "0.04em", lineHeight: 1.2 }}>
+          <h1 className="bg-theme-gradient bg-clip-text text-transparent font-bold" style={{ fontFamily: "Georgia, serif", fontSize: 16, letterSpacing: "0.04em", lineHeight: 1.2 }}>
             Pristine Designs
           </h1>
         </div>
@@ -80,14 +80,19 @@ export function Sidebar({
               <button
                 key={tab.id}
                 onClick={() => setActiveTab(tab.id)}
-                className={`flex items-center w-full px-4 py-3 rounded-xl font-bold text-xs tracking-widest transition-all ${
+                className={`flex items-center gap-3 w-full px-4 py-3 rounded-xl text-xs tracking-widest transition-all ${
                   isActive 
-                    ? "bg-[rgba(var(--theme-grad-start-rgb),0.1)] text-[color:var(--theme-grad-start)] border border-[color:var(--theme-grad-start)]/30" 
-                    : "text-zinc-500 dark:text-zinc-400 hover:bg-zinc-100 dark:hover:bg-white/5 border border-transparent"
+                    ? "bg-[rgba(var(--theme-grad-start-rgb),0.1)] border border-[color:var(--theme-grad-start)]/30" 
+                    : "font-bold text-zinc-500 dark:text-zinc-400 hover:bg-zinc-100 dark:hover:bg-white/5 border border-transparent"
                 }`}
                 style={isActive ? { borderColor: "rgba(179,136,235,0.3)" } : {}}
               >
-                {tab.label}
+                <div className={isActive ? "text-themeAccent" : "text-zinc-500 dark:text-zinc-400"}>
+                  {tab.icon}
+                </div>
+                <span className={isActive ? "bg-theme-gradient bg-clip-text text-transparent font-semibold" : ""}>
+                  {tab.label}
+                </span>
               </button>
             );
           })}

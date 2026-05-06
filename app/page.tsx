@@ -648,11 +648,11 @@ function CSuiteCard({
           return (
             <div key={t.id} className="flex flex-col gap-1">
               <div style={{ display: "flex", alignItems: "center", gap: 5, padding: "4px 7px", borderRadius: 5, cursor: "pointer" }} className="bg-white/5 dark:bg-black/20 border border-zinc-200/20 dark:border-white/5 hover:bg-white/10 dark:hover:bg-white/5 transition-colors" onClick={() => onTaskClick(t, agent.color)}>
-                {subs.length > 0 && (
-                  <button onClick={(e) => { e.stopPropagation(); toggleExpand(t.id); }} className="mr-1 text-zinc-500 hover:text-zinc-300">
-                    {isExpanded ? <ChevronDown className="w-4 h-4" /> : <ChevronRight className="w-4 h-4" />}
+                {subs.length > 0 ? (
+                  <button onClick={(e) => { e.stopPropagation(); toggleExpand(t.id); }} className="w-5 h-5 flex items-center justify-center rounded hover:bg-zinc-500/20 text-zinc-400 mr-2 shrink-0">
+                    {isExpanded ? <ChevronDown size={14} /> : <ChevronRight size={14} />}
                   </button>
-                )}
+                ) : <div className="w-5 mr-2 shrink-0" />}
                 <button onClick={(e) => { e.stopPropagation(); onToggle(t.id); }} className="text-zinc-500 hover:text-[color:var(--theme-grad-start)] transition-colors p-0 border-none bg-none flex shrink-0">
                   <Circle size={12} />
                 </button>
