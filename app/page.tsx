@@ -27,7 +27,6 @@ import {
   Sun,
   Moon,
   Send,
-  ChevronDown,
 } from "lucide-react";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
