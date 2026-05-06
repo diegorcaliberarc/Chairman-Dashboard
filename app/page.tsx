@@ -774,22 +774,22 @@ function MasterViewTab({
         <div style={{ ...PANEL, maxHeight: "250px", overflowY: "auto", flexShrink: 0 }} className={PANEL_CLASS}>
           <PriorityStrikes business={business} personal={personal} onToggle={onToggle} onDelete={onDelete} onTaskClick={onTaskClick} subtasksMap={subtasksMap} onToggleSubtask={onToggleSubtask} />
         </div>
-        <div style={{ ...CAL_PANEL, flex: 1, minHeight: 0 }} className={PANEL_CLASS}>
+        <div style={{ ...CAL_PANEL, flex: 1, minHeight: 0 }} className={`${PANEL_CLASS} flex-1 flex flex-col h-full`}>
           <CalendarFeed calConnected={calConnected} events={calendarEvents} calLoading={calLoading} calError={calError} />
         </div>
       </div>
 
       {/* ── Right Column / Grid ────────────────────────────────────────── */}
-      <div className="w-full lg:w-2/3 grid grid-cols-1 xl:grid-cols-2 gap-4 h-max pb-10 pr-1">
+      <div className="w-full lg:w-2/3 grid grid-cols-1 xl:grid-cols-2 gap-4 flex-1 h-full min-h-[1400px] auto-rows-fr pb-6 pr-1">
         {/* Domain Cards */}
-        <div style={PANEL} className={`${PANEL_CLASS} flex flex-col min-h-[300px] max-h-[400px]`}><DomainBlock label="WEALTH" sub="Income & Freedom" tasks={wealthTasks} color={personal.find(a => a.id === "wealth")?.color || "#C9A961"} onToggle={onToggle} onDelete={onDelete} onTaskClick={onTaskClick} subtasksMap={subtasksMap} onToggleSubtask={onToggleSubtask} /></div>
-        <div style={PANEL} className={`${PANEL_CLASS} flex flex-col min-h-[300px] max-h-[400px]`}><DomainBlock label="HEALTH" sub="Training & Energy" tasks={healthTasks} color={personal.find(a => a.id === "health")?.color || "#C9A961"} onToggle={onToggle} onDelete={onDelete} onTaskClick={onTaskClick} subtasksMap={subtasksMap} onToggleSubtask={onToggleSubtask} /></div>
-        <div style={PANEL} className={`${PANEL_CLASS} flex flex-col min-h-[300px] max-h-[400px]`}><DomainBlock label="RELATIONSHIPS" sub="Legacy & Pack" tasks={relateTasks} color={personal.find(a => a.id === "relate")?.color || "#C9A961"} onToggle={onToggle} onDelete={onDelete} onTaskClick={onTaskClick} subtasksMap={subtasksMap} onToggleSubtask={onToggleSubtask} /></div>
-        <div style={PANEL} className={`${PANEL_CLASS} flex flex-col min-h-[300px] max-h-[400px]`}><DomainBlock label="JOY" sub="Goals & Happiness" tasks={joyTasks} color={personal.find(a => a.id === "joy")?.color || "#C9A961"} onToggle={onToggle} onDelete={onDelete} onTaskClick={onTaskClick} subtasksMap={subtasksMap} onToggleSubtask={onToggleSubtask} /></div>
+        <div style={PANEL} className={`${PANEL_CLASS} h-full flex flex-col`}><DomainBlock label="WEALTH" sub="Income & Freedom" tasks={wealthTasks} color={personal.find(a => a.id === "wealth")?.color || "#C9A961"} onToggle={onToggle} onDelete={onDelete} onTaskClick={onTaskClick} subtasksMap={subtasksMap} onToggleSubtask={onToggleSubtask} /></div>
+        <div style={PANEL} className={`${PANEL_CLASS} h-full flex flex-col`}><DomainBlock label="HEALTH" sub="Training & Energy" tasks={healthTasks} color={personal.find(a => a.id === "health")?.color || "#C9A961"} onToggle={onToggle} onDelete={onDelete} onTaskClick={onTaskClick} subtasksMap={subtasksMap} onToggleSubtask={onToggleSubtask} /></div>
+        <div style={PANEL} className={`${PANEL_CLASS} h-full flex flex-col`}><DomainBlock label="RELATIONSHIPS" sub="Legacy & Pack" tasks={relateTasks} color={personal.find(a => a.id === "relate")?.color || "#C9A961"} onToggle={onToggle} onDelete={onDelete} onTaskClick={onTaskClick} subtasksMap={subtasksMap} onToggleSubtask={onToggleSubtask} /></div>
+        <div style={PANEL} className={`${PANEL_CLASS} h-full flex flex-col`}><DomainBlock label="JOY" sub="Goals & Happiness" tasks={joyTasks} color={personal.find(a => a.id === "joy")?.color || "#C9A961"} onToggle={onToggle} onDelete={onDelete} onTaskClick={onTaskClick} subtasksMap={subtasksMap} onToggleSubtask={onToggleSubtask} /></div>
 
         {/* Executive Suite */}
         {business.map((a) => (
-          <div key={a.id} style={PANEL} className={`${PANEL_CLASS} flex flex-col min-h-[300px] max-h-[400px]`}>
+          <div key={a.id} style={PANEL} className={`${PANEL_CLASS} h-full flex flex-col`}>
             <CSuiteCard agent={a} onToggle={onToggle} onDelete={onDelete} onTaskClick={onTaskClick} subtasksMap={subtasksMap} onToggleSubtask={onToggleSubtask} />
           </div>
         ))}
