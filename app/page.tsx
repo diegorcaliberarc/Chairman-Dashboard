@@ -7,6 +7,7 @@ import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
 import MermaidDiagram from "@/components/MermaidDiagram";
 import { AppearanceSettings } from "@/components/AppearanceSettings";
+import { TaskDetailModal } from "@/components/TaskDetailModal";
 import { Palette } from "lucide-react";
 import { Sidebar } from "@/components/Sidebar";
 import {
@@ -259,238 +260,52 @@ function SectionLabel({ children, right }: { children: React.ReactNode; right?: 
 }
 
 
-// ─── Agent Card ───────────────────────────────────────────────────────────────
-
-function AgentCard({ agent, selected, onClick }: { agent: Agent; selected: boolean; onClick: () => void }) {
-  const done  = agent.tasks.filter((t) => t.status === "DONE").length;
-  const total = agent.tasks.length;
-  return (
-    <button
-      onClick={onClick}
-      className={`w-full text-left rounded-xl p-5 transition-all duration-200 focus:outline-none border border-solid hover:shadow-[0_0_15px_var(--theme-grad-start)] dark:hover:shadow-[0_0_15px_var(--theme-grad-start)] ${
-        selected 
-          ? "bg-white/80 dark:bg-black/60 backdrop-blur-xl border-themeAccent/50 shadow-[0_0_28px_var(--theme-grad-start)]" 
-          : "bg-white/80 dark:bg-black/60 backdrop-blur-xl border-zinc-200/50 dark:border-white/10 shadow-[0_0_30px_rgba(0,0,0,0.08)] dark:shadow-[0_0_30px_rgba(255,255,255,0.02)]"
-      }`}
-    >
-      <div className="flex items-start justify-between mb-4">
-        <div>
-          <div style={{ fontFamily: "Georgia, serif", fontSize: 19, lineHeight: 1.1 }} className="text-zinc-900 dark:text-white">
-            {agent.title}
-          </div>
-          <div className="text-[10px] tracking-widest uppercase mt-1 text-zinc-500 dark:text-zinc-400">
-            {agent.role}
-          </div>
-        </div>
-        <div className="flex items-center gap-1.5 mt-0.5">
-          <span className="text-sm font-bold text-zinc-900 dark:text-white" style={{ fontVariantNumeric: "tabular-nums" }}>
-            {done}<span className="text-xs font-normal text-zinc-500 dark:text-zinc-400">/{total}</span>
-          </span>
-          <ChevronRight size={12} className={selected ? "text-zinc-900 dark:text-white" : "text-zinc-500 dark:text-zinc-400"} style={{ transform: selected ? "rotate(90deg)" : "none", transition: "transform 0.2s ease" }} />
-        </div>
-      </div>
-      <div className="h-px rounded-full" style={{ backgroundColor: "#1E1F24" }}>
-        <div className="h-full rounded-full transition-all duration-700 bg-themeAccent" style={{ width: `${total > 0 ? (done / total) * 100 : 0}%`, opacity: selected ? 0.65 : 0.28 }} />
-      </div>
-    </button>
-  );
-}
-
-// ─── Task Panel ───────────────────────────────────────────────────────────────
-
-function TaskPanel({
-  agent, subtasksMap, onToggle, onDelete, onAddSubtask,
-}: {
-  agent:          Agent;
-  subtasksMap:    Record<string, DbTask[]>;
-  onToggle:       (taskId: string) => void;
-  onDelete:       (taskId: string) => void;
-  onAddSubtask:   (parentId: string, title: string) => void;
-}) {
-  const [expandedId,   setExpandedId]   = useState<string | null>(null);
-  const [subInputs,    setSubInputs]    = useState<Record<string, string>>({});
-  const done = agent.tasks.filter((t) => t.status === "DONE").length;
-
-  return (
-    <div className="rounded-xl bg-white/80 dark:bg-black/60 backdrop-blur-xl shadow-[0_0_30px_rgba(0,0,0,0.08)] dark:shadow-[0_0_30px_rgba(255,255,255,0.02)] hover:shadow-[0_0_40px_rgba(0,0,0,0.12)] dark:hover:shadow-[0_0_40px_rgba(255,255,255,0.04)] transition-shadow duration-500" style={{ border: `1px solid ${agent.color}30`, padding: "24px", animation: "fade-up 0.22s ease-out" }}>
-      <div className="flex items-center gap-3 mb-5">
-        <span style={{ fontFamily: "Georgia, serif", fontSize: 15, color: agent.color }}>{agent.title}</span>
-        <div className="h-3 w-px bg-zinc-300 dark:bg-[#1E1F24]" />
-        <span className="text-[10px] tracking-widest uppercase text-zinc-500 dark:text-zinc-400">{agent.role}</span>
-        <div style={{ flex: 1 }} />
-        <span className="text-[10px] tracking-widest uppercase text-zinc-400 dark:text-[#252836]">{done} of {agent.tasks.length} complete</span>
-      </div>
-      <div className="space-y-1.5">
-        {agent.tasks.map((task, i) => {
-          const isDone    = task.status === "DONE";
-          const subs      = subtasksMap[task.id] ?? [];
-          const isExpanded = expandedId === task.id;
-          return (
-            <div key={task.id}>
-              {/* ── Main task row ── */}
-              <div
-                className="flex items-start gap-2 rounded-lg transition-all duration-150"
-                style={{ padding: "9px 10px", backgroundColor: isDone ? `${agent.color}0A` : "transparent", border: `1px solid ${isDone ? `${agent.color}22` : "transparent"}` }}
-              >
-                {/* Toggle */}
-                <button onClick={() => onToggle(task.id)} className="shrink-0 mt-0.5 focus:outline-none" style={{ color: isDone ? "var(--theme-grad-start)" : "#252836", background: "none", border: "none", cursor: "pointer", padding: 0, display: "flex" }}>
-                  {isDone ? <CheckCircle2 size={14} /> : <Circle size={14} />}
-                </button>
-                {/* Index */}
-                <div className="shrink-0 text-[10px] font-mono tracking-wider mt-0.5" style={{ color: isDone ? agent.color : "#2A3040", minWidth: 18 }}>
-                  {String(i + 1).padStart(2, "0")}
-                </div>
-                {/* Title */}
-                <span className="text-sm leading-relaxed flex-1" style={{ color: isDone ? "#3B4558" : "#7A8599", textDecoration: isDone ? "line-through" : "none", textDecorationColor: agent.color, textDecorationThickness: "1px" }}>
-                  {task.title}
-                </span>
-                {/* Priority dot */}
-                {!isDone && (
-                  <div className="shrink-0 self-center" style={{
-                    width: 6, height: 6, borderRadius: "50%",
-                    backgroundColor: task.priority === 1 ? "#E05A3A" : task.priority === 3 ? "#3B4558" : "#C9A961",
-                    opacity: task.priority === 3 ? 0.5 : 0.85,
-                    flexShrink: 0,
-                  }} />
-                )}
-                {/* Expand subtasks */}
-                <button
-                  onClick={() => setExpandedId(isExpanded ? null : task.id)}
-                  className="shrink-0 self-center focus:outline-none"
-                  title={isExpanded ? "Collapse subtasks" : `${subs.length} subtask${subs.length !== 1 ? "s" : ""} · click to expand`}
-                  style={{ background: "none", border: "none", cursor: "pointer", padding: "2px 4px", borderRadius: 4, color: isExpanded ? agent.color : subs.length > 0 ? "#3B4558" : "#1A1C24", fontSize: 9, display: "flex", alignItems: "center", gap: 2, transition: "color 0.15s" }}
-                >
-                  {subs.length > 0 && <span style={{ fontVariantNumeric: "tabular-nums" }}>{subs.length}</span>}
-                  <ChevronRight size={10} style={{ transform: isExpanded ? "rotate(90deg)" : "none", transition: "transform 0.15s" }} />
-                </button>
-                {/* Delete */}
-                <button
-                  onClick={() => onDelete(task.id)}
-                  className="shrink-0 self-center focus:outline-none"
-                  title="Delete task"
-                  style={{ background: "none", border: "none", cursor: "pointer", padding: "2px 3px", borderRadius: 3, color: "var(--theme-grad-start)", display: "flex", transition: "color 0.15s" }}
-                  onMouseEnter={(e) => { (e.currentTarget as HTMLButtonElement).style.color = "#E05A3A"; }}
-                  onMouseLeave={(e) => { (e.currentTarget as HTMLButtonElement).style.color = "#1A1C24"; }}
-                >
-                  <X size={11} />
-                </button>
-              </div>
-
-              {/* ── Subtasks area ── */}
-              {isExpanded && (
-                <div style={{ marginLeft: 24, marginTop: 3, display: "flex", flexDirection: "column", gap: 2 }}>
-                  {subs.map((sub) => (
-                    <div key={sub.id} style={{ display: "flex", alignItems: "center", gap: 6, padding: "6px 10px", borderRadius: 6 }} className="bg-white/80 dark:bg-black/60 backdrop-blur-xl border border-zinc-200/50 dark:border-white/10">
-                      <button onClick={() => onToggle(sub.id)} style={{ background: "none", border: "none", cursor: "pointer", padding: 0, display: "flex", flexShrink: 0, color: sub.status === "DONE" ? "var(--theme-grad-start)" : undefined }} className={sub.status === "DONE" ? "" : "text-zinc-600 dark:text-[#252836]"}>
-                        {sub.status === "DONE" ? <CheckCircle2 size={11} /> : <Circle size={11} />}
-                      </button>
-                      <span style={{ flex: 1, fontSize: 11, color: sub.status === "DONE" ? undefined : undefined, textDecoration: sub.status === "DONE" ? "line-through" : "none", textDecorationColor: agent.color }} className={sub.status === "DONE" ? "text-zinc-400 dark:text-[#3B4558]" : "text-zinc-700 dark:text-[#7A8599]"}>{sub.title}</span>
-                      <button onClick={() => onDelete(sub.id)} style={{ background: "none", border: "none", cursor: "pointer", padding: 0, display: "flex", flexShrink: 0, transition: "color 0.15s" }} className="text-zinc-400 dark:text-[#1A1C24]"
-                        onMouseEnter={(e) => { (e.currentTarget as HTMLButtonElement).style.color = "#E05A3A"; }}
-                        onMouseLeave={(e) => { (e.currentTarget as HTMLButtonElement).style.color = "#1A1C24"; }}>
-                        <X size={9} />
-                      </button>
-                    </div>
-                  ))}
-                  {/* Add subtask input */}
-                  <div style={{ display: "flex", alignItems: "center", gap: 6, padding: "5px 10px", borderRadius: 6, border: `1px solid ${agent.color}18` }} className="bg-white/80 dark:bg-black/60 backdrop-blur-xl border border-zinc-200/50 dark:border-white/10">
-                    <div style={{ width: 11, height: 11, flexShrink: 0 }} />
-                    <input
-                      value={subInputs[task.id] ?? ""}
-                      onChange={(e) => setSubInputs((p) => ({ ...p, [task.id]: e.target.value }))}
-                      onKeyDown={(e) => {
-                        if (e.key === "Enter") {
-                          const val = (subInputs[task.id] ?? "").trim();
-                          if (val) { onAddSubtask(task.id, val); setSubInputs((p) => ({ ...p, [task.id]: "" })); }
-                        }
-                        if (e.key === "Escape") setExpandedId(null);
-                      }}
-                      placeholder="+ Add subtask  ↵"
-                      style={{ flex: 1, background: "none", border: "none", outline: "none", fontSize: 11, fontFamily: "inherit", opacity: 0.7 }}
-                      className="text-zinc-700 dark:text-[#7A8599]"
-                    />
-                  </div>
-                </div>
-              )}
-            </div>
-          );
-        })}
-        {agent.tasks.length === 0 && (
-          <div className="text-center py-6" style={{ color: "var(--theme-grad-start)", fontSize: 11, letterSpacing: "0.1em" }}>
-            No tasks yet — add one via the command bar
-          </div>
-        )}
-      </div>
-    </div>
-  );
-}
-
-
-
 // ─── Business Tab ─────────────────────────────────────────────────────────────
 
-function BusinessTab({ agents, subtasksMap, onToggle, onDelete, onAddSubtask }: {
+function BusinessTab({ agents, onToggle, onDelete, onTaskClick }: {
   agents:        Agent[];
-  subtasksMap:   Record<string, DbTask[]>;
   onToggle:      (agentId: string, taskId: string) => void;
   onDelete:      (taskId: string) => void;
-  onAddSubtask:  (parentId: string, title: string) => void;
+  onTaskClick:   (task: DbTask, color: string) => void;
 }) {
-  const [selectedId, setSelectedId] = useState<string>("ceo");
-  const active = agents.find((a) => a.id === selectedId) ?? null;
+  const PANEL_CLASS = "bg-white/80 dark:bg-black/60 backdrop-blur-xl border border-zinc-200/50 dark:border-white/10 shadow-[0_0_30px_rgba(0,0,0,0.08)] dark:shadow-[0_0_30px_rgba(255,255,255,0.02)] hover:shadow-[0_0_40px_rgba(0,0,0,0.12)] dark:hover:shadow-[0_0_40px_rgba(255,255,255,0.04)] transition-shadow duration-500";
+  const PANEL: React.CSSProperties = { borderRadius: 10, padding: "14px 16px", overflow: "hidden", minHeight: 0, minWidth: 0 };
 
   return (
     <div className="space-y-6" style={{ animation: "tab-in 0.22s ease-out" }}>
       <SectionLabel>Executive Suite · 6 Agents Active</SectionLabel>
-      <div className="grid grid-cols-2 lg:grid-cols-3 gap-3">
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
         {agents.map((a) => (
-          <AgentCard key={a.id} agent={a} selected={selectedId === a.id}
-            onClick={() => setSelectedId(a.id === selectedId ? "" : a.id)} />
+          <div key={a.id} style={PANEL} className={PANEL_CLASS}>
+            <CSuiteCard agent={a} onToggle={(taskId) => onToggle(a.id, taskId)} onDelete={onDelete} onTaskClick={onTaskClick} />
+          </div>
         ))}
       </div>
-      {active && (
-        <TaskPanel
-          agent={active}
-          subtasksMap={subtasksMap}
-          onToggle={(taskId) => onToggle(active.id, taskId)}
-          onDelete={onDelete}
-          onAddSubtask={onAddSubtask}
-        />
-      )}
     </div>
   );
 }
 
 // ─── Personal Tab ─────────────────────────────────────────────────────────────
 
-function PersonalTab({ agents, subtasksMap, onToggle, onDelete, onAddSubtask }: {
+function PersonalTab({ agents, onToggle, onDelete, onTaskClick }: {
   agents:        Agent[];
-  subtasksMap:   Record<string, DbTask[]>;
   onToggle:      (agentId: string, taskId: string) => void;
   onDelete:      (taskId: string) => void;
-  onAddSubtask:  (parentId: string, title: string) => void;
+  onTaskClick:   (task: DbTask, color: string) => void;
 }) {
-  const [selectedId, setSelectedId] = useState<string>("wealth");
-  const active = agents.find((a) => a.id === selectedId) ?? null;
+  const PANEL_CLASS = "bg-white/80 dark:bg-black/60 backdrop-blur-xl border border-zinc-200/50 dark:border-white/10 shadow-[0_0_30px_rgba(0,0,0,0.08)] dark:shadow-[0_0_30px_rgba(255,255,255,0.02)] hover:shadow-[0_0_40px_rgba(0,0,0,0.12)] dark:hover:shadow-[0_0_40px_rgba(255,255,255,0.04)] transition-shadow duration-500";
+  const PANEL: React.CSSProperties = { borderRadius: 10, padding: "14px 16px", overflow: "hidden", minHeight: 0, minWidth: 0 };
 
   return (
     <div className="space-y-5" style={{ animation: "tab-in 0.22s ease-out" }}>
       <SectionLabel>Personal Power Blocks · 4 Domains</SectionLabel>
-      <div className="grid grid-cols-2 gap-3">
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
         {agents.map((a) => (
-          <AgentCard key={a.id} agent={a} selected={selectedId === a.id}
-            onClick={() => setSelectedId(a.id === selectedId ? "" : a.id)} />
+          <div key={a.id} style={PANEL} className={PANEL_CLASS}>
+            <DomainBlock label={a.title} sub={a.role} tasks={a.tasks} color={a.color} onToggle={(taskId) => onToggle(a.id, taskId)} onDelete={onDelete} onTaskClick={onTaskClick} />
+          </div>
         ))}
       </div>
-      {active && (
-        <TaskPanel
-          agent={active}
-          subtasksMap={subtasksMap}
-          onToggle={(taskId) => onToggle(active.id, taskId)}
-          onDelete={onDelete}
-          onAddSubtask={onAddSubtask}
-        />
-      )}
     </div>
   );
 }
@@ -686,8 +501,8 @@ function CalendarFeed({
 // ─── Priority Strikes ─────────────────────────────────────────────────────────
 
 function PriorityStrikes({
-  business, personal, onToggle, onDelete,
-}: { business: Agent[]; personal: Agent[]; onToggle: (taskId: string) => void; onDelete: (taskId: string) => void }) {
+  business, personal, onToggle, onDelete, onTaskClick
+}: { business: Agent[]; personal: Agent[]; onToggle: (taskId: string) => void; onDelete: (taskId: string) => void; onTaskClick: (task: DbTask, color: string) => void }) {
   const strikes = [...business, ...personal]
     .flatMap((a) => a.tasks.filter((t) => t.status !== "DONE").map((t) => ({ task: t, agent: a })))
     .sort((a, b) => a.task.priority - b.task.priority);
@@ -696,7 +511,7 @@ function PriorityStrikes({
     <div style={{ height: "100%", display: "flex", flexDirection: "column" }}>
       <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 10 }}>
         <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
-          <Crosshair size={10} className="text-zinc-900 dark:text-white dark:text-zinc-900 dark:text-white" />
+          <Crosshair size={10} className="text-zinc-900 dark:text-white" />
           <span style={{ fontSize: 9, letterSpacing: "0.22em", textTransform: "uppercase" }} className="text-zinc-500 dark:text-zinc-400">Priority Strikes</span>
         </div>
         <span style={{ fontSize: 8, letterSpacing: "0.14em", color: "var(--theme-grad-start)" }}>{strikes.length} pending</span>
@@ -715,15 +530,7 @@ function PriorityStrikes({
             </button>
             <div style={{ width: 4, height: 4, borderRadius: "50%", backgroundColor: agent.color, flexShrink: 0 }} />
             <span style={{ fontSize: 7, letterSpacing: "0.12em", textTransform: "uppercase", color: agent.color, flexShrink: 0, width: 28 }}>{agent.title}</span>
-            <span style={{ fontSize: 11, flex: 1, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }} className="text-zinc-900 dark:text-white">{task.title}</span>
-            <span style={{
-              fontSize: 7, letterSpacing: "0.14em", textTransform: "uppercase", padding: "2px 5px", borderRadius: 3, flexShrink: 0,
-              backgroundColor: task.priority === 1 ? "rgba(224,90,58,0.10)" : task.priority === 3 ? "rgba(59,69,88,0.08)" : "rgba(59,130,246,0.07)",
-              border: `1px solid ${task.priority === 1 ? "rgba(224,90,58,0.28)" : task.priority === 3 ? "#1A1C24" : "rgba(59,130,246,0.18)"}`,
-              color: task.priority === 1 ? "#E05A3A" : task.priority === 3 ? "#3B4558" : "#C9A961",
-            }}>
-              {task.priority === 1 ? "HI" : task.priority === 3 ? "LO" : "MD"}
-            </span>
+            <span className="text-[11px] flex-1 overflow-hidden text-ellipsis whitespace-nowrap cursor-pointer hover:underline text-zinc-900 dark:text-white" onClick={() => onTaskClick(task, agent.color)}>{task.title}</span>
             <button onClick={() => onDelete(task.id)} style={{ background: "none", border: "none", cursor: "pointer", padding: 0, color: "var(--theme-grad-start)", display: "flex", flexShrink: 0, transition: "color 0.15s" }}
               onMouseEnter={(e) => { (e.currentTarget as HTMLButtonElement).style.color = "#E05A3A"; }}
               onMouseLeave={(e) => { (e.currentTarget as HTMLButtonElement).style.color = "#1A1C24"; }}>
@@ -744,8 +551,8 @@ function PriorityStrikes({
 // ─── Personal Life Quadrants ──────────────────────────────────────────────────
 
 function DomainBlock({
-  label, sub, tasks, onToggle, onDelete
-}: { label: string; sub: string; tasks: DbTask[]; onToggle: (id: string) => void; onDelete: (id: string) => void }) {
+  label, sub, tasks, color, onToggle, onDelete, onTaskClick
+}: { label: string; sub: string; tasks: DbTask[]; color: string; onToggle: (id: string) => void; onDelete: (id: string) => void; onTaskClick: (task: DbTask, color: string) => void }) {
   const pending = tasks.filter((t) => t.status !== "DONE");
   const done    = tasks.filter((t) => t.status === "DONE");
   return (
@@ -756,30 +563,30 @@ function DomainBlock({
         <div className="flex-1" />
         <span className="text-[7px] tracking-[0.16em] uppercase text-zinc-400 dark:text-[#252836]">{sub}</span>
       </div>
-      <div className="flex-1 flex flex-col gap-1 overflow-y-auto min-h-0">
+      <div className="flex-1 overflow-y-auto max-h-[400px] flex flex-col gap-1 pr-1">
         <div className="flex items-center justify-between px-1 pb-1">
           <span className="text-[7px] tracking-[0.18em] uppercase text-themeAccent">Tasks</span>
           <span className="text-[7px] text-themeAccent">{done.length}/{tasks.length}</span>
         </div>
-        <div className="flex-1 overflow-y-auto flex flex-col gap-1.5">
+        <div className="flex-1 overflow-y-auto flex flex-col gap-1.5 min-h-0">
           {pending.map((t) => (
             <div key={t.id} className="flex items-center gap-1.5 p-1.5 bg-zinc-100/10 dark:bg-black/20 rounded-md border border-zinc-200/20 dark:border-white/5">
-              <button onClick={() => onToggle(t.id)} className="bg-none border-none cursor-pointer p-0 text-themeAccent shrink-0 flex">
+              <button onClick={(e) => { e.stopPropagation(); onToggle(t.id); }} className="bg-none border-none cursor-pointer p-0 text-themeAccent shrink-0 flex">
                 <Circle size={10} />
               </button>
-              <span className="flex-1 text-[10px] text-themeAccent overflow-hidden text-ellipsis whitespace-nowrap">{t.title}</span>
-              <button onClick={() => onDelete(t.id)} className="bg-none border-none cursor-pointer p-0 text-themeAccent flex shrink-0 hover:text-[#E05A3A]">
+              <span className="flex-1 text-[10px] text-themeAccent overflow-hidden text-ellipsis whitespace-nowrap cursor-pointer hover:underline" onClick={() => onTaskClick(t, color)}>{t.title}</span>
+              <button onClick={(e) => { e.stopPropagation(); onDelete(t.id); }} className="bg-none border-none cursor-pointer p-0 text-themeAccent flex shrink-0 hover:text-[#E05A3A]">
                 <X size={9} />
               </button>
             </div>
           ))}
           {done.map((t) => (
             <div key={t.id} className="flex items-center gap-1.5 p-1.5 rounded-md opacity-40">
-              <button onClick={() => onToggle(t.id)} className="bg-none border-none cursor-pointer p-0 text-themeAccent shrink-0 flex">
+              <button onClick={(e) => { e.stopPropagation(); onToggle(t.id); }} className="bg-none border-none cursor-pointer p-0 text-themeAccent shrink-0 flex">
                 <CheckCircle2 size={10} />
               </button>
               <span className="flex-1 text-[10px] text-themeAccent line-through overflow-hidden text-ellipsis whitespace-nowrap">{t.title}</span>
-              <button onClick={() => onDelete(t.id)} className="bg-none border-none cursor-pointer p-0 text-themeAccent flex shrink-0 hover:text-[#E05A3A]">
+              <button onClick={(e) => { e.stopPropagation(); onDelete(t.id); }} className="bg-none border-none cursor-pointer p-0 text-themeAccent flex shrink-0 hover:text-[#E05A3A]">
                 <X size={9} />
               </button>
             </div>
@@ -798,132 +605,51 @@ function DomainBlock({
 // ─── C-Suite Command Card ─────────────────────────────────────────────────────
 
 function CSuiteCard({
-  agent, onToggle, onDelete,
-}: { agent: Agent; onToggle: (id: string) => void; onDelete: (id: string) => void }) {
-  const [isOpen, setIsOpen] = useState(false);
+  agent, onToggle, onDelete, onTaskClick
+}: { agent: Agent; onToggle: (id: string) => void; onDelete: (id: string) => void; onTaskClick: (task: DbTask, color: string) => void }) {
   const pending   = agent.tasks.filter((t) => t.status !== "DONE");
   const done      = agent.tasks.filter((t) => t.status === "DONE").length;
   const total     = agent.tasks.length;
   const pct       = total > 0 ? (done / total) * 100 : 0;
-  const previewTasks = pending.slice(0, 3);
 
   return (
-    <>
-      {/* ── Card (clickable) ── */}
-      <button
-        onClick={() => setIsOpen(true)}
-        style={{
-          height: "100%", width: "100%", textAlign: "left",
-          display: "flex", flexDirection: "column", overflow: "hidden",
-          background: "none", border: "none", cursor: "pointer", padding: 0,
-        }}
-      >
-        <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", marginBottom: 6 }}>
-          <div>
-            <div style={{ fontFamily: "Georgia, serif", fontSize: 16, color: agent.color, lineHeight: 1 }}>{agent.title}</div>
-            <div style={{ fontSize: 7, letterSpacing: "0.16em", textTransform: "uppercase", color: "var(--theme-grad-start)", marginTop: 3 }}>{agent.role}</div>
+    <div className="h-full w-full text-left flex flex-col overflow-hidden">
+      <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", marginBottom: 6 }}>
+        <div>
+          <div style={{ fontFamily: "Georgia, serif", fontSize: 16, color: agent.color, lineHeight: 1 }}>{agent.title}</div>
+          <div style={{ fontSize: 7, letterSpacing: "0.16em", textTransform: "uppercase", color: "var(--theme-grad-start)", marginTop: 3 }}>{agent.role}</div>
+        </div>
+        <div style={{ textAlign: "right" }}>
+          <span style={{ fontSize: 16, color: agent.color, fontVariantNumeric: "tabular-nums", fontFamily: "Georgia, serif" }}>{done}</span>
+          <span style={{ fontSize: 9, color: "var(--theme-grad-start)" }}>/{total}</span>
+        </div>
+      </div>
+      <div style={{ height: 1.5, backgroundColor: "#1E1F24", borderRadius: 2, marginBottom: 8, flexShrink: 0 }}>
+        <div style={{ height: "100%", width: `${pct}%`, backgroundColor: agent.color, borderRadius: 2, opacity: 0.65, transition: "width 0.6s ease" }} />
+      </div>
+      <div className="flex-1 overflow-y-auto max-h-[250px] flex flex-col gap-2 min-h-0 mt-2 pr-1" style={{ scrollbarWidth: "none", msOverflowStyle: "none" }}>
+        {pending.length > 0 ? pending.map((t) => (
+          <div key={t.id} style={{ display: "flex", alignItems: "center", gap: 5, padding: "4px 7px", borderRadius: 5, cursor: "pointer" }} className="bg-white/5 dark:bg-black/20 border border-zinc-200/20 dark:border-white/5 hover:bg-white/10 dark:hover:bg-white/5 transition-colors" onClick={() => onTaskClick(t, agent.color)}>
+            <div style={{ width: 4, height: 4, borderRadius: "50%", backgroundColor: t.priority === 1 ? "#E05A3A" : t.priority === 3 ? "#3B4558" : "#C9A961", flexShrink: 0 }} />
+            <span style={{ fontSize: 11, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", flex: 1 }} className="text-zinc-900 dark:text-white">{t.title}</span>
           </div>
-          <div style={{ textAlign: "right" }}>
-            <span style={{ fontSize: 16, color: agent.color, fontVariantNumeric: "tabular-nums", fontFamily: "Georgia, serif" }}>{done}</span>
-            <span style={{ fontSize: 9, color: "var(--theme-grad-start)" }}>/{total}</span>
+        )) : (
+          <div style={{ display: "flex", alignItems: "center", justifyContent: "center", flex: 1 }}>
+            <span style={{ fontSize: 9, color: "var(--theme-grad-start)", letterSpacing: "0.1em" }}>All clear</span>
           </div>
-        </div>
-        <div style={{ height: 1.5, backgroundColor: "#1E1F24", borderRadius: 2, marginBottom: 8 }}>
-          <div style={{ height: "100%", width: `${pct}%`, backgroundColor: agent.color, borderRadius: 2, opacity: 0.65, transition: "width 0.6s ease" }} />
-        </div>
-        <div style={{ flex: 1, overflow: "hidden", display: "flex", flexDirection: "column", gap: 3 }}>
-          {previewTasks.length > 0 ? previewTasks.map((t) => (
-            <div key={t.id} style={{ display: "flex", alignItems: "center", gap: 5, padding: "4px 7px", borderRadius: 5 }} className="bg-white/80 dark:bg-black/60 backdrop-blur-xl border border-zinc-200 dark:border-[#1E1F24]">
-              <div style={{ width: 4, height: 4, borderRadius: "50%", backgroundColor: t.priority === 1 ? "#E05A3A" : t.priority === 3 ? "#3B4558" : "#C9A961", flexShrink: 0 }} />
-              <span style={{ fontSize: 9, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", flex: 1 }} className="text-zinc-900 dark:text-white">{t.title}</span>
-            </div>
-          )) : (
-            <div style={{ display: "flex", alignItems: "center", justifyContent: "center", flex: 1 }}>
-              <span style={{ fontSize: 9, color: "var(--theme-grad-start)", letterSpacing: "0.1em" }}>All clear</span>
-            </div>
-          )}
-        </div>
-        <div style={{ marginTop: 6, fontSize: 7, letterSpacing: "0.12em", textTransform: "uppercase", color: "var(--theme-grad-start)" }}>
-          {pending.length} pending · {pct.toFixed(0)}% done
-        </div>
-      </button>
-
-      {/* ── Task Modal ── */}
-      {isOpen && (
-        <div
-          className="fixed inset-0 z-50 flex items-center justify-center p-6 bg-black/70 backdrop-blur-sm"
-          onClick={() => setIsOpen(false)}
-        >
-          <div
-            className="m-auto max-w-2xl max-h-[80vh] flex flex-col w-full bg-white/80 dark:bg-black/60 backdrop-blur-xl border border-zinc-200/50 dark:border-white/10 rounded-2xl p-7 shadow-2xl animate-in fade-in zoom-in-95"
-            onClick={(e) => e.stopPropagation()}
-          >
-            {/* Modal header */}
-            <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", marginBottom: 20, flexShrink: 0 }}>
-              <div>
-                <div style={{ fontFamily: "Georgia, serif", fontSize: 22, color: agent.color, lineHeight: 1 }}>{agent.title}</div>
-                <div style={{ fontSize: 9, letterSpacing: "0.18em", textTransform: "uppercase", marginTop: 5 }} className="text-zinc-500 dark:text-zinc-400">{agent.role} · {total} task{total !== 1 ? "s" : ""}</div>
-              </div>
-              <button
-                onClick={() => setIsOpen(false)}
-                style={{ background: "none", border: "1px solid #1E1F24", cursor: "pointer", color: "var(--theme-grad-start)", borderRadius: 6, padding: "5px 8px", display: "flex", alignItems: "center", transition: "all 0.15s" }}
-                className="hover:border-zinc-400 dark:hover:border-[#1E1F24]"
-                onMouseEnter={(e) => { (e.currentTarget as HTMLButtonElement).style.borderColor = `${agent.color}55`; (e.currentTarget as HTMLButtonElement).style.color = agent.color; }}
-                onMouseLeave={(e) => { (e.currentTarget as HTMLButtonElement).style.borderColor = "#1E1F24"; (e.currentTarget as HTMLButtonElement).style.color = "#3B4558"; }}
-              >
-                <X size={13} />
-              </button>
-            </div>
-
-            {/* Progress bar */}
-            <div style={{ height: 2, backgroundColor: "#1E1F24", borderRadius: 2, marginBottom: 20, flexShrink: 0 }}>
-              <div style={{ height: "100%", width: `${pct}%`, backgroundColor: agent.color, borderRadius: 2, opacity: 0.7, transition: "width 0.6s ease" }} />
-            </div>
-
-            {/* All tasks */}
-            <div className="flex-1 overflow-y-auto flex flex-col gap-2 min-h-0">
-              {agent.tasks.length === 0 ? (
-                <div style={{ padding: "32px 0", textAlign: "center", fontSize: 11, color: "var(--theme-grad-start)", letterSpacing: "0.1em" }}>
-                  No tasks assigned. Add one via the command bar.
-                </div>
-              ) : (
-                agent.tasks.map((t) => {
-                  const isDone = t.status === "DONE";
-                  return (
-                    <div key={t.id} style={{ display: "flex", alignItems: "center", gap: 10, padding: "10px 14px" }} className={isDone ? "rounded-lg border border-zinc-200/50 dark:border-white/10" : "bg-zinc-100/10 dark:bg-black/20 rounded-md border border-zinc-200/20 dark:border-white/5"}>
-                      <button onClick={() => onToggle(t.id)} style={{ background: "none", border: "none", cursor: "pointer", padding: 0, display: "flex", flexShrink: 0, color: isDone ? agent.color : undefined }} className={isDone ? "" : "text-zinc-400 dark:text-[#252836]"}>
-                        {isDone ? <CheckCircle2 size={14} /> : <Circle size={14} />}
-                      </button>
-                      <div style={{ width: 5, height: 5, borderRadius: "50%", backgroundColor: t.priority === 1 ? "#E05A3A" : t.priority === 3 ? "#3B4558" : "#C9A961", flexShrink: 0 }} />
-                      <span style={{ flex: 1, fontSize: 12, color: isDone ? undefined : undefined, textDecoration: isDone ? "line-through" : "none", textDecorationColor: agent.color, lineHeight: 1.4 }} className={isDone ? "text-zinc-400 dark:text-[#3B4558]" : "text-zinc-600 dark:text-[#C2C8D4]"}>
-                        {t.title}
-                      </span>
-                      <button onClick={() => onDelete(t.id)} style={{ background: "none", border: "none", cursor: "pointer", padding: 0, display: "flex", flexShrink: 0, transition: "color 0.15s" }} className="text-zinc-400 dark:text-[#1A1C24]"
-                        onMouseEnter={(e) => { (e.currentTarget as HTMLButtonElement).style.color = "#E05A3A"; }}
-                        onMouseLeave={(e) => { (e.currentTarget as HTMLButtonElement).style.color = "#1A1C24"; }}>
-                        <X size={12} />
-                      </button>
-                    </div>
-                  );
-                })
-              )}
-            </div>
-
-            {/* Footer */}
-            <div style={{ marginTop: 16, flexShrink: 0, fontSize: 9, letterSpacing: "0.12em", textTransform: "uppercase", color: "var(--theme-grad-start)", textAlign: "right" }}>
-              {done}/{total} complete · {pct.toFixed(0)}%
-            </div>
-          </div>
-        </div>
-      )}
-    </>
+        )}
+      </div>
+      <div style={{ marginTop: 6, fontSize: 7, letterSpacing: "0.12em", textTransform: "uppercase", color: "var(--theme-grad-start)", flexShrink: 0 }}>
+        {pending.length} pending · {pct.toFixed(0)}% done
+      </div>
+    </div>
   );
 }
 
 // ─── Master View Tab (One-Pager Command Center) ───────────────────────────────
 
 function MasterViewTab({
-  business, personal, calConnected, calendarEvents, calLoading, calError, onToggle, onDelete,
+  business, personal, calConnected, calendarEvents, calLoading, calError, onToggle, onDelete, onTaskClick
 }: {
   business:       Agent[];
   personal:       Agent[];
@@ -933,6 +659,7 @@ function MasterViewTab({
   calError:       string | null;
   onToggle:       (taskId: string) => void;
   onDelete:       (taskId: string) => void;
+  onTaskClick:    (task: DbTask, color: string) => void;
 }) {
   const wealthTasks = personal.find((a) => a.id === "wealth")?.tasks ?? [];
   const healthTasks = personal.find((a) => a.id === "health")?.tasks ?? [];
@@ -953,8 +680,8 @@ function MasterViewTab({
     <div className="flex flex-col lg:flex-row gap-4 flex-1 min-h-0 overflow-hidden">
       {/* ── Left Column ──────────────────────────────────────────────────── */}
       <div className="w-full lg:w-1/3 flex flex-col gap-4 min-h-0 overflow-y-auto pr-1">
-        <div style={PANEL} className={PANEL_CLASS}>
-          <PriorityStrikes business={business} personal={personal} onToggle={onToggle} onDelete={onDelete} />
+        <div style={{ ...PANEL, flexGrow: 1, minHeight: "350px" }} className={PANEL_CLASS}>
+          <PriorityStrikes business={business} personal={personal} onToggle={onToggle} onDelete={onDelete} onTaskClick={onTaskClick} />
         </div>
         <div style={{ ...CAL_PANEL, minHeight: "500px", flexGrow: 1 }} className={PANEL_CLASS}>
           <CalendarFeed calConnected={calConnected} events={calendarEvents} calLoading={calLoading} calError={calError} />
@@ -964,15 +691,15 @@ function MasterViewTab({
       {/* ── Right Column / Grid ────────────────────────────────────────── */}
       <div className="w-full lg:w-2/3 grid grid-cols-1 md:grid-cols-2 gap-4 min-h-0 overflow-y-auto pr-1">
         {/* Domain Cards */}
-        <div style={PANEL} className={PANEL_CLASS}><DomainBlock label="WEALTH" sub="Income & Freedom" tasks={wealthTasks} onToggle={onToggle} onDelete={onDelete} /></div>
-        <div style={PANEL} className={PANEL_CLASS}><DomainBlock label="HEALTH" sub="Training & Energy" tasks={healthTasks} onToggle={onToggle} onDelete={onDelete} /></div>
-        <div style={PANEL} className={PANEL_CLASS}><DomainBlock label="RELATIONSHIPS" sub="Legacy & Pack" tasks={relateTasks} onToggle={onToggle} onDelete={onDelete} /></div>
-        <div style={PANEL} className={PANEL_CLASS}><DomainBlock label="JOY" sub="Goals & Happiness" tasks={joyTasks} onToggle={onToggle} onDelete={onDelete} /></div>
+        <div style={PANEL} className={PANEL_CLASS}><DomainBlock label="WEALTH" sub="Income & Freedom" tasks={wealthTasks} color={personal.find(a => a.id === "wealth")?.color || "#C9A961"} onToggle={onToggle} onDelete={onDelete} onTaskClick={onTaskClick} /></div>
+        <div style={PANEL} className={PANEL_CLASS}><DomainBlock label="HEALTH" sub="Training & Energy" tasks={healthTasks} color={personal.find(a => a.id === "health")?.color || "#C9A961"} onToggle={onToggle} onDelete={onDelete} onTaskClick={onTaskClick} /></div>
+        <div style={PANEL} className={PANEL_CLASS}><DomainBlock label="RELATIONSHIPS" sub="Legacy & Pack" tasks={relateTasks} color={personal.find(a => a.id === "relate")?.color || "#C9A961"} onToggle={onToggle} onDelete={onDelete} onTaskClick={onTaskClick} /></div>
+        <div style={PANEL} className={PANEL_CLASS}><DomainBlock label="JOY" sub="Goals & Happiness" tasks={joyTasks} color={personal.find(a => a.id === "joy")?.color || "#C9A961"} onToggle={onToggle} onDelete={onDelete} onTaskClick={onTaskClick} /></div>
 
         {/* Executive Suite */}
         {business.map((a) => (
           <div key={a.id} style={PANEL} className={PANEL_CLASS}>
-            <CSuiteCard agent={a} onToggle={onToggle} onDelete={onDelete} />
+            <CSuiteCard agent={a} onToggle={onToggle} onDelete={onDelete} onTaskClick={onTaskClick} />
           </div>
         ))}
       </div>
@@ -1438,6 +1165,7 @@ export default function ChairmanDashboard() {
   const [deepWork,     setDeepWork]     = useState(false);
   const [novaOpen,     setNovaOpen]     = useState(false);
   const [isAppearanceOpen, setIsAppearanceOpen] = useState(false);
+  const [selectedTask, setSelectedTask] = useState<{ task: DbTask; color: string } | null>(null);
 
   // ── Calendar state ─────────────────────────────────────────────────────────
   const [calendarEvents, setCalendarEvents] = useState<CalendarEvent[]>([]);
@@ -1585,6 +1313,21 @@ export default function ChairmanDashboard() {
 
   const handleDeepWorkComplete = (taskId: string) => toggleTask(taskId);
 
+  const handleTaskSave = async (id: string, updates: any) => {
+    setDbTasks((prev) => prev.map((t) => t.id === id ? { ...t, ...updates } : t));
+    try {
+      await fetch("/api/tasks", {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ id, ...updates }),
+      });
+    } catch {}
+  };
+
+  const handleTaskClick = useCallback((task: DbTask, color: string) => {
+    setSelectedTask({ task, color });
+  }, []);
+
   // ── Command submit (DB-first: render only after server confirms) ───────────
   const handleSubmit = useCallback(() => {
     const text = cmdValue.trim();
@@ -1689,10 +1432,24 @@ export default function ChairmanDashboard() {
           paddingBottom: 148,
         }}
       >
-        {activeTab === "MASTER"   && <MasterViewTab key="master"   business={business} personal={personal} calConnected={calConnected} calendarEvents={calendarEvents} calLoading={calLoading} calError={calError} onToggle={toggleTask} onDelete={deleteTask} />}
-        {activeTab === "BUSINESS" && <BusinessTab   key="business" agents={business}  subtasksMap={subtasksMap} onToggle={(_, taskId) => toggleTask(taskId)} onDelete={deleteTask} onAddSubtask={addSubtask} />}
-        {activeTab === "PERSONAL" && <PersonalTab   key="personal" agents={personal}  subtasksMap={subtasksMap} onToggle={(_, taskId) => toggleTask(taskId)} onDelete={deleteTask} onAddSubtask={addSubtask} />}
+        {activeTab === "MASTER"   && <MasterViewTab key="master"   business={business} personal={personal} calConnected={calConnected} calendarEvents={calendarEvents} calLoading={calLoading} calError={calError} onToggle={toggleTask} onDelete={deleteTask} onTaskClick={handleTaskClick} />}
+        {activeTab === "BUSINESS" && <BusinessTab   key="business" agents={business} onToggle={(_, taskId) => toggleTask(taskId)} onDelete={deleteTask} onTaskClick={handleTaskClick} />}
+        {activeTab === "PERSONAL" && <PersonalTab   key="personal" agents={personal} onToggle={(_, taskId) => toggleTask(taskId)} onDelete={deleteTask} onTaskClick={handleTaskClick} />}
       </main>
+
+      {/* ── TASK DETAIL MODAL ─────────────────────────────────────────────── */}
+      {selectedTask && (
+        <TaskDetailModal
+          task={selectedTask.task}
+          agentColor={selectedTask.color}
+          onClose={() => setSelectedTask(null)}
+          onSave={handleTaskSave}
+          onToggleSubtask={toggleTask}
+          onDeleteSubtask={deleteTask}
+          onAddSubtask={addSubtask}
+          subtasks={subtasksMap[selectedTask.task.id] ?? []}
+        />
+      )}
 
       {/* ── TOAST (primary) ───────────────────────────────────────────────── */}
       {toast && (
