@@ -274,7 +274,7 @@ function BusinessTab({ agents, onToggle, onDelete, onTaskClick }: {
   return (
     <div className="flex flex-col flex-1 h-full min-h-[calc(100vh-6rem)] space-y-6" style={{ animation: "tab-in 0.22s ease-out" }}>
       <SectionLabel>Executive Suite · 6 Agents Active</SectionLabel>
-      <div className="grid grid-cols-1 md:grid-cols-2 grid-rows-3 gap-4 flex-1 h-full">
+      <div className="grid grid-cols-1 md:grid-cols-2 grid-rows-3 gap-4 flex-1 h-full pb-6">
         {agents.map((a) => (
           <div key={a.id} style={PANEL} className={`${PANEL_CLASS} h-full flex flex-col`}>
             <CSuiteCard agent={a} onToggle={(taskId) => onToggle(a.id, taskId)} onDelete={onDelete} onTaskClick={onTaskClick} />
@@ -299,7 +299,7 @@ function PersonalTab({ agents, onToggle, onDelete, onTaskClick }: {
   return (
     <div className="flex flex-col flex-1 h-full min-h-[calc(100vh-6rem)] space-y-5" style={{ animation: "tab-in 0.22s ease-out" }}>
       <SectionLabel>Personal Power Blocks · 4 Domains</SectionLabel>
-      <div className="grid grid-cols-1 xl:grid-cols-2 gap-6 flex-1 h-full">
+      <div className="grid grid-cols-1 xl:grid-cols-2 gap-6 flex-1 h-full pb-6">
         {agents.map((a) => (
           <div key={a.id} style={PANEL} className={`${PANEL_CLASS} h-full flex flex-col`}>
             <DomainBlock label={a.title} sub={a.role} tasks={a.tasks} color={a.color} onToggle={(taskId) => onToggle(a.id, taskId)} onDelete={onDelete} onTaskClick={onTaskClick} />
@@ -648,20 +648,20 @@ function CSuiteCard({
           return (
             <div key={t.id} className="flex flex-col gap-1">
               <div style={{ display: "flex", alignItems: "center", gap: 5, padding: "4px 7px", borderRadius: 5, cursor: "pointer" }} className="bg-white/5 dark:bg-black/20 border border-zinc-200/20 dark:border-white/5 hover:bg-white/10 dark:hover:bg-white/5 transition-colors" onClick={() => onTaskClick(t, agent.color)}>
-                <button onClick={(e) => { e.stopPropagation(); onToggle(t.id); }} className="text-zinc-500 hover:text-[color:var(--theme-grad-start)] transition-colors p-0 border-none bg-none flex shrink-0">
-                  <Circle size={12} />
-                </button>
-                <div style={{ width: 4, height: 4, borderRadius: "50%", backgroundColor: t.priority === 1 ? "#E05A3A" : t.priority === 3 ? "#3B4558" : "#C9A961", flexShrink: 0 }} />
                 {subs.length > 0 && (
                   <button onClick={(e) => { e.stopPropagation(); toggleExpand(t.id); }} className="mr-1 text-zinc-500 hover:text-zinc-300">
                     {isExpanded ? <ChevronDown className="w-4 h-4" /> : <ChevronRight className="w-4 h-4" />}
                   </button>
                 )}
+                <button onClick={(e) => { e.stopPropagation(); onToggle(t.id); }} className="text-zinc-500 hover:text-[color:var(--theme-grad-start)] transition-colors p-0 border-none bg-none flex shrink-0">
+                  <Circle size={12} />
+                </button>
+                <div style={{ width: 4, height: 4, borderRadius: "50%", backgroundColor: t.priority === 1 ? "#E05A3A" : t.priority === 3 ? "#3B4558" : "#C9A961", flexShrink: 0 }} />
                 <span style={{ fontSize: 11, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", flex: 1 }} className="text-zinc-900 dark:text-white">{t.title}</span>
               </div>
               {/* Subtasks Accordion */}
               {isExpanded && subs.length > 0 && (
-                <div className="pl-11 pr-2 flex flex-col gap-1.5 mt-0.5 pb-1">
+                <div className="ml-6 pl-4 border-l border-zinc-500/30 flex flex-col gap-2 mt-2">
                   {subs.map(sub => (
                     <div key={sub.id} className="flex items-center gap-2 group p-1.5 bg-white/5 dark:bg-black/20 rounded border border-zinc-200/20 dark:border-white/5">
                       <button onClick={(e) => { e.stopPropagation(); onToggleSubtask && onToggleSubtask(sub.id); }} className="text-zinc-500 hover:text-zinc-900 dark:hover:text-white transition-colors shrink-0">
@@ -743,7 +743,7 @@ function MasterViewTab({
   return (
     <div className="flex flex-col lg:flex-row gap-4 flex-1 h-full min-h-[calc(100vh-6rem)] overflow-hidden">
       {/* ── Left Column ──────────────────────────────────────────────────── */}
-      <div className="w-full lg:w-1/3 flex flex-col gap-4 h-full min-h-0 pr-1">
+      <div className="w-full lg:w-1/3 flex flex-col gap-4 h-full min-h-0 pb-6 pr-1">
         <div style={{ ...PANEL, maxHeight: "250px", overflowY: "auto", flexShrink: 0 }} className={PANEL_CLASS}>
           <PriorityStrikes business={business} personal={personal} onToggle={onToggle} onDelete={onDelete} onTaskClick={onTaskClick} />
         </div>
@@ -753,7 +753,7 @@ function MasterViewTab({
       </div>
 
       {/* ── Right Column / Grid ────────────────────────────────────────── */}
-      <div className="w-full lg:w-2/3 grid grid-cols-1 md:grid-cols-2 auto-rows-[1fr] gap-4 flex-1 h-full overflow-y-auto pr-1">
+      <div className="w-full lg:w-2/3 grid grid-cols-1 md:grid-cols-2 auto-rows-[1fr] gap-4 flex-1 h-full overflow-y-auto pb-6 pr-1">
         {/* Domain Cards */}
         <div style={PANEL} className={`${PANEL_CLASS} h-full flex flex-col`}><DomainBlock label="WEALTH" sub="Income & Freedom" tasks={wealthTasks} color={personal.find(a => a.id === "wealth")?.color || "#C9A961"} onToggle={onToggle} onDelete={onDelete} onTaskClick={onTaskClick} /></div>
         <div style={PANEL} className={`${PANEL_CLASS} h-full flex flex-col`}><DomainBlock label="HEALTH" sub="Training & Energy" tasks={healthTasks} color={personal.find(a => a.id === "health")?.color || "#C9A961"} onToggle={onToggle} onDelete={onDelete} onTaskClick={onTaskClick} /></div>
