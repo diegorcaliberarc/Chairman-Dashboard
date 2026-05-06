@@ -262,11 +262,12 @@ function SectionLabel({ children, right }: { children: React.ReactNode; right?: 
 
 // ─── Business Tab ─────────────────────────────────────────────────────────────
 
-function BusinessTab({ agents, onToggle, onDelete, onTaskClick }: {
+function BusinessTab({ agents, onToggle, onDelete, onTaskClick, subtasksMap }: {
   agents:        Agent[];
   onToggle:      (agentId: string, taskId: string) => void;
   onDelete:      (taskId: string) => void;
   onTaskClick:   (task: DbTask, color: string) => void;
+  subtasksMap?:  any;
 }) {
   const PANEL_CLASS = "bg-white/80 dark:bg-black/60 backdrop-blur-xl border border-zinc-200/50 dark:border-white/10 shadow-[0_0_30px_rgba(0,0,0,0.08)] dark:shadow-[0_0_30px_rgba(255,255,255,0.02)] hover:shadow-[0_0_40px_rgba(0,0,0,0.12)] dark:hover:shadow-[0_0_40px_rgba(255,255,255,0.04)] transition-shadow duration-500";
   const PANEL: React.CSSProperties = { borderRadius: 10, padding: "14px 16px", overflow: "hidden", minHeight: 0, minWidth: 0 };
@@ -277,7 +278,7 @@ function BusinessTab({ agents, onToggle, onDelete, onTaskClick }: {
       <div className="grid grid-cols-1 md:grid-cols-2 grid-rows-3 gap-4 flex-1 h-full pb-6">
         {agents.map((a) => (
           <div key={a.id} style={PANEL} className={`${PANEL_CLASS} h-full flex flex-col`}>
-            <CSuiteCard agent={a} onToggle={(taskId) => onToggle(a.id, taskId)} onDelete={onDelete} onTaskClick={onTaskClick} />
+            <CSuiteCard agent={a} onToggle={(taskId) => onToggle(a.id, taskId)} onDelete={onDelete} onTaskClick={onTaskClick} subtasksMap={subtasksMap} />
           </div>
         ))}
       </div>
@@ -287,11 +288,12 @@ function BusinessTab({ agents, onToggle, onDelete, onTaskClick }: {
 
 // ─── Personal Tab ─────────────────────────────────────────────────────────────
 
-function PersonalTab({ agents, onToggle, onDelete, onTaskClick }: {
+function PersonalTab({ agents, onToggle, onDelete, onTaskClick, subtasksMap }: {
   agents:        Agent[];
   onToggle:      (agentId: string, taskId: string) => void;
   onDelete:      (taskId: string) => void;
   onTaskClick:   (task: DbTask, color: string) => void;
+  subtasksMap?:  any;
 }) {
   const PANEL_CLASS = "bg-white/80 dark:bg-black/60 backdrop-blur-xl border border-zinc-200/50 dark:border-white/10 shadow-[0_0_30px_rgba(0,0,0,0.08)] dark:shadow-[0_0_30px_rgba(255,255,255,0.02)] hover:shadow-[0_0_40px_rgba(0,0,0,0.12)] dark:hover:shadow-[0_0_40px_rgba(255,255,255,0.04)] transition-shadow duration-500";
   const PANEL: React.CSSProperties = { borderRadius: 10, padding: "14px 16px", overflow: "hidden", minHeight: 0, minWidth: 0 };
@@ -302,7 +304,7 @@ function PersonalTab({ agents, onToggle, onDelete, onTaskClick }: {
       <div className="grid grid-cols-1 xl:grid-cols-2 gap-6 flex-1 h-full pb-6">
         {agents.map((a) => (
           <div key={a.id} style={PANEL} className={`${PANEL_CLASS} h-full flex flex-col`}>
-            <DomainBlock label={a.title} sub={a.role} tasks={a.tasks} color={a.color} onToggle={(taskId) => onToggle(a.id, taskId)} onDelete={onDelete} onTaskClick={onTaskClick} />
+            <DomainBlock label={a.title} sub={a.role} tasks={a.tasks} color={a.color} onToggle={(taskId) => onToggle(a.id, taskId)} onDelete={onDelete} onTaskClick={onTaskClick} subtasksMap={subtasksMap} />
           </div>
         ))}
       </div>
@@ -501,8 +503,8 @@ function CalendarFeed({
 // ─── Priority Strikes ─────────────────────────────────────────────────────────
 
 function PriorityStrikes({
-  business, personal, onToggle, onDelete, onTaskClick
-}: { business: Agent[]; personal: Agent[]; onToggle: (taskId: string) => void; onDelete: (taskId: string) => void; onTaskClick: (task: DbTask, color: string) => void }) {
+  business, personal, onToggle, onDelete, onTaskClick, subtasksMap
+}: { business: Agent[]; personal: Agent[]; onToggle: (taskId: string) => void; onDelete: (taskId: string) => void; onTaskClick: (task: DbTask, color: string) => void; subtasksMap?: any; }) {
   const strikes = [...business, ...personal]
     .flatMap((a) => a.tasks.filter((t) => t.status !== "DONE").map((t) => ({ task: t, agent: a })))
     .sort((a, b) => a.task.priority - b.task.priority);
@@ -551,8 +553,8 @@ function PriorityStrikes({
 // ─── Personal Life Quadrants ──────────────────────────────────────────────────
 
 function DomainBlock({
-  label, sub, tasks, color, onToggle, onDelete, onTaskClick
-}: { label: string; sub: string; tasks: DbTask[]; color: string; onToggle: (id: string) => void; onDelete: (id: string) => void; onTaskClick: (task: DbTask, color: string) => void }) {
+  label, sub, tasks, color, onToggle, onDelete, onTaskClick, subtasksMap
+}: { label: string; sub: string; tasks: DbTask[]; color: string; onToggle: (id: string) => void; onDelete: (id: string) => void; onTaskClick: (task: DbTask, color: string) => void; subtasksMap?: any; }) {
   const pending = tasks.filter((t) => t.status !== "DONE");
   const done    = tasks.filter((t) => t.status === "DONE");
   return (
@@ -729,7 +731,7 @@ function KPITab() {
 // ─── Master View Tab (One-Pager Command Center) ───────────────────────────────
 
 function MasterViewTab({
-  business, personal, calConnected, calendarEvents, calLoading, calError, onToggle, onDelete, onTaskClick
+  business, personal, calConnected, calendarEvents, calLoading, calError, onToggle, onDelete, onTaskClick, subtasksMap
 }: {
   business:       Agent[];
   personal:       Agent[];
@@ -740,6 +742,7 @@ function MasterViewTab({
   onToggle:       (taskId: string) => void;
   onDelete:       (taskId: string) => void;
   onTaskClick:    (task: DbTask, color: string) => void;
+  subtasksMap?:   any;
 }) {
   const wealthTasks = personal.find((a) => a.id === "wealth")?.tasks ?? [];
   const healthTasks = personal.find((a) => a.id === "health")?.tasks ?? [];
@@ -761,7 +764,7 @@ function MasterViewTab({
       {/* ── Left Column ──────────────────────────────────────────────────── */}
       <div className="w-full lg:w-1/3 flex flex-col gap-4 h-full min-h-0 pb-6 pr-1">
         <div style={{ ...PANEL, maxHeight: "250px", overflowY: "auto", flexShrink: 0 }} className={PANEL_CLASS}>
-          <PriorityStrikes business={business} personal={personal} onToggle={onToggle} onDelete={onDelete} onTaskClick={onTaskClick} />
+          <PriorityStrikes business={business} personal={personal} onToggle={onToggle} onDelete={onDelete} onTaskClick={onTaskClick} subtasksMap={subtasksMap} />
         </div>
         <div style={{ ...CAL_PANEL, flex: 1, minHeight: 0 }} className={PANEL_CLASS}>
           <CalendarFeed calConnected={calConnected} events={calendarEvents} calLoading={calLoading} calError={calError} />
@@ -771,15 +774,15 @@ function MasterViewTab({
       {/* ── Right Column / Grid ────────────────────────────────────────── */}
       <div className="w-full lg:w-2/3 grid grid-cols-1 md:grid-cols-2 auto-rows-[1fr] gap-4 flex-1 h-full overflow-y-auto pb-6 pr-1">
         {/* Domain Cards */}
-        <div style={PANEL} className={`${PANEL_CLASS} h-full flex flex-col`}><DomainBlock label="WEALTH" sub="Income & Freedom" tasks={wealthTasks} color={personal.find(a => a.id === "wealth")?.color || "#C9A961"} onToggle={onToggle} onDelete={onDelete} onTaskClick={onTaskClick} /></div>
-        <div style={PANEL} className={`${PANEL_CLASS} h-full flex flex-col`}><DomainBlock label="HEALTH" sub="Training & Energy" tasks={healthTasks} color={personal.find(a => a.id === "health")?.color || "#C9A961"} onToggle={onToggle} onDelete={onDelete} onTaskClick={onTaskClick} /></div>
-        <div style={PANEL} className={`${PANEL_CLASS} h-full flex flex-col`}><DomainBlock label="RELATIONSHIPS" sub="Legacy & Pack" tasks={relateTasks} color={personal.find(a => a.id === "relate")?.color || "#C9A961"} onToggle={onToggle} onDelete={onDelete} onTaskClick={onTaskClick} /></div>
-        <div style={PANEL} className={`${PANEL_CLASS} h-full flex flex-col`}><DomainBlock label="JOY" sub="Goals & Happiness" tasks={joyTasks} color={personal.find(a => a.id === "joy")?.color || "#C9A961"} onToggle={onToggle} onDelete={onDelete} onTaskClick={onTaskClick} /></div>
+        <div style={PANEL} className={`${PANEL_CLASS} h-full flex flex-col`}><DomainBlock label="WEALTH" sub="Income & Freedom" tasks={wealthTasks} color={personal.find(a => a.id === "wealth")?.color || "#C9A961"} onToggle={onToggle} onDelete={onDelete} onTaskClick={onTaskClick} subtasksMap={subtasksMap} /></div>
+        <div style={PANEL} className={`${PANEL_CLASS} h-full flex flex-col`}><DomainBlock label="HEALTH" sub="Training & Energy" tasks={healthTasks} color={personal.find(a => a.id === "health")?.color || "#C9A961"} onToggle={onToggle} onDelete={onDelete} onTaskClick={onTaskClick} subtasksMap={subtasksMap} /></div>
+        <div style={PANEL} className={`${PANEL_CLASS} h-full flex flex-col`}><DomainBlock label="RELATIONSHIPS" sub="Legacy & Pack" tasks={relateTasks} color={personal.find(a => a.id === "relate")?.color || "#C9A961"} onToggle={onToggle} onDelete={onDelete} onTaskClick={onTaskClick} subtasksMap={subtasksMap} /></div>
+        <div style={PANEL} className={`${PANEL_CLASS} h-full flex flex-col`}><DomainBlock label="JOY" sub="Goals & Happiness" tasks={joyTasks} color={personal.find(a => a.id === "joy")?.color || "#C9A961"} onToggle={onToggle} onDelete={onDelete} onTaskClick={onTaskClick} subtasksMap={subtasksMap} /></div>
 
         {/* Executive Suite */}
         {business.map((a) => (
           <div key={a.id} style={PANEL} className={`${PANEL_CLASS} h-full flex flex-col`}>
-            <CSuiteCard agent={a} onToggle={onToggle} onDelete={onDelete} onTaskClick={onTaskClick} />
+            <CSuiteCard agent={a} onToggle={onToggle} onDelete={onDelete} onTaskClick={onTaskClick} subtasksMap={subtasksMap} />
           </div>
         ))}
       </div>
@@ -1525,9 +1528,9 @@ export default function ChairmanDashboard() {
           paddingBottom: 148,
         }}
       >
-        {activeTab === "MASTER"   && <MasterViewTab key="master"   business={business} personal={personal} calConnected={calConnected} calendarEvents={calendarEvents} calLoading={calLoading} calError={calError} onToggle={toggleTask} onDelete={deleteTask} onTaskClick={handleTaskClick} />}
-        {activeTab === "BUSINESS" && <BusinessTab   key="business" agents={business} onToggle={(_, taskId) => toggleTask(taskId)} onDelete={deleteTask} onTaskClick={handleTaskClick} />}
-        {activeTab === "PERSONAL" && <PersonalTab   key="personal" agents={personal} onToggle={(_, taskId) => toggleTask(taskId)} onDelete={deleteTask} onTaskClick={handleTaskClick} />}
+        {activeTab === "MASTER"   && <MasterViewTab key="master"   business={business} personal={personal} calConnected={calConnected} calendarEvents={calendarEvents} calLoading={calLoading} calError={calError} onToggle={toggleTask} onDelete={deleteTask} onTaskClick={handleTaskClick} subtasksMap={subtasksMap} />}
+        {activeTab === "BUSINESS" && <BusinessTab   key="business" agents={business} onToggle={(_, taskId) => toggleTask(taskId)} onDelete={deleteTask} onTaskClick={handleTaskClick} subtasksMap={subtasksMap} />}
+        {activeTab === "PERSONAL" && <PersonalTab   key="personal" agents={personal} onToggle={(_, taskId) => toggleTask(taskId)} onDelete={deleteTask} onTaskClick={handleTaskClick} subtasksMap={subtasksMap} />}
         {activeTab === "KPI"      && <KPITab        key="kpi" />}
       </main>
 
