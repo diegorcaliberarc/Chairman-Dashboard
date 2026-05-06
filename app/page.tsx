@@ -651,16 +651,12 @@ function CSuiteCard({
               <div className="flex flex-row items-start gap-2 w-full bg-white/5 dark:bg-black/20 border border-zinc-200/20 dark:border-white/5 hover:bg-white/10 dark:hover:bg-white/5 transition-colors p-1.5 rounded cursor-pointer" onClick={() => onTaskClick(t, agent.color)}>
                 {/* Uncrushable Chevron Box */}
                 <div className="w-6 min-w-[24px] flex items-center justify-center shrink-0 pt-0.5">
-                  {subs.length > 0 ? (
-                    <button 
-                      onClick={(e) => { e.preventDefault(); e.stopPropagation(); toggleExpand(t.id); }}
-                      className="p-1 hover:bg-zinc-500/20 rounded text-zinc-400 cursor-pointer"
-                    >
-                      {isExpanded ? <ChevronDown size={14} /> : <ChevronRight size={14} />}
-                    </button>
-                  ) : (
-                    <div className="w-full h-full" />
-                  )}
+                  <button 
+                    onClick={(e) => { e.preventDefault(); e.stopPropagation(); toggleExpand(t.id); }}
+                    className="p-1 hover:bg-zinc-500/20 rounded text-zinc-400 cursor-pointer"
+                  >
+                    {isExpanded ? <ChevronDown size={14} /> : <ChevronRight size={14} />}
+                  </button>
                 </div>
                 
                 {/* Checkbox & Title */}
@@ -676,21 +672,25 @@ function CSuiteCard({
               </div>
 
               {/* Nested Subtasks */}
-              {isExpanded && subs.length > 0 && (
+              {isExpanded && (
                 <div className="ml-8 pl-4 border-l border-zinc-500/30 flex flex-col gap-2 mt-2">
-                  {subs.map(sub => (
-                    <div key={sub.id} className="flex flex-row items-start gap-2 group p-1">
-                      <div className="shrink-0 pt-0.5">
-                        <button onClick={(e) => { e.stopPropagation(); onToggleSubtask && onToggleSubtask(sub.id); }} className="text-zinc-500 hover:text-zinc-900 dark:hover:text-white transition-colors shrink-0">
-                          {sub.status === "DONE" ? <CheckCircle2 size={11} color={agent.color} /> : <Circle size={11} />}
+                  {subs.length > 0 ? (
+                    subs.map(sub => (
+                      <div key={sub.id} className="flex flex-row items-start gap-2 group p-1">
+                        <div className="shrink-0 pt-0.5">
+                          <button onClick={(e) => { e.stopPropagation(); onToggleSubtask && onToggleSubtask(sub.id); }} className="text-zinc-500 hover:text-zinc-900 dark:hover:text-white transition-colors shrink-0">
+                            {sub.status === "DONE" ? <CheckCircle2 size={11} color={agent.color} /> : <Circle size={11} />}
+                          </button>
+                        </div>
+                        <span className={`text-sm flex-1 pt-0.5 ${sub.status === "DONE" ? "line-through text-zinc-500" : "text-zinc-700 dark:text-white"}`}>{sub.title}</span>
+                        <button onClick={(e) => { e.stopPropagation(); onDeleteSubtask && onDeleteSubtask(sub.id); }} className="opacity-0 group-hover:opacity-100 text-zinc-500 hover:text-red-400 transition-all shrink-0">
+                          <X size={10} />
                         </button>
                       </div>
-                      <span className={`text-sm flex-1 pt-0.5 ${sub.status === "DONE" ? "line-through text-zinc-500" : "text-zinc-700 dark:text-white"}`}>{sub.title}</span>
-                      <button onClick={(e) => { e.stopPropagation(); onDeleteSubtask && onDeleteSubtask(sub.id); }} className="opacity-0 group-hover:opacity-100 text-zinc-500 hover:text-red-400 transition-all shrink-0">
-                        <X size={10} />
-                      </button>
-                    </div>
-                  ))}
+                    ))
+                  ) : (
+                    <div className="italic text-xs text-zinc-500 dark:text-zinc-500 py-1">No subtasks found in database...</div>
+                  )}
                 </div>
               )}
             </div>
