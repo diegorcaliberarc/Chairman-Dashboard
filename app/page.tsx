@@ -743,152 +743,53 @@ function PriorityStrikes({
 
 // ─── Personal Life Quadrants ──────────────────────────────────────────────────
 
-function QuadrantHeader({ label, sub, color }: { label: string; sub: string; color: string }) {
-  return (
-    <div style={{ display: "flex", alignItems: "center", gap: 7, marginBottom: 10 }}>
-      <div style={{ width: 5, height: 5, borderRadius: "50%", backgroundColor: color, boxShadow: `0 0 8px ${color}77`, flexShrink: 0 }} />
-      <span style={{ fontFamily: "Georgia, serif", fontSize: 12, color, letterSpacing: "0.04em" }}>{label}</span>
-      <div style={{ flex: 1 }} />
-      <span style={{ fontSize: 7, letterSpacing: "0.16em", textTransform: "uppercase" }} className="text-zinc-400 dark:text-[#252836]">{sub}</span>
-    </div>
-  );
-}
-
-function SubPanel({ children }: { children: React.ReactNode }) {
-  return (
-    <div style={{ borderRadius: 7, padding: "7px 10px" }} className="bg-white/80 dark:bg-black/60 backdrop-blur-xl border border-zinc-200/50 dark:border-white/10">
-      {children}
-    </div>
-  );
-}
-
-function DataRow({ label, value, color }: { label: string; value: string; color?: string }) {
-  return (
-    <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "4px 0" }} className="border-b border-zinc-200 dark:border-[#0C0E14]">
-      <span style={{ fontSize: 7, letterSpacing: "0.15em", textTransform: "uppercase" }} className="text-zinc-600 dark:text-[#1E2030]">{label}</span>
-      <span style={{ fontSize: 11, color: color, fontVariantNumeric: "tabular-nums" }} className={color ? "" : "text-zinc-500 dark:text-zinc-400"}>{value}</span>
-    </div>
-  );
-}
-
-function WealthBlock() {
-  return (
-    <div style={{ height: "100%", display: "flex", flexDirection: "column", overflow: "hidden" }}>
-      <QuadrantHeader label="WEALTH" sub="Income & Freedom" color="#D4AF37" />
-      <div style={{ flex: 1, display: "flex", flexDirection: "column", gap: 6, overflowY: "auto" }}>
-        <SubPanel>
-          <div style={{ fontSize: 7, letterSpacing: "0.2em", textTransform: "uppercase", color: "var(--theme-grad-start)", marginBottom: 6 }}>Income Targets</div>
-          <DataRow label="Current Income"  value="—" color="#D4AF37" />
-          <DataRow label="Target Income"   value="—" color="#8BA87B" />
-          <DataRow label="Gap to Target"   value="—" color="#E05A3A" />
-        </SubPanel>
-        <SubPanel>
-          <div style={{ fontSize: 7, letterSpacing: "0.2em", textTransform: "uppercase", color: "var(--theme-grad-start)", marginBottom: 5 }}>NQ Session Bias</div>
-          <div style={{ fontFamily: "Georgia, serif", fontSize: 13, color: "var(--theme-grad-start)" }}>RANGE-BOUND</div>
-          <div style={{ fontSize: 7, color: "var(--theme-grad-start)", marginTop: 2 }}>ES / NQ · Watching supply at prior hi</div>
-        </SubPanel>
-        <SubPanel>
-          <DataRow label="Account Buffer" value="—" color="#8BA87B" />
-          <DataRow label="Daily P&L"      value="—" color="#8BA87B" />
-        </SubPanel>
-      </div>
-    </div>
-  );
-}
-
-function HealthBlock() {
-  return (
-    <div style={{ height: "100%", display: "flex", flexDirection: "column", overflow: "hidden" }}>
-      <QuadrantHeader label="HEALTH" sub="Training & Energy" color="#E05A3A" />
-      <div style={{ flex: 1, display: "flex", flexDirection: "column", gap: 6, overflowY: "auto" }}>
-        <SubPanel>
-          <div style={{ fontSize: 7, letterSpacing: "0.2em", textTransform: "uppercase", color: "var(--theme-grad-start)", marginBottom: 6 }}>Body Metrics</div>
-          <DataRow label="Current Weight"  value="—" color="#E05A3A" />
-          <DataRow label="Activity Level"  value="—" color="#E05A3A" />
-          <DataRow label="Sleep Hours"     value="—" />
-        </SubPanel>
-        <SubPanel>
-          <div style={{ fontSize: 7, letterSpacing: "0.2em", textTransform: "uppercase", color: "var(--theme-grad-start)", marginBottom: 5 }}>Today's Session</div>
-          <DataRow label="Workout Type"    value="—" color="#E05A3A" />
-          <DataRow label="Protein Target"  value="200g" color="#8BA87B" />
-          <DataRow label="Calories"        value="2,800 kcal" color="#8BA87B" />
-        </SubPanel>
-      </div>
-    </div>
-  );
-}
-
-function RelationshipsBlock() {
-  return (
-    <div style={{ height: "100%", display: "flex", flexDirection: "column", overflow: "hidden" }}>
-      <QuadrantHeader label="RELATIONSHIPS" sub="Legacy & Pack" color="#5B8FB9" />
-      <div style={{ flex: 1, display: "flex", flexDirection: "column", gap: 5, overflowY: "auto" }}>
-        <SubPanel>
-          <div style={{ fontSize: 7, letterSpacing: "0.18em", textTransform: "uppercase", color: "var(--theme-grad-start)", marginBottom: 5, opacity: 0.7 }}>Antonia</div>
-          <DataRow label="Last Quality Time" value="—" color="#5B8FB9" />
-          <DataRow label="Next Commitment"   value="—" color="#5B8FB9" />
-        </SubPanel>
-        <SubPanel>
-          <div style={{ fontSize: 7, letterSpacing: "0.18em", textTransform: "uppercase", color: "var(--theme-grad-start)", marginBottom: 5, opacity: 0.7 }}>Maximiliano</div>
-          <DataRow label="Last Quality Time" value="—" color="#5B8FB9" />
-          <DataRow label="Next Commitment"   value="—" color="#5B8FB9" />
-        </SubPanel>
-        <SubPanel>
-          <div style={{ fontSize: 7, letterSpacing: "0.18em", textTransform: "uppercase", color: "var(--theme-grad-start)", marginBottom: 5, opacity: 0.7 }}>The Pack</div>
-          <DataRow label="Nova"   value="—" color="#3B6A8A" />
-          <DataRow label="Astro"  value="—" color="#3B6A8A" />
-          <DataRow label="Comet"  value="—" color="#3B6A8A" />
-        </SubPanel>
-      </div>
-    </div>
-  );
-}
-
-function HappinessBlock({ tasks, onToggle, onDelete }: { tasks: DbTask[]; onToggle: (id: string) => void; onDelete: (id: string) => void }) {
+function DomainBlock({
+  label, sub, tasks, onToggle, onDelete
+}: { label: string; sub: string; tasks: DbTask[]; onToggle: (id: string) => void; onDelete: (id: string) => void }) {
   const pending = tasks.filter((t) => t.status !== "DONE");
   const done    = tasks.filter((t) => t.status === "DONE");
   return (
-    <div style={{ height: "100%", display: "flex", flexDirection: "column", overflow: "hidden" }}>
-      <QuadrantHeader label="JOY" sub="Goals & Happiness" color="#B388EB" />
-      <div style={{ flex: 1, display: "flex", flexDirection: "column", gap: 5, overflowY: "auto", minHeight: 0 }}>
-        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "0 2px" }}>
-          <span style={{ fontSize: 7, letterSpacing: "0.18em", textTransform: "uppercase", color: "var(--theme-grad-start)" }}>Areas of Happiness · Targets</span>
-          <span style={{ fontSize: 7, color: "var(--theme-grad-start)" }}>{done.length}/{tasks.length}</span>
+    <div className="h-full flex flex-col overflow-hidden">
+      <div className="flex items-center gap-2 mb-2">
+        <div className="w-1.5 h-1.5 rounded-full bg-themeAccent shadow-[0_0_8px_var(--theme-grad-start)] flex-shrink-0" />
+        <span className="font-serif text-[12px] text-themeAccent tracking-[0.04em]">{label}</span>
+        <div className="flex-1" />
+        <span className="text-[7px] tracking-[0.16em] uppercase text-zinc-400 dark:text-[#252836]">{sub}</span>
+      </div>
+      <div className="flex-1 flex flex-col gap-1 overflow-y-auto min-h-0">
+        <div className="flex items-center justify-between px-1 pb-1">
+          <span className="text-[7px] tracking-[0.18em] uppercase text-themeAccent">Tasks</span>
+          <span className="text-[7px] text-themeAccent">{done.length}/{tasks.length}</span>
         </div>
-        <div style={{ flex: 1, overflowY: "auto", display: "flex", flexDirection: "column", gap: 3 }}>
+        <div className="flex-1 overflow-y-auto flex flex-col gap-1.5">
           {pending.map((t) => (
-            <div key={t.id} style={{ display: "flex", alignItems: "center", gap: 6, padding: "5px 8px", borderRadius: 5, backgroundColor: "rgba(179,136,235,0.04)", border: "1px solid rgba(179,136,235,0.09)" }}>
-              <button onClick={() => onToggle(t.id)} style={{ background: "none", border: "none", cursor: "pointer", padding: 0, color: "var(--theme-grad-start)", flexShrink: 0, display: "flex" }}>
+            <div key={t.id} className="flex items-center gap-1.5 p-1.5 bg-zinc-100/10 dark:bg-black/20 rounded-md border border-zinc-200/20 dark:border-white/5">
+              <button onClick={() => onToggle(t.id)} className="bg-none border-none cursor-pointer p-0 text-themeAccent shrink-0 flex">
                 <Circle size={10} />
               </button>
-              <span style={{ flex: 1, fontSize: 10, color: "var(--theme-grad-start)", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{t.title}</span>
-              <button onClick={() => onDelete(t.id)} style={{ background: "none", border: "none", cursor: "pointer", padding: 0, color: "var(--theme-grad-start)", display: "flex", flexShrink: 0 }}
-                onMouseEnter={(e) => { (e.currentTarget as HTMLButtonElement).style.color = "#E05A3A"; }}
-                onMouseLeave={(e) => { (e.currentTarget as HTMLButtonElement).style.color = "#252836"; }}>
+              <span className="flex-1 text-[10px] text-themeAccent overflow-hidden text-ellipsis whitespace-nowrap">{t.title}</span>
+              <button onClick={() => onDelete(t.id)} className="bg-none border-none cursor-pointer p-0 text-themeAccent flex shrink-0 hover:text-[#E05A3A]">
                 <X size={9} />
               </button>
             </div>
           ))}
           {done.map((t) => (
-            <div key={t.id} style={{ display: "flex", alignItems: "center", gap: 6, padding: "5px 8px", borderRadius: 5, opacity: 0.4 }}>
-              <button onClick={() => onToggle(t.id)} style={{ background: "none", border: "none", cursor: "pointer", padding: 0, color: "var(--theme-grad-start)", flexShrink: 0, display: "flex" }}>
+            <div key={t.id} className="flex items-center gap-1.5 p-1.5 rounded-md opacity-40">
+              <button onClick={() => onToggle(t.id)} className="bg-none border-none cursor-pointer p-0 text-themeAccent shrink-0 flex">
                 <CheckCircle2 size={10} />
               </button>
-              <span style={{ flex: 1, fontSize: 10, color: "var(--theme-grad-start)", textDecoration: "line-through", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{t.title}</span>
-              <button onClick={() => onDelete(t.id)} style={{ background: "none", border: "none", cursor: "pointer", padding: 0, color: "var(--theme-grad-start)", display: "flex", flexShrink: 0 }}>
+              <span className="flex-1 text-[10px] text-themeAccent line-through overflow-hidden text-ellipsis whitespace-nowrap">{t.title}</span>
+              <button onClick={() => onDelete(t.id)} className="bg-none border-none cursor-pointer p-0 text-themeAccent flex shrink-0 hover:text-[#E05A3A]">
                 <X size={9} />
               </button>
             </div>
           ))}
           {tasks.length === 0 && (
-            <div style={{ fontSize: 9, color: "var(--theme-grad-start)", padding: "8px 0", letterSpacing: "0.08em" }}>
-              Add goals via Joy category in the command bar.
+            <div className="text-[9px] text-themeAccent py-2 tracking-[0.08em]">
+              All clear.
             </div>
           )}
         </div>
-        <SubPanel>
-          <DataRow label="Daily Anchor" value='"One step closer."' color="#B388EB" />
-        </SubPanel>
       </div>
     </div>
   );
@@ -950,11 +851,11 @@ function CSuiteCard({
       {/* ── Task Modal ── */}
       {isOpen && (
         <div
-          style={{ position: "fixed", inset: 0, backgroundColor: "rgba(0,0,0,0.72)", zIndex: 100, display: "flex", alignItems: "center", justifyContent: "center", padding: 24 }}
+          className="fixed inset-0 z-50 flex items-center justify-center p-6 bg-black/70 backdrop-blur-sm"
           onClick={() => setIsOpen(false)}
         >
           <div
-            style={{ borderRadius: 14, padding: "28px 32px", minWidth: 420, maxWidth: 560, width: "100%", boxShadow: "0 24px 80px rgba(0,0,0,0.8)", animation: "fade-up 0.18s ease-out", maxHeight: "80vh", display: "flex", flexDirection: "column" }} className="bg-white/80 dark:bg-black/60 backdrop-blur-xl border border-zinc-200/50 dark:border-white/10"
+            className="m-auto max-w-2xl max-h-[80vh] flex flex-col w-full bg-white/80 dark:bg-black/60 backdrop-blur-xl border border-zinc-200/50 dark:border-white/10 rounded-2xl p-7 shadow-2xl animate-in fade-in zoom-in-95"
             onClick={(e) => e.stopPropagation()}
           >
             {/* Modal header */}
@@ -980,7 +881,7 @@ function CSuiteCard({
             </div>
 
             {/* All tasks */}
-            <div style={{ flex: 1, overflowY: "auto", display: "flex", flexDirection: "column", gap: 6 }}>
+            <div className="flex-1 overflow-y-auto flex flex-col gap-2 min-h-0">
               {agent.tasks.length === 0 ? (
                 <div style={{ padding: "32px 0", textAlign: "center", fontSize: 11, color: "var(--theme-grad-start)", letterSpacing: "0.1em" }}>
                   No tasks assigned. Add one via the command bar.
@@ -989,7 +890,7 @@ function CSuiteCard({
                 agent.tasks.map((t) => {
                   const isDone = t.status === "DONE";
                   return (
-                    <div key={t.id} style={{ display: "flex", alignItems: "center", gap: 10, padding: "10px 14px", borderRadius: 8, backgroundColor: isDone ? `${agent.color}08` : undefined }} className={isDone ? "border border-zinc-200/50 dark:border-white/10" : "bg-white/80 dark:bg-black/60 backdrop-blur-xl border border-zinc-200/50 dark:border-white/10"}>
+                    <div key={t.id} style={{ display: "flex", alignItems: "center", gap: 10, padding: "10px 14px" }} className={isDone ? "rounded-lg border border-zinc-200/50 dark:border-white/10" : "bg-zinc-100/10 dark:bg-black/20 rounded-md border border-zinc-200/20 dark:border-white/5"}>
                       <button onClick={() => onToggle(t.id)} style={{ background: "none", border: "none", cursor: "pointer", padding: 0, display: "flex", flexShrink: 0, color: isDone ? agent.color : undefined }} className={isDone ? "" : "text-zinc-400 dark:text-[#252836]"}>
                         {isDone ? <CheckCircle2 size={14} /> : <Circle size={14} />}
                       </button>
@@ -1033,7 +934,10 @@ function MasterViewTab({
   onToggle:       (taskId: string) => void;
   onDelete:       (taskId: string) => void;
 }) {
-  const joyTasks = personal.find((a) => a.id === "joy")?.tasks ?? [];
+  const wealthTasks = personal.find((a) => a.id === "wealth")?.tasks ?? [];
+  const healthTasks = personal.find((a) => a.id === "health")?.tasks ?? [];
+  const relateTasks = personal.find((a) => a.id === "relate")?.tasks ?? [];
+  const joyTasks    = personal.find((a) => a.id === "joy")?.tasks ?? [];
 
   const PANEL_CLASS = "bg-white/80 dark:bg-black/60 backdrop-blur-xl border border-zinc-200/50 dark:border-white/10 shadow-[0_0_30px_rgba(0,0,0,0.08)] dark:shadow-[0_0_30px_rgba(255,255,255,0.02)] hover:shadow-[0_0_40px_rgba(0,0,0,0.12)] dark:hover:shadow-[0_0_40px_rgba(255,255,255,0.04)] transition-shadow duration-500";
   const PANEL: React.CSSProperties = {
@@ -1043,36 +947,29 @@ function MasterViewTab({
     minHeight:       0,
     minWidth:        0,
   };
-  // Calendar panel scrolls at panel level so events aren't trapped in a tiny inner div
   const CAL_PANEL: React.CSSProperties = { ...PANEL, overflowY: "auto" };
 
-  // Row proportions: Feeds 38% · Personal 38% · C-Suite 24%
   return (
-    <div style={{
-      display:             "grid",
-      gridTemplateRows:    "38fr 38fr 24fr",
-      gridTemplateColumns: "100%",
-      gap:                 10,
-      flex:                1,
-      minHeight:           0,
-      overflow:            "hidden",
-    }}>
-      {/* ── Row 1: Calendar + Priority Strikes ─────────────────────────── */}
-      <div style={{ display: "grid", gridTemplateColumns: "3fr 2fr", gap: 10, minHeight: 0, overflow: "hidden" }}>
-        <div style={CAL_PANEL} className={PANEL_CLASS}><CalendarFeed calConnected={calConnected} events={calendarEvents} calLoading={calLoading} calError={calError} /></div>
-        <div style={PANEL} className={PANEL_CLASS}><PriorityStrikes business={business} personal={personal} onToggle={onToggle} onDelete={onDelete} /></div>
+    <div className="flex flex-col lg:flex-row gap-4 flex-1 min-h-0 overflow-hidden">
+      {/* ── Left Column ──────────────────────────────────────────────────── */}
+      <div className="w-full lg:w-1/3 flex flex-col gap-4 min-h-0 overflow-y-auto pr-1">
+        <div style={PANEL} className={PANEL_CLASS}>
+          <PriorityStrikes business={business} personal={personal} onToggle={onToggle} onDelete={onDelete} />
+        </div>
+        <div style={{ ...CAL_PANEL, minHeight: "500px", flexGrow: 1 }} className={PANEL_CLASS}>
+          <CalendarFeed calConnected={calConnected} events={calendarEvents} calLoading={calLoading} calError={calError} />
+        </div>
       </div>
 
-      {/* ── Row 2: Personal Quadrants ──────────────────────────────────── */}
-      <div style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: 10, minHeight: 0, overflow: "hidden" }}>
-        <div style={PANEL} className={PANEL_CLASS}><WealthBlock /></div>
-        <div style={PANEL} className={PANEL_CLASS}><HealthBlock /></div>
-        <div style={PANEL} className={PANEL_CLASS}><RelationshipsBlock /></div>
-        <div style={PANEL} className={PANEL_CLASS}><HappinessBlock tasks={joyTasks} onToggle={onToggle} onDelete={onDelete} /></div>
-      </div>
+      {/* ── Right Column / Grid ────────────────────────────────────────── */}
+      <div className="w-full lg:w-2/3 grid grid-cols-1 md:grid-cols-2 gap-4 min-h-0 overflow-y-auto pr-1">
+        {/* Domain Cards */}
+        <div style={PANEL} className={PANEL_CLASS}><DomainBlock label="WEALTH" sub="Income & Freedom" tasks={wealthTasks} onToggle={onToggle} onDelete={onDelete} /></div>
+        <div style={PANEL} className={PANEL_CLASS}><DomainBlock label="HEALTH" sub="Training & Energy" tasks={healthTasks} onToggle={onToggle} onDelete={onDelete} /></div>
+        <div style={PANEL} className={PANEL_CLASS}><DomainBlock label="RELATIONSHIPS" sub="Legacy & Pack" tasks={relateTasks} onToggle={onToggle} onDelete={onDelete} /></div>
+        <div style={PANEL} className={PANEL_CLASS}><DomainBlock label="JOY" sub="Goals & Happiness" tasks={joyTasks} onToggle={onToggle} onDelete={onDelete} /></div>
 
-      {/* ── Row 3: Business C-Suite (all 6) ────────────────────────────── */}
-      <div style={{ display: "grid", gridTemplateColumns: "repeat(6, 1fr)", gap: 10, minHeight: 0, overflow: "hidden" }}>
+        {/* Executive Suite */}
         {business.map((a) => (
           <div key={a.id} style={PANEL} className={PANEL_CLASS}>
             <CSuiteCard agent={a} onToggle={onToggle} onDelete={onDelete} />
@@ -1796,14 +1693,6 @@ export default function ChairmanDashboard() {
         {activeTab === "BUSINESS" && <BusinessTab   key="business" agents={business}  subtasksMap={subtasksMap} onToggle={(_, taskId) => toggleTask(taskId)} onDelete={deleteTask} onAddSubtask={addSubtask} />}
         {activeTab === "PERSONAL" && <PersonalTab   key="personal" agents={personal}  subtasksMap={subtasksMap} onToggle={(_, taskId) => toggleTask(taskId)} onDelete={deleteTask} onAddSubtask={addSubtask} />}
       </main>
-
-      {/* ── FOOTER ────────────────────────────────────────────────────────── */}
-      <div style={{ borderTop: "1px solid #111218" }}>
-        <div className="max-w-[1440px] mx-auto px-8 py-3 flex items-center justify-between">
-          <span className="text-[9px] tracking-widest uppercase text-zinc-500 dark:text-zinc-400">Pristine Designs · Executive Command · V6 · Claude Agent Stack · Supabase</span>
-          <span className="text-[9px] tracking-widest uppercase text-zinc-500 dark:text-zinc-400">One Step Closer · 2026</span>
-        </div>
-      </div>
 
       {/* ── TOAST (primary) ───────────────────────────────────────────────── */}
       {toast && (
