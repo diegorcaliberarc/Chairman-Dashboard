@@ -242,28 +242,7 @@ function getWeekDays() {
   });
 }
 
-// ─── Live Clock ───────────────────────────────────────────────────────────────
 
-function LiveClock() {
-  const [time, setTime] = useState("");
-  const [date, setDate] = useState("");
-  useEffect(() => {
-    const tick = () => {
-      const n = new Date();
-      setTime(n.toLocaleTimeString("en-US", { hour: "2-digit", minute: "2-digit", second: "2-digit", hour12: true }));
-      setDate(n.toLocaleDateString("en-US", { weekday: "short", month: "short", day: "numeric", year: "numeric" }));
-    };
-    tick();
-    const id = setInterval(tick, 1000);
-    return () => clearInterval(id);
-  }, []);
-  return (
-    <div className="text-right select-none">
-      <div className="font-mono text-sm tracking-wider text-zinc-900 dark:text-white" style={{ fontVariantNumeric: "tabular-nums" }}>{time}</div>
-      <div className="text-[10px] tracking-wider mt-0.5 text-zinc-900 dark:text-white">{date}</div>
-    </div>
-  );
-}
 
 // ─── Section Label ────────────────────────────────────────────────────────────
 
@@ -1561,7 +1540,7 @@ export default function ChairmanDashboard() {
   const [activeTab,    setActiveTab]    = useState<TabId>("MASTER");
   const [deepWork,     setDeepWork]     = useState(false);
   const [novaOpen,     setNovaOpen]     = useState(false);
-  const [appearanceOpen, setAppearanceOpen] = useState(false);
+  const [isAppearanceOpen, setIsAppearanceOpen] = useState(false);
 
   // ── Calendar state ─────────────────────────────────────────────────────────
   const [calendarEvents, setCalendarEvents] = useState<CalendarEvent[]>([]);
@@ -1766,8 +1745,12 @@ export default function ChairmanDashboard() {
         setActiveTab={setActiveTab} 
         calConnected={calConnected} 
         onCalToggle={() => calConnected ? signOut({ redirect: false }) : signIn("google")}
-        appearanceOpen={appearanceOpen} 
-        setAppearanceOpen={setAppearanceOpen} 
+        isAppearanceOpen={isAppearanceOpen} 
+        setIsAppearanceOpen={setIsAppearanceOpen} 
+        doneTasks={doneTasks}
+        totalTasks={totalTasks}
+        overallPct={overallPct}
+        tasksLoading={tasksLoading}
         user={user}
         deepWork={deepWork}
         setDeepWork={setDeepWork}
@@ -1787,39 +1770,7 @@ export default function ChairmanDashboard() {
         />
       )}
 
-      {/* ── HEADER ────────────────────────────────────────────────────────── */}
-      <header className="sticky top-0 z-40 bg-white/80 dark:bg-black/60 backdrop-blur-xl border-b border-zinc-200/50 dark:border-white/10">
-        <div className="max-w-[1440px] mx-auto px-6">
-          <div className="flex flex-wrap items-center justify-between gap-y-3 py-3">
-            {/* Brand */}
-            <div className="flex items-center gap-4">
-              <Crosshair size={15} className="text-zinc-900 dark:text-white" />
-              <h1 style={{ fontFamily: "Georgia, serif", fontSize: 16, color: "var(--theme-grad-start)", letterSpacing: "0.04em" }}>
-                Pristine Designs
-              </h1>
-            </div>
 
-            {/* Right cluster */}
-            <div className="flex items-center gap-6">
-              {/* Progress */}
-              <div className="text-right select-none">
-                <div className="text-[9px] tracking-widest uppercase mb-1 text-zinc-500 dark:text-zinc-400">
-                  {tasksLoading ? "Syncing…" : "Mission Progress"}
-                </div>
-                <div className="text-lg font-bold text-zinc-900 dark:text-white" style={{ fontVariantNumeric: "tabular-nums" }}>
-                  {doneTasks}<span className="text-xs font-normal text-zinc-500 dark:text-zinc-400">/{totalTasks}</span>
-                </div>
-                <div className="header-progress-bar mt-1.5 rounded-full" style={{ width: 64, height: 2, backgroundColor: "#1E1F24", marginLeft: "auto" }}>
-                  <div className="h-full rounded-full transition-all duration-700" style={{ width: `${overallPct * 100}%`, backgroundImage: 'linear-gradient(to right, var(--theme-grad-start), var(--theme-grad-end))', opacity: 0.7 }} />
-                </div>
-              </div>
-
-              <div className="header-divider-clock" style={{ width: 1, height: 28, backgroundColor: "#1E1F24" }} />
-              <div className="header-clock"><LiveClock /></div>
-            </div>
-          </div>
-        </div>
-      </header>
 
       {/* ── MAIN ──────────────────────────────────────────────────────────── */}
       <main
