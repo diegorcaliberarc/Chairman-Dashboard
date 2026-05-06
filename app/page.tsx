@@ -273,11 +273,11 @@ function BusinessTab({ agents, onToggle, onDelete, onTaskClick }: {
   const PANEL: React.CSSProperties = { borderRadius: 10, padding: "14px 16px", overflow: "hidden", minHeight: 0, minWidth: 0 };
 
   return (
-    <div className="space-y-6" style={{ animation: "tab-in 0.22s ease-out" }}>
+    <div className="h-full flex flex-col space-y-6" style={{ animation: "tab-in 0.22s ease-out" }}>
       <SectionLabel>Executive Suite · 6 Agents Active</SectionLabel>
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 flex-1 min-h-[85vh]">
         {agents.map((a) => (
-          <div key={a.id} style={PANEL} className={`${PANEL_CLASS} min-h-[350px] max-h-[500px]`}>
+          <div key={a.id} style={PANEL} className={`${PANEL_CLASS} h-full flex flex-col`}>
             <CSuiteCard agent={a} onToggle={(taskId) => onToggle(a.id, taskId)} onDelete={onDelete} onTaskClick={onTaskClick} />
           </div>
         ))}
@@ -298,11 +298,11 @@ function PersonalTab({ agents, onToggle, onDelete, onTaskClick }: {
   const PANEL: React.CSSProperties = { borderRadius: 10, padding: "14px 16px", overflow: "hidden", minHeight: 0, minWidth: 0 };
 
   return (
-    <div className="space-y-5" style={{ animation: "tab-in 0.22s ease-out" }}>
+    <div className="h-full flex flex-col space-y-5" style={{ animation: "tab-in 0.22s ease-out" }}>
       <SectionLabel>Personal Power Blocks · 4 Domains</SectionLabel>
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4 flex-1 min-h-[85vh]">
         {agents.map((a) => (
-          <div key={a.id} style={PANEL} className={`${PANEL_CLASS} min-h-[350px] max-h-[500px]`}>
+          <div key={a.id} style={PANEL} className={`${PANEL_CLASS} h-full flex flex-col`}>
             <DomainBlock label={a.title} sub={a.role} tasks={a.tasks} color={a.color} onToggle={(taskId) => onToggle(a.id, taskId)} onDelete={onDelete} onTaskClick={onTaskClick} />
           </div>
         ))}
@@ -564,7 +564,7 @@ function DomainBlock({
         <div className="flex-1" />
         <span className="text-[7px] tracking-[0.16em] uppercase text-zinc-400 dark:text-[#252836]">{sub}</span>
       </div>
-      <div className="flex-1 overflow-y-auto max-h-[400px] flex flex-col gap-1 pr-1">
+      <div className="flex-1 overflow-y-auto flex flex-col gap-1 pr-1">
         <div className="flex items-center justify-between px-1 pb-1">
           <span className="text-[7px] tracking-[0.18em] uppercase text-themeAccent">Tasks</span>
           <span className="text-[7px] text-themeAccent">{done.length}/{tasks.length}</span>
@@ -642,7 +642,7 @@ function CSuiteCard({
       <div style={{ height: 1.5, backgroundColor: "#1E1F24", borderRadius: 2, marginBottom: 8, flexShrink: 0 }}>
         <div style={{ height: "100%", width: `${pct}%`, backgroundColor: agent.color, borderRadius: 2, opacity: 0.65, transition: "width 0.6s ease" }} />
       </div>
-      <div className="flex-1 overflow-y-auto max-h-[250px] flex flex-col gap-2 min-h-0 mt-2 pr-1" style={{ scrollbarWidth: "none", msOverflowStyle: "none" }}>
+      <div className="flex-1 overflow-y-auto flex flex-col gap-2 min-h-0 mt-2 pr-1" style={{ scrollbarWidth: "none", msOverflowStyle: "none" }}>
         {pending.length > 0 ? pending.map((t) => {
           const subs = subtasksMap ? subtasksMap[t.id] ?? [] : [];
           const isExpanded = !!expandedIds[t.id];
@@ -695,6 +695,24 @@ function CSuiteCard({
   );
 }
 
+// ─── KPI Tab ──────────────────────────────────────────────────────────────────
+
+function KPITab() {
+  const PANEL_CLASS = "bg-white/80 dark:bg-black/60 backdrop-blur-xl border border-zinc-200/50 dark:border-white/10 shadow-[0_0_30px_rgba(0,0,0,0.08)] dark:shadow-[0_0_30px_rgba(255,255,255,0.02)] hover:shadow-[0_0_40px_rgba(0,0,0,0.12)] dark:hover:shadow-[0_0_40px_rgba(255,255,255,0.04)] transition-shadow duration-500";
+  const PANEL: React.CSSProperties = { borderRadius: 10, padding: "24px", overflow: "hidden", minHeight: 0, minWidth: 0, display: "flex", flexDirection: "column", height: "100%" };
+
+  return (
+    <div className="h-full flex flex-col gap-4" style={{ animation: "tab-in 0.22s ease-out", minHeight: "85vh" }}>
+      <SectionLabel>Key Performance Indicators</SectionLabel>
+      <div style={PANEL} className={PANEL_CLASS}>
+        <div className="flex items-center justify-center h-full">
+          <span className="text-sm tracking-widest text-zinc-500 uppercase">KPI Dashboard Coming Soon</span>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 // ─── Master View Tab (One-Pager Command Center) ───────────────────────────────
 
 function MasterViewTab({
@@ -726,28 +744,28 @@ function MasterViewTab({
   const CAL_PANEL: React.CSSProperties = { ...PANEL, overflowY: "auto" };
 
   return (
-    <div className="flex flex-col lg:flex-row gap-4 flex-1 min-h-0 overflow-hidden">
+    <div className="flex flex-col lg:flex-row gap-4 flex-1 h-full min-h-0 overflow-hidden">
       {/* ── Left Column ──────────────────────────────────────────────────── */}
-      <div className="w-full lg:w-1/3 flex flex-col gap-4 min-h-0 overflow-y-auto pr-1">
-        <div style={{ ...PANEL, flexGrow: 1, maxHeight: "250px", overflowY: "auto" }} className={PANEL_CLASS}>
+      <div className="w-full lg:w-1/3 flex flex-col gap-4 h-full min-h-0 pr-1">
+        <div style={{ ...PANEL, maxHeight: "250px", overflowY: "auto", flexShrink: 0 }} className={PANEL_CLASS}>
           <PriorityStrikes business={business} personal={personal} onToggle={onToggle} onDelete={onDelete} onTaskClick={onTaskClick} />
         </div>
-        <div style={{ ...CAL_PANEL, minHeight: "600px", flexGrow: 1 }} className={PANEL_CLASS}>
+        <div style={{ ...CAL_PANEL, flex: 1, minHeight: 0 }} className={PANEL_CLASS}>
           <CalendarFeed calConnected={calConnected} events={calendarEvents} calLoading={calLoading} calError={calError} />
         </div>
       </div>
 
       {/* ── Right Column / Grid ────────────────────────────────────────── */}
-      <div className="w-full lg:w-2/3 grid grid-cols-1 md:grid-cols-2 gap-4 min-h-0 overflow-y-auto pr-1">
+      <div className="w-full lg:w-2/3 grid grid-cols-1 md:grid-cols-2 gap-4 h-full overflow-y-auto pr-1">
         {/* Domain Cards */}
-        <div style={PANEL} className={`${PANEL_CLASS} min-h-[350px] max-h-[500px]`}><DomainBlock label="WEALTH" sub="Income & Freedom" tasks={wealthTasks} color={personal.find(a => a.id === "wealth")?.color || "#C9A961"} onToggle={onToggle} onDelete={onDelete} onTaskClick={onTaskClick} /></div>
-        <div style={PANEL} className={`${PANEL_CLASS} min-h-[350px] max-h-[500px]`}><DomainBlock label="HEALTH" sub="Training & Energy" tasks={healthTasks} color={personal.find(a => a.id === "health")?.color || "#C9A961"} onToggle={onToggle} onDelete={onDelete} onTaskClick={onTaskClick} /></div>
-        <div style={PANEL} className={`${PANEL_CLASS} min-h-[350px] max-h-[500px]`}><DomainBlock label="RELATIONSHIPS" sub="Legacy & Pack" tasks={relateTasks} color={personal.find(a => a.id === "relate")?.color || "#C9A961"} onToggle={onToggle} onDelete={onDelete} onTaskClick={onTaskClick} /></div>
-        <div style={PANEL} className={`${PANEL_CLASS} min-h-[350px] max-h-[500px]`}><DomainBlock label="JOY" sub="Goals & Happiness" tasks={joyTasks} color={personal.find(a => a.id === "joy")?.color || "#C9A961"} onToggle={onToggle} onDelete={onDelete} onTaskClick={onTaskClick} /></div>
+        <div style={PANEL} className={`${PANEL_CLASS} h-full flex flex-col`}><DomainBlock label="WEALTH" sub="Income & Freedom" tasks={wealthTasks} color={personal.find(a => a.id === "wealth")?.color || "#C9A961"} onToggle={onToggle} onDelete={onDelete} onTaskClick={onTaskClick} /></div>
+        <div style={PANEL} className={`${PANEL_CLASS} h-full flex flex-col`}><DomainBlock label="HEALTH" sub="Training & Energy" tasks={healthTasks} color={personal.find(a => a.id === "health")?.color || "#C9A961"} onToggle={onToggle} onDelete={onDelete} onTaskClick={onTaskClick} /></div>
+        <div style={PANEL} className={`${PANEL_CLASS} h-full flex flex-col`}><DomainBlock label="RELATIONSHIPS" sub="Legacy & Pack" tasks={relateTasks} color={personal.find(a => a.id === "relate")?.color || "#C9A961"} onToggle={onToggle} onDelete={onDelete} onTaskClick={onTaskClick} /></div>
+        <div style={PANEL} className={`${PANEL_CLASS} h-full flex flex-col`}><DomainBlock label="JOY" sub="Goals & Happiness" tasks={joyTasks} color={personal.find(a => a.id === "joy")?.color || "#C9A961"} onToggle={onToggle} onDelete={onDelete} onTaskClick={onTaskClick} /></div>
 
         {/* Executive Suite */}
         {business.map((a) => (
-          <div key={a.id} style={PANEL} className={`${PANEL_CLASS} min-h-[350px] max-h-[500px]`}>
+          <div key={a.id} style={PANEL} className={`${PANEL_CLASS} h-full flex flex-col`}>
             <CSuiteCard agent={a} onToggle={onToggle} onDelete={onDelete} onTaskClick={onTaskClick} />
           </div>
         ))}
@@ -1484,6 +1502,7 @@ export default function ChairmanDashboard() {
         {activeTab === "MASTER"   && <MasterViewTab key="master"   business={business} personal={personal} calConnected={calConnected} calendarEvents={calendarEvents} calLoading={calLoading} calError={calError} onToggle={toggleTask} onDelete={deleteTask} onTaskClick={handleTaskClick} />}
         {activeTab === "BUSINESS" && <BusinessTab   key="business" agents={business} onToggle={(_, taskId) => toggleTask(taskId)} onDelete={deleteTask} onTaskClick={handleTaskClick} />}
         {activeTab === "PERSONAL" && <PersonalTab   key="personal" agents={personal} onToggle={(_, taskId) => toggleTask(taskId)} onDelete={deleteTask} onTaskClick={handleTaskClick} />}
+        {activeTab === "KPI"      && <KPITab        key="kpi" />}
       </main>
 
       {/* ── TASK DETAIL MODAL ─────────────────────────────────────────────── */}
