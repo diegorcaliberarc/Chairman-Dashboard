@@ -69,26 +69,31 @@ function buildContext(tasks: any[], calendarEvents: any[]): string {
     })
     .join("\n");
 
-  const todayStr = new Date().toDateString();
+  const currentMDT = new Date().toLocaleString("en-US", { 
+    timeZone: "America/Denver", 
+    dateStyle: "full", 
+    timeStyle: "long" 
+  });
+  
+  const todayMDT = new Date().toLocaleDateString("en-US", { timeZone: "America/Denver" });
+
   const todayEvents = calendarEvents
     .filter((ev) => {
       const dt = ev.start?.dateTime ?? ev.start?.date;
-      return dt ? new Date(dt).toDateString() === todayStr : false;
+      return dt ? new Date(dt).toLocaleDateString("en-US", { timeZone: "America/Denver" }) === todayMDT : false;
     })
     .map((ev) => {
       const dt = ev.start?.dateTime;
       const time = dt
-        ? new Date(dt).toLocaleTimeString("en-US", { hour: "numeric", minute: "2-digit", hour12: true })
+        ? new Date(dt).toLocaleTimeString("en-US", { timeZone: "America/Denver", hour: "numeric", minute: "2-digit", hour12: true })
         : "All day";
       return `  ${time} — ${ev.summary ?? "Event"}`;
     })
     .join("\n");
 
-  const dateStr = new Date().toLocaleDateString("en-US", { weekday: "long", year: "numeric", month: "long", day: "numeric" });
-
   return `
 === DASHBOARD CONTEXT ===
-Date: ${dateStr}
+Current Time (Mountain Time): ${currentMDT}
 
 PENDING TASKS (${pending.length} active, ${done.length} complete):
 ${taskLines || "  No pending tasks."}
