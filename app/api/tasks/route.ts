@@ -87,8 +87,11 @@ export async function POST(req: NextRequest) {
     console.log("Tasks POST: created task id =", task.id);
     
     if (task.startDate || task.dueDate) {
-      // Async sync to avoid blocking the response
-      syncTaskToCalendar(userId!, task).catch(console.error);
+      try {
+        await syncTaskToCalendar(userId!, task);
+      } catch (calendarError) {
+        console.error("Google Calendar sync failed, but task was created:", calendarError);
+      }
     }
 
     return NextResponse.json({ task });
@@ -166,7 +169,11 @@ export async function PATCH(req: NextRequest) {
     const task = await prisma.task.update({ where: { id }, data });
     
     if (data.startDate !== undefined || data.dueDate !== undefined) {
-      syncTaskToCalendar(userId!, task).catch(console.error);
+      try {
+        await syncTaskToCalendar(userId!, task);
+      } catch (calendarError) {
+        console.error("Google Calendar sync failed, but task was updated:", calendarError);
+      }
     }
 
     return NextResponse.json({ task });
