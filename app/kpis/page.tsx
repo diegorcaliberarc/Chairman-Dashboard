@@ -57,7 +57,13 @@ const RAW_METRIC_DEFS: Record<string, { name: string, defaultVal: number, target
   cmo: [{ name: "CAC", defaultVal: 0, target: 0 }, { name: "LTV", defaultVal: 0, target: 0 }],
   cto: [{ name: "Uptime", defaultVal: 99.9, target: 99.9 }],
   cpo: [{ name: "User Satisfaction", defaultVal: 100, target: 100 }],
-  health: [{ name: "Health Score", defaultVal: 100, target: 100 }],
+  health: [
+    { name: "health_protein", defaultVal: 0, target: 160 },
+    { name: "health_energy", defaultVal: 0, target: 40 },
+    { name: "health_fasting", defaultVal: 0, target: 18 },
+    { name: "health_sleep", defaultVal: 0, target: 7 },
+    { name: "health_strength", defaultVal: 0, target: 100 },
+  ],
   relate: [{ name: "Relationship Score", defaultVal: 100, target: 100 }],
   joy: [{ name: "Joy Index", defaultVal: 100, target: 100 }],
 };
@@ -128,6 +134,43 @@ function getWealthStatus(val: number, type: string) {
   return { color: "text-zinc-500", label: "UNKNOWN" };
 }
 
+function calculateHealthPhysics(localVals: Record<string, number>) {
+  const protein = localVals["health_protein"] || 0;
+  const energy = localVals["health_energy"] || 0;
+  const fasting = localVals["health_fasting"] || 0;
+  const sleep = localVals["health_sleep"] || 0;
+  const strength = localVals["health_strength"] || 0;
+
+  return { protein, energy, fasting, sleep, strength };
+}
+
+function getHealthStatus(val: number, type: string) {
+  if (type === "protein") {
+    if (val >= 155) return { color: "text-emerald-500", label: "✅ OPTIMAL" };
+    if (val >= 140) return { color: "text-yellow-500", label: "⚠️ WARNING" };
+    return { color: "text-red-500", label: "🚨 CRITICAL" };
+  }
+  if (type === "energy") {
+    if (val <= 40) return { color: "text-emerald-500", label: "✅ OPTIMAL" };
+    return { color: "text-red-500", label: "🚨 CRITICAL" };
+  }
+  if (type === "fasting") {
+    if (val >= 18) return { color: "text-emerald-500", label: "✅ OPTIMAL" };
+    return { color: "text-red-500", label: "🚨 CRITICAL" };
+  }
+  if (type === "sleep") {
+    if (val >= 7) return { color: "text-emerald-500", label: "✅ OPTIMAL" };
+    if (val >= 6) return { color: "text-yellow-500", label: "⚠️ WARNING" };
+    return { color: "text-red-500", label: "🚨 CRITICAL" };
+  }
+  if (type === "strength") {
+    if (val >= 100) return { color: "text-emerald-500", label: "✅ OPTIMAL" };
+    if (val >= 90) return { color: "text-yellow-500", label: "⚠️ WARNING" };
+    return { color: "text-red-500", label: "🚨 CRITICAL" };
+  }
+  return { color: "text-zinc-500", label: "UNKNOWN" };
+}
+
 function SectorCard({ category, allMetrics, onSave }: any) {
   const [isFlipped, setIsFlipped] = useState(false);
   const defs = RAW_METRIC_DEFS[category.id];
@@ -159,7 +202,10 @@ function SectorCard({ category, allMetrics, onSave }: any) {
   };
 
   const isWealth = category.id === "wealth";
+  const isHealth = category.id === "health";
+  const isActiveSector = isWealth || isHealth;
   const wPhys = isWealth ? calculateWealthPhysics(localVals) : null;
+  const hPhys = isHealth ? calculateHealthPhysics(localVals) : null;
 
   let primaryLabel = "Core Score";
   let primaryValue = "0";
@@ -193,7 +239,7 @@ function SectorCard({ category, allMetrics, onSave }: any) {
     RED: "bg-red-500 shadow-[0_0_10px_rgba(239,68,68,0.5)]",
   };
 
-  const cardHeight = isWealth ? "h-[380px]" : "h-[220px]";
+  const cardHeight = isActiveSector ? "h-[380px]" : "h-[220px]";
 
   return (
     <div className={`relative w-full ${cardHeight} perspective-1000 group`}>
@@ -205,7 +251,7 @@ function SectorCard({ category, allMetrics, onSave }: any) {
               <category.icon className="w-5 h-5" style={{ color: category.color }} />
               <h3 className="font-serif text-lg tracking-widest uppercase" style={{ color: category.color }}>{category.title}</h3>
             </div>
-            <button onClick={() => isWealth && setIsFlipped(true)} className={`p-1.5 rounded-md transition-colors ${isWealth ? "hover:bg-zinc-200/50 dark:hover:bg-white/10 text-zinc-500" : "opacity-50 cursor-not-allowed text-zinc-300 dark:text-zinc-700"}`}>
+            <button onClick={() => isActiveSector && setIsFlipped(true)} className={`p-1.5 rounded-md transition-colors ${isActiveSector ? "hover:bg-zinc-200/50 dark:hover:bg-white/10 text-zinc-500" : "opacity-50 cursor-not-allowed text-zinc-300 dark:text-zinc-700"}`}>
               <Edit2 size={14} />
             </button>
           </div>
@@ -231,11 +277,32 @@ function SectorCard({ category, allMetrics, onSave }: any) {
                 </div>
               ))}
             </div>
+          ) : isHealth && hPhys ? (
+            <div className="flex flex-col gap-2 flex-1 mt-6 justify-center">
+              {[
+                { label: "THE PROTEIN PAYLOAD", sub: "Tissue Preservation", val: `${hPhys.protein}g`, status: getHealthStatus(hPhys.protein, "protein") },
+                { label: "THE ENERGY CAP", sub: "Fat + Carbs", val: `${hPhys.energy}g`, status: getHealthStatus(hPhys.energy, "energy") },
+                { label: "FASTING INTEGRITY", sub: "13:00-19:00 Window", val: `${hPhys.fasting}h`, status: getHealthStatus(hPhys.fasting, "fasting") },
+                { label: "SLEEP ARCHITECTURE", sub: "Cellular Repair", val: `${hPhys.sleep}h`, status: getHealthStatus(hPhys.sleep, "sleep") },
+                { label: "STRENGTH RETENTION", sub: "Baseline vs Current", val: `${hPhys.strength}%`, status: getHealthStatus(hPhys.strength, "strength") },
+              ].map(k => (
+                <div key={k.label} className="flex justify-between items-center bg-zinc-50/50 dark:bg-white/5 p-2 rounded-lg border border-zinc-200/50 dark:border-white/5">
+                  <div className="flex flex-col">
+                    <span className="text-[10px] font-bold tracking-widest uppercase text-zinc-900 dark:text-zinc-100">{k.label}</span>
+                    <span className="text-[8px] tracking-widest uppercase text-zinc-500">{k.sub}</span>
+                  </div>
+                  <div className="flex flex-col items-end gap-0.5">
+                    <span className="font-mono text-xs font-medium text-zinc-900 dark:text-white">{k.val}</span>
+                    <span className={`text-[9px] font-bold tracking-widest uppercase ${k.status.color}`}>{k.status.label}</span>
+                  </div>
+                </div>
+              ))}
+            </div>
           ) : (
             <div className="flex flex-col items-center justify-center flex-1 mt-4">
               <div className="text-[10px] tracking-[0.2em] uppercase text-zinc-500 mb-2">AWAITING DATA</div>
               <div className="font-serif text-sm text-zinc-400 dark:text-zinc-500 text-center px-4 leading-relaxed">
-                This sector is offline.<br/>Focus strictly on<br/>Wealth structural integrity.
+                This sector is offline.<br/>Focus strictly on<br/>active core systems.
               </div>
             </div>
           )}
