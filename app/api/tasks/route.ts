@@ -59,6 +59,21 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: "Invalid JSON body" }, { status: 400 });
   }
 
+  // Forcefully remove database-controlled fields to prevent binary format crashes
+  if (req.method === 'POST') {
+    delete body.id; 
+  }
+  delete body.createdAt;
+  delete body.updatedAt;
+
+  // Force boolean casting for completed state to prevent string ("false") crashes
+  if (typeof body.completed === 'string') {
+    body.completed = body.completed === 'true';
+  }
+  if (typeof body.isDelegated === 'string') {
+    body.isDelegated = body.isDelegated === 'true';
+  }
+
   const { title, pillar, agentId, category, status, isDelegated, priority, startDate, dueDate, timeTracked, parentId } = body as {
     title:        string;
     pillar:       string;
@@ -156,6 +171,21 @@ export async function PATCH(req: NextRequest) {
 
   try {
     const body = await req.json();
+
+    // Forcefully remove database-controlled fields to prevent binary format crashes
+    if (req.method === 'POST') {
+      delete body.id; 
+    }
+    delete body.createdAt;
+    delete body.updatedAt;
+
+    // Force boolean casting for completed state to prevent string ("false") crashes
+    if (typeof body.completed === 'string') {
+      body.completed = body.completed === 'true';
+    }
+    if (typeof body.isDelegated === 'string') {
+      body.isDelegated = body.isDelegated === 'true';
+    }
     const { id, status, isDelegated, priority, startDate, dueDate, timeTracked } = body as {
       id:           string;
       status?:      string;
