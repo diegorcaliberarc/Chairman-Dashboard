@@ -67,21 +67,20 @@ export async function POST(req: NextRequest) {
   }
 
   try {
+    const sanitizedData = {
+      ...body,
+      // Force empty strings to null, and valid strings to Date objects
+      startDate: body.startDate ? new Date(body.startDate) : null,
+      dueDate: body.dueDate ? new Date(body.dueDate) : null,
+      // Ensure timeTracked is an integer
+      timeTracked: body.timeTracked ? parseInt(body.timeTracked, 10) : 0,
+      // Ensure priority and status fallbacks
+      priority: body.priority || 'None',
+      status: body.status || 'To Do'
+    };
+
     const task = await prisma.task.create({
-      data: {
-        title,
-        pillar,
-        agentId,
-        category:    category    ?? null,
-        status:      status      ?? "To Do",
-        isDelegated: isDelegated ?? false,
-        priority:    priority    ?? "None",
-        startDate:   startDate   ? new Date(startDate) : null,
-        dueDate:     dueDate     ? new Date(dueDate) : null,
-        timeTracked: timeTracked ?? 0,
-        userId:      userId      ?? null,
-        parentId:    parentId    ?? null,
-      },
+      data: sanitizedData,
     });
 
     console.log("Tasks POST: created task id =", task.id);
@@ -158,17 +157,21 @@ export async function PATCH(req: NextRequest) {
       return NextResponse.json({ error: "Forbidden" }, { status: 403 });
     }
 
-    const data: any = {};
-    if (status      !== undefined) data.status      = status;
-    if (isDelegated !== undefined) data.isDelegated = isDelegated;
-    if (priority    !== undefined) data.priority    = priority;
-    if (startDate   !== undefined) data.startDate   = startDate ? new Date(startDate) : null;
-    if (dueDate     !== undefined) data.dueDate     = dueDate ? new Date(dueDate) : null;
-    if (timeTracked !== undefined) data.timeTracked = timeTracked;
+    const sanitizedData = {
+      ...body,
+      ...(body.startDate !== undefined && { startDate: body.startDate ? new Date(body.startDate) : null }),
+      ...(body.dueDate !== undefined && { dueDate: body.dueDate ? new Date(body.dueDate) : null }),
+      ...(body.timeTracked !== undefined && { timeTracked: body.timeTracked ? parseInt(body.timeTracked, 10) : 0 }),
+      ...(body.priority !== undefined && { priority: body.priority || 'None' }),
+      ...(body.status !== undefined && { status: body.status || 'To Do' }),
+    };
 
-    const task = await prisma.task.update({ where: { id }, data });
+    // Remove ID so we don't try to update the primary key
+    delete sanitizedData.id;
+
+    const task = await prisma.task.update({ where: { id }, data: sanitizedData });
     
-    if (data.startDate !== undefined || data.dueDate !== undefined) {
+    if (body.startDate !== undefined || body.dueDate !== undefined) {
       try {
         await syncTaskToCalendar(userId!, task);
       } catch (calendarError) {

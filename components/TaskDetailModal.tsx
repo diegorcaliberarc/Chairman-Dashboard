@@ -40,7 +40,7 @@ export function TaskDetailModal({
       priority,
       startDate: startDate ? new Date(startDate).toISOString() : null,
       dueDate: dueDate ? new Date(dueDate).toISOString() : null,
-      timeTracked
+      timeTracked: timeTracked ? parseInt(timeTracked as any, 10) : 0
     });
     onClose();
   };
