@@ -72,7 +72,13 @@ const RAW_METRIC_DEFS: Record<string, { name: string, defaultVal: number, target
     { name: "rel_frame_breaks", defaultVal: 0, target: 0 },
     { name: "rel_armor_score", defaultVal: 10, target: 10 },
   ],
-  joy: [{ name: "Joy Index", defaultVal: 100, target: 100 }],
+  joy: [
+    { name: "joy_presence_days", defaultVal: 0, target: 7 },
+    { name: "joy_hard_stop_days", defaultVal: 0, target: 5 },
+    { name: "joy_whitespace_hours", defaultVal: 0, target: 14 },
+    { name: "joy_doomscroll_hours", defaultVal: 0, target: 0 },
+    { name: "joy_low_value_hours", defaultVal: 0, target: 0 },
+  ],
 };
 
 function getStatus(val: number, target: number, operator: "<" | ">") {
@@ -220,6 +226,44 @@ function getRelateStatus(val: number, type: string) {
   return { color: "text-zinc-500", label: "UNKNOWN" };
 }
 
+function calculateJoyPhysics(localVals: Record<string, number>) {
+  const presence = localVals["joy_presence_days"] || 0;
+  const hardStop = localVals["joy_hard_stop_days"] || 0;
+  const whitespace = localVals["joy_whitespace_hours"] || 0;
+  const doomscroll = localVals["joy_doomscroll_hours"] || 0;
+  const lowValue = localVals["joy_low_value_hours"] || 0;
+
+  return { presence, hardStop, whitespace, doomscroll, lowValue };
+}
+
+function getJoyStatus(val: number, type: string) {
+  if (type === "presence") {
+    if (val === 7) return { color: "text-emerald-500", label: "✅ OPTIMAL" };
+    if (val >= 4) return { color: "text-yellow-500", label: "⚠️ WARNING" };
+    return { color: "text-red-500", label: "🚨 CRITICAL" };
+  }
+  if (type === "hardstop") {
+    if (val >= 5) return { color: "text-emerald-500", label: "✅ OPTIMAL" };
+    if (val >= 3) return { color: "text-yellow-500", label: "⚠️ WARNING" };
+    return { color: "text-red-500", label: "🚨 CRITICAL" };
+  }
+  if (type === "whitespace") {
+    if (val >= 14) return { color: "text-emerald-500", label: "✅ OPTIMAL" };
+    if (val >= 8) return { color: "text-yellow-500", label: "⚠️ WARNING" };
+    return { color: "text-red-500", label: "🚨 CRITICAL" };
+  }
+  if (type === "doomscroll") {
+    if (val <= 1) return { color: "text-emerald-500", label: "✅ OPTIMAL" };
+    return { color: "text-red-500", label: "🚨 CRITICAL" };
+  }
+  if (type === "lowvalue") {
+    if (val <= 2) return { color: "text-emerald-500", label: "✅ OPTIMAL" };
+    if (val <= 5) return { color: "text-yellow-500", label: "⚠️ WARNING" };
+    return { color: "text-red-500", label: "🚨 CRITICAL" };
+  }
+  return { color: "text-zinc-500", label: "UNKNOWN" };
+}
+
 function SectorCard({ category, allMetrics, onSave }: any) {
   const [isFlipped, setIsFlipped] = useState(false);
   const defs = RAW_METRIC_DEFS[category.id];
@@ -253,10 +297,12 @@ function SectorCard({ category, allMetrics, onSave }: any) {
   const isWealth = category.id === "wealth";
   const isHealth = category.id === "health";
   const isRelate = category.id === "relate";
-  const isActiveSector = isWealth || isHealth || isRelate;
+  const isJoy = category.id === "joy";
+  const isActiveSector = isWealth || isHealth || isRelate || isJoy;
   const wPhys = isWealth ? calculateWealthPhysics(localVals) : null;
   const hPhys = isHealth ? calculateHealthPhysics(localVals) : null;
   const rPhys = isRelate ? calculateRelatePhysics(localVals) : null;
+  const jPhys = isJoy ? calculateJoyPhysics(localVals) : null;
 
   let primaryLabel = "Core Score";
   let primaryValue = "0";
@@ -357,6 +403,27 @@ function SectorCard({ category, allMetrics, onSave }: any) {
                 { label: "SILENT EXECUTION", sub: "Cognitive Load Relief", val: `${rPhys.silentExec.toFixed(2)}%`, status: getRelateStatus(rPhys.silentExec, "silent") },
                 { label: "THE ANCHOR DELTA", sub: "Structural Integrity", val: `${rPhys.frame} Breaks`, status: getRelateStatus(rPhys.frame, "frame") },
                 { label: "ARMOR PERMEABILITY", sub: "Vulnerability Score", val: `${rPhys.armor}/10`, status: getRelateStatus(rPhys.armor, "armor") },
+              ].map(k => (
+                <div key={k.label} className="flex justify-between items-center bg-zinc-50/50 dark:bg-white/5 p-2 rounded-lg border border-zinc-200/50 dark:border-white/5">
+                  <div className="flex flex-col">
+                    <span className="text-[10px] font-bold tracking-widest uppercase text-zinc-900 dark:text-zinc-100">{k.label}</span>
+                    <span className="text-[8px] tracking-widest uppercase text-zinc-500">{k.sub}</span>
+                  </div>
+                  <div className="flex flex-col items-end gap-0.5">
+                    <span className="font-mono text-xs font-medium text-zinc-900 dark:text-white">{k.val}</span>
+                    <span className={`text-[9px] font-bold tracking-widest uppercase ${k.status.color}`}>{k.status.label}</span>
+                  </div>
+                </div>
+              ))}
+            </div>
+          ) : isJoy && jPhys ? (
+            <div className="flex flex-col gap-2 flex-1 mt-6 justify-center">
+              {[
+                { label: "AVATAR PRESENCE RATE", sub: "Deep Anchoring", val: `${jPhys.presence}/7 Days`, status: getJoyStatus(jPhys.presence, "presence") },
+                { label: "19:00 HARD STOP", sub: "System Depressurization", val: `${jPhys.hardStop}/7 Days`, status: getJoyStatus(jPhys.hardStop, "hardstop") },
+                { label: "WHITE SPACE INTEGRITY", sub: "Creative Buffer", val: `${jPhys.whitespace}h`, status: getJoyStatus(jPhys.whitespace, "whitespace") },
+                { label: "THE DOOMSCROLL TRIPWIRE", sub: "System Exhaustion / Entropy", val: `${jPhys.doomscroll}h`, status: getJoyStatus(jPhys.doomscroll, "doomscroll") },
+                { label: "$10/HR DELEGATION RATIO", sub: "Opportunity Cost Limit", val: `${jPhys.lowValue}h`, status: getJoyStatus(jPhys.lowValue, "lowvalue") },
               ].map(k => (
                 <div key={k.label} className="flex justify-between items-center bg-zinc-50/50 dark:bg-white/5 p-2 rounded-lg border border-zinc-200/50 dark:border-white/5">
                   <div className="flex flex-col">
