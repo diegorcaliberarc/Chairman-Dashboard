@@ -58,7 +58,7 @@ export function Sidebar({
     { id: "MASTER", label: "MASTER VIEW", icon: <LayoutDashboard size={18} />, route: "/" },
     { id: "BUSINESS", label: "BUSINESS", icon: <Briefcase size={18} />, route: "/" },
     { id: "PERSONAL", label: "PERSONAL", icon: <User size={18} />, route: "/" },
-    { id: "KPI", label: "KPIs", icon: <BarChart size={18} />, route: "/" },
+    { id: "KPI", label: "KPIs / VITAL SIGNS", icon: <Activity size={18} />, route: "/kpis" },
   ];
 
   return (
@@ -112,20 +112,6 @@ export function Sidebar({
           })}
 
           <div className="text-[10px] tracking-widest uppercase text-zinc-500 dark:text-zinc-400 mt-6 mb-2 px-2">Systems</div>
-          
-          <button
-            onClick={() => {
-              if (pathname !== "/kpis") router.push("/kpis");
-            }}
-            className={`flex items-center gap-3 px-4 py-3 rounded-xl font-bold text-xs tracking-widest transition-all ${
-              pathname === "/kpis"
-                ? "bg-[rgba(var(--theme-grad-start-rgb),0.1)] text-[color:var(--theme-grad-start)] border border-[color:var(--theme-grad-start)]/30" 
-                : "text-zinc-500 dark:text-zinc-400 hover:bg-zinc-100 dark:hover:bg-white/5 border border-transparent"
-            }`}
-          >
-            <Activity size={16} />
-            KPIs / VITAL SIGNS
-          </button>
           
           <button
             onClick={() => setDeepWork((p) => !p)}
