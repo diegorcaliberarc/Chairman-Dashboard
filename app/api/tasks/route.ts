@@ -95,25 +95,27 @@ export async function POST(req: NextRequest) {
   }
 
   try {
-    // Bulletproof UUID Validator
-    const uuidRegex = /^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$/;
+    const sanitizedData: any = {
+      title: body.title,
+      userId: userId || null, // ensure task is linked to user
+      
+      // 1. STRINGS & ENUMS (Pass through safely for C-Suite and Domains)
+      agentId: body.agentId, 
+      category: body.category,
+      pillar: body.pillar,
+      status: body.status || "PENDING",
+      priority: body.priority || "Normal",
 
-    for (const key of Object.keys(body)) {
-      if (key.endsWith('Id') && key !== 'id') {
-        // If it's empty, null, or NOT a valid 36-character UUID, vaporize it to null
-        if (!body[key] || body[key] === "null" || body[key] === "undefined" || !uuidRegex.test(String(body[key]))) {
-          body[key] = null;
-        }
-      }
-    }
+      // 2. BOOLEANS
+      isDelegated: body.isDelegated === true || body.isDelegated === "true",
 
-    const sanitizedData = {
-      ...body,
+      // 3. DATES & INTEGERS
       startDate: parseDateSafe(body.startDate),
       dueDate: parseDateSafe(body.dueDate),
       timeTracked: parseTimeSafe(body.timeTracked),
-      priority: (body.priority && typeof body.priority === 'string') ? body.priority : 'None',
-      status: (body.status && typeof body.status === 'string') ? body.status : 'To Do'
+
+      // 4. STRICT UUID FOREIGN KEYS (Vaporize empty strings to null)
+      parentId: (!body.parentId || body.parentId === "" || body.parentId === "null" || body.parentId === "undefined") ? null : body.parentId,
     };
 
     console.log("FINAL PRISMA PAYLOAD:", JSON.stringify(sanitizedData, null, 2));
@@ -211,29 +213,20 @@ export async function PATCH(req: NextRequest) {
       return NextResponse.json({ error: "Forbidden" }, { status: 403 });
     }
 
-    // Bulletproof UUID Validator
-    const uuidRegex = /^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$/;
-
-    for (const key of Object.keys(body)) {
-      if (key.endsWith('Id') && key !== 'id') {
-        // If it's empty, null, or NOT a valid 36-character UUID, vaporize it to null
-        if (!body[key] || body[key] === "null" || body[key] === "undefined" || !uuidRegex.test(String(body[key]))) {
-          body[key] = null;
-        }
-      }
+    const sanitizedData: any = {};
+    if (body.title !== undefined) sanitizedData.title = body.title;
+    if (body.agentId !== undefined) sanitizedData.agentId = body.agentId;
+    if (body.category !== undefined) sanitizedData.category = body.category;
+    if (body.pillar !== undefined) sanitizedData.pillar = body.pillar;
+    if (body.status !== undefined) sanitizedData.status = body.status;
+    if (body.priority !== undefined) sanitizedData.priority = body.priority;
+    if (body.isDelegated !== undefined) sanitizedData.isDelegated = body.isDelegated === true || body.isDelegated === "true";
+    if (body.startDate !== undefined) sanitizedData.startDate = parseDateSafe(body.startDate);
+    if (body.dueDate !== undefined) sanitizedData.dueDate = parseDateSafe(body.dueDate);
+    if (body.timeTracked !== undefined) sanitizedData.timeTracked = parseTimeSafe(body.timeTracked);
+    if (body.parentId !== undefined) {
+      sanitizedData.parentId = (!body.parentId || body.parentId === "" || body.parentId === "null" || body.parentId === "undefined") ? null : body.parentId;
     }
-
-    const sanitizedData = {
-      ...body,
-      ...(body.startDate !== undefined && { startDate: parseDateSafe(body.startDate) }),
-      ...(body.dueDate !== undefined && { dueDate: parseDateSafe(body.dueDate) }),
-      ...(body.timeTracked !== undefined && { timeTracked: parseTimeSafe(body.timeTracked) }),
-      ...(body.priority !== undefined && { priority: (body.priority && typeof body.priority === 'string') ? body.priority : 'None' }),
-      ...(body.status !== undefined && { status: (body.status && typeof body.status === 'string') ? body.status : 'To Do' }),
-    };
-
-    // Remove ID so we don't try to update the primary key
-    delete sanitizedData.id;
 
     console.log("FINAL PRISMA PAYLOAD:", JSON.stringify(sanitizedData, null, 2));
 
