@@ -574,10 +574,9 @@ function PriorityStrikes({
 function DomainBlock({
   label, sub, tasks, color, onToggle, onDelete, onTaskClick, subtasksMap, onToggleSubtask
 }: { label: string; sub: string; tasks: DbTask[]; color: string; onToggle: (id: string) => void; onDelete: (id: string) => void; onTaskClick: (task: DbTask, color: string) => void; subtasksMap?: any; onToggleSubtask?: (taskId: string, subtaskId: string) => void; }) {
-  const pending = tasks.filter((t) => t.status !== "DONE");
-  const done    = tasks.filter((t) => t.status === "DONE");
+  const doneCount = tasks.filter((t) => t.status === "DONE" || (t as any).completed).length;
   const total     = tasks.length;
-  const pct       = total > 0 ? (done.length / total) * 100 : 0;
+  const pct       = total > 0 ? (doneCount / total) * 100 : 0;
   
   return (
     <div className="h-full w-full flex flex-col overflow-hidden">
@@ -592,7 +591,7 @@ function DomainBlock({
       <div style={{ display: "flex", alignItems: "flex-end", justifyContent: "space-between", marginBottom: 4 }}>
         <span className="text-[7px] tracking-[0.18em] uppercase text-themeAccent">Tasks</span>
         <div style={{ textAlign: "right" }}>
-          <span style={{ fontSize: 10, color: color, fontVariantNumeric: "tabular-nums", fontFamily: "Georgia, serif" }}>{done.length}</span>
+          <span style={{ fontSize: 10, color: color, fontVariantNumeric: "tabular-nums", fontFamily: "Georgia, serif" }}>{doneCount}</span>
           <span style={{ fontSize: 7, color: "var(--theme-grad-start)" }}>/{total}</span>
         </div>
       </div>
@@ -602,12 +601,12 @@ function DomainBlock({
 
       <div className="flex-1 overflow-y-auto flex flex-col gap-1 pr-1">
         <div className="flex-1 overflow-y-auto flex flex-col gap-1.5 min-h-0">
-          {pending.map((t) => (
-            <div key={t.id} className="flex items-center gap-1.5 p-1.5 bg-zinc-100/10 dark:bg-black/20 rounded-md border border-zinc-200/20 dark:border-white/5">
+          {tasks.map((t) => (
+            <div key={t.id} className={`flex items-center gap-1.5 p-1.5 rounded-md border ${t.status === "DONE" || (t as any).completed ? "opacity-40 border-transparent" : "bg-zinc-100/10 dark:bg-black/20 border-zinc-200/20 dark:border-white/5"}`}>
               <button onClick={(e) => { e.stopPropagation(); onToggle(t.id); }} className="bg-none border-none cursor-pointer p-0 text-themeAccent shrink-0 flex">
-                <Circle size={10} />
+                {t.status === "DONE" || (t as any).completed ? <CheckCircle2 size={10} /> : <Circle size={10} />}
               </button>
-              <span className="flex-1 text-[10px] text-themeAccent overflow-hidden text-ellipsis whitespace-nowrap cursor-pointer hover:underline flex items-center justify-between" onClick={() => onTaskClick(t, color)}>
+              <span className={`flex-1 text-[10px] text-themeAccent overflow-hidden text-ellipsis whitespace-nowrap cursor-pointer hover:underline flex items-center justify-between ${t.status === "DONE" || (t as any).completed ? "line-through" : ""}`} onClick={() => onTaskClick(t, color)}>
                 <span className="flex items-center gap-1.5 truncate">
                   {t.title}
                   {t.priority && t.priority !== "None" && (
@@ -618,17 +617,6 @@ function DomainBlock({
                   <span className="text-[8px] text-zinc-500 shrink-0 ml-2 opacity-70">{new Date(t.dueDate).toLocaleDateString(undefined, { month: 'short', day: 'numeric' })}</span>
                 )}
               </span>
-              <button onClick={(e) => { e.stopPropagation(); onDelete(t.id); }} className="bg-none border-none cursor-pointer p-0 text-themeAccent flex shrink-0 hover:text-[#E05A3A]">
-                <X size={9} />
-              </button>
-            </div>
-          ))}
-          {done.map((t) => (
-            <div key={t.id} className="flex items-center gap-1.5 p-1.5 rounded-md opacity-40">
-              <button onClick={(e) => { e.stopPropagation(); onToggle(t.id); }} className="bg-none border-none cursor-pointer p-0 text-themeAccent shrink-0 flex">
-                <CheckCircle2 size={10} />
-              </button>
-              <span className="flex-1 text-[10px] text-themeAccent line-through overflow-hidden text-ellipsis whitespace-nowrap">{t.title}</span>
               <button onClick={(e) => { e.stopPropagation(); onDelete(t.id); }} className="bg-none border-none cursor-pointer p-0 text-themeAccent flex shrink-0 hover:text-[#E05A3A]">
                 <X size={9} />
               </button>
@@ -658,8 +646,7 @@ function CSuiteCard({
   onToggleSubtask?: (taskId: string, subtaskId: string) => void;
   onDeleteSubtask?: (id: string) => void;
 }) {
-  const pending   = agent.tasks.filter((t) => t.status !== "DONE");
-  const done      = agent.tasks.filter((t) => t.status === "DONE").length;
+  const done      = agent.tasks.filter((t) => t.status === "DONE" || (t as any).completed).length;
   const total     = agent.tasks.length;
   const pct       = total > 0 ? (done / total) * 100 : 0;
   
@@ -685,7 +672,7 @@ function CSuiteCard({
         <div style={{ height: "100%", width: `${pct}%`, backgroundColor: agent.color, borderRadius: 2, opacity: 0.65, transition: "width 0.6s ease" }} />
       </div>
       <div className="flex-1 overflow-y-auto flex flex-col gap-2 min-h-0 mt-2 pr-1" style={{ scrollbarWidth: "none", msOverflowStyle: "none" }}>
-        {pending.length > 0 ? pending.map((t) => {
+        {agent.tasks.length > 0 ? agent.tasks.map((t) => {
           const subs = subtasksMap ? subtasksMap[t.id] ?? [] : [];
           const isExpanded = !!expandedIds[t.id];
           return (
@@ -709,12 +696,12 @@ function CSuiteCard({
                 {/* Checkbox & Title */}
                 <div className="shrink-0 pt-1">
                   <button onClick={(e) => { e.stopPropagation(); onToggle(t.id); }} className="text-zinc-500 hover:text-[color:var(--theme-grad-start)] transition-colors p-0 border-none bg-none flex shrink-0">
-                    <Circle size={12} />
+                    {t.status === "DONE" || (t as any).completed ? <CheckCircle2 size={12} className="text-themeAccent" /> : <Circle size={12} />}
                   </button>
                 </div>
                 <div className="shrink-0 pt-[6px] hidden">
                 </div>
-                <span className="flex-1 text-sm leading-tight text-zinc-900 dark:text-white pt-[3px] flex items-center justify-between">
+                <span className={`flex-1 text-sm leading-tight pt-[3px] flex items-center justify-between ${t.status === "DONE" || (t as any).completed ? "line-through text-zinc-500" : "text-zinc-900 dark:text-white"}`}>
                   <span className="flex items-center gap-2 truncate">
                     {t.title}
                     {t.priority && t.priority !== "None" && (
@@ -759,7 +746,7 @@ function CSuiteCard({
         )}
       </div>
       <div style={{ marginTop: 6, fontSize: 7, letterSpacing: "0.12em", textTransform: "uppercase", color: "var(--theme-grad-start)", flexShrink: 0 }}>
-        {pending.length} pending · {pct.toFixed(0)}% done
+        {agent.tasks.length - done} pending · {pct.toFixed(0)}% done
       </div>
     </div>
   );
@@ -1377,20 +1364,20 @@ export default function ChairmanDashboard() {
 
   // Top-level tasks only (parentId is null/undefined) for agent task lists
   const business = useMemo(
-    () => AGENT_META_BUSINESS.map((a) => ({ ...a, tasks: activeTasks.filter((t) => t.agentId === a.id && !t.parentId) })),
+    () => AGENT_META_BUSINESS.map((a) => ({ ...a, tasks: activeTasks.filter((t) => (t.agentId?.toUpperCase() === a.id.toUpperCase() || t.category?.toUpperCase() === a.id.toUpperCase()) && !t.parentId) })),
     [activeTasks]
   );
   const personal = useMemo(
-    () => AGENT_META_PERSONAL.map((a) => ({ ...a, tasks: activeTasks.filter((t) => t.agentId === a.id && !t.parentId) })),
+    () => AGENT_META_PERSONAL.map((a) => ({ ...a, tasks: activeTasks.filter((t) => (t.agentId?.toUpperCase() === a.id.toUpperCase() || t.pillar?.toUpperCase() === a.id.toUpperCase() || t.category?.toUpperCase() === a.id.toUpperCase()) && !t.parentId) })),
     [activeTasks]
   );
   
   const archivedBusiness = useMemo(
-    () => AGENT_META_BUSINESS.map((a) => ({ ...a, tasks: archivedTasks.filter((t) => t.agentId === a.id && !t.parentId) })),
+    () => AGENT_META_BUSINESS.map((a) => ({ ...a, tasks: archivedTasks.filter((t) => (t.agentId?.toUpperCase() === a.id.toUpperCase() || t.category?.toUpperCase() === a.id.toUpperCase()) && !t.parentId) })),
     [archivedTasks]
   );
   const archivedPersonal = useMemo(
-    () => AGENT_META_PERSONAL.map((a) => ({ ...a, tasks: archivedTasks.filter((t) => t.agentId === a.id && !t.parentId) })),
+    () => AGENT_META_PERSONAL.map((a) => ({ ...a, tasks: archivedTasks.filter((t) => (t.agentId?.toUpperCase() === a.id.toUpperCase() || t.pillar?.toUpperCase() === a.id.toUpperCase() || t.category?.toUpperCase() === a.id.toUpperCase()) && !t.parentId) })),
     [archivedTasks]
   );
 
