@@ -1076,17 +1076,9 @@ export default function KPIsPage() {
       />
 
       <div className="flex-1 flex flex-col ml-64 min-w-0">
-        <main className="flex-1 overflow-y-auto overflow-x-hidden p-8">
+        <main className="flex-1 overflow-y-auto overflow-x-hidden p-6 pt-6">
           <div className="max-w-[1440px] mx-auto">
             
-            <div className="mb-8 border-b border-zinc-200/50 dark:border-white/10 pb-4">
-              <h1 className="text-2xl font-bold tracking-[0.1em] text-zinc-900 dark:text-white flex items-center gap-3">
-                <Activity className="text-[color:var(--theme-grad-start)]" size={24} />
-                GOVERNANCE ENGINE
-              </h1>
-              <p className="text-xs text-zinc-500 tracking-widest uppercase mt-2">Physics-based KPI tracking & Vital Signs</p>
-            </div>
-
             {/* Grid */}
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 pb-24">
               {CATEGORIES.map(cat => (
