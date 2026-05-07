@@ -73,7 +73,13 @@ const RAW_METRIC_DEFS: Record<string, { name: string, defaultVal: number, target
     { name: "cmo_ttv_hours", defaultVal: 0, target: 24 },
     { name: "cmo_storybrand_score", defaultVal: 0, target: 9 },
   ],
-  cto: [{ name: "Uptime", defaultVal: 99.9, target: 99.9 }],
+  cto: [
+    { name: "cto_telemetry_latency", defaultVal: 0, target: 50 },
+    { name: "cto_uptime_percentage", defaultVal: 99.99, target: 99.99 },
+    { name: "cto_mission_velocity", defaultVal: 0, target: 90 },
+    { name: "cto_mttr_minutes", defaultVal: 0, target: 15 },
+    { name: "cto_bus_factor", defaultVal: 0, target: 90 },
+  ],
   cpo: [{ name: "User Satisfaction", defaultVal: 100, target: 100 }],
   health: [
     { name: "health_protein", defaultVal: 0, target: 160 },
@@ -433,6 +439,45 @@ function getCfoStatus(val: number, type: string) {
   return { color: "text-zinc-500", label: "UNKNOWN" };
 }
 
+function calculateCtoPhysics(localVals: Record<string, number>) {
+  const latency = localVals["cto_telemetry_latency"] || 0;
+  const uptime = localVals["cto_uptime_percentage"] || 99.99;
+  const velocity = localVals["cto_mission_velocity"] || 0;
+  const mttr = localVals["cto_mttr_minutes"] || 0;
+  const bus = localVals["cto_bus_factor"] || 0;
+
+  return { latency, uptime, velocity, mttr, bus };
+}
+
+function getCtoStatus(val: number, type: string) {
+  if (type === "latency") {
+    if (val < 50) return { color: "text-emerald-500", label: "✅ OPTIMAL" };
+    if (val <= 100) return { color: "text-yellow-500", label: "⚠️ WARNING" };
+    return { color: "text-red-500", label: "🚨 CRITICAL" };
+  }
+  if (type === "uptime") {
+    if (val >= 99.99) return { color: "text-emerald-500", label: "✅ OPTIMAL" };
+    if (val >= 99.0) return { color: "text-yellow-500", label: "⚠️ WARNING" };
+    return { color: "text-red-500", label: "🚨 CRITICAL" };
+  }
+  if (type === "velocity") {
+    if (val >= 90) return { color: "text-emerald-500", label: "✅ OPTIMAL" };
+    if (val >= 75) return { color: "text-yellow-500", label: "⚠️ WARNING" };
+    return { color: "text-red-500", label: "🚨 CRITICAL" };
+  }
+  if (type === "mttr") {
+    if (val < 15) return { color: "text-emerald-500", label: "✅ OPTIMAL" };
+    if (val <= 60) return { color: "text-yellow-500", label: "⚠️ WARNING" };
+    return { color: "text-red-500", label: "🚨 CRITICAL" };
+  }
+  if (type === "bus") {
+    if (val >= 90) return { color: "text-emerald-500", label: "✅ OPTIMAL" };
+    if (val >= 70) return { color: "text-yellow-500", label: "⚠️ WARNING" };
+    return { color: "text-red-500", label: "🚨 CRITICAL" };
+  }
+  return { color: "text-zinc-500", label: "UNKNOWN" };
+}
+
 function SectorCard({ category, allMetrics, onSave }: any) {
   const [isFlipped, setIsFlipped] = useState(false);
   const defs = RAW_METRIC_DEFS[category.id];
@@ -471,7 +516,8 @@ function SectorCard({ category, allMetrics, onSave }: any) {
   const isCoo = category.id === "coo";
   const isCmo = category.id === "cmo";
   const isCfo = category.id === "cfo";
-  const isActiveSector = isWealth || isHealth || isRelate || isJoy || isCeo || isCoo || isCmo || isCfo;
+  const isCto = category.id === "cto";
+  const isActiveSector = isWealth || isHealth || isRelate || isJoy || isCeo || isCoo || isCmo || isCfo || isCto;
   const wPhys = isWealth ? calculateWealthPhysics(localVals) : null;
   const hPhys = isHealth ? calculateHealthPhysics(localVals) : null;
   const rPhys = isRelate ? calculateRelatePhysics(localVals) : null;
@@ -480,6 +526,7 @@ function SectorCard({ category, allMetrics, onSave }: any) {
   const cooPhys = isCoo ? calculateCooPhysics(localVals) : null;
   const cmoPhys = isCmo ? calculateCmoPhysics(localVals) : null;
   const cfoPhys = isCfo ? calculateCfoPhysics(localVals) : null;
+  const ctoPhys = isCto ? calculateCtoPhysics(localVals) : null;
 
   let primaryLabel = "Core Score";
   let primaryValue = "0";
@@ -669,6 +716,27 @@ function SectorCard({ category, allMetrics, onSave }: any) {
                 { label: "COST PER SETUP (CPAS)", sub: "Intelligence Cost", val: `$${cfoPhys.cpas.toFixed(2)}`, status: getCfoStatus(cfoPhys.cpas, "cpas") },
                 { label: "BLACK SWAN RESILIENCE", sub: "Market Anti-Fragility", val: `${cfoPhys.swan.toFixed(1)}%`, status: getCfoStatus(cfoPhys.swan, "swan") },
                 { label: "TELEMETRY-TO-LEDGER SYNC", sub: "Data Friction", val: `${cfoPhys.sync.toFixed(1)}%`, status: getCfoStatus(cfoPhys.sync, "sync") },
+              ].map(k => (
+                <div key={k.label} className="flex justify-between items-center bg-zinc-50/50 dark:bg-white/5 p-2 rounded-lg border border-zinc-200/50 dark:border-white/5">
+                  <div className="flex flex-col">
+                    <span className="text-[10px] font-bold tracking-widest uppercase text-zinc-900 dark:text-zinc-100">{k.label}</span>
+                    <span className="text-[8px] tracking-widest uppercase text-zinc-500">{k.sub}</span>
+                  </div>
+                  <div className="flex flex-col items-end gap-0.5">
+                    <span className="font-mono text-xs font-medium text-zinc-900 dark:text-white">{k.val}</span>
+                    <span className={`text-[9px] font-bold tracking-widest uppercase ${k.status.color}`}>{k.status.label}</span>
+                  </div>
+                </div>
+              ))}
+            </div>
+          ) : isCto && ctoPhys ? (
+            <div className="flex flex-col gap-2 flex-1 mt-6 justify-center">
+              {[
+                { label: "TELEMETRY LATENCY", sub: "Execution Velocity", val: `${ctoPhys.latency} ms`, status: getCtoStatus(ctoPhys.latency, "latency") },
+                { label: "INFRASTRUCTURE UPTIME", sub: "System Stability", val: `${ctoPhys.uptime.toFixed(2)}%`, status: getCtoStatus(ctoPhys.uptime, "uptime") },
+                { label: "ACTIVE MISSION VELOCITY", sub: "Clean Sprint Velocity", val: `${ctoPhys.velocity.toFixed(1)}%`, status: getCtoStatus(ctoPhys.velocity, "velocity") },
+                { label: "CRITICAL MTTR", sub: "Live-Market Bugs", val: `${ctoPhys.mttr} Mins`, status: getCtoStatus(ctoPhys.mttr, "mttr") },
+                { label: "THE BUS FACTOR", sub: "Engineering Autonomy", val: `${ctoPhys.bus}/100`, status: getCtoStatus(ctoPhys.bus, "bus") },
               ].map(k => (
                 <div key={k.label} className="flex justify-between items-center bg-zinc-50/50 dark:bg-white/5 p-2 rounded-lg border border-zinc-200/50 dark:border-white/5">
                   <div className="flex flex-col">
