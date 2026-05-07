@@ -46,8 +46,11 @@ const RAW_METRIC_DEFS: Record<string, { name: string, defaultVal: number, target
     { name: "interest_rate", defaultVal: 0, target: 0 },
   ],
   ceo: [
-    { name: "Total Revenue", defaultVal: 0, target: 0 },
-    { name: "Manual Hours", defaultVal: 1, target: 0 },
+    { name: "ceo_fcf", defaultVal: 0, target: 0 },
+    { name: "ceo_ruin_buffer", defaultVal: 0, target: 10 },
+    { name: "ceo_buyback_rate", defaultVal: 0, target: 80 },
+    { name: "ceo_logic_alignment", defaultVal: 0, target: 100 },
+    { name: "ceo_autonomy_score", defaultVal: 0, target: 80 },
   ],
   cfo: [
     { name: "Liquidity", defaultVal: 0, target: 0 },
@@ -264,6 +267,43 @@ function getJoyStatus(val: number, type: string) {
   return { color: "text-zinc-500", label: "UNKNOWN" };
 }
 
+function calculateCeoPhysics(localVals: Record<string, number>) {
+  const fcf = localVals["ceo_fcf"] || 0;
+  const ruin = localVals["ceo_ruin_buffer"] || 0;
+  const buyback = localVals["ceo_buyback_rate"] || 0;
+  const logic = localVals["ceo_logic_alignment"] || 0;
+  const autonomy = localVals["ceo_autonomy_score"] || 0;
+
+  return { fcf, ruin, buyback, logic, autonomy };
+}
+
+function getCeoStatus(val: number, type: string) {
+  if (type === "fcf") {
+    if (val > 0) return { color: "text-emerald-500", label: "✅ OPTIMAL" };
+    return { color: "text-red-500", label: "🚨 CRITICAL" };
+  }
+  if (type === "ruin") {
+    if (val >= 10) return { color: "text-emerald-500", label: "✅ OPTIMAL" };
+    if (val >= 4) return { color: "text-yellow-500", label: "⚠️ WARNING" };
+    return { color: "text-red-500", label: "🚨 CRITICAL" };
+  }
+  if (type === "buyback") {
+    if (val >= 80) return { color: "text-emerald-500", label: "✅ OPTIMAL" };
+    if (val >= 50) return { color: "text-yellow-500", label: "⚠️ WARNING" };
+    return { color: "text-red-500", label: "🚨 CRITICAL" };
+  }
+  if (type === "logic") {
+    if (val >= 100) return { color: "text-emerald-500", label: "✅ OPTIMAL" };
+    return { color: "text-red-500", label: "🚨 CRITICAL" };
+  }
+  if (type === "autonomy") {
+    if (val >= 80) return { color: "text-emerald-500", label: "✅ OPTIMAL" };
+    if (val >= 50) return { color: "text-yellow-500", label: "⚠️ WARNING" };
+    return { color: "text-red-500", label: "🚨 CRITICAL" };
+  }
+  return { color: "text-zinc-500", label: "UNKNOWN" };
+}
+
 function SectorCard({ category, allMetrics, onSave }: any) {
   const [isFlipped, setIsFlipped] = useState(false);
   const defs = RAW_METRIC_DEFS[category.id];
@@ -298,24 +338,19 @@ function SectorCard({ category, allMetrics, onSave }: any) {
   const isHealth = category.id === "health";
   const isRelate = category.id === "relate";
   const isJoy = category.id === "joy";
-  const isActiveSector = isWealth || isHealth || isRelate || isJoy;
+  const isCeo = category.id === "ceo";
+  const isActiveSector = isWealth || isHealth || isRelate || isJoy || isCeo;
   const wPhys = isWealth ? calculateWealthPhysics(localVals) : null;
   const hPhys = isHealth ? calculateHealthPhysics(localVals) : null;
   const rPhys = isRelate ? calculateRelatePhysics(localVals) : null;
   const jPhys = isJoy ? calculateJoyPhysics(localVals) : null;
+  const cPhys = isCeo ? calculateCeoPhysics(localVals) : null;
 
   let primaryLabel = "Core Score";
   let primaryValue = "0";
   let status = "RED";
 
-  if (category.id === "ceo") {
-    const rev = localVals["Total Revenue"] || 0;
-    const hrs = localVals["Manual Hours"] || 1;
-    const lev = rev / hrs;
-    primaryLabel = "Leverage Ratio";
-    primaryValue = `$${lev.toFixed(0)}/hr`;
-    status = getStatus(lev, 1000, ">");
-  } else if (category.id === "cfo") {
+  if (category.id === "cfo") {
     const liq = localVals["Liquidity"] || 0;
     const dd = localVals["Max Session Drawdown"] || 1;
     const mos = liq / dd;
@@ -424,6 +459,27 @@ function SectorCard({ category, allMetrics, onSave }: any) {
                 { label: "WHITE SPACE INTEGRITY", sub: "Creative Buffer", val: `${jPhys.whitespace}h`, status: getJoyStatus(jPhys.whitespace, "whitespace") },
                 { label: "THE DOOMSCROLL TRIPWIRE", sub: "System Exhaustion / Entropy", val: `${jPhys.doomscroll}h`, status: getJoyStatus(jPhys.doomscroll, "doomscroll") },
                 { label: "$10/HR DELEGATION RATIO", sub: "Opportunity Cost Limit", val: `${jPhys.lowValue}h`, status: getJoyStatus(jPhys.lowValue, "lowvalue") },
+              ].map(k => (
+                <div key={k.label} className="flex justify-between items-center bg-zinc-50/50 dark:bg-white/5 p-2 rounded-lg border border-zinc-200/50 dark:border-white/5">
+                  <div className="flex flex-col">
+                    <span className="text-[10px] font-bold tracking-widest uppercase text-zinc-900 dark:text-zinc-100">{k.label}</span>
+                    <span className="text-[8px] tracking-widest uppercase text-zinc-500">{k.sub}</span>
+                  </div>
+                  <div className="flex flex-col items-end gap-0.5">
+                    <span className="font-mono text-xs font-medium text-zinc-900 dark:text-white">{k.val}</span>
+                    <span className={`text-[9px] font-bold tracking-widest uppercase ${k.status.color}`}>{k.status.label}</span>
+                  </div>
+                </div>
+              ))}
+            </div>
+          ) : isCeo && cPhys ? (
+            <div className="flex flex-col gap-2 flex-1 mt-6 justify-center">
+              {[
+                { label: "NET VELOCITY (FCF)", sub: "Capital Physics", val: `$${cPhys.fcf.toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2})}`, status: getCeoStatus(cPhys.fcf, "fcf") },
+                { label: "THE RUIN RATIO", sub: "Capital Buffer", val: `${cPhys.ruin.toFixed(1)}x`, status: getCeoStatus(cPhys.ruin, "ruin") },
+                { label: "THE BUY-BACK RATE", sub: "Operational Leverage", val: `${cPhys.buyback.toFixed(1)}%`, status: getCeoStatus(cPhys.buyback, "buyback") },
+                { label: "LOGIC ALIGNMENT", sub: "5 Guidelines", val: `${cPhys.logic.toFixed(1)}%`, status: getCeoStatus(cPhys.logic, "logic") },
+                { label: "ARCHITECTURAL AUTONOMY", sub: "System Autonomy", val: `${cPhys.autonomy.toFixed(1)}%`, status: getCeoStatus(cPhys.autonomy, "autonomy") },
               ].map(k => (
                 <div key={k.label} className="flex justify-between items-center bg-zinc-50/50 dark:bg-white/5 p-2 rounded-lg border border-zinc-200/50 dark:border-white/5">
                   <div className="flex flex-col">
