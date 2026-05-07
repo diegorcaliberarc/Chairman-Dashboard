@@ -89,7 +89,7 @@ model Task {
   status      String    @default("To Do")
   isDelegated Boolean   @default(false)
   createdAt   DateTime  @default(now())
-  priority    String    @default("None")
+  priority    Int       @default(2)
   userId      String?
   user        User?     @relation(fields: [userId], references: [id], onDelete: Cascade)
   // Self-relation for subtasks

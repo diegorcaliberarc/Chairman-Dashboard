@@ -81,6 +81,16 @@ export async function POST(req: NextRequest) {
   }
 
   try {
+    // Safe Integer Translation for Postgres
+    let numericPriority = 2; // Default to Normal/Medium
+    if (typeof body.priority === 'number') {
+      numericPriority = body.priority;
+    } else if (typeof body.priority === 'string') {
+      const p = body.priority.toUpperCase();
+      if (p === 'URGENT' || p === 'HIGH') numericPriority = 1;
+      if (p === 'LOW') numericPriority = 3;
+    }
+
     const sanitizedData: any = {
       title: body.title,
       userId: userId || null, // ensure task is linked to user
@@ -90,7 +100,7 @@ export async function POST(req: NextRequest) {
       category: body.category,
       pillar: body.pillar,
       status: body.status || "PENDING",
-      priority: body.priority || "Normal",
+      priority: numericPriority,
 
       // 2. BOOLEANS
       isDelegated: body.isDelegated === true || body.isDelegated === "true",
@@ -191,7 +201,18 @@ export async function PATCH(req: NextRequest) {
     if (body.category !== undefined) sanitizedData.category = body.category;
     if (body.pillar !== undefined) sanitizedData.pillar = body.pillar;
     if (body.status !== undefined) sanitizedData.status = body.status;
-    if (body.priority !== undefined) sanitizedData.priority = body.priority;
+    if (body.priority !== undefined) {
+      // Safe Integer Translation for Postgres
+      let numericPriority = 2; // Default to Normal/Medium
+      if (typeof body.priority === 'number') {
+        numericPriority = body.priority;
+      } else if (typeof body.priority === 'string') {
+        const p = body.priority.toUpperCase();
+        if (p === 'URGENT' || p === 'HIGH') numericPriority = 1;
+        if (p === 'LOW') numericPriority = 3;
+      }
+      sanitizedData.priority = numericPriority;
+    }
     if (body.isDelegated !== undefined) sanitizedData.isDelegated = body.isDelegated === true || body.isDelegated === "true";
 
     if (body.parentId !== undefined) {
