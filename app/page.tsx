@@ -38,6 +38,8 @@ import {
   CircleDollarSign,
   Activity,
   Users,
+  BadgeDollarSign,
+  ShieldCheck,
 } from "lucide-react";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
@@ -87,6 +89,8 @@ const AGENT_META_BUSINESS = [
   { id: "cfo", title: "CFO", role: "Finance & Cash",         color: "var(--theme-grad-start)", icon: <Landmark className="w-4 h-4 opacity-70" /> },
   { id: "cto", title: "CTO", role: "APIs & Automation Pipelines",color: "var(--theme-grad-start)", icon: <Terminal className="w-4 h-4 opacity-70" /> },
   { id: "cpo", title: "CPO", role: "Product & UX",           color: "var(--theme-grad-start)", icon: <Layers className="w-4 h-4 opacity-70" /> },
+  { id: "cro", title: "CRO", role: "Revenue & Conversion",   color: "var(--theme-grad-start)", icon: <BadgeDollarSign className="w-4 h-4 opacity-70" /> },
+  { id: "cho", title: "CHO", role: "Talent & Culture",       color: "var(--theme-grad-start)", icon: <ShieldCheck className="w-4 h-4 opacity-70" /> },
 ];
 
 const AGENT_META_PERSONAL = [
@@ -106,6 +110,8 @@ const CATEGORIES: Record<string, { label: string; color: string; pillar: string;
   CFO:    { label: "CFO",    color: "var(--theme-grad-start)", pillar: "BUSINESS", agentId: "cfo"    },
   CTO:    { label: "CTO",    color: "var(--theme-grad-start)", pillar: "BUSINESS", agentId: "cto"    },
   CPO:    { label: "CPO",    color: "var(--theme-grad-start)", pillar: "BUSINESS", agentId: "cpo"    },
+  CRO:    { label: "CRO",    color: "var(--theme-grad-start)", pillar: "BUSINESS", agentId: "cro"    },
+  CHO:    { label: "CHO",    color: "var(--theme-grad-start)", pillar: "BUSINESS", agentId: "cho"    },
   Wealth: { label: "WEALTH", color: "var(--theme-grad-start)", pillar: "PERSONAL", agentId: "wealth" },
   Health: { label: "HEALTH", color: "var(--theme-grad-start)", pillar: "PERSONAL", agentId: "health" },
   Relate: { label: "RELATE", color: "var(--theme-grad-start)", pillar: "PERSONAL", agentId: "relate" },
@@ -290,8 +296,8 @@ function BusinessTab({ agents, onToggle, onDelete, onTaskClick, subtasksMap, onT
 
   return (
     <div className="flex flex-col flex-1 h-full min-h-[calc(100vh-6rem)] space-y-6" style={{ animation: "tab-in 0.22s ease-out" }}>
-      <SectionLabel>Executive Suite · 6 Agents Active</SectionLabel>
-      <div className="grid grid-cols-1 md:grid-cols-2 grid-rows-3 gap-4 flex-1 h-full pb-6">
+      <SectionLabel>Executive Suite · 8 Agents Active</SectionLabel>
+      <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-4 flex-1 h-full pb-6">
         {agents.map((a) => (
           <div key={a.id} style={PANEL} className={`${PANEL_CLASS} h-full flex flex-col`}>
             <CSuiteCard agent={a} onToggle={(taskId) => onToggle(a.id, taskId)} onDelete={onDelete} onTaskClick={onTaskClick} subtasksMap={subtasksMap} onToggleSubtask={onToggleSubtask} />
