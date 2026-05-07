@@ -60,12 +60,14 @@ export function NovaPanel({
 
     try {
       // Fetch fresh tasks and calendar here if needed, or omit if you just want chat
-      const [tasksRes, calRes] = await Promise.all([
+      const [tasksRes, calRes, metricsRes] = await Promise.all([
         fetch("/api/tasks"),
-        fetch("/api/calendar")
+        fetch("/api/calendar"),
+        fetch("/api/metrics")
       ]);
       const tasksData = await tasksRes.json();
       const calData = await calRes.json();
+      const metricsData = await metricsRes.json();
 
       const res = await fetch("/api/chat", {
         method: "POST",
@@ -74,7 +76,8 @@ export function NovaPanel({
           message: text, 
           agentRole: agent, 
           tasks: tasksData.tasks || [], 
-          calendarEvents: calData.events || [] 
+          calendarEvents: calData.events || [],
+          telemetry: metricsData.metrics || []
         }),
       });
       const data = await res.json();

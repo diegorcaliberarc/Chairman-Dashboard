@@ -2,7 +2,6 @@ import { NextRequest, NextResponse } from "next/server";
 import { getServerSession } from "next-auth/next";
 import { authOptions } from "@/lib/auth";
 import { GoogleGenerativeAI } from "@google/generative-ai";
-import { prisma } from "@/lib/prisma";
 
 const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY!);
 
@@ -113,11 +112,12 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: "Invalid JSON" }, { status: 400 });
   }
 
-  const { message, agentRole, tasks = [], calendarEvents = [] } = body as {
+  const { message, agentRole, tasks = [], calendarEvents = [], telemetry = [] } = body as {
     message:        string;
     agentRole:      string;
     tasks:          any[];
     calendarEvents: any[];
+    telemetry:      any[];
   };
 
   if (!message?.trim()) {
@@ -127,13 +127,9 @@ export async function POST(req: NextRequest) {
   const systemPrompt = AGENT_PROMPTS[agentRole] ?? AGENT_PROMPTS["Universal Command"];
   const context      = buildContext(tasks, calendarEvents);
 
-  let kpiContext = "Telemetry currently unavailable.";
-  try {
-    const allMetrics = await prisma.metric.findMany();
-    kpiContext = allMetrics.map((m: any) => `[${m.category}] ${m.label}: ${m.value} (Target: ${m.target})`).join('\n');
-  } catch (error) {
-    console.error("Prisma fetch failed in chat route:", error);
-  }
+  const kpiContext = Array.isArray(telemetry) && telemetry.length > 0
+    ? telemetry.map((m: any) => `[${m.category}] ${m.label}: ${m.value} (Target: ${m.target})`).join('\n')
+    : "Telemetry unavailable.";
 
   const fullSystem = `${systemPrompt}\n\n${context}\n\n=== VITAL SIGNS & KPI TELEMETRY ===\n${kpiContext || "  No telemetry data available."}\n=================================\n\nYou are the Nova Logic Core. Below is the Chairman's current real-time telemetry and KPI dashboard data. Use this precise data to answer any questions about their operational state, identifying what is OPTIMAL and what is CRITICAL based on the targets.\n\nCRITICAL DIRECTIVE:\nWhen the user asks for a roadmap, sequence, blueprint, or map, you MUST output a Mermaid.js flowchart using graph TD syntax. Enclose the mermaid code strictly in standard markdown mermaid code blocks. If the user asks to map a strategy, you must generate the Mermaid syntax AND use the save_roadmap tool to persist it to the database.\n\nRespond in plain text. Be concise and direct. No markdown headers unless outputting Mermaid blocks. No bullet introductions like "Here are...". Lead with the most important point.`;
 
