@@ -568,7 +568,7 @@ export default function KPIsPage() {
             </div>
 
             {/* Grid */}
-            <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6 pb-24">
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 pb-24">
               {CATEGORIES.map(cat => (
                 <SectorCard key={cat.id} category={cat} allMetrics={metrics} onSave={handleSave} />
               ))}
