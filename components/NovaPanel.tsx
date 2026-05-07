@@ -19,8 +19,26 @@ export function NovaPanel({
   const [messages, setMessages] = useState<NovaMessage[]>([]);
   const [input, setInput] = useState("");
   const [loading, setLoading] = useState(false);
+  const [contextCounts, setContextCounts] = useState({ tasks: 0, events: 0, metrics: 0 });
   const bottomRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
+
+  // Fetch context counts on open
+  useEffect(() => {
+    if (open) {
+      Promise.all([
+        fetch("/api/tasks").then(r => r.json()).catch(() => ({ tasks: [] })),
+        fetch("/api/calendar").then(r => r.json()).catch(() => ({ events: [] })),
+        fetch("/api/metrics").then(r => r.json()).catch(() => ({ metrics: [] }))
+      ]).then(([tData, cData, mData]) => {
+        setContextCounts({
+          tasks: (tData.tasks || []).filter((t: any) => t.status !== "DONE").length,
+          events: (cData.events || []).length,
+          metrics: (mData.metrics || []).length
+        });
+      });
+    }
+  }, [open]);
 
   // Scroll to bottom on new messages
   useEffect(() => {
@@ -236,6 +254,9 @@ export function NovaPanel({
           >
             Send
           </button>
+        </div>
+        <div style={{ marginTop: 6, fontSize: 8, color: "var(--theme-grad-start)", letterSpacing: "0.1em", textAlign: "center" }}>
+          Context loaded: {contextCounts.tasks} tasks - {contextCounts.events} events - {contextCounts.metrics} vital signs
         </div>
       </div>
     </div>
