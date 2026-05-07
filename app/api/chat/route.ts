@@ -62,8 +62,10 @@ function buildContext(tasks: any[], calendarEvents: any[]): string {
   const taskLines = pending
     .sort((a, b) => (priorityScore[a.priority] ?? 5) - (priorityScore[b.priority] ?? 5))
     .map((t) => {
-      const p = t.priority ? t.priority.toUpperCase() : "NONE";
-      return `  [${p}] [${t.agentId?.toUpperCase()}] ${t.title}${t.dueDate ? ` (due ${new Date(t.dueDate).toLocaleDateString()})` : ""}`;
+      const p = (t.priority && typeof t.priority === 'string') ? t.priority.toUpperCase() : "NONE";
+      const aId = (t.agentId && typeof t.agentId === 'string') ? t.agentId.toUpperCase() : "UNKNOWN";
+      const title = t.title || 'Untitled Task';
+      return `  [${p}] [${aId}] ${title}${t.dueDate ? ` (due ${new Date(t.dueDate).toLocaleDateString()})` : ""}`;
     })
     .join("\n");
 
@@ -112,12 +114,11 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: "Invalid JSON" }, { status: 400 });
   }
 
-  const { message, agentRole, tasks = [], calendarEvents = [] } = body as {
-    message:        string;
-    agentRole:      string;
-    tasks:          any[];
-    calendarEvents: any[];
-  };
+  const message = body.message;
+  const agentRole = body.agentRole;
+  
+  const rawTasks = Array.isArray(body.tasks) ? body.tasks : (body.tasks?.tasks || body.tasks?.data || []);
+  const rawCalendar = Array.isArray(body.calendarEvents) ? body.calendarEvents : (body.calendarEvents?.events || body.calendarEvents?.data || []);
   const rawTelemetry = body.telemetry;
 
   if (!message?.trim()) {
@@ -125,7 +126,7 @@ export async function POST(req: NextRequest) {
   }
 
   const systemPrompt = AGENT_PROMPTS[agentRole] ?? AGENT_PROMPTS["Universal Command"];
-  const context      = buildContext(tasks, calendarEvents);
+  const context      = buildContext(rawTasks, rawCalendar);
 
   let telemetryArray: any[] = [];
 
