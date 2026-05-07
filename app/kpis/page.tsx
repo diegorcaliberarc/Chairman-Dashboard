@@ -36,12 +36,14 @@ const CATEGORIES = [
 
 const RAW_METRIC_DEFS: Record<string, { name: string, defaultVal: number, target: number }[]> = {
   wealth: [
-    { name: "Total Monthly Debt", defaultVal: 0, target: 0 },
-    { name: "Guaranteed Income", defaultVal: 1, target: 0 },
-    { name: "Liquid Cash", defaultVal: 0, target: 0 },
-    { name: "Monthly Burn", defaultVal: 1, target: 0 },
-    { name: "Average Debt Rate", defaultVal: 0, target: 0 },
-    { name: "Total FCF", defaultVal: 0, target: 0 },
+    { name: "income_va_ssa", defaultVal: 1, target: 0 },
+    { name: "income_total", defaultVal: 0, target: 0 },
+    { name: "debt_monthly_service", defaultVal: 0, target: 0 },
+    { name: "debt_total_principal", defaultVal: 1, target: 0 },
+    { name: "debt_avg_interest", defaultVal: 0, target: 0 },
+    { name: "expenses_monthly", defaultVal: 1, target: 0 },
+    { name: "cash_liquid", defaultVal: 0, target: 0 },
+    { name: "assets_income_producing", defaultVal: 0, target: 0 },
   ],
   ceo: [
     { name: "Total Revenue", defaultVal: 0, target: 0 },
@@ -70,6 +72,26 @@ function getStatus(val: number, target: number, operator: "<" | ">") {
     if (val >= target * 0.8) return "YELLOW";
     return "RED";
   }
+}
+
+function calculateWealthPhysics(localVals: Record<string, number>) {
+  const inc_va_ssa = localVals["income_va_ssa"] || 1;
+  const inc_total = localVals["income_total"] || 0;
+  const debt_mo = localVals["debt_monthly_service"] || 0;
+  const debt_prin = localVals["debt_total_principal"] || 1;
+  const debt_int = localVals["debt_avg_interest"] || 0;
+  const exp_mo = localVals["expenses_monthly"] || 1;
+  const cash = localVals["cash_liquid"] || 0;
+  const assets = localVals["assets_income_producing"] || 0;
+
+  const oxygenRatio = (debt_mo / inc_va_ssa) * 100;
+  const fcf = inc_total - exp_mo - debt_mo;
+  const burn = exp_mo + debt_mo || 1;
+  const ruinRatio = cash / burn;
+  const entropyRate = debt_int;
+  const multiplier = assets / debt_prin;
+
+  return { oxygenRatio, fcf, ruinRatio, entropyRate, multiplier };
 }
 
 function SectorCard({ category, allMetrics, onSave }: any) {
@@ -102,18 +124,14 @@ function SectorCard({ category, allMetrics, onSave }: any) {
     setIsFlipped(false);
   };
 
+  const isWealth = category.id === "wealth";
+  const wPhys = isWealth ? calculateWealthPhysics(localVals) : null;
+
   let primaryLabel = "Core Score";
   let primaryValue = "0";
   let status = "RED";
 
-  if (category.id === "wealth") {
-    const debt = localVals["Total Monthly Debt"] || 0;
-    const inc = localVals["Guaranteed Income"] || 1;
-    const oxy = (debt / inc) * 100;
-    primaryLabel = "Oxygen Ratio";
-    primaryValue = `${oxy.toFixed(1)}%`;
-    status = getStatus(oxy, 15, "<");
-  } else if (category.id === "ceo") {
+  if (category.id === "ceo") {
     const rev = localVals["Total Revenue"] || 0;
     const hrs = localVals["Manual Hours"] || 1;
     const lev = rev / hrs;
@@ -141,12 +159,14 @@ function SectorCard({ category, allMetrics, onSave }: any) {
     RED: "bg-red-500 shadow-[0_0_10px_rgba(239,68,68,0.5)]",
   };
 
+  const cardHeight = isWealth ? "h-[380px]" : "h-[220px]";
+
   return (
-    <div className="relative w-full h-[220px] perspective-1000 group">
+    <div className={`relative w-full ${cardHeight} perspective-1000 group`}>
       <div className={`w-full h-full absolute transition-transform duration-500 preserve-3d ${isFlipped ? "rotate-y-180" : ""}`}>
         {/* Front */}
-        <div className="absolute w-full h-full backface-hidden bg-white/80 dark:bg-black/60 backdrop-blur-xl border border-zinc-200/50 dark:border-white/10 rounded-xl p-5 flex flex-col justify-between shadow-[0_0_30px_rgba(0,0,0,0.08)] dark:shadow-[0_0_30px_rgba(255,255,255,0.02)]">
-          <div className="flex items-center justify-between">
+        <div className="absolute w-full h-full backface-hidden bg-white/80 dark:bg-black/60 backdrop-blur-xl border border-zinc-200/50 dark:border-white/10 rounded-xl p-5 flex flex-col shadow-[0_0_30px_rgba(0,0,0,0.08)] dark:shadow-[0_0_30px_rgba(255,255,255,0.02)]">
+          <div className="flex items-center justify-between shrink-0">
             <div className="flex items-center gap-3">
               <category.icon className="w-5 h-5" style={{ color: category.color }} />
               <h3 className="font-serif text-lg tracking-widest uppercase" style={{ color: category.color }}>{category.title}</h3>
@@ -156,23 +176,39 @@ function SectorCard({ category, allMetrics, onSave }: any) {
             </button>
           </div>
           
-          <div className="flex flex-col items-center justify-center flex-1">
-            <div className="text-[10px] tracking-[0.2em] uppercase text-zinc-500 mb-2">{primaryLabel}</div>
-            <div className="font-serif text-4xl mb-4" style={{ color: category.color }}>{primaryValue}</div>
-            
-            {category.id === "wealth" && (
-              <div className="text-[10px] tracking-[0.1em] text-zinc-500 uppercase mb-4">
-                Ruin Ratio: {(localVals["Liquid Cash"] / (localVals["Monthly Burn"] || 1)).toFixed(1)}
-              </div>
-            )}
-            
-            <div className="flex items-center gap-2">
-              <div className={`w-2 h-2 rounded-full ${statusColors[status as keyof typeof statusColors]}`} />
-              <span className="text-[9px] tracking-widest uppercase text-zinc-600 dark:text-zinc-400">
-                {status === "GREEN" ? "OPTIMAL" : status === "YELLOW" ? "WARNING" : "CRITICAL"}
-              </span>
+          {isWealth && wPhys ? (
+            <div className="flex flex-col gap-2 flex-1 mt-6 justify-center">
+              {[
+                { label: "Oxygen Ratio", sub: "Monthly Debt / VA+SSA", val: `${wPhys.oxygenRatio.toFixed(1)}%`, status: getStatus(wPhys.oxygenRatio, 15, "<") },
+                { label: "Free Cash Flow", sub: "Net Velocity", val: `$${wPhys.fcf.toLocaleString()}`, status: wPhys.fcf > 0 ? "GREEN" : (wPhys.fcf === 0 ? "YELLOW" : "RED") },
+                { label: "Ruin Ratio", sub: "Capital Buffer", val: `${wPhys.ruinRatio.toFixed(1)}x`, status: getStatus(wPhys.ruinRatio, 6.0, ">") },
+                { label: "Entropy Rate", sub: "Weighted Avg Interest", val: `${wPhys.entropyRate.toFixed(1)}%`, status: wPhys.entropyRate <= 0 ? "GREEN" : (wPhys.entropyRate <= 5 ? "YELLOW" : "RED") },
+                { label: "Multiplier", sub: "Assets / Debt", val: `${wPhys.multiplier.toFixed(2)}x`, status: getStatus(wPhys.multiplier, 2.0, ">") },
+              ].map(k => (
+                <div key={k.label} className="flex justify-between items-center bg-zinc-50/50 dark:bg-white/5 p-2 rounded-lg border border-zinc-200/50 dark:border-white/5">
+                  <div className="flex flex-col">
+                    <span className="text-[10px] font-bold tracking-widest uppercase text-zinc-900 dark:text-zinc-100">{k.label}</span>
+                    <span className="text-[8px] tracking-widest uppercase text-zinc-500">{k.sub}</span>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <span className="font-mono text-xs font-medium text-zinc-900 dark:text-white">{k.val}</span>
+                    <span className="text-[10px] leading-none" title={k.status === "GREEN" ? "OPTIMAL" : k.status === "YELLOW" ? "WARNING" : "CRITICAL"}>{k.status === "GREEN" ? "✅" : k.status === "YELLOW" ? "⚠️" : "🚨"}</span>
+                  </div>
+                </div>
+              ))}
             </div>
-          </div>
+          ) : (
+            <div className="flex flex-col items-center justify-center flex-1 mt-4">
+              <div className="text-[10px] tracking-[0.2em] uppercase text-zinc-500 mb-2">{primaryLabel}</div>
+              <div className="font-serif text-4xl mb-4" style={{ color: category.color }}>{primaryValue}</div>
+              <div className="flex items-center gap-2">
+                <div className={`w-2 h-2 rounded-full ${statusColors[status as keyof typeof statusColors]}`} />
+                <span className="text-[9px] tracking-widest uppercase text-zinc-600 dark:text-zinc-400">
+                  {status === "GREEN" ? "OPTIMAL" : status === "YELLOW" ? "WARNING" : "CRITICAL"}
+                </span>
+              </div>
+            </div>
+          )}
         </div>
 
         {/* Back (Edit Mode) */}
@@ -262,11 +298,13 @@ export default function KPIsPage() {
     }
   };
 
-  const entropyM = metrics.find(m => m.category === "wealth" && m.metricName === "Average Debt Rate");
+  const entropyM = metrics.find(m => m.category === "wealth" && m.metricName === "debt_avg_interest");
   const entropy = entropyM ? entropyM.value : 0;
   
-  const fcfM = metrics.find(m => m.category === "wealth" && m.metricName === "Total FCF");
-  const velocity = fcfM ? fcfM.value : 0;
+  const inc_total = metrics.find(m => m.category === "wealth" && m.metricName === "income_total")?.value || 0;
+  const exp_mo = metrics.find(m => m.category === "wealth" && m.metricName === "expenses_monthly")?.value || 0;
+  const debt_mo = metrics.find(m => m.category === "wealth" && m.metricName === "debt_monthly_service")?.value || 0;
+  const velocity = inc_total - exp_mo - debt_mo;
 
   return (
     <div className="min-h-screen text-zinc-900 dark:text-white flex flex-row">
