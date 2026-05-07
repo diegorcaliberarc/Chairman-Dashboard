@@ -1289,6 +1289,34 @@ function ThemeToggle() {
   );
 }
 
+// ─── Archive View ─────────────────────────────────────────────────────────────
+
+function ArchiveViewTab({ archivedBusiness, archivedPersonal, subtasksMap, onToggle, onDelete, onTaskClick, onToggleSubtask }: any) {
+  return (
+    <div className="flex flex-col gap-6 h-full w-full">
+      <div className="text-center pb-4 border-b border-zinc-200/20 dark:border-white/10 mb-2 mt-4">
+        <h2 className="text-xl font-bold tracking-[0.2em] uppercase text-zinc-500">ARCHIVED MISSIONS</h2>
+        <p className="text-xs text-zinc-600 mt-1 uppercase tracking-widest">COMPLETED LOG</p>
+      </div>
+      <div className="flex-1 overflow-y-auto">
+        <MasterViewTab 
+          business={archivedBusiness} 
+          personal={archivedPersonal} 
+          calConnected={false} 
+          calendarEvents={[]} 
+          calLoading={false} 
+          calError={null} 
+          onToggle={onToggle} 
+          onDelete={onDelete} 
+          onTaskClick={onTaskClick} 
+          subtasksMap={subtasksMap} 
+          onToggleSubtask={onToggleSubtask} 
+        />
+      </div>
+    </div>
+  );
+}
+
 // ─── Root ─────────────────────────────────────────────────────────────────────
 
 export default function ChairmanDashboard() {
@@ -1343,25 +1371,47 @@ export default function ChairmanDashboard() {
     return () => window.removeEventListener("openMissionControl", handleOpen);
   }, []);
 
+  // Split tasks into active and archived streams
+  const activeTasks = useMemo(() => dbTasks.filter((t) => t.status !== "DONE" && !(t as any).completed), [dbTasks]);
+  const archivedTasks = useMemo(() => dbTasks.filter((t) => t.status === "DONE" || (t as any).completed), [dbTasks]);
+
   // Top-level tasks only (parentId is null/undefined) for agent task lists
   const business = useMemo(
-    () => AGENT_META_BUSINESS.map((a) => ({ ...a, tasks: dbTasks.filter((t) => t.agentId === a.id && !t.parentId) })),
-    [dbTasks]
+    () => AGENT_META_BUSINESS.map((a) => ({ ...a, tasks: activeTasks.filter((t) => t.agentId === a.id && !t.parentId) })),
+    [activeTasks]
   );
   const personal = useMemo(
-    () => AGENT_META_PERSONAL.map((a) => ({ ...a, tasks: dbTasks.filter((t) => t.agentId === a.id && !t.parentId) })),
-    [dbTasks]
+    () => AGENT_META_PERSONAL.map((a) => ({ ...a, tasks: activeTasks.filter((t) => t.agentId === a.id && !t.parentId) })),
+    [activeTasks]
+  );
+  
+  const archivedBusiness = useMemo(
+    () => AGENT_META_BUSINESS.map((a) => ({ ...a, tasks: archivedTasks.filter((t) => t.agentId === a.id && !t.parentId) })),
+    [archivedTasks]
+  );
+  const archivedPersonal = useMemo(
+    () => AGENT_META_PERSONAL.map((a) => ({ ...a, tasks: archivedTasks.filter((t) => t.agentId === a.id && !t.parentId) })),
+    [archivedTasks]
   );
 
   // Subtasks map: parentId → subtask[]
   const subtasksMap = useMemo(() => {
     const map: Record<string, DbTask[]> = {};
-    dbTasks.filter((t) => t.parentId).forEach((t) => {
+    activeTasks.filter((t) => t.parentId).forEach((t) => {
       if (!map[t.parentId!]) map[t.parentId!] = [];
       map[t.parentId!].push(t);
     });
     return map;
-  }, [dbTasks]);
+  }, [activeTasks]);
+  
+  const archivedSubtasksMap = useMemo(() => {
+    const map: Record<string, DbTask[]> = {};
+    archivedTasks.filter((t) => t.parentId).forEach((t) => {
+      if (!map[t.parentId!]) map[t.parentId!] = [];
+      map[t.parentId!].push(t);
+    });
+    return map;
+  }, [archivedTasks]);
 
   // Load tasks on mount
   useEffect(() => {
@@ -1587,7 +1637,7 @@ export default function ChairmanDashboard() {
       {/* ── MAIN ──────────────────────────────────────────────────────────── */}
       <main
         className="main-px flex-1 h-screen overflow-y-auto overflow-x-hidden relative"
-        style={activeTab === "MASTER" ? {
+        style={(activeTab === "MASTER" || activeTab === "ARCHIVE") ? {
           paddingLeft:    32,
           paddingRight:   32,
           paddingTop:     10,
@@ -1603,6 +1653,7 @@ export default function ChairmanDashboard() {
         }}
       >
         {activeTab === "MASTER"   && <MasterViewTab key="master"   business={business} personal={personal} calConnected={calConnected} calendarEvents={calendarEvents} calLoading={calLoading} calError={calError} onToggle={toggleTask} onDelete={deleteTask} onTaskClick={handleTaskClick} subtasksMap={subtasksMap} onToggleSubtask={toggleSubtask} />}
+        {activeTab === "ARCHIVE"  && <ArchiveViewTab key="archive" archivedBusiness={archivedBusiness} archivedPersonal={archivedPersonal} subtasksMap={archivedSubtasksMap} onToggle={toggleTask} onDelete={deleteTask} onTaskClick={handleTaskClick} onToggleSubtask={toggleSubtask} />}
         {activeTab === "BUSINESS" && <BusinessTab   key="business" agents={business} onToggle={(_, taskId) => toggleTask(taskId)} onDelete={deleteTask} onTaskClick={handleTaskClick} subtasksMap={subtasksMap} onToggleSubtask={toggleSubtask} />}
         {activeTab === "PERSONAL" && <PersonalTab   key="personal" agents={personal} onToggle={(_, taskId) => toggleTask(taskId)} onDelete={deleteTask} onTaskClick={handleTaskClick} subtasksMap={subtasksMap} onToggleSubtask={toggleSubtask} />}
         {activeTab === "KPI"      && <KPITab        key="kpi" />}

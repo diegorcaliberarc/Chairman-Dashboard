@@ -1,6 +1,6 @@
 "use client";
 
-import { Bot, Brain, CalendarDays, Palette, Map, LayoutDashboard, Briefcase, User, BarChart, CalendarRange } from "lucide-react";
+import { Bot, Brain, CalendarDays, Palette, Map, LayoutDashboard, Briefcase, User, BarChart, CalendarRange, Archive } from "lucide-react";
 import { useRouter, usePathname } from "next/navigation";
 import { UserAccountModal } from "./UserAccountModal";
 import { useState, useEffect } from "react";
@@ -140,6 +140,18 @@ export function Sidebar({
           >
             <Bot size={16} />
             NOVA CORE
+          </button>
+          
+          <button
+            onClick={() => setActiveTab("ARCHIVE")}
+            className={`flex items-center gap-3 px-4 py-3 rounded-xl font-bold text-xs tracking-widest transition-all ${
+              activeTab === "ARCHIVE"
+                ? "bg-[rgba(var(--theme-grad-start-rgb),0.1)] text-[color:var(--theme-grad-start)] border border-[color:var(--theme-grad-start)]/30" 
+                : "text-zinc-500 dark:text-zinc-400 hover:bg-zinc-100 dark:hover:bg-white/5 border border-transparent"
+            }`}
+          >
+            <Archive size={16} />
+            ARCHIVE
           </button>
         </div>
 
