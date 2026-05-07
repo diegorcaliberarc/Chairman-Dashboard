@@ -36,14 +36,14 @@ const CATEGORIES = [
 
 const RAW_METRIC_DEFS: Record<string, { name: string, defaultVal: number, target: number }[]> = {
   wealth: [
-    { name: "income_va_ssa", defaultVal: 1, target: 0 },
-    { name: "income_total", defaultVal: 0, target: 0 },
-    { name: "debt_monthly_service", defaultVal: 0, target: 0 },
-    { name: "debt_total_principal", defaultVal: 1, target: 0 },
-    { name: "debt_avg_interest", defaultVal: 0, target: 0 },
-    { name: "expenses_monthly", defaultVal: 1, target: 0 },
+    { name: "income_guaranteed", defaultVal: 1, target: 0 },
+    { name: "income_other", defaultVal: 0, target: 0 },
+    { name: "expenses_base", defaultVal: 1, target: 0 },
+    { name: "debt_monthly", defaultVal: 0, target: 0 },
+    { name: "debt_total", defaultVal: 1, target: 0 },
     { name: "cash_liquid", defaultVal: 0, target: 0 },
-    { name: "assets_income_producing", defaultVal: 0, target: 0 },
+    { name: "assets_productive", defaultVal: 0, target: 0 },
+    { name: "interest_rate", defaultVal: 0, target: 0 },
   ],
   ceo: [
     { name: "Total Revenue", defaultVal: 0, target: 0 },
@@ -75,23 +75,57 @@ function getStatus(val: number, target: number, operator: "<" | ">") {
 }
 
 function calculateWealthPhysics(localVals: Record<string, number>) {
-  const inc_va_ssa = localVals["income_va_ssa"] || 1;
-  const inc_total = localVals["income_total"] || 0;
-  const debt_mo = localVals["debt_monthly_service"] || 0;
-  const debt_prin = localVals["debt_total_principal"] || 1;
-  const debt_int = localVals["debt_avg_interest"] || 0;
-  const exp_mo = localVals["expenses_monthly"] || 1;
+  const inc_guar = localVals["income_guaranteed"] || 1;
+  const inc_other = localVals["income_other"] || 0;
+  const exp_base = localVals["expenses_base"] || 1;
+  const debt_mo = localVals["debt_monthly"] || 0;
+  const debt_tot = localVals["debt_total"] || 1;
   const cash = localVals["cash_liquid"] || 0;
-  const assets = localVals["assets_income_producing"] || 0;
+  const assets = localVals["assets_productive"] || 0;
+  const int_rate = localVals["interest_rate"] || 0;
 
-  const oxygenRatio = (debt_mo / inc_va_ssa) * 100;
-  const fcf = inc_total - exp_mo - debt_mo;
-  const burn = exp_mo + debt_mo || 1;
+  const oxygenRatio = (debt_mo / inc_guar) * 100;
+  const fcf = (inc_guar + inc_other) - (exp_base + debt_mo);
+  const burn = exp_base + debt_mo || 1;
   const ruinRatio = cash / burn;
-  const entropyRate = debt_int;
-  const multiplier = assets / debt_prin;
+  const entropyRate = int_rate;
+  const multiplier = assets / debt_tot;
 
   return { oxygenRatio, fcf, ruinRatio, entropyRate, multiplier };
+}
+
+function getWealthStatus(val: number, type: string) {
+  if (type === "oxygen") {
+    if (val <= 15) return { color: "text-emerald-500", label: "✅ OPTIMAL" };
+    if (val <= 25) return { color: "text-yellow-500", label: "⚠️ WEAK" };
+    if (val <= 40) return { color: "text-orange-500", label: "☢️ TOXIC" };
+    return { color: "text-red-500", label: "🚨 CRITICAL" };
+  }
+  if (type === "fcf") {
+    if (val > 0) return { color: "text-emerald-500", label: "✅ OPTIMAL" };
+    if (val === 0) return { color: "text-yellow-500", label: "⚠️ WEAK" };
+    if (val > -1000) return { color: "text-orange-500", label: "☢️ TOXIC" };
+    return { color: "text-red-500", label: "🚨 CRITICAL" };
+  }
+  if (type === "ruin") {
+    if (val >= 6.0) return { color: "text-emerald-500", label: "✅ OPTIMAL" };
+    if (val >= 3.0) return { color: "text-yellow-500", label: "⚠️ WEAK" };
+    if (val >= 1.0) return { color: "text-orange-500", label: "☢️ TOXIC" };
+    return { color: "text-red-500", label: "🚨 CRITICAL" };
+  }
+  if (type === "entropy") {
+    if (val <= 0) return { color: "text-emerald-500", label: "✅ OPTIMAL" };
+    if (val <= 5) return { color: "text-yellow-500", label: "⚠️ WEAK" };
+    if (val <= 12) return { color: "text-orange-500", label: "☢️ TOXIC" };
+    return { color: "text-red-500", label: "🚨 CRITICAL" };
+  }
+  if (type === "multiplier") {
+    if (val >= 2.0) return { color: "text-emerald-500", label: "✅ OPTIMAL" };
+    if (val >= 1.0) return { color: "text-yellow-500", label: "⚠️ WEAK" };
+    if (val >= 0.5) return { color: "text-orange-500", label: "☢️ TOXIC" };
+    return { color: "text-red-500", label: "🚨 CRITICAL" };
+  }
+  return { color: "text-zinc-500", label: "UNKNOWN" };
 }
 
 function SectorCard({ category, allMetrics, onSave }: any) {
@@ -171,7 +205,7 @@ function SectorCard({ category, allMetrics, onSave }: any) {
               <category.icon className="w-5 h-5" style={{ color: category.color }} />
               <h3 className="font-serif text-lg tracking-widest uppercase" style={{ color: category.color }}>{category.title}</h3>
             </div>
-            <button onClick={() => setIsFlipped(true)} className="p-1.5 rounded-md hover:bg-zinc-200/50 dark:hover:bg-white/10 text-zinc-500 transition-colors">
+            <button onClick={() => isWealth && setIsFlipped(true)} className={`p-1.5 rounded-md transition-colors ${isWealth ? "hover:bg-zinc-200/50 dark:hover:bg-white/10 text-zinc-500" : "opacity-50 cursor-not-allowed text-zinc-300 dark:text-zinc-700"}`}>
               <Edit2 size={14} />
             </button>
           </div>
@@ -179,33 +213,29 @@ function SectorCard({ category, allMetrics, onSave }: any) {
           {isWealth && wPhys ? (
             <div className="flex flex-col gap-2 flex-1 mt-6 justify-center">
               {[
-                { label: "Oxygen Ratio", sub: "Monthly Debt / VA+SSA", val: `${wPhys.oxygenRatio.toFixed(1)}%`, status: getStatus(wPhys.oxygenRatio, 15, "<") },
-                { label: "Free Cash Flow", sub: "Net Velocity", val: `$${wPhys.fcf.toLocaleString()}`, status: wPhys.fcf > 0 ? "GREEN" : (wPhys.fcf === 0 ? "YELLOW" : "RED") },
-                { label: "Ruin Ratio", sub: "Capital Buffer", val: `${wPhys.ruinRatio.toFixed(1)}x`, status: getStatus(wPhys.ruinRatio, 6.0, ">") },
-                { label: "Entropy Rate", sub: "Weighted Avg Interest", val: `${wPhys.entropyRate.toFixed(1)}%`, status: wPhys.entropyRate <= 0 ? "GREEN" : (wPhys.entropyRate <= 5 ? "YELLOW" : "RED") },
-                { label: "Multiplier", sub: "Assets / Debt", val: `${wPhys.multiplier.toFixed(2)}x`, status: getStatus(wPhys.multiplier, 2.0, ">") },
+                { label: "THE OXYGEN RATIO", sub: "Friction vs. Thrust", val: `${wPhys.oxygenRatio.toFixed(2)}%`, status: getWealthStatus(wPhys.oxygenRatio, "oxygen") },
+                { label: "FREE CASH FLOW", sub: "Net Velocity", val: `$${wPhys.fcf.toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2})}`, status: getWealthStatus(wPhys.fcf, "fcf") },
+                { label: "RUIN RATIO", sub: "Capital Buffer", val: `${wPhys.ruinRatio.toFixed(2)}x`, status: getWealthStatus(wPhys.ruinRatio, "ruin") },
+                { label: "ENTROPY RATE", sub: "Weighted Avg Interest", val: `${wPhys.entropyRate.toFixed(2)}%`, status: getWealthStatus(wPhys.entropyRate, "entropy") },
+                { label: "MULTIPLIER", sub: "Assets / Debt", val: `${wPhys.multiplier.toFixed(2)}x`, status: getWealthStatus(wPhys.multiplier, "multiplier") },
               ].map(k => (
                 <div key={k.label} className="flex justify-between items-center bg-zinc-50/50 dark:bg-white/5 p-2 rounded-lg border border-zinc-200/50 dark:border-white/5">
                   <div className="flex flex-col">
                     <span className="text-[10px] font-bold tracking-widest uppercase text-zinc-900 dark:text-zinc-100">{k.label}</span>
                     <span className="text-[8px] tracking-widest uppercase text-zinc-500">{k.sub}</span>
                   </div>
-                  <div className="flex items-center gap-2">
+                  <div className="flex flex-col items-end gap-0.5">
                     <span className="font-mono text-xs font-medium text-zinc-900 dark:text-white">{k.val}</span>
-                    <span className="text-[10px] leading-none" title={k.status === "GREEN" ? "OPTIMAL" : k.status === "YELLOW" ? "WARNING" : "CRITICAL"}>{k.status === "GREEN" ? "✅" : k.status === "YELLOW" ? "⚠️" : "🚨"}</span>
+                    <span className={`text-[9px] font-bold tracking-widest uppercase ${k.status.color}`}>{k.status.label}</span>
                   </div>
                 </div>
               ))}
             </div>
           ) : (
             <div className="flex flex-col items-center justify-center flex-1 mt-4">
-              <div className="text-[10px] tracking-[0.2em] uppercase text-zinc-500 mb-2">{primaryLabel}</div>
-              <div className="font-serif text-4xl mb-4" style={{ color: category.color }}>{primaryValue}</div>
-              <div className="flex items-center gap-2">
-                <div className={`w-2 h-2 rounded-full ${statusColors[status as keyof typeof statusColors]}`} />
-                <span className="text-[9px] tracking-widest uppercase text-zinc-600 dark:text-zinc-400">
-                  {status === "GREEN" ? "OPTIMAL" : status === "YELLOW" ? "WARNING" : "CRITICAL"}
-                </span>
+              <div className="text-[10px] tracking-[0.2em] uppercase text-zinc-500 mb-2">AWAITING DATA</div>
+              <div className="font-serif text-sm text-zinc-400 dark:text-zinc-500 text-center px-4 leading-relaxed">
+                This sector is offline.<br/>Focus strictly on<br/>Wealth structural integrity.
               </div>
             </div>
           )}
@@ -298,13 +328,14 @@ export default function KPIsPage() {
     }
   };
 
-  const entropyM = metrics.find(m => m.category === "wealth" && m.metricName === "debt_avg_interest");
+  const entropyM = metrics.find(m => m.category === "wealth" && m.metricName === "interest_rate");
   const entropy = entropyM ? entropyM.value : 0;
   
-  const inc_total = metrics.find(m => m.category === "wealth" && m.metricName === "income_total")?.value || 0;
-  const exp_mo = metrics.find(m => m.category === "wealth" && m.metricName === "expenses_monthly")?.value || 0;
-  const debt_mo = metrics.find(m => m.category === "wealth" && m.metricName === "debt_monthly_service")?.value || 0;
-  const velocity = inc_total - exp_mo - debt_mo;
+  const inc_guar = metrics.find(m => m.category === "wealth" && m.metricName === "income_guaranteed")?.value || 0;
+  const inc_other = metrics.find(m => m.category === "wealth" && m.metricName === "income_other")?.value || 0;
+  const exp_base = metrics.find(m => m.category === "wealth" && m.metricName === "expenses_base")?.value || 0;
+  const debt_mo = metrics.find(m => m.category === "wealth" && m.metricName === "debt_monthly")?.value || 0;
+  const velocity = (inc_guar + inc_other) - (exp_base + debt_mo);
 
   return (
     <div className="min-h-screen text-zinc-900 dark:text-white flex flex-row">
@@ -343,11 +374,11 @@ export default function KPIsPage() {
             <div className="w-full grid grid-cols-1 md:grid-cols-2 gap-4 mb-8">
               <div className="bg-white/80 dark:bg-black/60 backdrop-blur-xl border border-zinc-200/50 dark:border-white/10 rounded-xl p-8 flex flex-col items-center justify-center shadow-lg">
                 <div className="text-[10px] tracking-[0.2em] uppercase text-zinc-500 mb-2">Total Entropy (Average Debt Rate)</div>
-                <div className="text-4xl font-serif text-[#E05A3A]">{entropy.toFixed(1)}%</div>
+                <div className="text-4xl font-serif text-[#E05A3A]">{entropy.toFixed(2)}%</div>
               </div>
               <div className="bg-white/80 dark:bg-black/60 backdrop-blur-xl border border-zinc-200/50 dark:border-white/10 rounded-xl p-8 flex flex-col items-center justify-center shadow-lg">
                 <div className="text-[10px] tracking-[0.2em] uppercase text-zinc-500 mb-2">Net Velocity (Total FCF)</div>
-                <div className="text-4xl font-serif text-[#C9A961]">${velocity.toLocaleString()}</div>
+                <div className="text-4xl font-serif text-[#C9A961]">${velocity.toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2})}</div>
               </div>
             </div>
 
