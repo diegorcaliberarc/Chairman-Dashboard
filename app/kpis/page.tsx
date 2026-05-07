@@ -56,7 +56,13 @@ const RAW_METRIC_DEFS: Record<string, { name: string, defaultVal: number, target
     { name: "Liquidity", defaultVal: 0, target: 0 },
     { name: "Max Session Drawdown", defaultVal: 1, target: 0 },
   ],
-  coo: [{ name: "Efficiency Score", defaultVal: 100, target: 100 }],
+  coo: [
+    { name: "coo_mission_velocity", defaultVal: 0, target: 90 },
+    { name: "coo_exception_rate", defaultVal: 0, target: 0 },
+    { name: "coo_qa_fidelity", defaultVal: 0, target: 100 },
+    { name: "coo_mttr_hours", defaultVal: 0, target: 4 },
+    { name: "coo_sop_autonomy", defaultVal: 0, target: 90 },
+  ],
   cmo: [{ name: "CAC", defaultVal: 0, target: 0 }, { name: "LTV", defaultVal: 0, target: 0 }],
   cto: [{ name: "Uptime", defaultVal: 99.9, target: 99.9 }],
   cpo: [{ name: "User Satisfaction", defaultVal: 100, target: 100 }],
@@ -304,6 +310,43 @@ function getCeoStatus(val: number, type: string) {
   return { color: "text-zinc-500", label: "UNKNOWN" };
 }
 
+function calculateCooPhysics(localVals: Record<string, number>) {
+  const velocity = localVals["coo_mission_velocity"] || 0;
+  const exception = localVals["coo_exception_rate"] || 0;
+  const qa = localVals["coo_qa_fidelity"] || 0;
+  const mttr = localVals["coo_mttr_hours"] || 0;
+  const sop = localVals["coo_sop_autonomy"] || 0;
+
+  return { velocity, exception, qa, mttr, sop };
+}
+
+function getCooStatus(val: number, type: string) {
+  if (type === "velocity") {
+    if (val >= 90) return { color: "text-emerald-500", label: "✅ OPTIMAL" };
+    if (val >= 75) return { color: "text-yellow-500", label: "⚠️ WARNING" };
+    return { color: "text-red-500", label: "🚨 CRITICAL" };
+  }
+  if (type === "exception") {
+    if (val === 0) return { color: "text-emerald-500", label: "✅ OPTIMAL" };
+    return { color: "text-red-500", label: "🚨 CRITICAL" };
+  }
+  if (type === "qa") {
+    if (val >= 100) return { color: "text-emerald-500", label: "✅ OPTIMAL" };
+    return { color: "text-red-500", label: "🚨 CRITICAL" };
+  }
+  if (type === "mttr") {
+    if (val <= 4) return { color: "text-emerald-500", label: "✅ OPTIMAL" };
+    if (val <= 12) return { color: "text-yellow-500", label: "⚠️ WARNING" };
+    return { color: "text-red-500", label: "🚨 CRITICAL" };
+  }
+  if (type === "sop") {
+    if (val >= 90) return { color: "text-emerald-500", label: "✅ OPTIMAL" };
+    if (val >= 70) return { color: "text-yellow-500", label: "⚠️ WARNING" };
+    return { color: "text-red-500", label: "🚨 CRITICAL" };
+  }
+  return { color: "text-zinc-500", label: "UNKNOWN" };
+}
+
 function SectorCard({ category, allMetrics, onSave }: any) {
   const [isFlipped, setIsFlipped] = useState(false);
   const defs = RAW_METRIC_DEFS[category.id];
@@ -339,12 +382,14 @@ function SectorCard({ category, allMetrics, onSave }: any) {
   const isRelate = category.id === "relate";
   const isJoy = category.id === "joy";
   const isCeo = category.id === "ceo";
-  const isActiveSector = isWealth || isHealth || isRelate || isJoy || isCeo;
+  const isCoo = category.id === "coo";
+  const isActiveSector = isWealth || isHealth || isRelate || isJoy || isCeo || isCoo;
   const wPhys = isWealth ? calculateWealthPhysics(localVals) : null;
   const hPhys = isHealth ? calculateHealthPhysics(localVals) : null;
   const rPhys = isRelate ? calculateRelatePhysics(localVals) : null;
   const jPhys = isJoy ? calculateJoyPhysics(localVals) : null;
   const cPhys = isCeo ? calculateCeoPhysics(localVals) : null;
+  const cooPhys = isCoo ? calculateCooPhysics(localVals) : null;
 
   let primaryLabel = "Core Score";
   let primaryValue = "0";
@@ -480,6 +525,27 @@ function SectorCard({ category, allMetrics, onSave }: any) {
                 { label: "THE BUY-BACK RATE", sub: "Operational Leverage", val: `${cPhys.buyback.toFixed(1)}%`, status: getCeoStatus(cPhys.buyback, "buyback") },
                 { label: "LOGIC ALIGNMENT", sub: "5 Guidelines", val: `${cPhys.logic.toFixed(1)}%`, status: getCeoStatus(cPhys.logic, "logic") },
                 { label: "ARCHITECTURAL AUTONOMY", sub: "System Autonomy", val: `${cPhys.autonomy.toFixed(1)}%`, status: getCeoStatus(cPhys.autonomy, "autonomy") },
+              ].map(k => (
+                <div key={k.label} className="flex justify-between items-center bg-zinc-50/50 dark:bg-white/5 p-2 rounded-lg border border-zinc-200/50 dark:border-white/5">
+                  <div className="flex flex-col">
+                    <span className="text-[10px] font-bold tracking-widest uppercase text-zinc-900 dark:text-zinc-100">{k.label}</span>
+                    <span className="text-[8px] tracking-widest uppercase text-zinc-500">{k.sub}</span>
+                  </div>
+                  <div className="flex flex-col items-end gap-0.5">
+                    <span className="font-mono text-xs font-medium text-zinc-900 dark:text-white">{k.val}</span>
+                    <span className={`text-[9px] font-bold tracking-widest uppercase ${k.status.color}`}>{k.status.label}</span>
+                  </div>
+                </div>
+              ))}
+            </div>
+          ) : isCoo && cooPhys ? (
+            <div className="flex flex-col gap-2 flex-1 mt-6 justify-center">
+              {[
+                { label: "ACTIVE MISSION VELOCITY", sub: "Forward Momentum", val: `${cooPhys.velocity.toFixed(1)}%`, status: getCooStatus(cooPhys.velocity, "velocity") },
+                { label: "CRITICAL EXCEPTION RATE", sub: "System Fragility", val: `${cooPhys.exception} Failures`, status: getCooStatus(cooPhys.exception, "exception") },
+                { label: "QA FIDELITY SCORE", sub: "Design Integrity", val: `${cooPhys.qa.toFixed(1)}%`, status: getCooStatus(cooPhys.qa, "qa") },
+                { label: "MTTR (BUG RESOLUTION)", sub: "Pipeline Friction", val: `${cooPhys.mttr.toFixed(1)} Hrs`, status: getCooStatus(cooPhys.mttr, "mttr") },
+                { label: "SOP AUTONOMY", sub: "Hand-Off Readiness", val: `${cooPhys.sop.toFixed(1)}%`, status: getCooStatus(cooPhys.sop, "sop") },
               ].map(k => (
                 <div key={k.label} className="flex justify-between items-center bg-zinc-50/50 dark:bg-white/5 p-2 rounded-lg border border-zinc-200/50 dark:border-white/5">
                   <div className="flex flex-col">
