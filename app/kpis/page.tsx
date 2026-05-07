@@ -22,16 +22,16 @@ interface Metric {
 }
 
 const CATEGORIES = [
+  { id: "wealth", title: "WEALTH", icon: CircleDollarSign, color: "#D4AF37" },
+  { id: "health", title: "HEALTH", icon: Activity, color: "#E05A3A" },
+  { id: "relate", title: "RELATIONSHIPS", icon: Users, color: "#5B8FB9" },
+  { id: "joy", title: "JOY", icon: Sparkles, color: "#B388EB" },
   { id: "ceo", title: "CEO", icon: Target, color: "#C9A961" },
   { id: "coo", title: "COO", icon: Settings, color: "#7B9EA8" },
   { id: "cmo", title: "CMO", icon: TrendingUp, color: "#A87B9E" },
   { id: "cfo", title: "CFO", icon: Landmark, color: "#8BA87B" },
   { id: "cto", title: "CTO", icon: Terminal, color: "#4A90E2" },
   { id: "cpo", title: "CPO", icon: Layers, color: "#F39C12" },
-  { id: "wealth", title: "WEALTH", icon: CircleDollarSign, color: "#D4AF37" },
-  { id: "health", title: "HEALTH", icon: Activity, color: "#E05A3A" },
-  { id: "relate", title: "RELATIONSHIPS", icon: Users, color: "#5B8FB9" },
-  { id: "joy", title: "JOY", icon: Sparkles, color: "#B388EB" },
 ];
 
 const RAW_METRIC_DEFS: Record<string, { name: string, defaultVal: number, target: number }[]> = {
@@ -534,15 +534,6 @@ export default function KPIsPage() {
     }
   };
 
-  const entropyM = metrics.find(m => m.category === "wealth" && m.metricName === "interest_rate");
-  const entropy = entropyM ? entropyM.value : 0;
-  
-  const inc_guar = metrics.find(m => m.category === "wealth" && m.metricName === "income_guaranteed")?.value || 0;
-  const inc_other = metrics.find(m => m.category === "wealth" && m.metricName === "income_other")?.value || 0;
-  const exp_base = metrics.find(m => m.category === "wealth" && m.metricName === "expenses_base")?.value || 0;
-  const debt_mo = metrics.find(m => m.category === "wealth" && m.metricName === "debt_monthly")?.value || 0;
-  const velocity = (inc_guar + inc_other) - (exp_base + debt_mo);
-
   return (
     <div className="min-h-screen text-zinc-900 dark:text-white flex flex-row">
       <style>{CSS_3D}</style>
@@ -574,18 +565,6 @@ export default function KPIsPage() {
                 GOVERNANCE ENGINE
               </h1>
               <p className="text-xs text-zinc-500 tracking-widest uppercase mt-2">Physics-based KPI tracking & Vital Signs</p>
-            </div>
-
-            {/* Scorecard */}
-            <div className="w-full grid grid-cols-1 md:grid-cols-2 gap-4 mb-8">
-              <div className="bg-white/80 dark:bg-black/60 backdrop-blur-xl border border-zinc-200/50 dark:border-white/10 rounded-xl p-8 flex flex-col items-center justify-center shadow-lg">
-                <div className="text-[10px] tracking-[0.2em] uppercase text-zinc-500 mb-2">Total Entropy (Average Debt Rate)</div>
-                <div className="text-4xl font-serif text-[#E05A3A]">{entropy.toFixed(2)}%</div>
-              </div>
-              <div className="bg-white/80 dark:bg-black/60 backdrop-blur-xl border border-zinc-200/50 dark:border-white/10 rounded-xl p-8 flex flex-col items-center justify-center shadow-lg">
-                <div className="text-[10px] tracking-[0.2em] uppercase text-zinc-500 mb-2">Net Velocity (Total FCF)</div>
-                <div className="text-4xl font-serif text-[#C9A961]">${velocity.toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2})}</div>
-              </div>
             </div>
 
             {/* Grid */}
