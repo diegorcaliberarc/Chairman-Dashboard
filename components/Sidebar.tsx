@@ -42,6 +42,9 @@ interface SidebarProps {
   doneTasks: number;
   totalTasks: number;
   overallPct: number;
+  doneSubtasks: number;
+  totalSubtasks: number;
+  subtasksPct: number;
   tasksLoading: boolean;
 }
 
@@ -49,7 +52,8 @@ export function Sidebar({
   activeTab, setActiveTab, calConnected, onCalToggle, 
   isAppearanceOpen, setIsAppearanceOpen, user,
   deepWork, setDeepWork, novaOpen, setNovaOpen,
-  doneTasks, totalTasks, overallPct, tasksLoading
+  doneTasks, totalTasks, overallPct,
+  doneSubtasks, totalSubtasks, subtasksPct, tasksLoading
 }: SidebarProps) {
   const [accountModalOpen, setAccountModalOpen] = useState(false);
   const router = useRouter();
@@ -141,7 +145,13 @@ export function Sidebar({
 
         {/* Telemetry (Mission Progress & Clock) */}
         <div className="px-4 pb-4">
-          <div className="p-4 rounded-xl bg-zinc-50/50 dark:bg-white/5 border border-zinc-200/50 dark:border-white/10 flex flex-col gap-4 shadow-inner">
+          <button 
+            onClick={() => {
+              /* Open MissionControlModal logic here via event or state. We can dispatch a custom event for simplicity */
+              window.dispatchEvent(new Event("openMissionControl"));
+            }}
+            className="w-full text-left p-4 rounded-xl bg-zinc-50/50 dark:bg-white/5 border border-zinc-200/50 dark:border-white/10 flex flex-col gap-4 shadow-inner hover:bg-zinc-100 dark:hover:bg-white/10 transition-colors"
+          >
             {/* Progress */}
             <div className="select-none">
               <div className="text-[9px] tracking-widest uppercase mb-1 text-zinc-500 dark:text-zinc-400">
@@ -149,9 +159,18 @@ export function Sidebar({
               </div>
               <div className="text-lg font-bold text-zinc-900 dark:text-white" style={{ fontVariantNumeric: "tabular-nums" }}>
                 {doneTasks}<span className="text-xs font-normal text-zinc-500 dark:text-zinc-400">/{totalTasks}</span>
+                <span className="text-xs ml-2 text-zinc-500 font-normal">Tasks</span>
               </div>
               <div className="mt-1.5 rounded-full w-full" style={{ height: 2, backgroundColor: "#1E1F24" }}>
                 <div className="h-full rounded-full transition-all duration-700" style={{ width: `${overallPct * 100}%`, backgroundImage: 'linear-gradient(to right, var(--theme-grad-start), var(--theme-grad-end))', opacity: 0.7 }} />
+              </div>
+
+              <div className="text-lg font-bold text-zinc-900 dark:text-white mt-3" style={{ fontVariantNumeric: "tabular-nums" }}>
+                {doneSubtasks}<span className="text-xs font-normal text-zinc-500 dark:text-zinc-400">/{totalSubtasks}</span>
+                <span className="text-xs ml-2 text-zinc-500 font-normal">Subtasks</span>
+              </div>
+              <div className="mt-1.5 rounded-full w-full" style={{ height: 2, backgroundColor: "#1E1F24" }}>
+                <div className="h-full rounded-full transition-all duration-700" style={{ width: `${subtasksPct * 100}%`, backgroundImage: 'linear-gradient(to right, var(--theme-grad-start), var(--theme-grad-end))', opacity: 0.7 }} />
               </div>
             </div>
 
@@ -159,7 +178,7 @@ export function Sidebar({
             
             {/* Clock */}
             <LiveClock />
-          </div>
+          </button>
         </div>
 
         {/* Bottom / Footer (Discord Style) */}

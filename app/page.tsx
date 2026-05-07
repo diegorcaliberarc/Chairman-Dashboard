@@ -10,6 +10,7 @@ import { AppearanceSettings } from "@/components/AppearanceSettings";
 import { TaskDetailModal } from "@/components/TaskDetailModal";
 import { Palette } from "lucide-react";
 import { Sidebar } from "@/components/Sidebar";
+import { MissionControlModal } from "@/components/MissionControlModal";
 import {
   CheckCircle2,
   Circle,
@@ -513,11 +514,8 @@ function PriorityStrikes({
   const allTasks = [...business, ...personal].flatMap((a) => a.tasks.map((t) => ({ task: t, agent: a })));
   const strikes = allTasks.filter(x => x.task.status !== "DONE");
   
-  const priorityScore: Record<string, number> = { "Urgent": 1, "High": 2, "Normal": 3, "Low": 4, "None": 5 };
   strikes.sort((a, b) => {
-    const scoreA = priorityScore[a.task.priority] ?? 5;
-    const scoreB = priorityScore[b.task.priority] ?? 5;
-    return scoreA - scoreB;
+    return (a.task.priority ?? 2) - (b.task.priority ?? 2);
   });
 
   return (
@@ -578,6 +576,9 @@ function DomainBlock({
 }: { label: string; sub: string; tasks: DbTask[]; color: string; onToggle: (id: string) => void; onDelete: (id: string) => void; onTaskClick: (task: DbTask, color: string) => void; subtasksMap?: any; onToggleSubtask?: (taskId: string, subtaskId: string) => void; }) {
   const pending = tasks.filter((t) => t.status !== "DONE");
   const done    = tasks.filter((t) => t.status === "DONE");
+  const total     = tasks.length;
+  const pct       = total > 0 ? (done.length / total) * 100 : 0;
+  
   return (
     <div className="h-full w-full flex flex-col overflow-hidden">
       <div className="flex items-center gap-2 mb-2">
@@ -586,11 +587,20 @@ function DomainBlock({
         <div className="flex-1" />
         <span className="text-[7px] tracking-[0.16em] uppercase text-zinc-400 dark:text-[#252836]">{sub}</span>
       </div>
-      <div className="flex-1 overflow-y-auto flex flex-col gap-1 pr-1">
-        <div className="flex items-center justify-between px-1 pb-1">
-          <span className="text-[7px] tracking-[0.18em] uppercase text-themeAccent">Tasks</span>
-          <span className="text-[7px] text-themeAccent">{done.length}/{tasks.length}</span>
+      
+      {/* Domain Progress Bar */}
+      <div style={{ display: "flex", alignItems: "flex-end", justifyContent: "space-between", marginBottom: 4 }}>
+        <span className="text-[7px] tracking-[0.18em] uppercase text-themeAccent">Tasks</span>
+        <div style={{ textAlign: "right" }}>
+          <span style={{ fontSize: 10, color: color, fontVariantNumeric: "tabular-nums", fontFamily: "Georgia, serif" }}>{done.length}</span>
+          <span style={{ fontSize: 7, color: "var(--theme-grad-start)" }}>/{total}</span>
         </div>
+      </div>
+      <div style={{ height: 1.5, backgroundColor: "#1E1F24", borderRadius: 2, marginBottom: 8, flexShrink: 0 }}>
+        <div style={{ height: "100%", width: `${pct}%`, backgroundColor: color, borderRadius: 2, opacity: 0.65, transition: "width 0.6s ease" }} />
+      </div>
+
+      <div className="flex-1 overflow-y-auto flex flex-col gap-1 pr-1">
         <div className="flex-1 overflow-y-auto flex flex-col gap-1.5 min-h-0">
           {pending.map((t) => (
             <div key={t.id} className="flex items-center gap-1.5 p-1.5 bg-zinc-100/10 dark:bg-black/20 rounded-md border border-zinc-200/20 dark:border-white/5">
@@ -1325,6 +1335,13 @@ export default function ChairmanDashboard() {
   // ── Supabase task state ────────────────────────────────────────────────────
   const [dbTasks,      setDbTasks]      = useState<DbTask[]>([]);
   const [tasksLoading, setTasksLoading] = useState(true);
+  const [isMissionControlOpen, setIsMissionControlOpen] = useState(false);
+
+  useEffect(() => {
+    const handleOpen = () => setIsMissionControlOpen(true);
+    window.addEventListener("openMissionControl", handleOpen);
+    return () => window.removeEventListener("openMissionControl", handleOpen);
+  }, []);
 
   // Top-level tasks only (parentId is null/undefined) for agent task lists
   const business = useMemo(
@@ -1386,9 +1403,15 @@ export default function ChairmanDashboard() {
   }, [toast]);
 
   // ── Progress ───────────────────────────────────────────────────────────────
-  const totalTasks = dbTasks.length;
-  const doneTasks  = dbTasks.filter((t) => t.status === "DONE").length;
+  const parentTasks = dbTasks.filter((t) => !t.parentId);
+  const subTasks = dbTasks.filter((t) => t.parentId);
+  const totalTasks = parentTasks.length;
+  const doneTasks  = parentTasks.filter((t) => t.status === "DONE").length;
   const overallPct = totalTasks > 0 ? doneTasks / totalTasks : 0;
+
+  const totalSubtasks = subTasks.length;
+  const doneSubtasks = subTasks.filter((t) => t.status === "DONE").length;
+  const subtasksPct = totalSubtasks > 0 ? doneSubtasks / totalSubtasks : 0;
 
   // ── Toggle task via PATCH ──────────────────────────────────────────────────
   const toggleTask = useCallback(async (taskId: string) => {
@@ -1536,6 +1559,9 @@ export default function ChairmanDashboard() {
         doneTasks={doneTasks}
         totalTasks={totalTasks}
         overallPct={overallPct}
+        doneSubtasks={doneSubtasks}
+        totalSubtasks={totalSubtasks}
+        subtasksPct={subtasksPct}
         tasksLoading={tasksLoading}
         user={user}
         deepWork={deepWork}
@@ -1732,6 +1758,14 @@ export default function ChairmanDashboard() {
           </div>
         </div>
       </div>
+        {isMissionControlOpen && (
+          <MissionControlModal 
+            tasks={parentTasks} 
+            subtasksMap={subtasksMap} 
+            onClose={() => setIsMissionControlOpen(false)} 
+            onToggle={toggleTask} 
+          />
+        )}
       </div>
     </div>
   );

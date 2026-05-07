@@ -18,7 +18,8 @@ export function TaskDetailModal({
   const [subInput, setSubInput] = useState("");
 
   const [status, setStatus] = useState(task.status || "To Do");
-  const [priority, setPriority] = useState(task.priority || "None");
+  const [priority, setPriority] = useState(task.priority || "Normal");
+  const [isPriorityOpen, setIsPriorityOpen] = useState(false);
 
   const handleSave = () => {
     onSave(task.id, { 
@@ -73,27 +74,42 @@ export function TaskDetailModal({
                 placeholder="Status"
               />
               <datalist id="status-list">
-                <option value="To Do" />
-                <option value="In Progress" />
-                <option value="Review" />
+                <option value="TO DO" />
+                <option value="IN PROGRESS" />
+                <option value="REVIEW" />
+                <option value="BLOCKED" />
                 <option value="DONE" />
               </datalist>
             </div>
 
             {/* Priority Flag */}
-            <div className="flex items-center gap-1.5 bg-white/5 dark:bg-black/20 border border-zinc-200/20 dark:border-white/5 rounded-md px-2 py-1.5">
-              <Flag size={12} color={priority === "Urgent" ? "#E05A3A" : priority === "High" ? "#EAB308" : priority === "Normal" ? "#3B82F6" : priority === "Low" ? "#9CA3AF" : "#6B7280"} />
-              <select 
-                value={priority}
-                onChange={(e) => setPriority(e.target.value)}
-                className="bg-transparent border-none outline-none text-xs text-zinc-900 dark:text-white appearance-none cursor-pointer"
+            <div className="relative">
+              <button 
+                onClick={() => setIsPriorityOpen(!isPriorityOpen)}
+                className="flex items-center gap-1.5 bg-white/5 dark:bg-black/20 border border-zinc-200/20 dark:border-white/5 rounded-md px-2 py-1.5 min-w-[90px] justify-between cursor-pointer"
               >
-                <option value="None" className="bg-black text-white">Clear</option>
-                <option value="Low" className="bg-black text-white">Low</option>
-                <option value="Normal" className="bg-black text-white">Normal</option>
-                <option value="High" className="bg-black text-white">High</option>
-                <option value="Urgent" className="bg-black text-white">Urgent</option>
-              </select>
+                <div className="flex items-center gap-1.5">
+                  <Flag size={12} color={priority === 1 || priority === "Urgent" ? "#E05A3A" : priority === 2 || priority === "High" ? "#EAB308" : priority === 3 || priority === "Normal" ? "#3B82F6" : priority === 4 || priority === "Low" ? "#9CA3AF" : "#6B7280"} />
+                  <span className="text-xs text-zinc-900 dark:text-white">
+                    {priority === 1 ? "Urgent" : priority === 2 ? "High" : priority === 3 ? "Normal" : priority === 4 ? "Low" : priority === "Urgent" ? "Urgent" : priority === "High" ? "High" : priority === "Normal" ? "Normal" : priority === "Low" ? "Low" : "Clear"}
+                  </span>
+                </div>
+              </button>
+              
+              {isPriorityOpen && (
+                <div className="absolute top-full mt-2 left-0 w-full z-50 flex flex-col bg-[#0f172a] border border-white/10 rounded-md shadow-xl overflow-hidden text-xs text-white">
+                  {["Urgent", "High", "Normal", "Low", "None"].map((p) => (
+                    <button
+                      key={p}
+                      onClick={() => { setPriority(p); setIsPriorityOpen(false); }}
+                      className="flex items-center gap-2 px-3 py-2 text-left hover:bg-white/5 transition-colors w-full"
+                    >
+                      <Flag size={10} color={p === "Urgent" ? "#E05A3A" : p === "High" ? "#EAB308" : p === "Normal" ? "#3B82F6" : p === "Low" ? "#9CA3AF" : "#6B7280"} />
+                      {p === "None" ? "Clear" : p}
+                    </button>
+                  ))}
+                </div>
+              )}
             </div>
 
 
