@@ -80,19 +80,25 @@ export async function POST(req: NextRequest) {
   }
 
   try {
+    // Blanket scrub: Automatically vaporize empty strings for ANY relational field
+    for (const key of Object.keys(body)) {
+      if (key.endsWith('Id') || key === 'id') {
+        if (body[key] === "" || body[key] === "null" || body[key] === "undefined") {
+          body[key] = null;
+        }
+      }
+    }
+
     const sanitizedData = {
       ...body,
-      // Scrub empty strings from UUID foreign keys
-      parentId: (body.parentId === "" || body.parentId === "null") ? null : body.parentId,
-      agentId: (body.agentId === "" || body.agentId === "null") ? null : body.agentId,
-      userId: (body.userId === "" || body.userId === "null") ? null : body.userId,
-
       startDate: parseDateSafe(body.startDate),
       dueDate: parseDateSafe(body.dueDate),
       timeTracked: parseTimeSafe(body.timeTracked),
       priority: (body.priority && typeof body.priority === 'string') ? body.priority : 'None',
       status: (body.status && typeof body.status === 'string') ? body.status : 'To Do'
     };
+
+    console.log("FINAL PRISMA PAYLOAD:", JSON.stringify(sanitizedData, null, 2));
 
     const task = await prisma.task.create({
       data: sanitizedData,
@@ -172,11 +178,17 @@ export async function PATCH(req: NextRequest) {
       return NextResponse.json({ error: "Forbidden" }, { status: 403 });
     }
 
+    // Blanket scrub: Automatically vaporize empty strings for ANY relational field
+    for (const key of Object.keys(body)) {
+      if (key.endsWith('Id') || key === 'id') {
+        if (body[key] === "" || body[key] === "null" || body[key] === "undefined") {
+          body[key] = null;
+        }
+      }
+    }
+
     const sanitizedData = {
       ...body,
-      ...(body.parentId !== undefined && { parentId: (body.parentId === "" || body.parentId === "null") ? null : body.parentId }),
-      ...(body.agentId !== undefined && { agentId: (body.agentId === "" || body.agentId === "null") ? null : body.agentId }),
-      ...(body.userId !== undefined && { userId: (body.userId === "" || body.userId === "null") ? null : body.userId }),
       ...(body.startDate !== undefined && { startDate: parseDateSafe(body.startDate) }),
       ...(body.dueDate !== undefined && { dueDate: parseDateSafe(body.dueDate) }),
       ...(body.timeTracked !== undefined && { timeTracked: parseTimeSafe(body.timeTracked) }),
@@ -186,6 +198,8 @@ export async function PATCH(req: NextRequest) {
 
     // Remove ID so we don't try to update the primary key
     delete sanitizedData.id;
+
+    console.log("FINAL PRISMA PAYLOAD:", JSON.stringify(sanitizedData, null, 2));
 
     const task = await prisma.task.update({ where: { id }, data: sanitizedData });
     
