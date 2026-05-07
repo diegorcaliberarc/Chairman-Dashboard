@@ -64,7 +64,14 @@ const RAW_METRIC_DEFS: Record<string, { name: string, defaultVal: number, target
     { name: "health_sleep", defaultVal: 0, target: 7 },
     { name: "health_strength", defaultVal: 0, target: 100 },
   ],
-  relate: [{ name: "Relationship Score", defaultVal: 100, target: 100 }],
+  relate: [
+    { name: "rel_ttr_hours", defaultVal: 0, target: 2 },
+    { name: "rel_survival_hours", defaultVal: 0, target: 0 },
+    { name: "rel_decisions_total", defaultVal: 1, target: 0 },
+    { name: "rel_decisions_silent", defaultVal: 0, target: 0 },
+    { name: "rel_frame_breaks", defaultVal: 0, target: 0 },
+    { name: "rel_armor_score", defaultVal: 10, target: 10 },
+  ],
   joy: [{ name: "Joy Index", defaultVal: 100, target: 100 }],
 };
 
@@ -171,6 +178,48 @@ function getHealthStatus(val: number, type: string) {
   return { color: "text-zinc-500", label: "UNKNOWN" };
 }
 
+function calculateRelatePhysics(localVals: Record<string, number>) {
+  const ttr = localVals["rel_ttr_hours"] || 0;
+  const survival = localVals["rel_survival_hours"] || 0;
+  const dec_tot = localVals["rel_decisions_total"] || 1;
+  const dec_sil = localVals["rel_decisions_silent"] || 0;
+  const frame = localVals["rel_frame_breaks"] || 0;
+  const armor = localVals["rel_armor_score"] || 0;
+
+  const thermalLoad = (survival / 168) * 100;
+  const silentExec = (dec_sil / dec_tot) * 100;
+
+  return { ttr, thermalLoad, silentExec, frame, armor };
+}
+
+function getRelateStatus(val: number, type: string) {
+  if (type === "ttr") {
+    if (val <= 2) return { color: "text-emerald-500", label: "✅ OPTIMAL" };
+    if (val <= 23) return { color: "text-yellow-500", label: "⚠️ WARNING" };
+    return { color: "text-red-500", label: "🚨 CRITICAL" };
+  }
+  if (type === "thermal") {
+    if (val <= 20) return { color: "text-emerald-500", label: "✅ OPTIMAL" };
+    return { color: "text-red-500", label: "🚨 CRITICAL" };
+  }
+  if (type === "silent") {
+    if (val >= 80) return { color: "text-emerald-500", label: "✅ OPTIMAL" };
+    if (val >= 50) return { color: "text-yellow-500", label: "⚠️ WARNING" };
+    return { color: "text-red-500", label: "🚨 CRITICAL" };
+  }
+  if (type === "frame") {
+    if (val === 0) return { color: "text-emerald-500", label: "✅ OPTIMAL" };
+    if (val === 1) return { color: "text-yellow-500", label: "⚠️ WARNING" };
+    return { color: "text-red-500", label: "🚨 CRITICAL" };
+  }
+  if (type === "armor") {
+    if (val >= 8) return { color: "text-emerald-500", label: "✅ OPTIMAL" };
+    if (val >= 5) return { color: "text-yellow-500", label: "⚠️ WARNING" };
+    return { color: "text-red-500", label: "🚨 CRITICAL" };
+  }
+  return { color: "text-zinc-500", label: "UNKNOWN" };
+}
+
 function SectorCard({ category, allMetrics, onSave }: any) {
   const [isFlipped, setIsFlipped] = useState(false);
   const defs = RAW_METRIC_DEFS[category.id];
@@ -203,9 +252,11 @@ function SectorCard({ category, allMetrics, onSave }: any) {
 
   const isWealth = category.id === "wealth";
   const isHealth = category.id === "health";
-  const isActiveSector = isWealth || isHealth;
+  const isRelate = category.id === "relate";
+  const isActiveSector = isWealth || isHealth || isRelate;
   const wPhys = isWealth ? calculateWealthPhysics(localVals) : null;
   const hPhys = isHealth ? calculateHealthPhysics(localVals) : null;
+  const rPhys = isRelate ? calculateRelatePhysics(localVals) : null;
 
   let primaryLabel = "Core Score";
   let primaryValue = "0";
@@ -285,6 +336,27 @@ function SectorCard({ category, allMetrics, onSave }: any) {
                 { label: "FASTING INTEGRITY", sub: "13:00-19:00 Window", val: `${hPhys.fasting}h`, status: getHealthStatus(hPhys.fasting, "fasting") },
                 { label: "SLEEP ARCHITECTURE", sub: "Cellular Repair", val: `${hPhys.sleep}h`, status: getHealthStatus(hPhys.sleep, "sleep") },
                 { label: "STRENGTH RETENTION", sub: "Baseline vs Current", val: `${hPhys.strength}%`, status: getHealthStatus(hPhys.strength, "strength") },
+              ].map(k => (
+                <div key={k.label} className="flex justify-between items-center bg-zinc-50/50 dark:bg-white/5 p-2 rounded-lg border border-zinc-200/50 dark:border-white/5">
+                  <div className="flex flex-col">
+                    <span className="text-[10px] font-bold tracking-widest uppercase text-zinc-900 dark:text-zinc-100">{k.label}</span>
+                    <span className="text-[8px] tracking-widest uppercase text-zinc-500">{k.sub}</span>
+                  </div>
+                  <div className="flex flex-col items-end gap-0.5">
+                    <span className="font-mono text-xs font-medium text-zinc-900 dark:text-white">{k.val}</span>
+                    <span className={`text-[9px] font-bold tracking-widest uppercase ${k.status.color}`}>{k.status.label}</span>
+                  </div>
+                </div>
+              ))}
+            </div>
+          ) : isRelate && rPhys ? (
+            <div className="flex flex-col gap-2 flex-1 mt-6 justify-center">
+              {[
+                { label: "TIME TO REPAIR", sub: "Conflict Resolution", val: `${rPhys.ttr}h`, status: getRelateStatus(rPhys.ttr, "ttr") },
+                { label: "THERMAL LOAD", sub: "Survival State", val: `${rPhys.thermalLoad.toFixed(2)}%`, status: getRelateStatus(rPhys.thermalLoad, "thermal") },
+                { label: "SILENT EXECUTION", sub: "Cognitive Load Relief", val: `${rPhys.silentExec.toFixed(2)}%`, status: getRelateStatus(rPhys.silentExec, "silent") },
+                { label: "THE ANCHOR DELTA", sub: "Structural Integrity", val: `${rPhys.frame} Breaks`, status: getRelateStatus(rPhys.frame, "frame") },
+                { label: "ARMOR PERMEABILITY", sub: "Vulnerability Score", val: `${rPhys.armor}/10`, status: getRelateStatus(rPhys.armor, "armor") },
               ].map(k => (
                 <div key={k.label} className="flex justify-between items-center bg-zinc-50/50 dark:bg-white/5 p-2 rounded-lg border border-zinc-200/50 dark:border-white/5">
                   <div className="flex flex-col">
