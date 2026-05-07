@@ -29,6 +29,15 @@ import {
   Sun,
   Moon,
   Send,
+  Target,
+  Settings,
+  TrendingUp,
+  Landmark,
+  Terminal,
+  Layers,
+  Coins,
+  Activity,
+  Users,
 } from "lucide-react";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
@@ -64,6 +73,7 @@ interface Agent {
   title: string;
   role:  string;
   color: string;
+  icon?: React.ReactNode;
   tasks: DbTask[];
 }
 
@@ -71,19 +81,19 @@ interface Agent {
 // ─── Agent Metadata (tasks come from Supabase) ────────────────────────────────
 
 const AGENT_META_BUSINESS = [
-  { id: "ceo", title: "CEO", role: "Vision & Strategy",      color: "var(--theme-grad-start)" },
-  { id: "coo", title: "COO", role: "Ops & Execution",        color: "var(--theme-grad-start)" },
-  { id: "cmo", title: "CMO", role: "Growth & Sales",         color: "var(--theme-grad-start)" },
-  { id: "cfo", title: "CFO", role: "Finance & Cash",         color: "var(--theme-grad-start)" },
-  { id: "cto", title: "CTO", role: "APIs & Claude Pipelines",color: "var(--theme-grad-start)" },
-  { id: "cpo", title: "CPO", role: "Product & UX",           color: "var(--theme-grad-start)" },
+  { id: "ceo", title: "CEO", role: "Vision & Strategy",      color: "var(--theme-grad-start)", icon: <Target className="w-4 h-4 opacity-70" /> },
+  { id: "coo", title: "COO", role: "Ops & Execution",        color: "var(--theme-grad-start)", icon: <Settings className="w-4 h-4 opacity-70" /> },
+  { id: "cmo", title: "CMO", role: "Growth & Sales",         color: "var(--theme-grad-start)", icon: <TrendingUp className="w-4 h-4 opacity-70" /> },
+  { id: "cfo", title: "CFO", role: "Finance & Cash",         color: "var(--theme-grad-start)", icon: <Landmark className="w-4 h-4 opacity-70" /> },
+  { id: "cto", title: "CTO", role: "APIs & Claude Pipelines",color: "var(--theme-grad-start)", icon: <Terminal className="w-4 h-4 opacity-70" /> },
+  { id: "cpo", title: "CPO", role: "Product & UX",           color: "var(--theme-grad-start)", icon: <Layers className="w-4 h-4 opacity-70" /> },
 ];
 
 const AGENT_META_PERSONAL = [
-  { id: "wealth", title: "WEALTH",        role: "Income & Freedom",        color: "var(--theme-grad-start)" },
-  { id: "health", title: "HEALTH",        role: "Training & Energy",       color: "var(--theme-grad-start)" },
-  { id: "relate", title: "RELATIONSHIPS", role: "Legacy & Pack",           color: "var(--theme-grad-start)" },
-  { id: "joy",    title: "JOY",           role: "Goals & Happiness",       color: "var(--theme-grad-start)" },
+  { id: "wealth", title: "WEALTH",        role: "Income & Freedom",        color: "var(--theme-grad-start)", icon: <Coins className="w-4 h-4 opacity-70" /> },
+  { id: "health", title: "HEALTH",        role: "Training & Energy",       color: "var(--theme-grad-start)", icon: <Activity className="w-4 h-4 opacity-70" /> },
+  { id: "relate", title: "RELATIONSHIPS", role: "Legacy & Pack",           color: "var(--theme-grad-start)", icon: <Users className="w-4 h-4 opacity-70" /> },
+  { id: "joy",    title: "JOY",           role: "Goals & Happiness",       color: "var(--theme-grad-start)", icon: <Sparkles className="w-4 h-4 opacity-70" /> },
 ];
 
 
@@ -311,7 +321,7 @@ function PersonalTab({ agents, onToggle, onDelete, onTaskClick, subtasksMap, onT
       <div className="grid grid-cols-1 xl:grid-cols-2 gap-6 flex-1 h-full pb-6">
         {agents.map((a) => (
           <div key={a.id} style={PANEL} className={`${PANEL_CLASS} h-full flex flex-col`}>
-            <DomainBlock label={a.title} sub={a.role} tasks={a.tasks} color={a.color} onToggle={(taskId) => onToggle(a.id, taskId)} onDelete={onDelete} onTaskClick={onTaskClick} subtasksMap={subtasksMap} onToggleSubtask={onToggleSubtask} />
+            <DomainBlock label={a.title} sub={a.role} tasks={a.tasks} color={a.color} icon={a.icon} onToggle={(taskId) => onToggle(a.id, taskId)} onDelete={onDelete} onTaskClick={onTaskClick} subtasksMap={subtasksMap} onToggleSubtask={onToggleSubtask} />
           </div>
         ))}
       </div>
@@ -574,8 +584,8 @@ function PriorityStrikes({
 // ─── Personal Life Quadrants ──────────────────────────────────────────────────
 
 function DomainBlock({
-  label, sub, tasks, color, onToggle, onDelete, onTaskClick, subtasksMap, onToggleSubtask
-}: { label: string; sub: string; tasks: DbTask[]; color: string; onToggle: (id: string) => void; onDelete: (id: string) => void; onTaskClick: (task: DbTask, color: string) => void; subtasksMap?: any; onToggleSubtask?: (taskId: string, subtaskId: string) => void; }) {
+  label, sub, tasks, color, icon, onToggle, onDelete, onTaskClick, subtasksMap, onToggleSubtask
+}: { label: string; sub: string; tasks: DbTask[]; color: string; icon?: React.ReactNode; onToggle: (id: string) => void; onDelete: (id: string) => void; onTaskClick: (task: DbTask, color: string) => void; subtasksMap?: any; onToggleSubtask?: (taskId: string, subtaskId: string) => void; }) {
   const doneCount = tasks.filter((t) => t.status === "DONE" || (t as any).completed).length;
   const total     = tasks.length;
   const pct       = total > 0 ? (doneCount / total) * 100 : 0;
@@ -583,7 +593,7 @@ function DomainBlock({
   return (
     <div className="h-full w-full flex flex-col overflow-hidden">
       <div className="flex items-center gap-2 mb-2">
-        <div className="w-1.5 h-1.5 rounded-full bg-themeAccent shadow-[0_0_8px_var(--theme-grad-start)] flex-shrink-0" />
+        {icon}
         <span className="font-serif text-[12px] text-themeAccent tracking-[0.04em]">{label}</span>
         <div className="flex-1" />
         <span className="text-[7px] tracking-[0.16em] uppercase text-zinc-400 dark:text-[#252836]">{sub}</span>
@@ -662,7 +672,10 @@ function CSuiteCard({
     <div className="h-full w-full text-left flex flex-col overflow-hidden">
       <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", marginBottom: 6 }}>
         <div>
-          <div style={{ fontFamily: "Georgia, serif", fontSize: 16, color: agent.color, lineHeight: 1 }}>{agent.title}</div>
+          <div className="flex items-center gap-2">
+            {agent.icon}
+            <div style={{ fontFamily: "Georgia, serif", fontSize: 16, color: agent.color, lineHeight: 1 }}>{agent.title}</div>
+          </div>
           <div style={{ fontSize: 7, letterSpacing: "0.16em", textTransform: "uppercase", color: "var(--theme-grad-start)", marginTop: 3 }}>{agent.role}</div>
         </div>
         <div style={{ textAlign: "right" }}>
@@ -822,10 +835,10 @@ function MasterViewTab({
       {/* ── Right Column / Grid ────────────────────────────────────────── */}
       <div className={`grid grid-cols-1 ${isArchive ? 'xl:grid-cols-3' : 'xl:grid-cols-2'} gap-4 w-full ${isArchive ? '' : 'lg:w-2/3'} pb-8 grid-rows-[repeat(5,minmax(220px,auto))] pr-1`}>
         {/* Domain Cards */}
-        <div style={PANEL} className={`${PANEL_CLASS} h-full w-full flex flex-col`}><DomainBlock label="WEALTH" sub="Income & Freedom" tasks={wealthTasks} color={personal.find(a => a.id === "wealth")?.color || "#C9A961"} onToggle={onToggle} onDelete={onDelete} onTaskClick={onTaskClick} subtasksMap={subtasksMap} onToggleSubtask={onToggleSubtask} /></div>
-        <div style={PANEL} className={`${PANEL_CLASS} h-full w-full flex flex-col`}><DomainBlock label="HEALTH" sub="Training & Energy" tasks={healthTasks} color={personal.find(a => a.id === "health")?.color || "#C9A961"} onToggle={onToggle} onDelete={onDelete} onTaskClick={onTaskClick} subtasksMap={subtasksMap} onToggleSubtask={onToggleSubtask} /></div>
-        <div style={PANEL} className={`${PANEL_CLASS} h-full w-full flex flex-col`}><DomainBlock label="RELATIONSHIPS" sub="Legacy & Pack" tasks={relateTasks} color={personal.find(a => a.id === "relate")?.color || "#C9A961"} onToggle={onToggle} onDelete={onDelete} onTaskClick={onTaskClick} subtasksMap={subtasksMap} onToggleSubtask={onToggleSubtask} /></div>
-        <div style={PANEL} className={`${PANEL_CLASS} h-full w-full flex flex-col`}><DomainBlock label="JOY" sub="Goals & Happiness" tasks={joyTasks} color={personal.find(a => a.id === "joy")?.color || "#C9A961"} onToggle={onToggle} onDelete={onDelete} onTaskClick={onTaskClick} subtasksMap={subtasksMap} onToggleSubtask={onToggleSubtask} /></div>
+        <div style={PANEL} className={`${PANEL_CLASS} h-full w-full flex flex-col`}><DomainBlock label="WEALTH" sub="Income & Freedom" tasks={wealthTasks} color={personal.find(a => a.id === "wealth")?.color || "#C9A961"} icon={personal.find(a => a.id === "wealth")?.icon} onToggle={onToggle} onDelete={onDelete} onTaskClick={onTaskClick} subtasksMap={subtasksMap} onToggleSubtask={onToggleSubtask} /></div>
+        <div style={PANEL} className={`${PANEL_CLASS} h-full w-full flex flex-col`}><DomainBlock label="HEALTH" sub="Training & Energy" tasks={healthTasks} color={personal.find(a => a.id === "health")?.color || "#C9A961"} icon={personal.find(a => a.id === "health")?.icon} onToggle={onToggle} onDelete={onDelete} onTaskClick={onTaskClick} subtasksMap={subtasksMap} onToggleSubtask={onToggleSubtask} /></div>
+        <div style={PANEL} className={`${PANEL_CLASS} h-full w-full flex flex-col`}><DomainBlock label="RELATIONSHIPS" sub="Legacy & Pack" tasks={relateTasks} color={personal.find(a => a.id === "relate")?.color || "#C9A961"} icon={personal.find(a => a.id === "relate")?.icon} onToggle={onToggle} onDelete={onDelete} onTaskClick={onTaskClick} subtasksMap={subtasksMap} onToggleSubtask={onToggleSubtask} /></div>
+        <div style={PANEL} className={`${PANEL_CLASS} h-full w-full flex flex-col`}><DomainBlock label="JOY" sub="Goals & Happiness" tasks={joyTasks} color={personal.find(a => a.id === "joy")?.color || "#C9A961"} icon={personal.find(a => a.id === "joy")?.icon} onToggle={onToggle} onDelete={onDelete} onTaskClick={onTaskClick} subtasksMap={subtasksMap} onToggleSubtask={onToggleSubtask} /></div>
 
         {/* Executive Suite */}
         {business.map((a) => (
