@@ -198,6 +198,9 @@ export async function PATCH(req: NextRequest) {
       status?:      string;
       isDelegated?: boolean;
       priority?:    string;
+      startDate?:   string | null;
+      dueDate?:     string | null;
+      timeTracked?: number;
     };
 
     if (!id) {

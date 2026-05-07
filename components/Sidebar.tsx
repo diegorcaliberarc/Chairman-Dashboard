@@ -1,6 +1,6 @@
 "use client";
 
-import { Bot, Brain, CalendarDays, Palette, Map, LayoutDashboard, Briefcase, User, BarChart, CalendarRange, Archive } from "lucide-react";
+import { Bot, Brain, CalendarDays, Palette, Map, LayoutDashboard, Briefcase, User, BarChart, CalendarRange, Archive, CheckCircle2 } from "lucide-react";
 import { useRouter, usePathname } from "next/navigation";
 import { UserAccountModal } from "./UserAccountModal";
 import { useState, useEffect } from "react";

@@ -129,7 +129,7 @@ export async function POST(req: NextRequest) {
   const fullSystem = `${systemPrompt}\n\n${context}\n\nCRITICAL DIRECTIVE:\nWhen the user asks for a roadmap, sequence, blueprint, or map, you MUST output a Mermaid.js flowchart using graph TD syntax. Enclose the mermaid code strictly in standard markdown mermaid code blocks. If the user asks to map a strategy, you must generate the Mermaid syntax AND use the save_roadmap tool to persist it to the database.\n\nRespond in plain text. Be concise and direct. No markdown headers unless outputting Mermaid blocks. No bullet introductions like "Here are...". Lead with the most important point.`;
 
   try {
-    const model  = genAI.getGenerativeModel({ model: "gemini-2.5-flash", tools: [{ functionDeclarations }] });
+    const model  = genAI.getGenerativeModel({ model: "gemini-2.5-flash", tools: [{ functionDeclarations: functionDeclarations as any }] });
     const payload = [
       { text: fullSystem },
       { text: message },
@@ -151,15 +151,16 @@ export async function POST(req: NextRequest) {
       const parts = response.candidates[0].content.parts;
       const functionCallPart = parts.find((p: any) => p.functionCall);
       if (functionCallPart) {
-        calls = [functionCallPart.functionCall];
+        calls = [functionCallPart.functionCall] as any;
       }
     }
     
     const call = calls?.[0] ?? null;
 
     if (call && call.name === "save_roadmap" && call.args) {
-      const title = call.args.title || "Untitled Roadmap";
-      const mermaid_syntax = call.args.mermaid_syntax || "";
+      const args = call.args as any;
+      const title = args.title || "Untitled Roadmap";
+      const mermaid_syntax = args.mermaid_syntax || "";
       
       console.log("[API /chat] Extracted save_roadmap tool call:", call);
       const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || "";

@@ -33,7 +33,7 @@ import {
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
-type TabId = "MASTER" | "BUSINESS" | "PERSONAL" | "KPI";
+type TabId = "MASTER" | "BUSINESS" | "PERSONAL" | "KPI" | "ARCHIVE";
 
 interface CalendarEvent {
   id: string;
@@ -54,8 +54,9 @@ interface DbTask {
   priority:    string;   // "Urgent" | "High" | "Normal" | "Low" | "None"
   startDate?:  string | null;
   dueDate?:    string | null;
-  timeTracked: number;
+  timeTracked?: number;
   parentId?:   string | null;
+  completed?:  boolean;
 }
 
 interface Agent {
@@ -514,8 +515,9 @@ function PriorityStrikes({
   const allTasks = [...business, ...personal].flatMap((a) => a.tasks.map((t) => ({ task: t, agent: a })));
   const strikes = allTasks.filter(x => x.task.status !== "DONE");
   
+  const pMap: Record<string, number> = { "Urgent": 1, "High": 2, "Normal": 3, "Low": 4, "None": 5 };
   strikes.sort((a, b) => {
-    return (a.task.priority ?? 2) - (b.task.priority ?? 2);
+    return (pMap[a.task.priority || "Normal"] ?? 3) - (pMap[b.task.priority || "Normal"] ?? 3);
   });
 
   return (
@@ -1520,6 +1522,7 @@ export default function ChairmanDashboard() {
       id: tempId, title, pillar: parent.pillar, agentId: parent.agentId,
       category: parent.category, status: "PENDING", isDelegated: false,
       createdAt: new Date().toISOString(), priority: taskPriority, parentId,
+      timeTracked: 0,
     };
     setDbTasks((prev) => [...prev, optimistic]);
     try {
