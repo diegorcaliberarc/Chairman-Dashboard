@@ -1,6 +1,7 @@
 "use client";
 
-import { Bot, Brain, CalendarDays, Palette, Map, LayoutDashboard, Briefcase, User, BarChart } from "lucide-react";
+import { Bot, Brain, CalendarDays, Palette, Map, LayoutDashboard, Briefcase, User, BarChart, CalendarRange } from "lucide-react";
+import { useRouter, usePathname } from "next/navigation";
 import { UserAccountModal } from "./UserAccountModal";
 import { useState, useEffect } from "react";
 import { AppearanceSettings } from "./AppearanceSettings";
@@ -51,12 +52,15 @@ export function Sidebar({
   doneTasks, totalTasks, overallPct, tasksLoading
 }: SidebarProps) {
   const [accountModalOpen, setAccountModalOpen] = useState(false);
+  const router = useRouter();
+  const pathname = usePathname();
 
   const TABS = [
-    { id: "MASTER", label: "MASTER VIEW", icon: <LayoutDashboard size={18} /> },
-    { id: "BUSINESS", label: "BUSINESS", icon: <Briefcase size={18} /> },
-    { id: "PERSONAL", label: "PERSONAL", icon: <User size={18} /> },
-    { id: "KPI", label: "KPIs", icon: <BarChart size={18} /> },
+    { id: "MASTER", label: "MASTER VIEW", icon: <LayoutDashboard size={18} />, route: "/" },
+    { id: "GANTT", label: "GANTT CHART", icon: <CalendarRange size={18} />, route: "/gantt" },
+    { id: "BUSINESS", label: "BUSINESS", icon: <Briefcase size={18} />, route: "/" },
+    { id: "PERSONAL", label: "PERSONAL", icon: <User size={18} />, route: "/" },
+    { id: "KPI", label: "KPIs", icon: <BarChart size={18} />, route: "/" },
   ];
 
   return (
@@ -75,11 +79,23 @@ export function Sidebar({
         <div className="flex flex-col gap-2 p-4 flex-1 overflow-y-auto">
           <div className="text-[10px] tracking-widest uppercase text-zinc-500 dark:text-zinc-400 mb-2 px-2">Navigation</div>
           {TABS.map((tab) => {
-            const isActive = activeTab === tab.id;
+            const isActive = tab.route === "/" 
+              ? (pathname === "/" && activeTab === tab.id)
+              : pathname === tab.route;
             return (
               <button
                 key={tab.id}
-                onClick={() => setActiveTab(tab.id)}
+                onClick={() => {
+                  if (tab.route === pathname) {
+                    if (tab.route === "/") setActiveTab(tab.id);
+                  } else {
+                    if (tab.route === "/") {
+                      // Store tab intent or just go back
+                      setActiveTab(tab.id);
+                    }
+                    router.push(tab.route);
+                  }
+                }}
                 className={`flex items-center gap-3 w-full px-4 py-3 rounded-xl text-xs tracking-widest transition-all ${
                   isActive 
                     ? "bg-[rgba(var(--theme-grad-start-rgb),0.1)] border border-[color:var(--theme-grad-start)]/30" 

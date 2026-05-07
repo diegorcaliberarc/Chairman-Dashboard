@@ -4,6 +4,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { getServerSession } from "next-auth/next";
 import { authOptions } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
+import { syncTaskToCalendar } from "@/lib/calendarSync";
 
 async function getSession() {
   return getServerSession(authOptions);
@@ -84,6 +85,12 @@ export async function POST(req: NextRequest) {
     });
 
     console.log("Tasks POST: created task id =", task.id);
+    
+    if (task.startDate || task.dueDate) {
+      // Async sync to avoid blocking the response
+      syncTaskToCalendar(userId!, task).catch(console.error);
+    }
+
     return NextResponse.json({ task });
   } catch (err: any) {
     console.error("Tasks POST error — full detail:", err);
@@ -157,6 +164,11 @@ export async function PATCH(req: NextRequest) {
     if (timeTracked !== undefined) data.timeTracked = timeTracked;
 
     const task = await prisma.task.update({ where: { id }, data });
+    
+    if (data.startDate !== undefined || data.dueDate !== undefined) {
+      syncTaskToCalendar(userId!, task).catch(console.error);
+    }
+
     return NextResponse.json({ task });
   } catch (err) {
     console.error("Tasks PATCH error:", err);

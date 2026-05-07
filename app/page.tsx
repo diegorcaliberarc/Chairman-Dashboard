@@ -23,6 +23,7 @@ import {
   Brain,
   Bot,
   X,
+  Flag,
   CalendarDays,
   Sun,
   Moon,
@@ -542,7 +543,17 @@ function PriorityStrikes({
             </button>
             <div style={{ width: 4, height: 4, borderRadius: "50%", backgroundColor: agent.color, flexShrink: 0 }} />
             <span style={{ fontSize: 7, letterSpacing: "0.12em", textTransform: "uppercase", color: agent.color, flexShrink: 0, width: 28 }}>{agent.title}</span>
-            <span className="text-[11px] flex-1 overflow-hidden text-ellipsis whitespace-nowrap cursor-pointer hover:underline text-zinc-900 dark:text-white" onClick={() => onTaskClick(task, agent.color)}>{task.title}</span>
+            <span className="text-[11px] flex-1 overflow-hidden text-ellipsis whitespace-nowrap cursor-pointer hover:underline text-zinc-900 dark:text-white flex items-center justify-between" onClick={() => onTaskClick(task, agent.color)}>
+              <span className="flex items-center gap-1.5 truncate">
+                {task.title}
+                {task.priority && task.priority !== "None" && (
+                  <Flag size={9} color={task.priority === "Urgent" ? "#E05A3A" : task.priority === "High" ? "#EAB308" : task.priority === "Normal" ? "#3B82F6" : "#9CA3AF"} />
+                )}
+              </span>
+              {task.dueDate && (
+                <span className="text-[9px] text-zinc-500 shrink-0 ml-2">{new Date(task.dueDate).toLocaleDateString(undefined, { month: 'short', day: 'numeric' })}</span>
+              )}
+            </span>
             <button onClick={() => onDelete(task.id)} style={{ background: "none", border: "none", cursor: "pointer", padding: 0, color: "var(--theme-grad-start)", display: "flex", flexShrink: 0, transition: "color 0.15s" }}
               onMouseEnter={(e) => { (e.currentTarget as HTMLButtonElement).style.color = "#E05A3A"; }}
               onMouseLeave={(e) => { (e.currentTarget as HTMLButtonElement).style.color = "#1A1C24"; }}>
@@ -586,7 +597,17 @@ function DomainBlock({
               <button onClick={(e) => { e.stopPropagation(); onToggle(t.id); }} className="bg-none border-none cursor-pointer p-0 text-themeAccent shrink-0 flex">
                 <Circle size={10} />
               </button>
-              <span className="flex-1 text-[10px] text-themeAccent overflow-hidden text-ellipsis whitespace-nowrap cursor-pointer hover:underline" onClick={() => onTaskClick(t, color)}>{t.title}</span>
+              <span className="flex-1 text-[10px] text-themeAccent overflow-hidden text-ellipsis whitespace-nowrap cursor-pointer hover:underline flex items-center justify-between" onClick={() => onTaskClick(t, color)}>
+                <span className="flex items-center gap-1.5 truncate">
+                  {t.title}
+                  {t.priority && t.priority !== "None" && (
+                    <Flag size={8} color={t.priority === "Urgent" ? "#E05A3A" : t.priority === "High" ? "#EAB308" : t.priority === "Normal" ? "#3B82F6" : "#9CA3AF"} />
+                  )}
+                </span>
+                {t.dueDate && (
+                  <span className="text-[8px] text-zinc-500 shrink-0 ml-2 opacity-70">{new Date(t.dueDate).toLocaleDateString(undefined, { month: 'short', day: 'numeric' })}</span>
+                )}
+              </span>
               <button onClick={(e) => { e.stopPropagation(); onDelete(t.id); }} className="bg-none border-none cursor-pointer p-0 text-themeAccent flex shrink-0 hover:text-[#E05A3A]">
                 <X size={9} />
               </button>
@@ -681,11 +702,19 @@ function CSuiteCard({
                     <Circle size={12} />
                   </button>
                 </div>
-                <div className="shrink-0 pt-[6px]">
-                  <div style={{ width: 4, height: 4, borderRadius: "50%", backgroundColor: t.priority === "Urgent" || t.priority === "High" ? "#E05A3A" : t.priority === "Low" ? "#3B4558" : "#C9A961", flexShrink: 0 }} />
+                <div className="shrink-0 pt-[6px] hidden">
                 </div>
-                <span className="flex-1 text-sm leading-tight text-zinc-900 dark:text-white pt-[3px]">{t.title}</span>
-              </div>
+                <span className="flex-1 text-sm leading-tight text-zinc-900 dark:text-white pt-[3px] flex items-center justify-between">
+                  <span className="flex items-center gap-2 truncate">
+                    {t.title}
+                    {t.priority && t.priority !== "None" && (
+                      <Flag size={10} color={t.priority === "Urgent" ? "#E05A3A" : t.priority === "High" ? "#EAB308" : t.priority === "Normal" ? "#3B82F6" : "#9CA3AF"} />
+                    )}
+                  </span>
+                  {t.dueDate && (
+                    <span className="text-xs text-zinc-500 shrink-0 ml-2">{new Date(t.dueDate).toLocaleDateString(undefined, { month: 'short', day: 'numeric' })}</span>
+                  )}
+                </span>
 
               {/* Nested Subtasks */}
               {isExpanded && subtasksMap && subtasksMap[t.id] && subtasksMap[t.id].length > 0 && (
