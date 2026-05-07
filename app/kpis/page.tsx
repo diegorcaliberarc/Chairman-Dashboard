@@ -53,8 +53,11 @@ const RAW_METRIC_DEFS: Record<string, { name: string, defaultVal: number, target
     { name: "ceo_autonomy_score", defaultVal: 0, target: 80 },
   ],
   cfo: [
-    { name: "Liquidity", defaultVal: 0, target: 0 },
-    { name: "Max Session Drawdown", defaultVal: 1, target: 0 },
+    { name: "cfo_nroi", defaultVal: 0, target: 0 },
+    { name: "cfo_buffer_distance", defaultVal: 0, target: 500 },
+    { name: "cfo_cpas", defaultVal: 0, target: 1 },
+    { name: "cfo_black_swan_score", defaultVal: 0, target: 100 },
+    { name: "cfo_ledger_sync", defaultVal: 0, target: 100 },
   ],
   coo: [
     { name: "coo_mission_velocity", defaultVal: 0, target: 90 },
@@ -392,6 +395,44 @@ function getCmoStatus(val: number, type: string) {
   return { color: "text-zinc-500", label: "UNKNOWN" };
 }
 
+function calculateCfoPhysics(localVals: Record<string, number>) {
+  const nroi = localVals["cfo_nroi"] || 0;
+  const buffer = localVals["cfo_buffer_distance"] || 0;
+  const cpas = localVals["cfo_cpas"] || 0;
+  const swan = localVals["cfo_black_swan_score"] || 0;
+  const sync = localVals["cfo_ledger_sync"] || 0;
+
+  return { nroi, buffer, cpas, swan, sync };
+}
+
+function getCfoStatus(val: number, type: string) {
+  if (type === "nroi") {
+    if (val > 0) return { color: "text-emerald-500", label: "✅ OPTIMAL" };
+    return { color: "text-red-500", label: "🚨 CRITICAL" };
+  }
+  if (type === "buffer") {
+    if (val >= 500) return { color: "text-emerald-500", label: "✅ OPTIMAL" };
+    if (val >= 100) return { color: "text-yellow-500", label: "⚠️ WARNING" };
+    return { color: "text-red-500", label: "🚨 CRITICAL" };
+  }
+  if (type === "cpas") {
+    if (val <= 1.00) return { color: "text-emerald-500", label: "✅ OPTIMAL" };
+    if (val <= 5.00) return { color: "text-yellow-500", label: "⚠️ WARNING" };
+    return { color: "text-red-500", label: "🚨 CRITICAL" };
+  }
+  if (type === "swan") {
+    if (val >= 100) return { color: "text-emerald-500", label: "✅ OPTIMAL" };
+    if (val >= 80) return { color: "text-yellow-500", label: "⚠️ WARNING" };
+    return { color: "text-red-500", label: "🚨 CRITICAL" };
+  }
+  if (type === "sync") {
+    if (val >= 100) return { color: "text-emerald-500", label: "✅ OPTIMAL" };
+    if (val >= 90) return { color: "text-yellow-500", label: "⚠️ WARNING" };
+    return { color: "text-red-500", label: "🚨 CRITICAL" };
+  }
+  return { color: "text-zinc-500", label: "UNKNOWN" };
+}
+
 function SectorCard({ category, allMetrics, onSave }: any) {
   const [isFlipped, setIsFlipped] = useState(false);
   const defs = RAW_METRIC_DEFS[category.id];
@@ -429,7 +470,8 @@ function SectorCard({ category, allMetrics, onSave }: any) {
   const isCeo = category.id === "ceo";
   const isCoo = category.id === "coo";
   const isCmo = category.id === "cmo";
-  const isActiveSector = isWealth || isHealth || isRelate || isJoy || isCeo || isCoo || isCmo;
+  const isCfo = category.id === "cfo";
+  const isActiveSector = isWealth || isHealth || isRelate || isJoy || isCeo || isCoo || isCmo || isCfo;
   const wPhys = isWealth ? calculateWealthPhysics(localVals) : null;
   const hPhys = isHealth ? calculateHealthPhysics(localVals) : null;
   const rPhys = isRelate ? calculateRelatePhysics(localVals) : null;
@@ -437,25 +479,17 @@ function SectorCard({ category, allMetrics, onSave }: any) {
   const cPhys = isCeo ? calculateCeoPhysics(localVals) : null;
   const cooPhys = isCoo ? calculateCooPhysics(localVals) : null;
   const cmoPhys = isCmo ? calculateCmoPhysics(localVals) : null;
+  const cfoPhys = isCfo ? calculateCfoPhysics(localVals) : null;
 
   let primaryLabel = "Core Score";
   let primaryValue = "0";
   let status = "RED";
 
-  if (category.id === "cfo") {
-    const liq = localVals["Liquidity"] || 0;
-    const dd = localVals["Max Session Drawdown"] || 1;
-    const mos = liq / dd;
-    primaryLabel = "Margin of Safety";
-    primaryValue = `${mos.toFixed(1)}x`;
-    status = getStatus(mos, 5, ">");
-  } else {
-    const first = defs[0].name;
-    const val = localVals[first] || 0;
-    primaryLabel = first;
-    primaryValue = val.toString();
-    status = getStatus(val, defs[0].target, ">");
-  }
+  const first = defs[0].name;
+  const val = localVals[first] || 0;
+  primaryLabel = first;
+  primaryValue = val.toString();
+  status = getStatus(val, defs[0].target, ">");
 
   const statusColors = {
     GREEN: "bg-emerald-500 shadow-[0_0_10px_rgba(16,185,129,0.5)]",
@@ -614,6 +648,27 @@ function SectorCard({ category, allMetrics, onSave }: any) {
                 { label: "GRAND SLAM CONVERSION", sub: "Conversion Gravity", val: `${cmoPhys.conv_rate.toFixed(1)}%`, status: getCmoStatus(cmoPhys.conv_rate, "conv_rate") },
                 { label: "TIME-TO-VALUE (TTV)", sub: "Activation Speed", val: `${cmoPhys.ttv.toFixed(1)} Hrs`, status: getCmoStatus(cmoPhys.ttv, "ttv") },
                 { label: "SIGNAL-TO-NOISE (CLARITY)", sub: "Messaging Clarity", val: `${cmoPhys.storybrand}/10`, status: getCmoStatus(cmoPhys.storybrand, "storybrand") },
+              ].map(k => (
+                <div key={k.label} className="flex justify-between items-center bg-zinc-50/50 dark:bg-white/5 p-2 rounded-lg border border-zinc-200/50 dark:border-white/5">
+                  <div className="flex flex-col">
+                    <span className="text-[10px] font-bold tracking-widest uppercase text-zinc-900 dark:text-zinc-100">{k.label}</span>
+                    <span className="text-[8px] tracking-widest uppercase text-zinc-500">{k.sub}</span>
+                  </div>
+                  <div className="flex flex-col items-end gap-0.5">
+                    <span className="font-mono text-xs font-medium text-zinc-900 dark:text-white">{k.val}</span>
+                    <span className={`text-[9px] font-bold tracking-widest uppercase ${k.status.color}`}>{k.status.label}</span>
+                  </div>
+                </div>
+              ))}
+            </div>
+          ) : isCfo && cfoPhys ? (
+            <div className="flex flex-col gap-2 flex-1 mt-6 justify-center">
+              {[
+                { label: "NET RETURN ON INTELLIGENCE", sub: "Profitability / NROI", val: `$${cfoPhys.nroi.toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2})}`, status: getCfoStatus(cfoPhys.nroi, "nroi") },
+                { label: "ABSOLUTE RUIN BUFFER", sub: "Structural Preservation", val: `$${cfoPhys.buffer.toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2})}`, status: getCfoStatus(cfoPhys.buffer, "buffer") },
+                { label: "COST PER SETUP (CPAS)", sub: "Intelligence Cost", val: `$${cfoPhys.cpas.toFixed(2)}`, status: getCfoStatus(cfoPhys.cpas, "cpas") },
+                { label: "BLACK SWAN RESILIENCE", sub: "Market Anti-Fragility", val: `${cfoPhys.swan.toFixed(1)}%`, status: getCfoStatus(cfoPhys.swan, "swan") },
+                { label: "TELEMETRY-TO-LEDGER SYNC", sub: "Data Friction", val: `${cfoPhys.sync.toFixed(1)}%`, status: getCfoStatus(cfoPhys.sync, "sync") },
               ].map(k => (
                 <div key={k.label} className="flex justify-between items-center bg-zinc-50/50 dark:bg-white/5 p-2 rounded-lg border border-zinc-200/50 dark:border-white/5">
                   <div className="flex flex-col">
