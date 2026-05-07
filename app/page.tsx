@@ -35,7 +35,7 @@ import {
   Landmark,
   Terminal,
   Layers,
-  Coins,
+  CircleDollarSign,
   Activity,
   Users,
 } from "lucide-react";
@@ -85,12 +85,12 @@ const AGENT_META_BUSINESS = [
   { id: "coo", title: "COO", role: "Ops & Execution",        color: "var(--theme-grad-start)", icon: <Settings className="w-4 h-4 opacity-70" /> },
   { id: "cmo", title: "CMO", role: "Growth & Sales",         color: "var(--theme-grad-start)", icon: <TrendingUp className="w-4 h-4 opacity-70" /> },
   { id: "cfo", title: "CFO", role: "Finance & Cash",         color: "var(--theme-grad-start)", icon: <Landmark className="w-4 h-4 opacity-70" /> },
-  { id: "cto", title: "CTO", role: "APIs & Claude Pipelines",color: "var(--theme-grad-start)", icon: <Terminal className="w-4 h-4 opacity-70" /> },
+  { id: "cto", title: "CTO", role: "APIs & Automation Pipelines",color: "var(--theme-grad-start)", icon: <Terminal className="w-4 h-4 opacity-70" /> },
   { id: "cpo", title: "CPO", role: "Product & UX",           color: "var(--theme-grad-start)", icon: <Layers className="w-4 h-4 opacity-70" /> },
 ];
 
 const AGENT_META_PERSONAL = [
-  { id: "wealth", title: "WEALTH",        role: "Income & Freedom",        color: "var(--theme-grad-start)", icon: <Coins className="w-4 h-4 opacity-70" /> },
+  { id: "wealth", title: "WEALTH",        role: "Income & Freedom",        color: "var(--theme-grad-start)", icon: <CircleDollarSign className="w-4 h-4 opacity-70" /> },
   { id: "health", title: "HEALTH",        role: "Training & Energy",       color: "var(--theme-grad-start)", icon: <Activity className="w-4 h-4 opacity-70" /> },
   { id: "relate", title: "RELATIONSHIPS", role: "Legacy & Pack",           color: "var(--theme-grad-start)", icon: <Users className="w-4 h-4 opacity-70" /> },
   { id: "joy",    title: "JOY",           role: "Goals & Happiness",       color: "var(--theme-grad-start)", icon: <Sparkles className="w-4 h-4 opacity-70" /> },
