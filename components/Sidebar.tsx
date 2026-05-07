@@ -57,7 +57,6 @@ export function Sidebar({
 
   const TABS = [
     { id: "MASTER", label: "MASTER VIEW", icon: <LayoutDashboard size={18} />, route: "/" },
-    { id: "GANTT", label: "GANTT CHART", icon: <CalendarRange size={18} />, route: "/gantt" },
     { id: "BUSINESS", label: "BUSINESS", icon: <Briefcase size={18} />, route: "/" },
     { id: "PERSONAL", label: "PERSONAL", icon: <User size={18} />, route: "/" },
     { id: "KPI", label: "KPIs", icon: <BarChart size={18} />, route: "/" },

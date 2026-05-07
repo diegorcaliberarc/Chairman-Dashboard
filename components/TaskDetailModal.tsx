@@ -19,40 +19,18 @@ export function TaskDetailModal({
 
   const [status, setStatus] = useState(task.status || "To Do");
   const [priority, setPriority] = useState(task.priority || "None");
-  const [startDate, setStartDate] = useState(task.startDate ? task.startDate.split('T')[0] : "");
-  const [dueDate, setDueDate] = useState(task.dueDate ? task.dueDate.split('T')[0] : "");
-  const [timeTracked, setTimeTracked] = useState(task.timeTracked || 0);
-  const [isTracking, setIsTracking] = useState(false);
-
-  useEffect(() => {
-    let interval: any;
-    if (isTracking) {
-      interval = setInterval(() => setTimeTracked((prev: number) => prev + 1), 1000);
-    }
-    return () => clearInterval(interval);
-  }, [isTracking]);
 
   const handleSave = () => {
     onSave(task.id, { 
       title, 
       description,
       status,
-      priority,
-      startDate: startDate ? new Date(startDate).toISOString() : null,
-      dueDate: dueDate ? new Date(dueDate).toISOString() : null,
-      timeTracked: timeTracked ? parseInt(timeTracked as any, 10) : 0
+      priority
     });
     onClose();
   };
 
-  const formatTime = (seconds: number) => {
-    const h = Math.floor(seconds / 3600);
-    const m = Math.floor((seconds % 3600) / 60);
-    const s = seconds % 60;
-    if (h > 0) return `${h}h ${m}m`;
-    if (m > 0) return `${m}m ${s}s`;
-    return `${s}s`;
-  };
+
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-md p-6" onClick={onClose}>
@@ -118,37 +96,7 @@ export function TaskDetailModal({
               </select>
             </div>
 
-            {/* Date Picker */}
-            <div className="flex items-center gap-1.5 bg-white/5 dark:bg-black/20 border border-zinc-200/20 dark:border-white/5 rounded-md px-2 py-1.5">
-              <CalendarIcon size={12} className="text-zinc-500" />
-              <input 
-                type="date" 
-                value={startDate}
-                onChange={(e) => setStartDate(e.target.value)}
-                className="bg-transparent border-none outline-none text-xs text-zinc-900 dark:text-white cursor-pointer"
-                title="Start Date"
-              />
-              <span className="text-zinc-500 text-xs">→</span>
-              <input 
-                type="date" 
-                value={dueDate}
-                onChange={(e) => setDueDate(e.target.value)}
-                className="bg-transparent border-none outline-none text-xs text-zinc-900 dark:text-white cursor-pointer"
-                title="Due Date"
-              />
-            </div>
 
-            {/* Time Tracker */}
-            <div className="flex items-center gap-2 bg-white/5 dark:bg-black/20 border border-zinc-200/20 dark:border-white/5 rounded-md px-2 py-1.5 ml-auto">
-              <Clock size={12} className="text-zinc-500" />
-              <span className="text-xs font-mono text-zinc-900 dark:text-white min-w-[50px]">{formatTime(timeTracked)}</span>
-              <button 
-                onClick={() => setIsTracking(!isTracking)}
-                className={`flex items-center justify-center p-1 rounded-sm transition-colors ${isTracking ? 'bg-red-500/20 text-red-400 hover:bg-red-500/30' : 'bg-emerald-500/20 text-emerald-400 hover:bg-emerald-500/30'}`}
-              >
-                {isTracking ? <Square size={12} fill="currentColor" /> : <Play size={12} fill="currentColor" />}
-              </button>
-            </div>
           </div>
 
           {/* Description */}

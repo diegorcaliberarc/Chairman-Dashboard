@@ -4,20 +4,6 @@ import { NextRequest, NextResponse } from "next/server";
 import { getServerSession } from "next-auth/next";
 import { authOptions } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
-import { syncTaskToCalendar } from "@/lib/calendarSync";
-
-// 1. Safe Date Parsing Failsafe
-const parseDateSafe = (val: any) => {
-  if (!val || val === "null" || val === "undefined" || String(val).trim() === "") return null;
-  const d = new Date(val);
-  return isNaN(d.valueOf()) ? null : d;
-};
-
-// 2. Safe Integer Parsing Failsafe
-const parseTimeSafe = (val: any) => {
-  const parsed = parseInt(val, 10);
-  return isNaN(parsed) ? 0 : parsed;
-};
 
 async function getSession() {
   return getServerSession(authOptions);
@@ -109,12 +95,7 @@ export async function POST(req: NextRequest) {
       // 2. BOOLEANS
       isDelegated: body.isDelegated === true || body.isDelegated === "true",
 
-      // 3. DATES & INTEGERS
-      startDate: parseDateSafe(body.startDate),
-      dueDate: parseDateSafe(body.dueDate),
-      timeTracked: parseTimeSafe(body.timeTracked),
-
-      // 4. STRICT UUID FOREIGN KEYS (Vaporize empty strings to null)
+      // 3. STRICT UUID FOREIGN KEYS (Vaporize empty strings to null)
       parentId: (!body.parentId || body.parentId === "" || body.parentId === "null" || body.parentId === "undefined") ? null : body.parentId,
     };
 
@@ -126,13 +107,7 @@ export async function POST(req: NextRequest) {
 
     console.log("Tasks POST: created task id =", task.id);
     
-    if (task.startDate || task.dueDate) {
-      try {
-        await syncTaskToCalendar(userId!, task);
-      } catch (calendarError) {
-        console.error("Google Calendar sync failed, but task was created:", calendarError);
-      }
-    }
+
 
     return NextResponse.json({ task });
   } catch (err: any) {
@@ -196,9 +171,6 @@ export async function PATCH(req: NextRequest) {
       status?:      string;
       isDelegated?: boolean;
       priority?:    string;
-      startDate?:   string | null;
-      dueDate?:     string | null;
-      timeTracked?: number;
     };
 
     if (!id) {
@@ -221,9 +193,7 @@ export async function PATCH(req: NextRequest) {
     if (body.status !== undefined) sanitizedData.status = body.status;
     if (body.priority !== undefined) sanitizedData.priority = body.priority;
     if (body.isDelegated !== undefined) sanitizedData.isDelegated = body.isDelegated === true || body.isDelegated === "true";
-    if (body.startDate !== undefined) sanitizedData.startDate = parseDateSafe(body.startDate);
-    if (body.dueDate !== undefined) sanitizedData.dueDate = parseDateSafe(body.dueDate);
-    if (body.timeTracked !== undefined) sanitizedData.timeTracked = parseTimeSafe(body.timeTracked);
+
     if (body.parentId !== undefined) {
       sanitizedData.parentId = (!body.parentId || body.parentId === "" || body.parentId === "null" || body.parentId === "undefined") ? null : body.parentId;
     }
@@ -232,13 +202,7 @@ export async function PATCH(req: NextRequest) {
 
     const task = await prisma.task.update({ where: { id }, data: sanitizedData });
     
-    if (body.startDate !== undefined || body.dueDate !== undefined) {
-      try {
-        await syncTaskToCalendar(userId!, task);
-      } catch (calendarError) {
-        console.error("Google Calendar sync failed, but task was updated:", calendarError);
-      }
-    }
+
 
     return NextResponse.json({ task });
   } catch (err) {
