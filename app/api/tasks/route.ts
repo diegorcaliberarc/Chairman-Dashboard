@@ -95,10 +95,13 @@ export async function POST(req: NextRequest) {
   }
 
   try {
-    // Blanket scrub: Automatically vaporize empty strings for ANY relational field
+    // Bulletproof UUID Validator
+    const uuidRegex = /^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$/;
+
     for (const key of Object.keys(body)) {
-      if (key.endsWith('Id') || key === 'id') {
-        if (body[key] === "" || body[key] === "null" || body[key] === "undefined") {
+      if (key.endsWith('Id') && key !== 'id') {
+        // If it's empty, null, or NOT a valid 36-character UUID, vaporize it to null
+        if (!body[key] || body[key] === "null" || body[key] === "undefined" || !uuidRegex.test(String(body[key]))) {
           body[key] = null;
         }
       }
@@ -208,10 +211,13 @@ export async function PATCH(req: NextRequest) {
       return NextResponse.json({ error: "Forbidden" }, { status: 403 });
     }
 
-    // Blanket scrub: Automatically vaporize empty strings for ANY relational field
+    // Bulletproof UUID Validator
+    const uuidRegex = /^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$/;
+
     for (const key of Object.keys(body)) {
-      if (key.endsWith('Id') || key === 'id') {
-        if (body[key] === "" || body[key] === "null" || body[key] === "undefined") {
+      if (key.endsWith('Id') && key !== 'id') {
+        // If it's empty, null, or NOT a valid 36-character UUID, vaporize it to null
+        if (!body[key] || body[key] === "null" || body[key] === "undefined" || !uuidRegex.test(String(body[key]))) {
           body[key] = null;
         }
       }
