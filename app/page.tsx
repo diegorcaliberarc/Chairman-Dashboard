@@ -773,7 +773,7 @@ function KPITab() {
 // ─── Master View Tab (One-Pager Command Center) ───────────────────────────────
 
 function MasterViewTab({
-  business, personal, calConnected, calendarEvents, calLoading, calError, onToggle, onDelete, onTaskClick, subtasksMap, onToggleSubtask
+  business, personal, calConnected, calendarEvents, calLoading, calError, onToggle, onDelete, onTaskClick, subtasksMap, onToggleSubtask, isArchive
 }: {
   business:       Agent[];
   personal:       Agent[];
@@ -1281,12 +1281,18 @@ function ThemeToggle() {
 
 // ─── Archive View ─────────────────────────────────────────────────────────────
 
-function ArchiveViewTab({ archivedBusiness, archivedPersonal, subtasksMap, onToggle, onDelete, onTaskClick, onToggleSubtask }: any) {
+function ArchiveViewTab({ archivedBusiness, archivedPersonal, subtasksMap, onToggle, onDelete, onTaskClick, onToggleSubtask, onPurge }: any) {
   return (
     <div className="flex flex-col gap-6 h-full w-full">
-      <div className="text-center pb-4 border-b border-zinc-200/20 dark:border-white/10 mb-2 mt-4">
+      <div className="text-center pb-4 border-b border-zinc-200/20 dark:border-white/10 mb-2 mt-4 relative">
         <h2 className="text-xl font-bold tracking-[0.2em] uppercase text-zinc-500">ARCHIVED MISSIONS</h2>
         <p className="text-xs text-zinc-600 mt-1 uppercase tracking-widest">COMPLETED LOG</p>
+        <button 
+          onClick={onPurge}
+          className="absolute right-0 top-1/2 -translate-y-1/2 px-4 py-2 rounded-xl text-xs font-bold tracking-widest uppercase border border-red-500/30 text-red-400 hover:bg-red-500/10 transition-colors"
+        >
+          Clear Archive
+        </button>
       </div>
       <div className="flex-1 overflow-y-auto">
         <MasterViewTab 
@@ -1484,14 +1490,21 @@ export default function ChairmanDashboard() {
     return toggleTask(subtaskId);
   }, [toggleTask]);
 
-  const deleteTask = useCallback(async (taskId: string) => {
+  const deleteTask = useCallback(async (taskId?: string, bulkArchive?: boolean) => {
+    if (bulkArchive) {
+      setDbTasks((prev) => prev.filter((t) => !t.completed && t.status !== "DONE" && t.status !== "ARCHIVED"));
+      try {
+        await fetch("/api/tasks?deleteAllArchived=true", { method: "DELETE" });
+      } catch {}
+      return;
+    }
+    if (!taskId) return;
+    
     // Optimistically remove task + its subtasks from state
     setDbTasks((prev) => prev.filter((t) => t.id !== taskId && t.parentId !== taskId));
     try {
-      await fetch("/api/tasks", {
+      await fetch(`/api/tasks?id=${taskId}`, {
         method:  "DELETE",
-        headers: { "Content-Type": "application/json" },
-        body:    JSON.stringify({ id: taskId }),
       });
     } catch {
       // Silent failure — task already removed from UI
@@ -1645,7 +1658,7 @@ export default function ChairmanDashboard() {
         }}
       >
         {activeTab === "MASTER"   && <MasterViewTab key="master"   business={business} personal={personal} calConnected={calConnected} calendarEvents={calendarEvents} calLoading={calLoading} calError={calError} onToggle={toggleTask} onDelete={deleteTask} onTaskClick={handleTaskClick} subtasksMap={subtasksMap} onToggleSubtask={toggleSubtask} />}
-        {activeTab === "ARCHIVE"  && <ArchiveViewTab key="archive" archivedBusiness={archivedBusiness} archivedPersonal={archivedPersonal} subtasksMap={archivedSubtasksMap} onToggle={toggleTask} onDelete={deleteTask} onTaskClick={handleTaskClick} onToggleSubtask={toggleSubtask} />}
+        {activeTab === "ARCHIVE"  && <ArchiveViewTab key="archive" archivedBusiness={archivedBusiness} archivedPersonal={archivedPersonal} subtasksMap={archivedSubtasksMap} onToggle={toggleTask} onDelete={deleteTask} onTaskClick={handleTaskClick} onToggleSubtask={toggleSubtask} onPurge={() => deleteTask(undefined, true)} />}
         {activeTab === "BUSINESS" && <BusinessTab   key="business" agents={business} onToggle={(_, taskId) => toggleTask(taskId)} onDelete={deleteTask} onTaskClick={handleTaskClick} subtasksMap={subtasksMap} onToggleSubtask={toggleSubtask} />}
         {activeTab === "PERSONAL" && <PersonalTab   key="personal" agents={personal} onToggle={(_, taskId) => toggleTask(taskId)} onDelete={deleteTask} onTaskClick={handleTaskClick} subtasksMap={subtasksMap} onToggleSubtask={toggleSubtask} />}
         {activeTab === "KPI"      && <KPITab        key="kpi" />}

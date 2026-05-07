@@ -135,20 +135,37 @@ export async function DELETE(req: NextRequest) {
   const userId = (session as any)?.userId as string | undefined;
 
   try {
-    const { id } = await req.json() as { id: string };
-    if (!id) return NextResponse.json({ error: "id required" }, { status: 400 });
+    const { searchParams } = new URL(req.url);
+    const id = searchParams.get('id');
+    const deleteAllArchived = searchParams.get('deleteAllArchived');
 
-    const existing = await prisma.task.findUnique({ where: { id } });
-    if (!existing)               return NextResponse.json({ error: "Not found" }, { status: 404 });
-    if (existing.userId && existing.userId !== userId)
-                                 return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+    if (id) {
+      const existing = await prisma.task.findUnique({ where: { id } });
+      if (!existing)               return NextResponse.json({ error: "Not found" }, { status: 404 });
+      if (existing.userId && existing.userId !== userId)
+                                   return NextResponse.json({ error: "Forbidden" }, { status: 403 });
 
-    // Cascade deletes subtasks via Prisma self-relation onDelete: Cascade
-    await prisma.task.delete({ where: { id } });
-    return NextResponse.json({ ok: true });
+      // Cascade deletes subtasks via Prisma self-relation onDelete: Cascade
+      await prisma.task.delete({ where: { id } });
+      return NextResponse.json({ ok: true, message: 'Task deleted' });
+    }
+
+    if (deleteAllArchived === 'true') {
+      await prisma.task.deleteMany({
+        where: {
+          AND: [
+            userId ? { userId } : {},
+            { OR: [{ status: 'DONE' }, { status: 'ARCHIVED' }] }
+          ]
+        }
+      });
+      return NextResponse.json({ ok: true, message: 'Archive purged' });
+    }
+
+    return NextResponse.json({ error: "No valid deletion parameters" }, { status: 400 });
   } catch (err) {
     console.error("Tasks DELETE error:", err);
-    return NextResponse.json({ error: "Failed to delete task" }, { status: 500 });
+    return NextResponse.json({ error: "Failed to delete" }, { status: 500 });
   }
 }
 
