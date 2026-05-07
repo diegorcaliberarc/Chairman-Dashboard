@@ -4,7 +4,7 @@ import { useState, useEffect } from "react";
 import { Sidebar } from "@/components/Sidebar";
 import { useSession, signIn, signOut } from "next-auth/react";
 import { usePathname } from "next/navigation";
-import { Target, Settings, TrendingUp, Landmark, Terminal, Layers, CircleDollarSign, Activity, Users, Sparkles, Edit2, X, Save } from "lucide-react";
+import { Target, Settings, TrendingUp, Landmark, Terminal, Layers, CircleDollarSign, Activity, Users, Sparkles, Edit2, X, Save, BadgeDollarSign } from "lucide-react";
 
 const CSS_3D = `
 .perspective-1000 { perspective: 1000px; }
@@ -32,6 +32,7 @@ const CATEGORIES = [
   { id: "cfo", title: "CFO", icon: Landmark, color: "#8BA87B" },
   { id: "cto", title: "CTO", icon: Terminal, color: "#4A90E2" },
   { id: "cpo", title: "CPO", icon: Layers, color: "#F39C12" },
+  { id: "cro", title: "CRO", icon: BadgeDollarSign, color: "#10B981" },
 ];
 
 const RAW_METRIC_DEFS: Record<string, { name: string, defaultVal: number, target: number }[]> = {
@@ -86,6 +87,13 @@ const RAW_METRIC_DEFS: Record<string, { name: string, defaultVal: number, target
     { name: "cpo_ui_ttv", defaultVal: 0, target: 3 },
     { name: "cpo_pmf_score", defaultVal: 0, target: 40 },
     { name: "cpo_essentialism", defaultVal: 0, target: 95 },
+  ],
+  cro: [
+    { name: "cro_lead_to_close", defaultVal: 0, target: 20 },
+    { name: "cro_net_cash", defaultVal: 0, target: 0 },
+    { name: "cro_sales_cycle_days", defaultVal: 0, target: 14 },
+    { name: "cro_reclaim_rate", defaultVal: 0, target: 15 },
+    { name: "cro_pipeline_hygiene", defaultVal: 0, target: 95 },
   ],
   health: [
     { name: "health_protein", defaultVal: 0, target: 160 },
@@ -523,6 +531,44 @@ function getCpoStatus(val: number, type: string) {
   return { color: "text-zinc-500", label: "UNKNOWN" };
 }
 
+function calculateCroPhysics(localVals: Record<string, number>) {
+  const lead_to_close = localVals["cro_lead_to_close"] || 0;
+  const net_cash = localVals["cro_net_cash"] || 0;
+  const cycle = localVals["cro_sales_cycle_days"] || 0;
+  const reclaim = localVals["cro_reclaim_rate"] || 0;
+  const hygiene = localVals["cro_pipeline_hygiene"] || 0;
+
+  return { lead_to_close, net_cash, cycle, reclaim, hygiene };
+}
+
+function getCroStatus(val: number, type: string) {
+  if (type === "lead_to_close") {
+    if (val >= 20) return { color: "text-emerald-500", label: "✅ OPTIMAL" };
+    if (val >= 10) return { color: "text-yellow-500", label: "⚠️ WARNING" };
+    return { color: "text-red-500", label: "🚨 CRITICAL" };
+  }
+  if (type === "net_cash") {
+    if (val > 0) return { color: "text-emerald-500", label: "✅ OPTIMAL" };
+    return { color: "text-red-500", label: "🚨 CRITICAL" };
+  }
+  if (type === "cycle") {
+    if (val <= 14) return { color: "text-emerald-500", label: "✅ OPTIMAL" };
+    if (val <= 30) return { color: "text-yellow-500", label: "⚠️ WARNING" };
+    return { color: "text-red-500", label: "🚨 CRITICAL" };
+  }
+  if (type === "reclaim") {
+    if (val >= 15) return { color: "text-emerald-500", label: "✅ OPTIMAL" };
+    if (val >= 5) return { color: "text-yellow-500", label: "⚠️ WARNING" };
+    return { color: "text-red-500", label: "🚨 CRITICAL" };
+  }
+  if (type === "hygiene") {
+    if (val >= 95) return { color: "text-emerald-500", label: "✅ OPTIMAL" };
+    if (val >= 80) return { color: "text-yellow-500", label: "⚠️ WARNING" };
+    return { color: "text-red-500", label: "🚨 CRITICAL" };
+  }
+  return { color: "text-zinc-500", label: "UNKNOWN" };
+}
+
 function SectorCard({ category, allMetrics, onSave }: any) {
   const [isFlipped, setIsFlipped] = useState(false);
   const defs = RAW_METRIC_DEFS[category.id];
@@ -563,7 +609,8 @@ function SectorCard({ category, allMetrics, onSave }: any) {
   const isCfo = category.id === "cfo";
   const isCto = category.id === "cto";
   const isCpo = category.id === "cpo";
-  const isActiveSector = isWealth || isHealth || isRelate || isJoy || isCeo || isCoo || isCmo || isCfo || isCto || isCpo;
+  const isCro = category.id === "cro";
+  const isActiveSector = isWealth || isHealth || isRelate || isJoy || isCeo || isCoo || isCmo || isCfo || isCto || isCpo || isCro;
   const wPhys = isWealth ? calculateWealthPhysics(localVals) : null;
   const hPhys = isHealth ? calculateHealthPhysics(localVals) : null;
   const rPhys = isRelate ? calculateRelatePhysics(localVals) : null;
@@ -574,6 +621,7 @@ function SectorCard({ category, allMetrics, onSave }: any) {
   const cfoPhys = isCfo ? calculateCfoPhysics(localVals) : null;
   const ctoPhys = isCto ? calculateCtoPhysics(localVals) : null;
   const cpoPhys = isCpo ? calculateCpoPhysics(localVals) : null;
+  const croPhys = isCro ? calculateCroPhysics(localVals) : null;
 
   let primaryLabel = "Core Score";
   let primaryValue = "0";
@@ -805,6 +853,27 @@ function SectorCard({ category, allMetrics, onSave }: any) {
                 { label: "UI TIME-TO-VALUE", sub: "Cognitive Friction", val: `${cpoPhys.ttv.toFixed(1)} Secs`, status: getCpoStatus(cpoPhys.ttv, "ttv") },
                 { label: "THE \"MUST-HAVE\" SCORE", sub: "Product/Market Fit", val: `${cpoPhys.pmf.toFixed(1)}%`, status: getCpoStatus(cpoPhys.pmf, "pmf") },
                 { label: "FRONTEND ESSENTIALISM", sub: "Signal-to-Noise", val: `${cpoPhys.ess}/100`, status: getCpoStatus(cpoPhys.ess, "ess") },
+              ].map(k => (
+                <div key={k.label} className="flex justify-between items-center bg-zinc-50/50 dark:bg-white/5 p-2 rounded-lg border border-zinc-200/50 dark:border-white/5">
+                  <div className="flex flex-col">
+                    <span className="text-[10px] font-bold tracking-widest uppercase text-zinc-900 dark:text-zinc-100">{k.label}</span>
+                    <span className="text-[8px] tracking-widest uppercase text-zinc-500">{k.sub}</span>
+                  </div>
+                  <div className="flex flex-col items-end gap-0.5">
+                    <span className="font-mono text-xs font-medium text-zinc-900 dark:text-white">{k.val}</span>
+                    <span className={`text-[9px] font-bold tracking-widest uppercase ${k.status.color}`}>{k.status.label}</span>
+                  </div>
+                </div>
+              ))}
+            </div>
+          ) : isCro && croPhys ? (
+            <div className="flex flex-col gap-2 flex-1 mt-6 justify-center">
+              {[
+                { label: "LEAD-TO-CLOSE RATE", sub: "Kinetic Conversion", val: `${croPhys.lead_to_close.toFixed(1)}%`, status: getCroStatus(croPhys.lead_to_close, "lead_to_close") },
+                { label: "NET CASH CAPTURED", sub: "Capital Capture", val: `$${croPhys.net_cash.toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2})}`, status: getCroStatus(croPhys.net_cash, "net_cash") },
+                { label: "SALES CYCLE VELOCITY", sub: "Pipeline Friction", val: `${croPhys.cycle} Days`, status: getCroStatus(croPhys.cycle, "cycle") },
+                { label: "THE RECLAIM RATE", sub: "Salvage Velocity", val: `${croPhys.reclaim.toFixed(1)}%`, status: getCroStatus(croPhys.reclaim, "reclaim") },
+                { label: "PIPELINE HYGIENE", sub: "CRM Accuracy", val: `${croPhys.hygiene}/100`, status: getCroStatus(croPhys.hygiene, "hygiene") },
               ].map(k => (
                 <div key={k.label} className="flex justify-between items-center bg-zinc-50/50 dark:bg-white/5 p-2 rounded-lg border border-zinc-200/50 dark:border-white/5">
                   <div className="flex flex-col">
