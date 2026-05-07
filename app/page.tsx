@@ -786,6 +786,7 @@ function MasterViewTab({
   onTaskClick:    (task: DbTask, color: string) => void;
   subtasksMap?:   any;
   onToggleSubtask?: (taskId: string, subtaskId: string) => void;
+  isArchive?:     boolean;
 }) {
   const wealthTasks = personal.find((a) => a.id === "wealth")?.tasks ?? [];
   const healthTasks = personal.find((a) => a.id === "health")?.tasks ?? [];
@@ -803,19 +804,21 @@ function MasterViewTab({
   const CAL_PANEL: React.CSSProperties = { ...PANEL, overflowY: "auto" };
 
   return (
-    <div className="flex flex-col lg:flex-row gap-6 w-full min-h-max">
+    <div className={`flex flex-col ${isArchive ? '' : 'lg:flex-row'} gap-6 w-full min-h-max`}>
       {/* ── Left Column ──────────────────────────────────────────────────── */}
-      <div className="flex flex-col w-full lg:w-1/3 min-h-full gap-4 pb-6 pr-1">
-        <div style={{ ...PANEL, maxHeight: "250px", overflowY: "auto", flexShrink: 0 }} className={PANEL_CLASS}>
+      <div className={`flex flex-col w-full ${isArchive ? '' : 'lg:w-1/3'} min-h-full gap-4 pb-6 pr-1`}>
+        <div style={{ ...PANEL, maxHeight: isArchive ? "none" : "250px", overflowY: "auto", flexShrink: 0 }} className={PANEL_CLASS}>
           <PriorityStrikes business={business} personal={personal} onToggle={onToggle} onDelete={onDelete} onTaskClick={onTaskClick} subtasksMap={subtasksMap} onToggleSubtask={onToggleSubtask} />
         </div>
-        <div style={{ ...CAL_PANEL, minHeight: 0 }} className={`${PANEL_CLASS} flex-1 min-h-[500px] flex flex-col`}>
-          <CalendarFeed calConnected={calConnected} events={calendarEvents} calLoading={calLoading} calError={calError} />
-        </div>
+        {!isArchive && (
+          <div style={{ ...CAL_PANEL, minHeight: 0 }} className={`${PANEL_CLASS} flex-1 min-h-[500px] flex flex-col`}>
+            <CalendarFeed calConnected={calConnected} events={calendarEvents} calLoading={calLoading} calError={calError} />
+          </div>
+        )}
       </div>
 
       {/* ── Right Column / Grid ────────────────────────────────────────── */}
-      <div className="grid grid-cols-1 xl:grid-cols-2 gap-4 w-full lg:w-2/3 pb-8 grid-rows-[repeat(5,minmax(220px,auto))] pr-1">
+      <div className={`grid grid-cols-1 ${isArchive ? 'xl:grid-cols-3' : 'xl:grid-cols-2'} gap-4 w-full ${isArchive ? '' : 'lg:w-2/3'} pb-8 grid-rows-[repeat(5,minmax(220px,auto))] pr-1`}>
         {/* Domain Cards */}
         <div style={PANEL} className={`${PANEL_CLASS} h-full w-full flex flex-col`}><DomainBlock label="WEALTH" sub="Income & Freedom" tasks={wealthTasks} color={personal.find(a => a.id === "wealth")?.color || "#C9A961"} onToggle={onToggle} onDelete={onDelete} onTaskClick={onTaskClick} subtasksMap={subtasksMap} onToggleSubtask={onToggleSubtask} /></div>
         <div style={PANEL} className={`${PANEL_CLASS} h-full w-full flex flex-col`}><DomainBlock label="HEALTH" sub="Training & Energy" tasks={healthTasks} color={personal.find(a => a.id === "health")?.color || "#C9A961"} onToggle={onToggle} onDelete={onDelete} onTaskClick={onTaskClick} subtasksMap={subtasksMap} onToggleSubtask={onToggleSubtask} /></div>
@@ -1298,6 +1301,7 @@ function ArchiveViewTab({ archivedBusiness, archivedPersonal, subtasksMap, onTog
           onTaskClick={onTaskClick} 
           subtasksMap={subtasksMap} 
           onToggleSubtask={onToggleSubtask} 
+          isArchive={true}
         />
       </div>
     </div>
@@ -1359,8 +1363,13 @@ export default function ChairmanDashboard() {
   }, []);
 
   // Split tasks into active and archived streams
-  const activeTasks = useMemo(() => dbTasks.filter((t) => t.status !== "DONE" && !(t as any).completed), [dbTasks]);
-  const archivedTasks = useMemo(() => dbTasks.filter((t) => t.status === "DONE" || (t as any).completed), [dbTasks]);
+  const normalizedTasks = useMemo(() => dbTasks.map(t => ({
+    ...t,
+    completed: (t as any).completed || t.status === 'DONE' || t.status === 'ARCHIVED'
+  })), [dbTasks]);
+
+  const activeTasks = useMemo(() => normalizedTasks.filter((t) => !t.completed), [normalizedTasks]);
+  const archivedTasks = useMemo(() => normalizedTasks.filter((t) => t.completed), [normalizedTasks]);
 
   // Top-level tasks only (parentId is null/undefined) for agent task lists
   const business = useMemo(
@@ -1593,12 +1602,8 @@ export default function ChairmanDashboard() {
         onCalToggle={() => calConnected ? signOut({ redirect: false }) : signIn("google")}
         isAppearanceOpen={isAppearanceOpen} 
         setIsAppearanceOpen={setIsAppearanceOpen} 
-        doneTasks={doneTasks}
-        totalTasks={totalTasks}
-        overallPct={overallPct}
-        doneSubtasks={doneSubtasks}
-        totalSubtasks={totalSubtasks}
-        subtasksPct={subtasksPct}
+        activeTasksCount={activeTasks.filter(t => !t.parentId).length}
+        activeSubtasksCount={activeTasks.filter(t => t.parentId).length}
         tasksLoading={tasksLoading}
         user={user}
         deepWork={deepWork}

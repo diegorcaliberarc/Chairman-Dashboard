@@ -39,12 +39,8 @@ interface SidebarProps {
   setDeepWork: (val: boolean | ((p: boolean) => boolean)) => void;
   novaOpen: boolean;
   setNovaOpen: (val: boolean | ((p: boolean) => boolean)) => void;
-  doneTasks: number;
-  totalTasks: number;
-  overallPct: number;
-  doneSubtasks: number;
-  totalSubtasks: number;
-  subtasksPct: number;
+  activeTasksCount: number;
+  activeSubtasksCount: number;
   tasksLoading: boolean;
 }
 
@@ -52,8 +48,7 @@ export function Sidebar({
   activeTab, setActiveTab, calConnected, onCalToggle, 
   isAppearanceOpen, setIsAppearanceOpen, user,
   deepWork, setDeepWork, novaOpen, setNovaOpen,
-  doneTasks, totalTasks, overallPct,
-  doneSubtasks, totalSubtasks, subtasksPct, tasksLoading
+  activeTasksCount, activeSubtasksCount, tasksLoading
 }: SidebarProps) {
   const [accountModalOpen, setAccountModalOpen] = useState(false);
   const router = useRouter();
@@ -165,26 +160,30 @@ export function Sidebar({
             className="w-full text-left p-4 rounded-xl bg-zinc-50/50 dark:bg-white/5 border border-zinc-200/50 dark:border-white/10 flex flex-col gap-4 shadow-inner hover:bg-zinc-100 dark:hover:bg-white/10 transition-colors"
           >
             {/* Progress */}
-            <div className="select-none">
-              <div className="text-[9px] tracking-widest uppercase mb-1 text-zinc-500 dark:text-zinc-400">
-                {tasksLoading ? "Syncing…" : "Mission Progress"}
+            {activeTasksCount === 0 && activeSubtasksCount === 0 && !tasksLoading ? (
+              <div className="flex flex-col items-center justify-center py-4 gap-2 select-none">
+                 <CheckCircle2 className="text-[color:var(--theme-grad-start)]" size={28} />
+                 <span className="text-xs font-bold tracking-widest text-[color:var(--theme-grad-start)] uppercase">Inbox Zero</span>
               </div>
-              <div className="text-lg font-bold text-zinc-900 dark:text-white" style={{ fontVariantNumeric: "tabular-nums" }}>
-                {doneTasks}<span className="text-xs font-normal text-zinc-500 dark:text-zinc-400">/{totalTasks}</span>
-                <span className="text-xs ml-2 text-zinc-500 font-normal">Tasks</span>
+            ) : (
+              <div className="select-none flex flex-col gap-3">
+                <div className="text-[9px] tracking-widest uppercase text-zinc-500 dark:text-zinc-400">
+                  {tasksLoading ? "Syncing…" : "Mission Progress"}
+                </div>
+                
+                <div className="flex items-center justify-between border-b border-zinc-200/20 dark:border-white/5 pb-2">
+                  <span className="text-lg font-bold text-zinc-900 dark:text-white leading-none" style={{ fontVariantNumeric: "tabular-nums" }}>
+                    {activeTasksCount} <span className="text-xs font-normal text-zinc-500 dark:text-zinc-400 tracking-widest uppercase ml-1">Pending Tasks</span>
+                  </span>
+                </div>
+                
+                <div className="flex items-center justify-between">
+                  <span className="text-lg font-bold text-zinc-900 dark:text-white leading-none" style={{ fontVariantNumeric: "tabular-nums" }}>
+                    {activeSubtasksCount} <span className="text-xs font-normal text-zinc-500 dark:text-zinc-400 tracking-widest uppercase ml-1">Pending Subtasks</span>
+                  </span>
+                </div>
               </div>
-              <div className="mt-1.5 rounded-full w-full" style={{ height: 2, backgroundColor: "#1E1F24" }}>
-                <div className="h-full rounded-full transition-all duration-700" style={{ width: `${overallPct * 100}%`, backgroundImage: 'linear-gradient(to right, var(--theme-grad-start), var(--theme-grad-end))', opacity: 0.7 }} />
-              </div>
-
-              <div className="text-lg font-bold text-zinc-900 dark:text-white mt-3" style={{ fontVariantNumeric: "tabular-nums" }}>
-                {doneSubtasks}<span className="text-xs font-normal text-zinc-500 dark:text-zinc-400">/{totalSubtasks}</span>
-                <span className="text-xs ml-2 text-zinc-500 font-normal">Subtasks</span>
-              </div>
-              <div className="mt-1.5 rounded-full w-full" style={{ height: 2, backgroundColor: "#1E1F24" }}>
-                <div className="h-full rounded-full transition-all duration-700" style={{ width: `${subtasksPct * 100}%`, backgroundImage: 'linear-gradient(to right, var(--theme-grad-start), var(--theme-grad-end))', opacity: 0.7 }} />
-              </div>
-            </div>
+            )}
 
             <div style={{ height: 1, backgroundColor: "var(--theme-grad-start)", opacity: 0.15 }} />
             
