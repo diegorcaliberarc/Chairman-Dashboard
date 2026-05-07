@@ -49,8 +49,10 @@ interface DbTask {
   status:      string;   // "PENDING" | "DONE"
   isDelegated: boolean;
   createdAt:   string;
-  priority:    number;   // 1=HIGH 2=MEDIUM 3=LOW
+  priority:    string;   // "Urgent" | "High" | "Normal" | "Low" | "None"
+  startDate?:  string | null;
   dueDate?:    string | null;
+  timeTracked: number;
   parentId?:   string | null;
 }
 
@@ -102,11 +104,11 @@ const CATEGORIES: Record<string, { label: string; color: string; pillar: string;
 const HIGH_PRIORITY_KEYWORDS = ["urgent","asap","critical","immediately","top priority","high priority","now","emergency","rush"];
 const LOW_PRIORITY_KEYWORDS  = ["low priority","whenever","no rush","eventually","someday","low urgency"];
 
-function detectPriority(text: string): number {
+function detectPriority(text: string): string {
   const lower = text.toLowerCase();
-  if (HIGH_PRIORITY_KEYWORDS.some((k) => lower.includes(k))) return 1;
-  if (LOW_PRIORITY_KEYWORDS.some((k)  => lower.includes(k))) return 3;
-  return 2;
+  if (HIGH_PRIORITY_KEYWORDS.some((k) => lower.includes(k))) return "High";
+  if (LOW_PRIORITY_KEYWORDS.some((k)  => lower.includes(k))) return "Low";
+  return "Normal";
 }
 
 function getHighestPriorityTask(
@@ -507,9 +509,15 @@ function CalendarFeed({
 function PriorityStrikes({
   business, personal, onToggle, onDelete, onTaskClick, subtasksMap, onToggleSubtask
 }: { business: Agent[]; personal: Agent[]; onToggle: (taskId: string) => void; onDelete: (taskId: string) => void; onTaskClick: (task: DbTask, color: string) => void; subtasksMap?: any; onToggleSubtask?: (taskId: string, subtaskId: string) => void; }) {
-  const strikes = [...business, ...personal]
-    .flatMap((a) => a.tasks.filter((t) => t.status !== "DONE").map((t) => ({ task: t, agent: a })))
-    .sort((a, b) => a.task.priority - b.task.priority);
+  const allTasks = [...business, ...personal].flatMap((a) => a.tasks.map((t) => ({ task: t, agent: a })));
+  const strikes = allTasks.filter(x => x.task.status !== "DONE");
+  
+  const priorityScore: Record<string, number> = { "Urgent": 1, "High": 2, "Normal": 3, "Low": 4, "None": 5 };
+  strikes.sort((a, b) => {
+    const scoreA = priorityScore[a.task.priority] ?? 5;
+    const scoreB = priorityScore[b.task.priority] ?? 5;
+    return scoreA - scoreB;
+  });
 
   return (
     <div style={{ height: "100%", display: "flex", flexDirection: "column" }}>
@@ -674,7 +682,7 @@ function CSuiteCard({
                   </button>
                 </div>
                 <div className="shrink-0 pt-[6px]">
-                  <div style={{ width: 4, height: 4, borderRadius: "50%", backgroundColor: t.priority === 1 ? "#E05A3A" : t.priority === 3 ? "#3B4558" : "#C9A961", flexShrink: 0 }} />
+                  <div style={{ width: 4, height: 4, borderRadius: "50%", backgroundColor: t.priority === "Urgent" || t.priority === "High" ? "#E05A3A" : t.priority === "Low" ? "#3B4558" : "#C9A961", flexShrink: 0 }} />
                 </div>
                 <span className="flex-1 text-sm leading-tight text-zinc-900 dark:text-white pt-[3px]">{t.title}</span>
               </div>
@@ -1319,8 +1327,8 @@ export default function ChairmanDashboard() {
           if (parent) {
             // Inject mock subtasks for demonstration
             fetchedTasks.push(
-              { id: 'mock-s1', title: 'Review Q3 metrics', pillar: parent.pillar, agentId: parent.agentId, category: parent.category, status: 'PENDING', isDelegated: false, createdAt: new Date().toISOString(), priority: 2, parentId: parent.id },
-              { id: 'mock-s2', title: 'Draft email', pillar: parent.pillar, agentId: parent.agentId, category: parent.category, status: 'PENDING', isDelegated: false, createdAt: new Date().toISOString(), priority: 2, parentId: parent.id }
+              { id: 'mock-s1', title: 'Review Q3 metrics', pillar: parent.pillar, agentId: parent.agentId, category: parent.category, status: 'PENDING', isDelegated: false, createdAt: new Date().toISOString(), priority: "Normal", timeTracked: 0, parentId: parent.id },
+              { id: 'mock-s2', title: 'Draft email', pillar: parent.pillar, agentId: parent.agentId, category: parent.category, status: 'PENDING', isDelegated: false, createdAt: new Date().toISOString(), priority: "Normal", timeTracked: 0, parentId: parent.id }
             );
           }
           setDbTasks(fetchedTasks);

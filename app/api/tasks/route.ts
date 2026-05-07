@@ -17,8 +17,8 @@ export async function GET() {
     const tasks = await prisma.task.findMany({
       where:   userId ? { userId } : { userId: null },
       orderBy: [
-        { priority:  "asc"  },  // 1=HIGH first, 3=LOW last
-        { createdAt: "desc" },  // newest first within same priority
+        { priority:  "desc" },
+        { createdAt: "desc" },
       ],
     });
     return NextResponse.json({ tasks });
@@ -45,15 +45,17 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: "Invalid JSON body" }, { status: 400 });
   }
 
-  const { title, pillar, agentId, category, status, isDelegated, priority, dueDate, parentId } = body as {
+  const { title, pillar, agentId, category, status, isDelegated, priority, startDate, dueDate, timeTracked, parentId } = body as {
     title:        string;
     pillar:       string;
     agentId:      string;
     category?:    string;
     status?:      string;
     isDelegated?: boolean;
-    priority?:    number;
+    priority?:    string;
+    startDate?:   string;
     dueDate?:     string;
+    timeTracked?: number;
     parentId?:    string;
   };
 
@@ -70,10 +72,12 @@ export async function POST(req: NextRequest) {
         pillar,
         agentId,
         category:    category    ?? null,
-        status:      status      ?? "PENDING",
+        status:      status      ?? "To Do",
         isDelegated: isDelegated ?? false,
-        priority:    priority    ?? 2,
+        priority:    priority    ?? "None",
+        startDate:   startDate   ? new Date(startDate) : null,
         dueDate:     dueDate     ? new Date(dueDate) : null,
+        timeTracked: timeTracked ?? 0,
         userId:      userId      ?? null,
         parentId:    parentId    ?? null,
       },
@@ -122,11 +126,14 @@ export async function PATCH(req: NextRequest) {
 
   try {
     const body = await req.json();
-    const { id, status, isDelegated, priority } = body as {
+    const { id, status, isDelegated, priority, startDate, dueDate, timeTracked } = body as {
       id:           string;
       status?:      string;
       isDelegated?: boolean;
-      priority?:    number;
+      priority?:    string;
+      startDate?:   string | null;
+      dueDate?:     string | null;
+      timeTracked?: number;
     };
 
     if (!id) {
@@ -141,10 +148,13 @@ export async function PATCH(req: NextRequest) {
       return NextResponse.json({ error: "Forbidden" }, { status: 403 });
     }
 
-    const data: { status?: string; isDelegated?: boolean; priority?: number } = {};
+    const data: any = {};
     if (status      !== undefined) data.status      = status;
     if (isDelegated !== undefined) data.isDelegated = isDelegated;
     if (priority    !== undefined) data.priority    = priority;
+    if (startDate   !== undefined) data.startDate   = startDate ? new Date(startDate) : null;
+    if (dueDate     !== undefined) data.dueDate     = dueDate ? new Date(dueDate) : null;
+    if (timeTracked !== undefined) data.timeTracked = timeTracked;
 
     const task = await prisma.task.update({ where: { id }, data });
     return NextResponse.json({ task });

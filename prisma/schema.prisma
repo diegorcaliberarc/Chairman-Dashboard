@@ -86,12 +86,13 @@ model Task {
   pillar      String
   agentId     String
   category    String?   // Wealth | Health | Relate | Joy | CEO | COO | CFO | CTO | CMO | CPO
-  status      String
+  status      String    @default("To Do")
   isDelegated Boolean   @default(false)
   createdAt   DateTime  @default(now())
+  startDate   DateTime?
   dueDate     DateTime?
-  // 1 = HIGH · 2 = MEDIUM · 3 = LOW — lower rank sorts first (highest priority first)
-  priority    Int       @default(2)
+  priority    String    @default("None")
+  timeTracked Int       @default(0)
   userId      String?
   user        User?     @relation(fields: [userId], references: [id], onDelete: Cascade)
   // Self-relation for subtasks

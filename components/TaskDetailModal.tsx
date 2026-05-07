@@ -1,5 +1,5 @@
-import { useState } from "react";
-import { CheckCircle2, Circle, X } from "lucide-react";
+import { useState, useEffect } from "react";
+import { CheckCircle2, Circle, X, Play, Square, Flag, Calendar as CalendarIcon, Clock, Tag } from "lucide-react";
 
 export function TaskDetailModal({
   task, agentColor, onClose, onSave, onToggleSubtask, onDeleteSubtask, onAddSubtask, subtasks
@@ -17,9 +17,41 @@ export function TaskDetailModal({
   const [description, setDescription] = useState(task.description || "");
   const [subInput, setSubInput] = useState("");
 
+  const [status, setStatus] = useState(task.status || "To Do");
+  const [priority, setPriority] = useState(task.priority || "None");
+  const [startDate, setStartDate] = useState(task.startDate ? task.startDate.split('T')[0] : "");
+  const [dueDate, setDueDate] = useState(task.dueDate ? task.dueDate.split('T')[0] : "");
+  const [timeTracked, setTimeTracked] = useState(task.timeTracked || 0);
+  const [isTracking, setIsTracking] = useState(false);
+
+  useEffect(() => {
+    let interval: any;
+    if (isTracking) {
+      interval = setInterval(() => setTimeTracked((prev: number) => prev + 1), 1000);
+    }
+    return () => clearInterval(interval);
+  }, [isTracking]);
+
   const handleSave = () => {
-    onSave(task.id, { title, description });
+    onSave(task.id, { 
+      title, 
+      description,
+      status,
+      priority,
+      startDate: startDate ? new Date(startDate).toISOString() : null,
+      dueDate: dueDate ? new Date(dueDate).toISOString() : null,
+      timeTracked
+    });
     onClose();
+  };
+
+  const formatTime = (seconds: number) => {
+    const h = Math.floor(seconds / 3600);
+    const m = Math.floor((seconds % 3600) / 60);
+    const s = seconds % 60;
+    if (h > 0) return `${h}h ${m}m`;
+    if (m > 0) return `${m}m ${s}s`;
+    return `${s}s`;
   };
 
   return (
@@ -47,6 +79,76 @@ export function TaskDetailModal({
               className="w-full bg-transparent border-b border-zinc-200/20 dark:border-white/10 pb-2 text-zinc-900 dark:text-white text-lg font-medium focus:outline-none transition-colors"
               style={{ borderBottomColor: title ? agentColor : undefined }}
             />
+          </div>
+
+          {/* ClickUp-style Control Bar */}
+          <div className="flex flex-wrap items-center gap-3 py-3 border-y border-zinc-200/20 dark:border-white/10 my-1">
+            
+            {/* Status Dropdown / Input */}
+            <div className="flex items-center gap-1.5 bg-white/5 dark:bg-black/20 border border-zinc-200/20 dark:border-white/5 rounded-md px-2 py-1.5">
+              <Tag size={12} className="text-zinc-500" />
+              <input 
+                list="status-list"
+                value={status}
+                onChange={(e) => setStatus(e.target.value)}
+                className="bg-transparent border-none outline-none text-xs text-zinc-900 dark:text-white w-24 placeholder:text-zinc-500"
+                placeholder="Status"
+              />
+              <datalist id="status-list">
+                <option value="To Do" />
+                <option value="In Progress" />
+                <option value="Review" />
+                <option value="DONE" />
+              </datalist>
+            </div>
+
+            {/* Priority Flag */}
+            <div className="flex items-center gap-1.5 bg-white/5 dark:bg-black/20 border border-zinc-200/20 dark:border-white/5 rounded-md px-2 py-1.5">
+              <Flag size={12} color={priority === "Urgent" ? "#E05A3A" : priority === "High" ? "#EAB308" : priority === "Normal" ? "#3B82F6" : priority === "Low" ? "#9CA3AF" : "#6B7280"} />
+              <select 
+                value={priority}
+                onChange={(e) => setPriority(e.target.value)}
+                className="bg-transparent border-none outline-none text-xs text-zinc-900 dark:text-white appearance-none cursor-pointer"
+              >
+                <option value="None" className="bg-black text-white">Clear</option>
+                <option value="Low" className="bg-black text-white">Low</option>
+                <option value="Normal" className="bg-black text-white">Normal</option>
+                <option value="High" className="bg-black text-white">High</option>
+                <option value="Urgent" className="bg-black text-white">Urgent</option>
+              </select>
+            </div>
+
+            {/* Date Picker */}
+            <div className="flex items-center gap-1.5 bg-white/5 dark:bg-black/20 border border-zinc-200/20 dark:border-white/5 rounded-md px-2 py-1.5">
+              <CalendarIcon size={12} className="text-zinc-500" />
+              <input 
+                type="date" 
+                value={startDate}
+                onChange={(e) => setStartDate(e.target.value)}
+                className="bg-transparent border-none outline-none text-xs text-zinc-900 dark:text-white cursor-pointer"
+                title="Start Date"
+              />
+              <span className="text-zinc-500 text-xs">→</span>
+              <input 
+                type="date" 
+                value={dueDate}
+                onChange={(e) => setDueDate(e.target.value)}
+                className="bg-transparent border-none outline-none text-xs text-zinc-900 dark:text-white cursor-pointer"
+                title="Due Date"
+              />
+            </div>
+
+            {/* Time Tracker */}
+            <div className="flex items-center gap-2 bg-white/5 dark:bg-black/20 border border-zinc-200/20 dark:border-white/5 rounded-md px-2 py-1.5 ml-auto">
+              <Clock size={12} className="text-zinc-500" />
+              <span className="text-xs font-mono text-zinc-900 dark:text-white min-w-[50px]">{formatTime(timeTracked)}</span>
+              <button 
+                onClick={() => setIsTracking(!isTracking)}
+                className={`flex items-center justify-center p-1 rounded-sm transition-colors ${isTracking ? 'bg-red-500/20 text-red-400 hover:bg-red-500/30' : 'bg-emerald-500/20 text-emerald-400 hover:bg-emerald-500/30'}`}
+              >
+                {isTracking ? <Square size={12} fill="currentColor" /> : <Play size={12} fill="currentColor" />}
+              </button>
+            </div>
           </div>
 
           {/* Description */}

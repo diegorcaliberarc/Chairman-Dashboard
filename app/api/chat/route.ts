@@ -58,10 +58,11 @@ function buildContext(tasks: any[], calendarEvents: any[]): string {
   const pending = tasks.filter((t) => t.status !== "DONE");
   const done    = tasks.filter((t) => t.status === "DONE");
 
+  const priorityScore: Record<string, number> = { "Urgent": 1, "High": 2, "Normal": 3, "Low": 4, "None": 5 };
   const taskLines = pending
-    .sort((a, b) => a.priority - b.priority)
+    .sort((a, b) => (priorityScore[a.priority] ?? 5) - (priorityScore[b.priority] ?? 5))
     .map((t) => {
-      const p = t.priority === 1 ? "HIGH" : t.priority === 3 ? "LOW" : "MED";
+      const p = t.priority ? t.priority.toUpperCase() : "NONE";
       return `  [${p}] [${t.agentId?.toUpperCase()}] ${t.title}${t.dueDate ? ` (due ${new Date(t.dueDate).toLocaleDateString()})` : ""}`;
     })
     .join("\n");
