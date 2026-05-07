@@ -80,7 +80,13 @@ const RAW_METRIC_DEFS: Record<string, { name: string, defaultVal: number, target
     { name: "cto_mttr_minutes", defaultVal: 0, target: 15 },
     { name: "cto_bus_factor", defaultVal: 0, target: 90 },
   ],
-  cpo: [{ name: "User Satisfaction", defaultVal: 100, target: 100 }],
+  cpo: [
+    { name: "cpo_churn_velocity", defaultVal: 0, target: 3 },
+    { name: "cpo_alpha_winrate", defaultVal: 0, target: 65 },
+    { name: "cpo_ui_ttv", defaultVal: 0, target: 3 },
+    { name: "cpo_pmf_score", defaultVal: 0, target: 40 },
+    { name: "cpo_essentialism", defaultVal: 0, target: 95 },
+  ],
   health: [
     { name: "health_protein", defaultVal: 0, target: 160 },
     { name: "health_energy", defaultVal: 0, target: 40 },
@@ -478,6 +484,45 @@ function getCtoStatus(val: number, type: string) {
   return { color: "text-zinc-500", label: "UNKNOWN" };
 }
 
+function calculateCpoPhysics(localVals: Record<string, number>) {
+  const churn = localVals["cpo_churn_velocity"] || 0;
+  const alpha = localVals["cpo_alpha_winrate"] || 0;
+  const ttv = localVals["cpo_ui_ttv"] || 0;
+  const pmf = localVals["cpo_pmf_score"] || 0;
+  const ess = localVals["cpo_essentialism"] || 0;
+
+  return { churn, alpha, ttv, pmf, ess };
+}
+
+function getCpoStatus(val: number, type: string) {
+  if (type === "churn") {
+    if (val <= 3) return { color: "text-emerald-500", label: "✅ OPTIMAL" };
+    if (val <= 6) return { color: "text-yellow-500", label: "⚠️ WARNING" };
+    return { color: "text-red-500", label: "🚨 CRITICAL" };
+  }
+  if (type === "alpha") {
+    if (val >= 65) return { color: "text-emerald-500", label: "✅ OPTIMAL" };
+    if (val >= 50) return { color: "text-yellow-500", label: "⚠️ WARNING" };
+    return { color: "text-red-500", label: "🚨 CRITICAL" };
+  }
+  if (type === "ttv") {
+    if (val <= 3) return { color: "text-emerald-500", label: "✅ OPTIMAL" };
+    if (val <= 5) return { color: "text-yellow-500", label: "⚠️ WARNING" };
+    return { color: "text-red-500", label: "🚨 CRITICAL" };
+  }
+  if (type === "pmf") {
+    if (val >= 40) return { color: "text-emerald-500", label: "✅ OPTIMAL" };
+    if (val >= 25) return { color: "text-yellow-500", label: "⚠️ WARNING" };
+    return { color: "text-red-500", label: "🚨 CRITICAL" };
+  }
+  if (type === "ess") {
+    if (val >= 95) return { color: "text-emerald-500", label: "✅ OPTIMAL" };
+    if (val >= 80) return { color: "text-yellow-500", label: "⚠️ WARNING" };
+    return { color: "text-red-500", label: "🚨 CRITICAL" };
+  }
+  return { color: "text-zinc-500", label: "UNKNOWN" };
+}
+
 function SectorCard({ category, allMetrics, onSave }: any) {
   const [isFlipped, setIsFlipped] = useState(false);
   const defs = RAW_METRIC_DEFS[category.id];
@@ -517,7 +562,8 @@ function SectorCard({ category, allMetrics, onSave }: any) {
   const isCmo = category.id === "cmo";
   const isCfo = category.id === "cfo";
   const isCto = category.id === "cto";
-  const isActiveSector = isWealth || isHealth || isRelate || isJoy || isCeo || isCoo || isCmo || isCfo || isCto;
+  const isCpo = category.id === "cpo";
+  const isActiveSector = isWealth || isHealth || isRelate || isJoy || isCeo || isCoo || isCmo || isCfo || isCto || isCpo;
   const wPhys = isWealth ? calculateWealthPhysics(localVals) : null;
   const hPhys = isHealth ? calculateHealthPhysics(localVals) : null;
   const rPhys = isRelate ? calculateRelatePhysics(localVals) : null;
@@ -527,6 +573,7 @@ function SectorCard({ category, allMetrics, onSave }: any) {
   const cmoPhys = isCmo ? calculateCmoPhysics(localVals) : null;
   const cfoPhys = isCfo ? calculateCfoPhysics(localVals) : null;
   const ctoPhys = isCto ? calculateCtoPhysics(localVals) : null;
+  const cpoPhys = isCpo ? calculateCpoPhysics(localVals) : null;
 
   let primaryLabel = "Core Score";
   let primaryValue = "0";
@@ -737,6 +784,27 @@ function SectorCard({ category, allMetrics, onSave }: any) {
                 { label: "ACTIVE MISSION VELOCITY", sub: "Clean Sprint Velocity", val: `${ctoPhys.velocity.toFixed(1)}%`, status: getCtoStatus(ctoPhys.velocity, "velocity") },
                 { label: "CRITICAL MTTR", sub: "Live-Market Bugs", val: `${ctoPhys.mttr} Mins`, status: getCtoStatus(ctoPhys.mttr, "mttr") },
                 { label: "THE BUS FACTOR", sub: "Engineering Autonomy", val: `${ctoPhys.bus}/100`, status: getCtoStatus(ctoPhys.bus, "bus") },
+              ].map(k => (
+                <div key={k.label} className="flex justify-between items-center bg-zinc-50/50 dark:bg-white/5 p-2 rounded-lg border border-zinc-200/50 dark:border-white/5">
+                  <div className="flex flex-col">
+                    <span className="text-[10px] font-bold tracking-widest uppercase text-zinc-900 dark:text-zinc-100">{k.label}</span>
+                    <span className="text-[8px] tracking-widest uppercase text-zinc-500">{k.sub}</span>
+                  </div>
+                  <div className="flex flex-col items-end gap-0.5">
+                    <span className="font-mono text-xs font-medium text-zinc-900 dark:text-white">{k.val}</span>
+                    <span className={`text-[9px] font-bold tracking-widest uppercase ${k.status.color}`}>{k.status.label}</span>
+                  </div>
+                </div>
+              ))}
+            </div>
+          ) : isCpo && cpoPhys ? (
+            <div className="flex flex-col gap-2 flex-1 mt-6 justify-center">
+              {[
+                { label: "CHURN VELOCITY", sub: "Retention Entropy", val: `${cpoPhys.churn.toFixed(1)}%`, status: getCpoStatus(cpoPhys.churn, "churn") },
+                { label: "ALPHA DELIVERY RATE", sub: "Live-Market Edge", val: `${cpoPhys.alpha.toFixed(1)}%`, status: getCpoStatus(cpoPhys.alpha, "alpha") },
+                { label: "UI TIME-TO-VALUE", sub: "Cognitive Friction", val: `${cpoPhys.ttv.toFixed(1)} Secs`, status: getCpoStatus(cpoPhys.ttv, "ttv") },
+                { label: "THE \"MUST-HAVE\" SCORE", sub: "Product/Market Fit", val: `${cpoPhys.pmf.toFixed(1)}%`, status: getCpoStatus(cpoPhys.pmf, "pmf") },
+                { label: "FRONTEND ESSENTIALISM", sub: "Signal-to-Noise", val: `${cpoPhys.ess}/100`, status: getCpoStatus(cpoPhys.ess, "ess") },
               ].map(k => (
                 <div key={k.label} className="flex justify-between items-center bg-zinc-50/50 dark:bg-white/5 p-2 rounded-lg border border-zinc-200/50 dark:border-white/5">
                   <div className="flex flex-col">
