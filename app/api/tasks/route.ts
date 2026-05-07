@@ -82,6 +82,11 @@ export async function POST(req: NextRequest) {
   try {
     const sanitizedData = {
       ...body,
+      // Scrub empty strings from UUID foreign keys
+      parentId: (body.parentId === "" || body.parentId === "null") ? null : body.parentId,
+      agentId: (body.agentId === "" || body.agentId === "null") ? null : body.agentId,
+      userId: (body.userId === "" || body.userId === "null") ? null : body.userId,
+
       startDate: parseDateSafe(body.startDate),
       dueDate: parseDateSafe(body.dueDate),
       timeTracked: parseTimeSafe(body.timeTracked),
@@ -169,6 +174,9 @@ export async function PATCH(req: NextRequest) {
 
     const sanitizedData = {
       ...body,
+      ...(body.parentId !== undefined && { parentId: (body.parentId === "" || body.parentId === "null") ? null : body.parentId }),
+      ...(body.agentId !== undefined && { agentId: (body.agentId === "" || body.agentId === "null") ? null : body.agentId }),
+      ...(body.userId !== undefined && { userId: (body.userId === "" || body.userId === "null") ? null : body.userId }),
       ...(body.startDate !== undefined && { startDate: parseDateSafe(body.startDate) }),
       ...(body.dueDate !== undefined && { dueDate: parseDateSafe(body.dueDate) }),
       ...(body.timeTracked !== undefined && { timeTracked: parseTimeSafe(body.timeTracked) }),

@@ -1493,7 +1493,7 @@ export default function ChairmanDashboard() {
           headers: { "Content-Type": "application/json" },
           body:    JSON.stringify({
             title: text, pillar: cat.pillar, agentId: cat.agentId,
-            category: selectedCategory, status: "PENDING", isDelegated: false, priority: taskPriority,
+            category: selectedCategory, status: "PENDING", isDelegated: false, priority: taskPriority, parentId: null,
           }),
         });
         const data = await res.json();
