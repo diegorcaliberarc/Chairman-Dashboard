@@ -1288,7 +1288,7 @@ function ArchiveViewTab({ archivedBusiness, archivedPersonal, subtasksMap, onTog
         <h2 className="text-xl font-bold tracking-[0.2em] uppercase text-zinc-500">ARCHIVED MISSIONS</h2>
         <p className="text-xs text-zinc-600 mt-1 uppercase tracking-widest">COMPLETED LOG</p>
         <button 
-          onClick={onPurge}
+          onClick={() => onPurge()}
           className="absolute right-0 top-1/2 -translate-y-1/2 px-4 py-2 rounded-xl text-xs font-bold tracking-widest uppercase border border-red-500/30 text-red-400 hover:bg-red-500/10 transition-colors"
         >
           Clear Archive
@@ -1369,13 +1369,13 @@ export default function ChairmanDashboard() {
   }, []);
 
   // Split tasks into active and archived streams
-  const normalizedTasks = useMemo(() => dbTasks.map(t => ({
+  const normalizedTasks = useMemo(() => (dbTasks || []).map(t => ({
     ...t,
     completed: (t as any).completed || t.status === 'DONE' || t.status === 'ARCHIVED'
   })), [dbTasks]);
 
-  const activeTasks = useMemo(() => normalizedTasks.filter((t) => !t.completed), [normalizedTasks]);
-  const archivedTasks = useMemo(() => normalizedTasks.filter((t) => t.completed), [normalizedTasks]);
+  const activeTasks = useMemo(() => (normalizedTasks || []).filter((t) => !t.completed), [normalizedTasks]);
+  const archivedTasks = useMemo(() => (normalizedTasks || []).filter((t) => t.completed), [normalizedTasks]);
 
   // Top-level tasks only (parentId is null/undefined) for agent task lists
   const business = useMemo(
@@ -1603,6 +1603,12 @@ export default function ChairmanDashboard() {
     { id: "PERSONAL", label: "PERSONAL" },
   ];
 
+  const pendingSubtasksCount = (activeTasks || []).reduce((total, task) => {
+    const taskSubtasks = (subtasksMap && subtasksMap[task.id]) ? subtasksMap[task.id] : [];
+    const activeTaskSubtasks = taskSubtasks.filter(st => !st.completed && st.status !== 'DONE' && st.status !== 'ARCHIVED');
+    return total + activeTaskSubtasks.length;
+  }, 0);
+
   return (
     <div className="min-h-screen text-zinc-900 dark:text-white flex flex-row">
       <style>{KEYFRAMES}</style>
@@ -1615,8 +1621,8 @@ export default function ChairmanDashboard() {
         onCalToggle={() => calConnected ? signOut({ redirect: false }) : signIn("google")}
         isAppearanceOpen={isAppearanceOpen} 
         setIsAppearanceOpen={setIsAppearanceOpen} 
-        activeTasksCount={activeTasks.filter(t => !t.parentId).length}
-        activeSubtasksCount={activeTasks.filter(t => t.parentId).length}
+        activeTasksCount={(activeTasks || []).filter(t => !t.parentId).length}
+        activeSubtasksCount={pendingSubtasksCount}
         tasksLoading={tasksLoading}
         user={user}
         deepWork={deepWork}
