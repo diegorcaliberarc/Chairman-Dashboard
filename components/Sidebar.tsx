@@ -37,8 +37,6 @@ interface SidebarProps {
   user: any;
   deepWork: boolean;
   setDeepWork: (val: boolean | ((p: boolean) => boolean)) => void;
-  novaOpen: boolean;
-  setNovaOpen: (val: boolean | ((p: boolean) => boolean)) => void;
   activeTasksCount: number;
   activeSubtasksCount: number;
   tasksLoading: boolean;
@@ -47,12 +45,19 @@ interface SidebarProps {
 export function Sidebar({
   activeTab, setActiveTab, calConnected, onCalToggle, 
   isAppearanceOpen, setIsAppearanceOpen, user,
-  deepWork, setDeepWork, novaOpen, setNovaOpen,
+  deepWork, setDeepWork,
   activeTasksCount, activeSubtasksCount, tasksLoading
 }: SidebarProps) {
   const [accountModalOpen, setAccountModalOpen] = useState(false);
+  const [novaOpen, setNovaOpen] = useState(false);
   const router = useRouter();
   const pathname = usePathname();
+
+  useEffect(() => {
+    const handleToggle = () => setNovaOpen(p => !p);
+    window.addEventListener("toggleNovaCore", handleToggle);
+    return () => window.removeEventListener("toggleNovaCore", handleToggle);
+  }, []);
 
   const TABS = [
     { id: "MASTER", label: "MASTER VIEW", icon: <LayoutDashboard size={18} />, route: "/" },
@@ -126,7 +131,10 @@ export function Sidebar({
           </button>
           
           <button
-            onClick={() => setNovaOpen((p) => !p)}
+            onClick={(e) => {
+              e.preventDefault();
+              window.dispatchEvent(new Event("toggleNovaCore"));
+            }}
             className={`flex items-center gap-3 px-4 py-3 rounded-xl font-bold text-xs tracking-widest transition-all ${
               novaOpen 
                 ? "bg-[rgba(var(--theme-grad-start-rgb),0.1)] text-[color:var(--theme-grad-start)] border border-[color:var(--theme-grad-start)]/30" 

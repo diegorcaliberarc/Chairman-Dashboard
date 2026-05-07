@@ -1008,7 +1008,6 @@ export default function KPIsPage() {
   const [activeTab, setActiveTab] = useState("KPI");
   const [isAppearanceOpen, setIsAppearanceOpen] = useState(false);
   const [deepWork, setDeepWork] = useState(false);
-  const [novaOpen, setNovaOpen] = useState(false);
 
   useEffect(() => {
     fetch("/api/metrics")
@@ -1071,8 +1070,6 @@ export default function KPIsPage() {
         user={user}
         deepWork={deepWork}
         setDeepWork={setDeepWork}
-        novaOpen={novaOpen}
-        setNovaOpen={setNovaOpen}
       />
 
       <div className="flex-1 flex flex-col ml-64 min-w-0">

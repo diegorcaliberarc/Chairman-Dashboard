@@ -979,93 +979,6 @@ function DeepWorkMode({
       )}
     </div>
   );
-}
-
-// ─── Nova Logic Core Panel ────────────────────────────────────────────────────
-
-const NOVA_AGENTS = [
-  "Universal Command",
-  "CEO",
-  "COO",
-  "CMO",
-  "CFO",
-  "CTO",
-  "CPO",
-  "Tactical Spotter (Wealth)",
-  "Health Coach",
-  "Relationships",
-  "Joy",
-];
-
-interface NovaMessage {
-  role:    "user" | "assistant";
-  content: string;
-}
-
-function NovaPanel({
-  open, onClose, tasks, calendarEvents,
-}: {
-  open:           boolean;
-  onClose:        () => void;
-  tasks:          DbTask[];
-  calendarEvents: CalendarEvent[];
-}) {
-  const [agent,    setAgent]    = useState("Universal Command");
-  const [messages, setMessages] = useState<NovaMessage[]>([]);
-  const [input,    setInput]    = useState("");
-  const [loading,  setLoading]  = useState(false);
-  const [showDrop, setShowDrop] = useState(false);
-  const bottomRef = useRef<HTMLDivElement>(null);
-  const inputRef  = useRef<HTMLInputElement>(null);
-
-  // Scroll to bottom on new messages
-  useEffect(() => {
-    bottomRef.current?.scrollIntoView({ behavior: "smooth" });
-  }, [messages, loading]);
-
-  // Focus input when opened
-  useEffect(() => {
-    if (open) setTimeout(() => inputRef.current?.focus(), 120);
-  }, [open]);
-
-  const send = async () => {
-    const text = input.trim();
-    if (!text || loading) return;
-    setInput("");
-    const userMsg: NovaMessage = { role: "user", content: text };
-    setMessages((prev) => [...prev, userMsg]);
-    setLoading(true);
-
-    try {
-      const res  = await fetch("/api/chat", {
-        method:  "POST",
-        headers: { "Content-Type": "application/json" },
-        body:    JSON.stringify({ message: text, agentRole: agent, tasks, calendarEvents }),
-      });
-      const data = await res.json();
-      const reply = data.reply ?? data.error ?? "No response.";
-      setMessages((prev) => [...prev, { role: "assistant", content: reply }]);
-    } catch {
-      setMessages((prev) => [...prev, { role: "assistant", content: "Network error — could not reach Nova." }]);
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  if (!open) return null;
-
-  // Agent accent color
-  const agentColor = (() => {
-    const map: Record<string, string> = {
-      "Universal Command": "#C9A961", CEO: "#C9A961", COO: "#7B9EA8", CMO: "#A87B9E",
-      CFO: "#8BA87B", CTO: "#4A90E2", CPO: "#F39C12",
-      "Tactical Spotter (Wealth)": "#D4AF37", "Health Coach": "#E05A3A",
-      "Relationships": "#5B8FB9", "Joy": "#B388EB",
-    };
-    return map[agent] ?? "#C9A961";
-  })();
-
-  return (
     <div
       style={{
         position:        "fixed",
@@ -1348,7 +1261,6 @@ export default function ChairmanDashboard() {
 
   const [activeTab,    setActiveTab]    = useState<TabId>("MASTER");
   const [deepWork,     setDeepWork]     = useState(false);
-  const [novaOpen,     setNovaOpen]     = useState(false);
   const [isAppearanceOpen, setIsAppearanceOpen] = useState(false);
   const [selectedTask, setSelectedTask] = useState<{ task: DbTask; color: string } | null>(null);
 
@@ -1649,8 +1561,6 @@ export default function ChairmanDashboard() {
         user={user}
         deepWork={deepWork}
         setDeepWork={setDeepWork}
-        novaOpen={novaOpen}
-        setNovaOpen={setNovaOpen}
       />
 
       <div className="flex-1 flex flex-col ml-64 min-w-0">
@@ -1724,13 +1634,6 @@ export default function ChairmanDashboard() {
         </div>
       )}
 
-      {/* ── NOVA LOGIC CORE PANEL ────────────────────────────────────────── */}
-      <NovaPanel
-        open={novaOpen}
-        onClose={() => setNovaOpen(false)}
-        tasks={dbTasks}
-        calendarEvents={calendarEvents}
-      />
 
       {/* ── COGNITIVE COMMAND BAR ─────────────────────────────────────────── */}
       <div style={{

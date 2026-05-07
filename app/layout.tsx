@@ -1,6 +1,7 @@
 import type { Metadata, Viewport } from "next";
 import "./globals.css";
 import { Providers } from "./providers";
+import { NovaCoreWrapper } from "@/components/NovaCoreWrapper";
 
 export const metadata: Metadata = {
   title: "Pristine Command",
@@ -72,7 +73,10 @@ export default function RootLayout({
         <link rel="apple-touch-startup-image" media="screen and (device-width: 375px) and (device-height: 667px) and (-webkit-device-pixel-ratio: 2)"  href="/icons/splash-750x1334.png" />
       </head>
       <body className="min-h-screen bg-theme-gradient text-zinc-900 dark:text-zinc-50 antialiased overscroll-none">
-        <Providers>{children}</Providers>
+        <Providers>
+          {children}
+          <NovaCoreWrapper />
+        </Providers>
       </body>
     </html>
   );
