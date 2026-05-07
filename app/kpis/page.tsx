@@ -63,7 +63,13 @@ const RAW_METRIC_DEFS: Record<string, { name: string, defaultVal: number, target
     { name: "coo_mttr_hours", defaultVal: 0, target: 4 },
     { name: "coo_sop_autonomy", defaultVal: 0, target: 90 },
   ],
-  cmo: [{ name: "CAC", defaultVal: 0, target: 0 }, { name: "LTV", defaultVal: 0, target: 0 }],
+  cmo: [
+    { name: "cmo_ltv_cac_ratio", defaultVal: 0, target: 3 },
+    { name: "cmo_lead_velocity", defaultVal: 0, target: 10 },
+    { name: "cmo_conversion_rate", defaultVal: 0, target: 5 },
+    { name: "cmo_ttv_hours", defaultVal: 0, target: 24 },
+    { name: "cmo_storybrand_score", defaultVal: 0, target: 9 },
+  ],
   cto: [{ name: "Uptime", defaultVal: 99.9, target: 99.9 }],
   cpo: [{ name: "User Satisfaction", defaultVal: 100, target: 100 }],
   health: [
@@ -347,6 +353,45 @@ function getCooStatus(val: number, type: string) {
   return { color: "text-zinc-500", label: "UNKNOWN" };
 }
 
+function calculateCmoPhysics(localVals: Record<string, number>) {
+  const ltv_cac = localVals["cmo_ltv_cac_ratio"] || 0;
+  const lead_vel = localVals["cmo_lead_velocity"] || 0;
+  const conv_rate = localVals["cmo_conversion_rate"] || 0;
+  const ttv = localVals["cmo_ttv_hours"] || 0;
+  const storybrand = localVals["cmo_storybrand_score"] || 0;
+
+  return { ltv_cac, lead_vel, conv_rate, ttv, storybrand };
+}
+
+function getCmoStatus(val: number, type: string) {
+  if (type === "ltv_cac") {
+    if (val >= 3.0) return { color: "text-emerald-500", label: "✅ OPTIMAL" };
+    if (val >= 1.5) return { color: "text-yellow-500", label: "⚠️ WARNING" };
+    return { color: "text-red-500", label: "🚨 CRITICAL" };
+  }
+  if (type === "lead_vel") {
+    if (val >= 10) return { color: "text-emerald-500", label: "✅ OPTIMAL" };
+    if (val > 0) return { color: "text-yellow-500", label: "⚠️ WARNING" };
+    return { color: "text-red-500", label: "🚨 CRITICAL" };
+  }
+  if (type === "conv_rate") {
+    if (val >= 5) return { color: "text-emerald-500", label: "✅ OPTIMAL" };
+    if (val >= 2) return { color: "text-yellow-500", label: "⚠️ WARNING" };
+    return { color: "text-red-500", label: "🚨 CRITICAL" };
+  }
+  if (type === "ttv") {
+    if (val <= 24) return { color: "text-emerald-500", label: "✅ OPTIMAL" };
+    if (val <= 72) return { color: "text-yellow-500", label: "⚠️ WARNING" };
+    return { color: "text-red-500", label: "🚨 CRITICAL" };
+  }
+  if (type === "storybrand") {
+    if (val >= 9) return { color: "text-emerald-500", label: "✅ OPTIMAL" };
+    if (val >= 7) return { color: "text-yellow-500", label: "⚠️ WARNING" };
+    return { color: "text-red-500", label: "🚨 CRITICAL" };
+  }
+  return { color: "text-zinc-500", label: "UNKNOWN" };
+}
+
 function SectorCard({ category, allMetrics, onSave }: any) {
   const [isFlipped, setIsFlipped] = useState(false);
   const defs = RAW_METRIC_DEFS[category.id];
@@ -383,13 +428,15 @@ function SectorCard({ category, allMetrics, onSave }: any) {
   const isJoy = category.id === "joy";
   const isCeo = category.id === "ceo";
   const isCoo = category.id === "coo";
-  const isActiveSector = isWealth || isHealth || isRelate || isJoy || isCeo || isCoo;
+  const isCmo = category.id === "cmo";
+  const isActiveSector = isWealth || isHealth || isRelate || isJoy || isCeo || isCoo || isCmo;
   const wPhys = isWealth ? calculateWealthPhysics(localVals) : null;
   const hPhys = isHealth ? calculateHealthPhysics(localVals) : null;
   const rPhys = isRelate ? calculateRelatePhysics(localVals) : null;
   const jPhys = isJoy ? calculateJoyPhysics(localVals) : null;
   const cPhys = isCeo ? calculateCeoPhysics(localVals) : null;
   const cooPhys = isCoo ? calculateCooPhysics(localVals) : null;
+  const cmoPhys = isCmo ? calculateCmoPhysics(localVals) : null;
 
   let primaryLabel = "Core Score";
   let primaryValue = "0";
@@ -546,6 +593,27 @@ function SectorCard({ category, allMetrics, onSave }: any) {
                 { label: "QA FIDELITY SCORE", sub: "Design Integrity", val: `${cooPhys.qa.toFixed(1)}%`, status: getCooStatus(cooPhys.qa, "qa") },
                 { label: "MTTR (BUG RESOLUTION)", sub: "Pipeline Friction", val: `${cooPhys.mttr.toFixed(1)} Hrs`, status: getCooStatus(cooPhys.mttr, "mttr") },
                 { label: "SOP AUTONOMY", sub: "Hand-Off Readiness", val: `${cooPhys.sop.toFixed(1)}%`, status: getCooStatus(cooPhys.sop, "sop") },
+              ].map(k => (
+                <div key={k.label} className="flex justify-between items-center bg-zinc-50/50 dark:bg-white/5 p-2 rounded-lg border border-zinc-200/50 dark:border-white/5">
+                  <div className="flex flex-col">
+                    <span className="text-[10px] font-bold tracking-widest uppercase text-zinc-900 dark:text-zinc-100">{k.label}</span>
+                    <span className="text-[8px] tracking-widest uppercase text-zinc-500">{k.sub}</span>
+                  </div>
+                  <div className="flex flex-col items-end gap-0.5">
+                    <span className="font-mono text-xs font-medium text-zinc-900 dark:text-white">{k.val}</span>
+                    <span className={`text-[9px] font-bold tracking-widest uppercase ${k.status.color}`}>{k.status.label}</span>
+                  </div>
+                </div>
+              ))}
+            </div>
+          ) : isCmo && cmoPhys ? (
+            <div className="flex flex-col gap-2 flex-1 mt-6 justify-center">
+              {[
+                { label: "THE LTV:CAC RATIO", sub: "Capital Leverage / Offer Gravity", val: `${cmoPhys.ltv_cac.toFixed(1)}:1`, status: getCmoStatus(cmoPhys.ltv_cac, "ltv_cac") },
+                { label: "LEAD VELOCITY RATE", sub: "Pipeline Momentum", val: `${cmoPhys.lead_vel.toFixed(1)}%`, status: getCmoStatus(cmoPhys.lead_vel, "lead_vel") },
+                { label: "GRAND SLAM CONVERSION", sub: "Conversion Gravity", val: `${cmoPhys.conv_rate.toFixed(1)}%`, status: getCmoStatus(cmoPhys.conv_rate, "conv_rate") },
+                { label: "TIME-TO-VALUE (TTV)", sub: "Activation Speed", val: `${cmoPhys.ttv.toFixed(1)} Hrs`, status: getCmoStatus(cmoPhys.ttv, "ttv") },
+                { label: "SIGNAL-TO-NOISE (CLARITY)", sub: "Messaging Clarity", val: `${cmoPhys.storybrand}/10`, status: getCmoStatus(cmoPhys.storybrand, "storybrand") },
               ].map(k => (
                 <div key={k.label} className="flex justify-between items-center bg-zinc-50/50 dark:bg-white/5 p-2 rounded-lg border border-zinc-200/50 dark:border-white/5">
                   <div className="flex flex-col">
