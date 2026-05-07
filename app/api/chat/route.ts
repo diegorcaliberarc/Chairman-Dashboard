@@ -112,13 +112,13 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: "Invalid JSON" }, { status: 400 });
   }
 
-  const { message, agentRole, tasks = [], calendarEvents = [], telemetry = [] } = body as {
+  const { message, agentRole, tasks = [], calendarEvents = [] } = body as {
     message:        string;
     agentRole:      string;
     tasks:          any[];
     calendarEvents: any[];
-    telemetry:      any[];
   };
+  const rawTelemetry = body.telemetry;
 
   if (!message?.trim()) {
     return NextResponse.json({ error: "message required" }, { status: 400 });
@@ -127,9 +127,24 @@ export async function POST(req: NextRequest) {
   const systemPrompt = AGENT_PROMPTS[agentRole] ?? AGENT_PROMPTS["Universal Command"];
   const context      = buildContext(tasks, calendarEvents);
 
-  const kpiContext = Array.isArray(telemetry) && telemetry.length > 0
-    ? telemetry.map((m: any) => `[${m.category}] ${m.label}: ${m.value} (Target: ${m.target})`).join('\n')
-    : "Telemetry unavailable.";
+  let telemetryArray: any[] = [];
+
+  // Aggressively unpack the payload regardless of how the frontend wrapped it
+  if (Array.isArray(rawTelemetry)) {
+    telemetryArray = rawTelemetry;
+  } else if (rawTelemetry && Array.isArray(rawTelemetry.metrics)) {
+    telemetryArray = rawTelemetry.metrics;
+  } else if (rawTelemetry && Array.isArray(rawTelemetry.data)) {
+    telemetryArray = rawTelemetry.data;
+  } else if (rawTelemetry && typeof rawTelemetry === 'object') {
+    // Desperate fallback: try to extract values if it's a weird object
+    telemetryArray = Object.values(rawTelemetry).filter(val => typeof val === 'object' && val !== null);
+  }
+
+  // Format context, or inject a tracer to see exactly what went wrong
+  const kpiContext = telemetryArray.length > 0
+    ? telemetryArray.map(m => `[${m.category || 'KPI'}] ${m.label || m.key || 'Unknown'}: ${m.value} (Target: ${m.target})`).join('\n')
+    : `Telemetry unavailable. Debug Tracer - Received payload type: ${typeof rawTelemetry}, Data: ${JSON.stringify(rawTelemetry)}`;
 
   const fullSystem = `${systemPrompt}\n\n${context}\n\n=== VITAL SIGNS & KPI TELEMETRY ===\n${kpiContext || "  No telemetry data available."}\n=================================\n\nYou are the Nova Logic Core. Below is the Chairman's current real-time telemetry and KPI dashboard data. Use this precise data to answer any questions about their operational state, identifying what is OPTIMAL and what is CRITICAL based on the targets.\n\nCRITICAL DIRECTIVE:\nWhen the user asks for a roadmap, sequence, blueprint, or map, you MUST output a Mermaid.js flowchart using graph TD syntax. Enclose the mermaid code strictly in standard markdown mermaid code blocks. If the user asks to map a strategy, you must generate the Mermaid syntax AND use the save_roadmap tool to persist it to the database.\n\nRespond in plain text. Be concise and direct. No markdown headers unless outputting Mermaid blocks. No bullet introductions like "Here are...". Lead with the most important point.`;
 
