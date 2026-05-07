@@ -13,7 +13,6 @@ datasource db {
 enum Role {
   USER
   ADMIN
-  @@schema("public")
 }
 
 // ─── NextAuth Models ──────────────────────────────────────────────────────────
@@ -29,7 +28,6 @@ model User {
   sessions      Session[]
   tasks         Task[]
   scorecards    Scorecard[]
-  @@schema("public")
 }
 
 model Account {
@@ -49,7 +47,6 @@ model Account {
   user              User    @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@unique([provider, providerAccountId])
-  @@schema("public")
 }
 
 model Session {
@@ -58,7 +55,6 @@ model Session {
   userId       String
   expires      DateTime
   user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-  @@schema("public")
 }
 
 model VerificationToken {
@@ -67,7 +63,6 @@ model VerificationToken {
   expires    DateTime
 
   @@unique([identifier, token])
-  @@schema("public")
 }
 
 // ─── Scorecard Model ──────────────────────────────────────────────────────────
@@ -81,7 +76,6 @@ model Scorecard {
   category   String   // Health | Wealth | Joy | Relationships | CEO | COO | CFO | CTO | CMO | CPO
   userId     String?
   user       User?    @relation(fields: [userId], references: [id], onDelete: Cascade)
-  @@schema("public")
 }
 
 // ─── Chairman Task Model ──────────────────────────────────────────────────────
@@ -105,5 +99,4 @@ model Task {
   parentId    String?
   parent      Task?     @relation("SubTasks", fields: [parentId], references: [id], onDelete: Cascade)
   subtasks    Task[]    @relation("SubTasks")
-  @@schema("public")
 }
