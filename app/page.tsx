@@ -1749,22 +1749,23 @@ export default function ChairmanDashboard() {
                   <button
                     key={key}
                     onClick={() => setSelectedCategory(key)}
+                    className="border rounded-md"
                     style={{
                       padding:         "4px 9px",
-                      borderRadius:    5,
                       fontSize:        8,
                       fontWeight:      700,
                       letterSpacing:   "0.16em",
                       textTransform:   "uppercase",
                       cursor:          "pointer",
-                      border:          `1px solid ${active ? `${meta.color}55` : "#1A1B22"}`,
                       backgroundColor: active ? `${meta.color}14` : "transparent",
                       color:           active ? meta.color : "#2A3040",
-                      transition:      "all 0.15s",
+                      borderColor:     active ? meta.color : "transparent",
+                      boxShadow:       active ? `0 0 12px ${meta.color}80, inset 0 0 4px ${meta.color}40` : "none",
+                      transition:      "all 0.3s ease-in-out",
                       whiteSpace:      "nowrap",
                     }}
                     onMouseEnter={(e) => { if (!active) { (e.currentTarget as HTMLButtonElement).style.borderColor = `${meta.color}33`; (e.currentTarget as HTMLButtonElement).style.color = `${meta.color}99`; } }}
-                    onMouseLeave={(e) => { if (!active) { (e.currentTarget as HTMLButtonElement).style.borderColor = "#1A1B22"; (e.currentTarget as HTMLButtonElement).style.color = "#2A3040"; } }}
+                    onMouseLeave={(e) => { if (!active) { (e.currentTarget as HTMLButtonElement).style.borderColor = "transparent"; (e.currentTarget as HTMLButtonElement).style.color = "#2A3040"; } }}
                   >
                     {meta.label}
                   </button>
