@@ -6,6 +6,19 @@ import { authOptions } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { syncTaskToCalendar } from "@/lib/calendarSync";
 
+// 1. Safe Date Parsing Failsafe
+const parseDateSafe = (val: any) => {
+  if (!val || val === "null" || val === "undefined" || String(val).trim() === "") return null;
+  const d = new Date(val);
+  return isNaN(d.valueOf()) ? null : d;
+};
+
+// 2. Safe Integer Parsing Failsafe
+const parseTimeSafe = (val: any) => {
+  const parsed = parseInt(val, 10);
+  return isNaN(parsed) ? 0 : parsed;
+};
+
 async function getSession() {
   return getServerSession(authOptions);
 }
@@ -69,14 +82,11 @@ export async function POST(req: NextRequest) {
   try {
     const sanitizedData = {
       ...body,
-      // Force empty strings to null, and valid strings to Date objects
-      startDate: body.startDate ? new Date(body.startDate) : null,
-      dueDate: body.dueDate ? new Date(body.dueDate) : null,
-      // Ensure timeTracked is an integer
-      timeTracked: body.timeTracked ? parseInt(body.timeTracked, 10) : 0,
-      // Ensure priority and status fallbacks
-      priority: body.priority || 'None',
-      status: body.status || 'To Do'
+      startDate: parseDateSafe(body.startDate),
+      dueDate: parseDateSafe(body.dueDate),
+      timeTracked: parseTimeSafe(body.timeTracked),
+      priority: (body.priority && typeof body.priority === 'string') ? body.priority : 'None',
+      status: (body.status && typeof body.status === 'string') ? body.status : 'To Do'
     };
 
     const task = await prisma.task.create({
@@ -159,11 +169,11 @@ export async function PATCH(req: NextRequest) {
 
     const sanitizedData = {
       ...body,
-      ...(body.startDate !== undefined && { startDate: body.startDate ? new Date(body.startDate) : null }),
-      ...(body.dueDate !== undefined && { dueDate: body.dueDate ? new Date(body.dueDate) : null }),
-      ...(body.timeTracked !== undefined && { timeTracked: body.timeTracked ? parseInt(body.timeTracked, 10) : 0 }),
-      ...(body.priority !== undefined && { priority: body.priority || 'None' }),
-      ...(body.status !== undefined && { status: body.status || 'To Do' }),
+      ...(body.startDate !== undefined && { startDate: parseDateSafe(body.startDate) }),
+      ...(body.dueDate !== undefined && { dueDate: parseDateSafe(body.dueDate) }),
+      ...(body.timeTracked !== undefined && { timeTracked: parseTimeSafe(body.timeTracked) }),
+      ...(body.priority !== undefined && { priority: (body.priority && typeof body.priority === 'string') ? body.priority : 'None' }),
+      ...(body.status !== undefined && { status: (body.status && typeof body.status === 'string') ? body.status : 'To Do' }),
     };
 
     // Remove ID so we don't try to update the primary key
