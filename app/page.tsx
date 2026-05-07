@@ -715,6 +715,7 @@ function CSuiteCard({
                     <span className="text-xs text-zinc-500 shrink-0 ml-2">{new Date(t.dueDate).toLocaleDateString(undefined, { month: 'short', day: 'numeric' })}</span>
                   )}
                 </span>
+              </div>
 
               {/* Nested Subtasks */}
               {isExpanded && subtasksMap && subtasksMap[t.id] && subtasksMap[t.id].length > 0 && (
