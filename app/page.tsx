@@ -571,7 +571,7 @@ function PriorityStrikes({
             </button>
             <div className={`w-1 h-1 rounded-full shrink-0 ${agent.color.replace('text-', 'bg-')}`} />
             <span className={`text-[7px] tracking-[0.12em] uppercase shrink-0 w-7 ${agent.color}`}>{agent.title}</span>
-            <span className="text-[11px] flex-1 overflow-hidden text-ellipsis whitespace-nowrap cursor-pointer hover:underline text-zinc-900 dark:text-white flex items-center justify-between" onClick={() => onTaskClick(task, agent.color)}>
+            <span className="text-[11px] flex-1 overflow-hidden text-ellipsis whitespace-nowrap cursor-pointer hover:underline text-white flex items-center justify-between" onClick={() => onTaskClick(task, agent.color)}>
               <span className="flex items-center gap-1.5 truncate">
                 {task.title}
                 {task.priority && task.priority !== "None" && (
@@ -633,10 +633,10 @@ function DomainBlock({
         <div className="flex-1 overflow-y-auto flex flex-col gap-1.5 min-h-0">
           {tasks.map((t) => (
             <div key={t.id} className={`flex items-center gap-1.5 p-1.5 rounded-md border ${t.status === "DONE" || (t as any).completed ? "opacity-40 border-transparent" : "bg-zinc-100/10 dark:bg-black/20 border-zinc-200/20 dark:border-white/5"}`}>
-              <button onClick={(e) => { e.stopPropagation(); onToggle(t.id); }} className="bg-none border-none cursor-pointer p-0 text-themeAccent shrink-0 flex">
+              <button onClick={(e) => { e.stopPropagation(); onToggle(t.id); }} className="bg-none border-none cursor-pointer p-0 text-white shrink-0 flex">
                 {t.status === "DONE" || (t as any).completed ? <CheckCircle2 size={10} /> : <Circle size={10} />}
               </button>
-              <span className={`flex-1 text-[10px] text-themeAccent overflow-hidden text-ellipsis whitespace-nowrap cursor-pointer hover:underline flex items-center justify-between ${t.status === "DONE" || (t as any).completed ? "line-through" : ""}`} onClick={() => onTaskClick(t, color)}>
+              <span className={`flex-1 text-[10px] text-white overflow-hidden text-ellipsis whitespace-nowrap cursor-pointer hover:underline flex items-center justify-between ${t.status === "DONE" || (t as any).completed ? "line-through opacity-50" : ""}`} onClick={() => onTaskClick(t, color)}>
                 <span className="flex items-center gap-1.5 truncate">
                   {t.title}
                   {t.priority && t.priority !== "None" && (
@@ -647,13 +647,13 @@ function DomainBlock({
                   <span className="text-[8px] text-zinc-500 shrink-0 ml-2 opacity-70">{new Date(t.dueDate).toLocaleDateString(undefined, { month: 'short', day: 'numeric' })}</span>
                 )}
               </span>
-              <button onClick={(e) => { e.stopPropagation(); onDelete(t.id); }} className="bg-none border-none cursor-pointer p-0 text-themeAccent flex shrink-0 hover:text-[#E05A3A]">
+              <button onClick={(e) => { e.stopPropagation(); onDelete(t.id); }} className="bg-none border-none cursor-pointer p-0 text-white flex shrink-0 hover:text-[#E05A3A]">
                 <X size={9} />
               </button>
             </div>
           ))}
           {tasks.length === 0 && (
-            <div className="text-[9px] text-themeAccent py-2 tracking-[0.08em]">
+            <div className="text-[9px] text-white py-2 tracking-[0.08em]">
               All clear.
             </div>
           )}
@@ -729,12 +729,12 @@ function CSuiteCard({
                 {/* Checkbox & Title */}
                 <div className="shrink-0 pt-1">
                   <button onClick={(e) => { e.stopPropagation(); onToggle(t.id); }} className="text-zinc-500 hover:text-[color:var(--theme-grad-start)] transition-colors p-0 border-none bg-none flex shrink-0">
-                    {t.status === "DONE" || (t as any).completed ? <CheckCircle2 size={12} className="text-themeAccent" /> : <Circle size={12} />}
+                    {t.status === "DONE" || (t as any).completed ? <CheckCircle2 size={12} className="text-white" /> : <Circle size={12} />}
                   </button>
                 </div>
                 <div className="shrink-0 pt-[6px] hidden">
                 </div>
-                <span className={`flex-1 text-sm leading-tight pt-[3px] flex items-center justify-between ${t.status === "DONE" || (t as any).completed ? "line-through text-zinc-500" : "text-zinc-900 dark:text-white"}`}>
+                <span className={`flex-1 text-sm leading-tight pt-[3px] flex items-center justify-between ${t.status === "DONE" || (t as any).completed ? "line-through opacity-50 text-white" : "text-white"}`}>
                   <span className="flex items-center gap-2 truncate">
                     {t.title}
                     {t.priority && t.priority !== "None" && (
@@ -760,9 +760,9 @@ function CSuiteCard({
                         }} 
                         className="shrink-0 pt-0.5 cursor-pointer flex items-center justify-center hover:opacity-70 transition-opacity"
                       >
-                        {sub.status === "DONE" ? <CheckCircle2 className="w-4 h-4 text-themeAccent" /> : <Circle className="w-4 h-4 text-zinc-500" />}
+                        {sub.status === "DONE" ? <CheckCircle2 className="w-4 h-4 text-white" /> : <Circle className="w-4 h-4 text-zinc-500" />}
                       </button>
-                      <span className={`text-sm flex-1 pt-0.5 leading-tight ${sub.status === "DONE" ? "line-through text-zinc-500" : "text-zinc-400"}`}>{sub.title}</span>
+                      <span className={`text-sm flex-1 pt-0.5 leading-tight ${sub.status === "DONE" ? "line-through opacity-50 text-white" : "text-white"}`}>{sub.title}</span>
                       <button onClick={(e) => { e.stopPropagation(); onDeleteSubtask && onDeleteSubtask(sub.id); }} className="opacity-0 group-hover:opacity-100 text-zinc-500 hover:text-red-400 transition-all shrink-0">
                         <X size={10} />
                       </button>
