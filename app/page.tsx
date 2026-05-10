@@ -82,40 +82,54 @@ interface Agent {
 
 // ─── Agent Metadata (tasks come from Supabase) ────────────────────────────────
 
+const domainColors: Record<string, string> = {
+  WEALTH: '#D4AF37',
+  HEALTH: '#E05A3A',
+  RELATIONSHIPS: '#5B8FB9',
+  JOY: '#B388EB',
+  CEO: '#C9A961', 
+  COO: '#7B9EA8',
+  CMO: '#A87B9E',
+  CFO: '#8BA87B',
+  CTO: '#4A90E2',
+  CPO: '#F39C12',
+  CRO: '#10B981',
+  CHO: '#D81B60',
+};
+
 const AGENT_META_BUSINESS = [
-  { id: "ceo", title: "CEO", role: "Vision & Strategy",      color: "var(--theme-grad-start)", icon: <Target className="w-4 h-4 opacity-70" /> },
-  { id: "coo", title: "COO", role: "Ops & Execution",        color: "var(--theme-grad-start)", icon: <Settings className="w-4 h-4 opacity-70" /> },
-  { id: "cmo", title: "CMO", role: "Growth & Sales",         color: "var(--theme-grad-start)", icon: <TrendingUp className="w-4 h-4 opacity-70" /> },
-  { id: "cfo", title: "CFO", role: "Finance & Cash",         color: "var(--theme-grad-start)", icon: <Landmark className="w-4 h-4 opacity-70" /> },
-  { id: "cto", title: "CTO", role: "APIs & Automation Pipelines",color: "var(--theme-grad-start)", icon: <Terminal className="w-4 h-4 opacity-70" /> },
-  { id: "cpo", title: "CPO", role: "Product & UX",           color: "var(--theme-grad-start)", icon: <Layers className="w-4 h-4 opacity-70" /> },
-  { id: "cro", title: "CRO", role: "Revenue & Conversion",   color: "var(--theme-grad-start)", icon: <BadgeDollarSign className="w-4 h-4 opacity-70" /> },
-  { id: "cho", title: "CHO", role: "Talent & Culture",       color: "var(--theme-grad-start)", icon: <ShieldCheck className="w-4 h-4 opacity-70" /> },
+  { id: "ceo", title: "CEO", role: "Vision & Strategy",      color: domainColors.CEO, icon: <Target className="w-4 h-4 opacity-70" /> },
+  { id: "coo", title: "COO", role: "Ops & Execution",        color: domainColors.COO, icon: <Settings className="w-4 h-4 opacity-70" /> },
+  { id: "cmo", title: "CMO", role: "Growth & Sales",         color: domainColors.CMO, icon: <TrendingUp className="w-4 h-4 opacity-70" /> },
+  { id: "cfo", title: "CFO", role: "Finance & Cash",         color: domainColors.CFO, icon: <Landmark className="w-4 h-4 opacity-70" /> },
+  { id: "cto", title: "CTO", role: "APIs & Automation Pipelines",color: domainColors.CTO, icon: <Terminal className="w-4 h-4 opacity-70" /> },
+  { id: "cpo", title: "CPO", role: "Product & UX",           color: domainColors.CPO, icon: <Layers className="w-4 h-4 opacity-70" /> },
+  { id: "cro", title: "CRO", role: "Revenue & Conversion",   color: domainColors.CRO, icon: <BadgeDollarSign className="w-4 h-4 opacity-70" /> },
+  { id: "cho", title: "CHO", role: "Talent & Culture",       color: domainColors.CHO, icon: <ShieldCheck className="w-4 h-4 opacity-70" /> },
 ];
 
 const AGENT_META_PERSONAL = [
-  { id: "wealth", title: "WEALTH",        role: "Income & Freedom",        color: "var(--theme-grad-start)", icon: <CircleDollarSign className="w-4 h-4 opacity-70" /> },
-  { id: "health", title: "HEALTH",        role: "Training & Energy",       color: "var(--theme-grad-start)", icon: <Activity className="w-4 h-4 opacity-70" /> },
-  { id: "relate", title: "RELATIONSHIPS", role: "Legacy & Pack",           color: "var(--theme-grad-start)", icon: <Users className="w-4 h-4 opacity-70" /> },
-  { id: "joy",    title: "JOY",           role: "Goals & Happiness",       color: "var(--theme-grad-start)", icon: <Sparkles className="w-4 h-4 opacity-70" /> },
+  { id: "wealth", title: "WEALTH",        role: "Income & Freedom",        color: domainColors.WEALTH, icon: <CircleDollarSign className="w-4 h-4 opacity-70" /> },
+  { id: "health", title: "HEALTH",        role: "Training & Energy",       color: domainColors.HEALTH, icon: <Activity className="w-4 h-4 opacity-70" /> },
+  { id: "relate", title: "RELATIONSHIPS", role: "Legacy & Pack",           color: domainColors.RELATIONSHIPS, icon: <Users className="w-4 h-4 opacity-70" /> },
+  { id: "joy",    title: "JOY",           role: "Goals & Happiness",       color: domainColors.JOY, icon: <Sparkles className="w-4 h-4 opacity-70" /> },
 ];
-
 
 // ─── Category → Agent Routing (hardcoded, no guessing) ───────────────────────
 
 const CATEGORIES: Record<string, { label: string; color: string; pillar: string; agentId: string }> = {
-  CEO:    { label: "CEO",    color: "var(--theme-grad-start)", pillar: "BUSINESS", agentId: "ceo"    },
-  COO:    { label: "COO",    color: "var(--theme-grad-start)", pillar: "BUSINESS", agentId: "coo"    },
-  CMO:    { label: "CMO",    color: "var(--theme-grad-start)", pillar: "BUSINESS", agentId: "cmo"    },
-  CFO:    { label: "CFO",    color: "var(--theme-grad-start)", pillar: "BUSINESS", agentId: "cfo"    },
-  CTO:    { label: "CTO",    color: "var(--theme-grad-start)", pillar: "BUSINESS", agentId: "cto"    },
-  CPO:    { label: "CPO",    color: "var(--theme-grad-start)", pillar: "BUSINESS", agentId: "cpo"    },
-  CRO:    { label: "CRO",    color: "var(--theme-grad-start)", pillar: "BUSINESS", agentId: "cro"    },
-  CHO:    { label: "CHO",    color: "var(--theme-grad-start)", pillar: "BUSINESS", agentId: "cho"    },
-  Wealth: { label: "WEALTH", color: "var(--theme-grad-start)", pillar: "PERSONAL", agentId: "wealth" },
-  Health: { label: "HEALTH", color: "var(--theme-grad-start)", pillar: "PERSONAL", agentId: "health" },
-  Relate: { label: "RELATE", color: "var(--theme-grad-start)", pillar: "PERSONAL", agentId: "relate" },
-  Joy:    { label: "JOY",    color: "var(--theme-grad-start)", pillar: "PERSONAL", agentId: "joy"    },
+  CEO:    { label: "CEO",    color: domainColors.CEO, pillar: "BUSINESS", agentId: "ceo"    },
+  COO:    { label: "COO",    color: domainColors.COO, pillar: "BUSINESS", agentId: "coo"    },
+  CMO:    { label: "CMO",    color: domainColors.CMO, pillar: "BUSINESS", agentId: "cmo"    },
+  CFO:    { label: "CFO",    color: domainColors.CFO, pillar: "BUSINESS", agentId: "cfo"    },
+  CTO:    { label: "CTO",    color: domainColors.CTO, pillar: "BUSINESS", agentId: "cto"    },
+  CPO:    { label: "CPO",    color: domainColors.CPO, pillar: "BUSINESS", agentId: "cpo"    },
+  CRO:    { label: "CRO",    color: domainColors.CRO, pillar: "BUSINESS", agentId: "cro"    },
+  CHO:    { label: "CHO",    color: domainColors.CHO, pillar: "BUSINESS", agentId: "cho"    },
+  Wealth: { label: "WEALTH", color: domainColors.WEALTH, pillar: "PERSONAL", agentId: "wealth" },
+  Health: { label: "HEALTH", color: domainColors.HEALTH, pillar: "PERSONAL", agentId: "health" },
+  Relate: { label: "RELATE", color: domainColors.RELATIONSHIPS, pillar: "PERSONAL", agentId: "relate" },
+  Joy:    { label: "JOY",    color: domainColors.JOY, pillar: "PERSONAL", agentId: "joy"    },
 };
 
 
@@ -600,7 +614,7 @@ function DomainBlock({
     <div className="h-full w-full flex flex-col overflow-hidden">
       <div className="flex items-center gap-2 mb-2">
         {icon}
-        <span className="font-serif text-[12px] text-themeAccent tracking-[0.04em]">{label}</span>
+        <span className="font-serif text-[12px] tracking-[0.04em]" style={{ color }}>{label}</span>
         <div className="flex-1" />
         <span className="text-[7px] tracking-[0.16em] uppercase text-zinc-400 dark:text-[#252836]">{sub}</span>
       </div>
