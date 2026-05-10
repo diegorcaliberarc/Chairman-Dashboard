@@ -41,7 +41,7 @@ export function TaskDetailModal({
       >
         {/* Header */}
         <div className="flex items-center justify-between mb-6">
-          <span style={{ color: agentColor, fontFamily: "Georgia, serif", fontSize: 20 }}>Task Details</span>
+          <span className={`font-serif text-[20px] ${agentColor}`}>Task Details</span>
           <button onClick={onClose} className="text-zinc-500 hover:text-zinc-800 dark:hover:text-zinc-200 transition-colors">
             <X size={20} />
           </button>
@@ -55,8 +55,7 @@ export function TaskDetailModal({
             <input 
               value={title} 
               onChange={(e) => setTitle(e.target.value)}
-              className="w-full bg-transparent border-b border-zinc-200/20 dark:border-white/10 pb-2 text-zinc-900 dark:text-white text-lg font-medium focus:outline-none transition-colors"
-              style={{ borderBottomColor: title ? agentColor : undefined }}
+              className={`w-full bg-transparent border-b pb-2 text-zinc-900 dark:text-white text-lg font-medium focus:outline-none transition-colors ${title ? agentColor.replace('text-', 'border-') : 'border-zinc-200/20 dark:border-white/10'}`}
             />
           </div>
 
@@ -122,8 +121,7 @@ export function TaskDetailModal({
               value={description}
               onChange={(e) => setDescription(e.target.value)}
               placeholder="Add details..."
-              className="w-full flex-1 bg-white/5 dark:bg-black/20 border border-zinc-200/20 dark:border-white/5 rounded-lg p-3 text-zinc-900 dark:text-white text-sm focus:outline-none transition-all resize-none"
-              style={{ outlineColor: description ? agentColor : "transparent" }}
+              className={`w-full flex-1 bg-white/5 dark:bg-black/20 border border-zinc-200/20 dark:border-white/5 rounded-lg p-3 text-zinc-900 dark:text-white text-sm focus:outline-none transition-all resize-none ${description ? agentColor.replace('text-', 'outline-') : 'outline-transparent'}`}
             />
           </div>
 
@@ -133,7 +131,7 @@ export function TaskDetailModal({
             {subtasks.map((sub) => (
               <div key={sub.id} className="flex items-center gap-3 p-2.5 bg-white/5 dark:bg-black/20 border border-zinc-200/20 dark:border-white/5 rounded-md">
                 <button onClick={() => onToggleSubtask(sub.id)} className="shrink-0">
-                  {sub.status === "DONE" ? <CheckCircle2 size={14} color={agentColor} /> : <Circle size={14} className="text-zinc-500" />}
+                  {sub.status === "DONE" ? <CheckCircle2 size={14} className={agentColor} /> : <Circle size={14} className="text-zinc-500" />}
                 </button>
                 <span className={`flex-1 text-xs ${sub.status === "DONE" ? "line-through text-zinc-500" : "text-zinc-900 dark:text-white"}`}>{sub.title}</span>
                 <button onClick={() => onDeleteSubtask(sub.id)} className="text-zinc-500 hover:text-red-400 transition-colors shrink-0">
@@ -162,8 +160,7 @@ export function TaskDetailModal({
         <div className="mt-6 pt-4 border-t border-zinc-200/20 dark:border-white/10 flex justify-end shrink-0">
           <button 
             onClick={handleSave}
-            className="px-6 py-2 rounded-lg text-xs font-semibold tracking-wider uppercase transition-all"
-            style={{ backgroundColor: `${agentColor}20`, color: agentColor, border: `1px solid ${agentColor}40` }}
+            className={`px-6 py-2 rounded-lg text-xs font-semibold tracking-wider uppercase transition-all border ${agentColor.replace('text-', 'bg-')}/20 ${agentColor} ${agentColor.replace('text-', 'border-')}/40 hover:${agentColor.replace('text-', 'bg-')}/30`}
           >
             Save Changes
           </button>

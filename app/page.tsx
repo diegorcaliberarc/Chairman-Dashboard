@@ -83,18 +83,18 @@ interface Agent {
 // ─── Agent Metadata (tasks come from Supabase) ────────────────────────────────
 
 const domainColors: Record<string, string> = {
-  WEALTH: '#D4AF37',
-  HEALTH: '#E05A3A',
-  RELATIONSHIPS: '#5B8FB9',
-  JOY: '#B388EB',
-  CEO: '#C9A961', 
-  COO: '#7B9EA8',
-  CMO: '#A87B9E',
-  CFO: '#8BA87B',
-  CTO: '#4A90E2',
-  CPO: '#F39C12',
-  CRO: '#10B981',
-  CHO: '#D81B60',
+  WEALTH: 'text-yellow-500',
+  HEALTH: 'text-red-500',
+  RELATIONSHIPS: 'text-blue-400',
+  JOY: 'text-purple-400',
+  CEO: 'text-yellow-600', 
+  COO: 'text-yellow-600',
+  CMO: 'text-yellow-600',
+  CFO: 'text-yellow-600',
+  CTO: 'text-yellow-600',
+  CPO: 'text-yellow-600',
+  CRO: 'text-yellow-600',
+  CHO: 'text-yellow-600',
 };
 
 const AGENT_META_BUSINESS = [
@@ -564,15 +564,13 @@ function PriorityStrikes({
           <div
             key={task.id}
             style={{ display: "flex", alignItems: "center", gap: 6, padding: "5px 9px", borderRadius: 6, transition: "border-color 0.14s" }}
-            className="bg-transparent border border-zinc-200 dark:border-[#0F1015]"
-            onMouseEnter={(e) => (e.currentTarget.style.borderColor = `${agent.color}28`)}
-            onMouseLeave={(e) => (e.currentTarget.style.borderColor = "#0F1015")}
+            className="bg-transparent border border-zinc-200 dark:border-[#0F1015] hover:border-zinc-500/20"
           >
-            <button onClick={() => onToggle(task.id)} style={{ background: "none", border: "none", cursor: "pointer", padding: 0, display: "flex", flexShrink: 0, color: "var(--theme-grad-start)" }}>
+            <button onClick={() => onToggle(task.id)} className="bg-none border-none cursor-pointer p-0 flex shrink-0 text-zinc-500 hover:text-zinc-300 transition-colors">
               <Circle size={9} />
             </button>
-            <div style={{ width: 4, height: 4, borderRadius: "50%", backgroundColor: agent.color, flexShrink: 0 }} />
-            <span style={{ fontSize: 7, letterSpacing: "0.12em", textTransform: "uppercase", color: agent.color, flexShrink: 0, width: 28 }}>{agent.title}</span>
+            <div className={`w-1 h-1 rounded-full shrink-0 ${agent.color.replace('text-', 'bg-')}`} />
+            <span className={`text-[7px] tracking-[0.12em] uppercase shrink-0 w-7 ${agent.color}`}>{agent.title}</span>
             <span className="text-[11px] flex-1 overflow-hidden text-ellipsis whitespace-nowrap cursor-pointer hover:underline text-zinc-900 dark:text-white flex items-center justify-between" onClick={() => onTaskClick(task, agent.color)}>
               <span className="flex items-center gap-1.5 truncate">
                 {task.title}
@@ -612,23 +610,23 @@ function DomainBlock({
   
   return (
     <div className="h-full w-full flex flex-col overflow-hidden">
-      <div className="flex items-center gap-2 mb-2">
+      <div className={`flex items-center gap-2 mb-2 ${color}`}>
         {icon}
-        <span className="font-serif text-[12px] tracking-[0.04em]" style={{ color }}>{label}</span>
+        <span className="font-serif text-[12px] tracking-[0.04em]">{label}</span>
         <div className="flex-1" />
         <span className="text-[7px] tracking-[0.16em] uppercase text-zinc-400 dark:text-[#252836]">{sub}</span>
       </div>
       
       {/* Domain Progress Bar */}
       <div style={{ display: "flex", alignItems: "flex-end", justifyContent: "space-between", marginBottom: 4 }}>
-        <span className="text-[7px] tracking-[0.18em] uppercase text-themeAccent">Tasks</span>
+        <span className="text-[7px] tracking-[0.18em] uppercase text-zinc-500">Tasks</span>
         <div style={{ textAlign: "right" }}>
-          <span style={{ fontSize: 10, color: color, fontVariantNumeric: "tabular-nums", fontFamily: "Georgia, serif" }}>{doneCount}</span>
-          <span style={{ fontSize: 7, color: "var(--theme-grad-start)" }}>/{total}</span>
+          <span className={`text-[10px] font-serif tabular-nums ${color}`}>{doneCount}</span>
+          <span className="text-[7px] text-zinc-500">/{total}</span>
         </div>
       </div>
       <div style={{ height: 1.5, backgroundColor: "#1E1F24", borderRadius: 2, marginBottom: 8, flexShrink: 0 }}>
-        <div style={{ height: "100%", width: `${pct}%`, backgroundColor: color, borderRadius: 2, opacity: 0.65, transition: "width 0.6s ease" }} />
+        <div className={`h-full rounded-sm opacity-65 transition-[width] duration-600 ease-in-out ${color.replace('text-', 'bg-')}`} style={{ width: `${pct}%` }} />
       </div>
 
       <div className="flex-1 overflow-y-auto flex flex-col gap-1 pr-1">
@@ -692,19 +690,19 @@ function CSuiteCard({
     <div className="h-full w-full text-left flex flex-col overflow-hidden">
       <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", marginBottom: 6 }}>
         <div>
-          <div className="flex items-center gap-2">
+          <div className={`flex items-center gap-2 ${agent.color}`}>
             {agent.icon}
-            <div style={{ fontFamily: "Georgia, serif", fontSize: 16, color: agent.color, lineHeight: 1 }}>{agent.title}</div>
+            <div className="font-serif text-[16px] leading-none">{agent.title}</div>
           </div>
-          <div style={{ fontSize: 7, letterSpacing: "0.16em", textTransform: "uppercase", color: "var(--theme-grad-start)", marginTop: 3 }}>{agent.role}</div>
+          <div className="text-[7px] tracking-[0.16em] uppercase text-zinc-500 mt-1">{agent.role}</div>
         </div>
         <div style={{ textAlign: "right" }}>
-          <span style={{ fontSize: 16, color: agent.color, fontVariantNumeric: "tabular-nums", fontFamily: "Georgia, serif" }}>{done}</span>
-          <span style={{ fontSize: 9, color: "var(--theme-grad-start)" }}>/{total}</span>
+          <span className={`text-[16px] font-serif tabular-nums ${agent.color}`}>{done}</span>
+          <span className="text-[9px] text-zinc-500">/{total}</span>
         </div>
       </div>
       <div style={{ height: 1.5, backgroundColor: "#1E1F24", borderRadius: 2, marginBottom: 8, flexShrink: 0 }}>
-        <div style={{ height: "100%", width: `${pct}%`, backgroundColor: agent.color, borderRadius: 2, opacity: 0.65, transition: "width 0.6s ease" }} />
+        <div className={`h-full rounded-sm opacity-65 transition-[width] duration-600 ease-in-out ${agent.color.replace('text-', 'bg-')}`} style={{ width: `${pct}%` }} />
       </div>
       <div className="flex-1 overflow-y-auto flex flex-col gap-2 min-h-0 mt-2 pr-1" style={{ scrollbarWidth: "none", msOverflowStyle: "none" }}>
         {agent.tasks.length > 0 ? agent.tasks.map((t) => {
