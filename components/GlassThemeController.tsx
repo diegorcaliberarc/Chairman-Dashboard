@@ -11,6 +11,14 @@ import {
   loadGlassThemeFromStorage,
   normalizeGlassThemeConfig,
 } from "@/lib/glassTheme";
+import {
+  applyFontKitToDocument,
+  DEFAULT_FONT_KIT,
+  FONT_KIT_EVENT,
+  FONT_KIT_STORAGE_KEY,
+  FontKitConfig,
+  loadFontKitFromStorage,
+} from "@/lib/fontTheme";
 
 export function GlassThemeController() {
   const { setTheme } = useTheme();
@@ -30,6 +38,21 @@ export function GlassThemeController() {
     applyGlassThemeToDocument(initial, { persist: !hasLocalSaved, dispatch: false });
     setActivePreset(initial.presetId);
     setThemeRef.current(initial.colorMode);
+
+    // Hydrate Font Kit & Sizing
+    const hasFontSaved =
+      typeof window !== "undefined" &&
+      Boolean(localStorage.getItem(FONT_KIT_STORAGE_KEY));
+    const initialFont = loadFontKitFromStorage();
+    applyFontKitToDocument(initialFont, { persist: !hasFontSaved, dispatch: false });
+
+    const onFontEvent = (e: Event) => {
+      const fontEvt = e as CustomEvent<FontKitConfig>;
+      if (fontEvt.detail) {
+        applyFontKitToDocument(fontEvt.detail, { persist: false, dispatch: false });
+      }
+    };
+    window.addEventListener(FONT_KIT_EVENT, onFontEvent);
 
     const onThemeEvent = (e: Event) => {
       userChangedSinceMountRef.current = true;
@@ -64,6 +87,7 @@ export function GlassThemeController() {
     return () => {
       cancelled = true;
       window.removeEventListener(GLASS_THEME_EVENT, onThemeEvent);
+      window.removeEventListener(FONT_KIT_EVENT, onFontEvent);
     };
   }, []);
 

@@ -182,12 +182,12 @@ export function NovaPanel({
               {msg.role === "user" ? msg.content : (
                 <ReactMarkdown
                   components={{
-                    p: ({ children }) => <p style={{ margin: "0 0 8px 0", lastChild: { marginBottom: 0 } }}>{children}</p>,
+                    p: ({ children }) => <p style={{ margin: "0 0 8px 0" }}>{children}</p>,
                     strong: ({ children }) => <strong style={{ color: agentColor }}>{children}</strong>,
                     ul: ({ children }) => <ul style={{ margin: "0 0 8px 0", paddingLeft: 20 }}>{children}</ul>,
                     li: ({ children }) => <li style={{ marginBottom: 4 }}>{children}</li>,
-                    code: ({ inline, children }) => {
-                      if (inline) {
+                    code: ({ children, ...props }: any) => {
+                      if (props.inline || !String(children).includes("\n")) {
                         return <code style={{ backgroundColor: "rgba(0,0,0,0.3)", padding: "2px 4px", borderRadius: 4, fontSize: 11, color: "#C9A961" }}>{children}</code>;
                       }
                       return <pre style={{ backgroundColor: "rgba(0,0,0,0.4)", padding: 10, borderRadius: 6, fontSize: 10, overflowX: "auto", margin: "8px 0", border: "1px solid rgba(255,255,255,0.05)" }}><code>{children}</code></pre>;

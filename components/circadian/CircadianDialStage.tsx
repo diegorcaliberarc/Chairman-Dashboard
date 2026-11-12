@@ -150,8 +150,8 @@ export function CircadianDialStage({
   const R_SKY = 168 * scaleFactor;
   const R_TIMELAPSE_INNER = 168 * scaleFactor;
   const R_TIMELAPSE_OUTER = 182 * scaleFactor;
-  const R_SOLAR_ARC = 84 * scaleFactor;
-  const R_ORBITAL_TRACKS = [140, 124, 108].map((r) => r * scaleFactor);
+  const R_SOLAR_ARC = 92 * scaleFactor;
+  const R_ORBITAL_TRACKS: number[] = []; // Exterior orbital rings removed per user request
   const R_WEDGE_INNER = 190 * scaleFactor;
   const R_WEDGE_OUTER = 268 * scaleFactor;
 
@@ -872,7 +872,7 @@ export function CircadianDialStage({
           ))}
         </g>
 
-        {/* 4. 24-Hour Precision Ticks */}
+        {/* 4. 12-Hour Regular Clock Dial Precision Ticks (12 on Top, 3 on Right, 6 on Bottom, 9 on Left) */}
         <g className="pointer-events-none">
           {Array.from({ length: 48 }, (_, idx) => {
             const mins = idx * 30;
@@ -909,33 +909,114 @@ export function CircadianDialStage({
           })}
         </g>
 
-        {/* 5. Cardinal Hour Labels */}
+        {/* 5. Regular-Style Clock Hour Labels: 12 (Top), 3 (Right), 6 (Bottom), 9 (Left) */}
         <g
           className="pointer-events-none"
-          style={{ fontFamily: "Inter, sans-serif" }}
+          style={{ fontFamily: "var(--font-numbers, inherit)" }}
         >
           {[
-            { mins: 720, label: "12:00 PM", dx: 0, dy: 23 * scaleFactor },
-            { mins: 1080, label: "6:00 PM", dx: -34 * scaleFactor, dy: 4 },
-            { mins: 0, label: "12:00 AM", dx: 0, dy: -15 * scaleFactor },
-            { mins: 360, label: "6:00 AM", dx: 34 * scaleFactor, dy: 4 },
+            { mins: 720, num: "12", sub: "12 PM", dx: 0, dy: 24 * scaleFactor },
+            { mins: 1080, num: "3", sub: "6 PM", dx: -34 * scaleFactor, dy: 4 },
+            { mins: 0, num: "6", sub: "12 AM", dx: 0, dy: -14 * scaleFactor },
+            { mins: 360, num: "9", sub: "6 AM", dx: 34 * scaleFactor, dy: 4 },
           ].map((c) => {
             const pt = timeToCartesian(CX, CY, R_SKY, c.mins);
             return (
-              <g key={c.label}>
+              <g key={c.num}>
+                {/* Regular style primary clock number */}
                 <text
                   x={pt.x + c.dx}
-                  y={pt.y + c.dy}
+                  y={pt.y + c.dy - 3}
                   textAnchor="middle"
                   fill="#ffffff"
-                  stroke="rgba(5, 8, 18, 0.75)"
+                  stroke="rgba(5, 8, 18, 0.85)"
                   strokeWidth="3.5"
                   paintOrder="stroke"
-                  fontSize={11 * scaleFactor}
-                  fontWeight={700}
-                  letterSpacing="0.04em"
+                  fontSize={14 * scaleFactor}
+                  fontWeight={800}
                 >
-                  {c.label}
+                  {c.num}
+                </text>
+                {/* Circadian 24h subtitle */}
+                <text
+                  x={pt.x + c.dx}
+                  y={pt.y + c.dy + 9 * scaleFactor}
+                  textAnchor="middle"
+                  fill="rgba(255,255,255,0.6)"
+                  stroke="rgba(5, 8, 18, 0.75)"
+                  strokeWidth="2.5"
+                  paintOrder="stroke"
+                  fontSize={8.5 * scaleFactor}
+                  fontWeight={600}
+                >
+                  {c.sub}
+                </text>
+              </g>
+            );
+          })}
+        </g>
+
+        {/* 5.5 Realistic Sunrise (06:24 AM) and Sunset (05:48 PM / 17:48) Markers on Color Wheel */}
+        <g className="pointer-events-none">
+          {[
+            {
+              mins: 384, // 06:24 AM Sunrise
+              label: "SUNRISE 06:24",
+              type: "sunrise",
+              color: "#fbbf24",
+              icon: "🌅",
+            },
+            {
+              mins: 1068, // 17:48 (05:48 PM) Sunset
+              label: "SUNSET 17:48",
+              type: "sunset",
+              color: "#f97316",
+              icon: "🌇",
+            },
+          ].map((sol) => {
+            const rad = minutesToAngleRad(sol.mins);
+            const ptIn = polarToCartesian(CX, CY, R_TIMELAPSE_INNER - 6 * scaleFactor, rad);
+            const ptOut = polarToCartesian(CX, CY, R_TIMELAPSE_OUTER + 8 * scaleFactor, rad);
+            const tagPt = polarToCartesian(CX, CY, R_TIMELAPSE_OUTER + 24 * scaleFactor, rad);
+            return (
+              <g key={sol.type}>
+                <line
+                  x1={ptIn.x}
+                  y1={ptIn.y}
+                  x2={ptOut.x}
+                  y2={ptOut.y}
+                  stroke={sol.color}
+                  strokeWidth={2.4 * scaleFactor}
+                  filter="url(#arcNeonGlow)"
+                />
+                <circle
+                  cx={ptOut.x}
+                  cy={ptOut.y}
+                  r={3.8 * scaleFactor}
+                  fill={sol.color}
+                  stroke="#ffffff"
+                  strokeWidth="1.2"
+                />
+                <rect
+                  x={tagPt.x - 42 * scaleFactor}
+                  y={tagPt.y - 8 * scaleFactor}
+                  width={84 * scaleFactor}
+                  height={16 * scaleFactor}
+                  rx={8 * scaleFactor}
+                  fill="rgba(8, 12, 24, 0.92)"
+                  stroke={sol.color}
+                  strokeWidth="1"
+                />
+                <text
+                  x={tagPt.x}
+                  y={tagPt.y + 3.2 * scaleFactor}
+                  textAnchor="middle"
+                  fill="#ffffff"
+                  fontSize={7.8 * scaleFactor}
+                  fontWeight={800}
+                  letterSpacing="0.06em"
+                >
+                  {sol.label}
                 </text>
               </g>
             );
@@ -1102,19 +1183,69 @@ export function CircadianDialStage({
             </text>
           </g>
 
+          {/* Hollow Center Dynamic Glass Disc with Clean Digital Clock Display */}
           <g className="pointer-events-none">
-            <circle cx={CX} cy={CY} r={3} fill="#ffffff" opacity="0.85" />
+            {/* Hollow Center Circular Recess */}
+            <circle
+              cx={CX}
+              cy={CY}
+              r={48 * scaleFactor}
+              fill="rgba(5, 7, 16, 0.88)"
+              stroke="rgba(255,255,255,0.18)"
+              strokeWidth="1.5"
+            />
+            <circle
+              cx={CX}
+              cy={CY}
+              r={44 * scaleFactor}
+              fill="none"
+              stroke={liveSolarColor}
+              strokeOpacity="0.45"
+              strokeWidth="1"
+              strokeDasharray="3 3"
+            />
+
+            {/* Live Digital Clock Time Readout */}
             <text
               x={CX}
-              y={CY + 48 * scaleFactor}
+              y={CY - 4 * scaleFactor}
               textAnchor="middle"
               fill="#ffffff"
-              stroke="rgba(5, 8, 18, 0.8)"
-              strokeWidth="3"
-              paintOrder="stroke"
-              fontSize={9 * scaleFactor}
+              style={{
+                fontFamily: "var(--font-numbers, monospace)",
+                fontVariantNumeric: "tabular-nums",
+              }}
+              fontSize={18 * scaleFactor}
+              fontWeight={800}
+              letterSpacing="0.04em"
+            >
+              {minutesTo12Hour(currentMinutes, false).split(" ")[0]}
+            </text>
+
+            {/* AM / PM and Live Indicator */}
+            <text
+              x={CX}
+              y={CY + 12 * scaleFactor}
+              textAnchor="middle"
+              fill={liveSolarColor}
+              fontSize={8.5 * scaleFactor}
               fontWeight={700}
-              letterSpacing="0.14em"
+              letterSpacing="0.16em"
+              style={{ fontFamily: "var(--font-letters, sans-serif)" }}
+            >
+              {minutesTo12Hour(currentMinutes, false).split(" ")[1]} · LIVE
+            </text>
+
+            {/* Phase Subtitle Pill underneath Digital Clock */}
+            <text
+              x={CX}
+              y={CY + 26 * scaleFactor}
+              textAnchor="middle"
+              fill="rgba(203, 213, 225, 0.75)"
+              fontSize={6.8 * scaleFactor}
+              fontWeight={700}
+              letterSpacing="0.12em"
+              style={{ fontFamily: "var(--font-letters, sans-serif)" }}
             >
               {currentPhase.name}
             </text>

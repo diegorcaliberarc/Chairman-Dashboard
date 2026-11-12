@@ -22,6 +22,9 @@ import {
   Trash2,
   Wand2,
   X,
+  Type,
+  Binary,
+  Maximize2,
 } from "lucide-react";
 import {
   applyGlassThemeToDocument,
@@ -40,6 +43,17 @@ import {
   saveCustomThemesToStorage,
   structuredCloneConfig,
 } from "@/lib/glassTheme";
+import {
+  AppFontSize,
+  applyFontKitToDocument,
+  FONT_KIT_PRESETS,
+  FONT_SIZE_SCALES,
+  FontKitConfig,
+  FontPresetId,
+  loadFontKitFromStorage,
+  NUMBER_FONT_PRESETS,
+  NumberFontPresetId,
+} from "@/lib/fontTheme";
 
 const WHEEL_SIZE = 216;
 const WHEEL_RADIUS = WHEEL_SIZE / 2 - 8;
@@ -88,6 +102,12 @@ export function AppearanceSettings({ onClose }: { onClose: () => void }) {
   const [customNameInput, setCustomNameInput] = useState("");
   const [isSavingRemote, setIsSavingRemote] = useState(false);
 
+  // Font Kit & Sizing Staged State
+  const initialFontKitRef = useRef<FontKitConfig | null>(null);
+  const [stagedFontKit, setStagedFontKit] = useState<FontKitConfig>(() =>
+    loadFontKitFromStorage()
+  );
+
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
   const wheelWrapRef = useRef<HTMLDivElement | null>(null);
 
@@ -102,6 +122,11 @@ export function AppearanceSettings({ onClose }: { onClose: () => void }) {
       current.wheelStops[2].hex,
     ]);
     setSavedCustomThemes(loadSavedCustomThemes());
+
+    const currentFont = loadFontKitFromStorage();
+    initialFontKitRef.current = { ...currentFont };
+    setStagedFontKit({ ...currentFont });
+
     setMounted(true);
   }, []);
 
@@ -127,6 +152,15 @@ export function AppearanceSettings({ onClose }: { onClose: () => void }) {
     });
     setTheme(stagedConfig.colorMode);
   }, [stagedConfig, mounted, setTheme]);
+
+  // Live real-time DOM preview for font kit and sizing
+  useEffect(() => {
+    if (!mounted) return;
+    applyFontKitToDocument(stagedFontKit, {
+      persist: false,
+      dispatch: false,
+    });
+  }, [stagedFontKit, mounted]);
 
   // Draw authentic 360° Conic Hue × Radial Saturation Color Wheel on <canvas>
   useEffect(() => {
@@ -386,6 +420,12 @@ export function AppearanceSettings({ onClose }: { onClose: () => void }) {
       });
       setTheme(initialConfigRef.current.colorMode);
     }
+    if (initialFontKitRef.current) {
+      applyFontKitToDocument(initialFontKitRef.current, {
+        persist: false,
+        dispatch: false,
+      });
+    }
     onClose();
   };
 
@@ -394,11 +434,16 @@ export function AppearanceSettings({ onClose }: { onClose: () => void }) {
     applyGlassThemeToDocument(stagedConfig, { persist: true, dispatch: true });
     setTheme(stagedConfig.colorMode);
 
+    applyFontKitToDocument(stagedFontKit, { persist: true, dispatch: true });
+
     try {
       await fetch("/api/ui-preferences", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(stagedConfig),
+        body: JSON.stringify({
+          ...stagedConfig,
+          fontKit: stagedFontKit,
+        }),
       });
     } catch {
       // Resilient local fallback already persisted
@@ -1065,6 +1110,140 @@ export function AppearanceSettings({ onClose }: { onClose: () => void }) {
                   <span>65% Balanced</span>
                   <span>92% Smoked</span>
                 </div>
+              </div>
+            </div>
+          </section>
+          {/* 5. Typography Font Kit & Sizing Engine */}
+          <section className="rounded-2xl border border-zinc-200/80 dark:border-white/10 bg-white/55 dark:bg-white/[0.03] p-4 sm:p-5 space-y-5">
+            <div className="flex items-center justify-between">
+              <div>
+                <h3 className="text-[10.5px] font-bold uppercase tracking-[0.18em] text-zinc-500 dark:text-zinc-400 flex items-center gap-1.5">
+                  <Type size={13} className="text-themeAccent" />
+                  5 · Typography Font Kit &amp; Sizing Engine
+                </h3>
+                <p className="text-[11px] text-zinc-500 dark:text-zinc-400 mt-0.5">
+                  Choose bespoke typefaces for letters &amp; numbers, plus global small / medium / large interface scale
+                </p>
+              </div>
+
+              {/* Sizing Selector (Small, Medium, Large) */}
+              <div className="flex items-center gap-1 bg-zinc-200/60 dark:bg-white/10 p-1 rounded-xl">
+                {(["small", "medium", "large"] as const).map((sz) => {
+                  const isCurrent = stagedFontKit.fontSize === sz;
+                  return (
+                    <button
+                      key={sz}
+                      type="button"
+                      onClick={() =>
+                        setStagedFontKit((prev) => ({
+                          ...prev,
+                          fontSize: sz,
+                        }))
+                      }
+                      className={`px-3 py-1 rounded-lg text-xs font-bold capitalize transition-all ${
+                        isCurrent
+                          ? "bg-white dark:bg-zinc-800 text-zinc-900 dark:text-white shadow-sm"
+                          : "text-zinc-600 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-white"
+                      }`}
+                    >
+                      {sz}
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+
+            {/* Letter Fonts (Font Kit) */}
+            <div>
+              <div className="text-[10px] font-bold uppercase tracking-wider text-zinc-500 dark:text-zinc-400 mb-2 flex items-center gap-1.5">
+                <Type size={11} />
+                <span>Letter &amp; Interface Typeface</span>
+              </div>
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-2.5">
+                {FONT_KIT_PRESETS.map((font) => {
+                  const isSelected = stagedFontKit.letterFontId === font.id;
+                  return (
+                    <button
+                      key={font.id}
+                      type="button"
+                      onClick={() =>
+                        setStagedFontKit((prev) => ({
+                          ...prev,
+                          letterFontId: font.id as FontPresetId,
+                          letterFont: font.fontFamily,
+                        }))
+                      }
+                      className={`p-3 rounded-xl border text-left transition-all ${
+                        isSelected
+                          ? "border-blue-500/70 bg-blue-500/10 dark:bg-blue-500/20 shadow-sm"
+                          : "border-zinc-200/70 dark:border-white/10 bg-white/40 dark:bg-white/[0.02] hover:border-zinc-400 dark:hover:border-white/20"
+                      }`}
+                    >
+                      <div className="flex items-center justify-between mb-1">
+                        <span
+                          className="text-sm font-semibold truncate"
+                          style={{ fontFamily: font.fontFamily }}
+                        >
+                          Aa Bb Cc
+                        </span>
+                        {isSelected && <Check size={14} className="text-blue-500 shrink-0" />}
+                      </div>
+                      <div className="text-xs font-bold text-zinc-800 dark:text-zinc-200 truncate">
+                        {font.name.split(" (")[0]}
+                      </div>
+                      <div className="text-[9.5px] text-zinc-500 dark:text-zinc-400 line-clamp-1 mt-0.5">
+                        {font.description}
+                      </div>
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+
+            {/* Number & Telemetry Fonts */}
+            <div>
+              <div className="text-[10px] font-bold uppercase tracking-wider text-zinc-500 dark:text-zinc-400 mb-2 flex items-center gap-1.5">
+                <Binary size={11} />
+                <span>Number, Currency &amp; Clock Figures</span>
+              </div>
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-2.5">
+                {NUMBER_FONT_PRESETS.map((num) => {
+                  const isSelected = stagedFontKit.numberFontId === num.id;
+                  return (
+                    <button
+                      key={num.id}
+                      type="button"
+                      onClick={() =>
+                        setStagedFontKit((prev) => ({
+                          ...prev,
+                          numberFontId: num.id,
+                          numberFont: num.fontFamily,
+                        }))
+                      }
+                      className={`p-3 rounded-xl border text-left transition-all ${
+                        isSelected
+                          ? "border-purple-500/70 bg-purple-500/10 dark:bg-purple-500/20 shadow-sm"
+                          : "border-zinc-200/70 dark:border-white/10 bg-white/40 dark:bg-white/[0.02] hover:border-zinc-400 dark:hover:border-white/20"
+                      }`}
+                    >
+                      <div className="flex items-center justify-between mb-1">
+                        <span
+                          className="text-sm font-mono font-bold text-themeAccent"
+                          style={{ fontFamily: num.fontFamily }}
+                        >
+                          $1,234.56 · 12:00
+                        </span>
+                        {isSelected && <Check size={14} className="text-purple-500 shrink-0" />}
+                      </div>
+                      <div className="text-xs font-bold text-zinc-800 dark:text-zinc-200 truncate">
+                        {num.name.split(" (")[0]}
+                      </div>
+                      <div className="text-[9.5px] text-zinc-500 dark:text-zinc-400 line-clamp-1 mt-0.5">
+                        {num.description}
+                      </div>
+                    </button>
+                  );
+                })}
               </div>
             </div>
           </section>

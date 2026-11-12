@@ -1,14 +1,14 @@
 import { NextRequest, NextResponse } from "next/server";
 import { PrismaClient } from "@prisma/client";
 import { getServerSession } from "next-auth/next";
-import { authOptions } from "../auth/[...nextauth]/route";
+import { authOptions } from "@/lib/auth";
 
 const prisma = new PrismaClient();
 
 export async function GET(req: NextRequest) {
   try {
     const session = await getServerSession(authOptions);
-    const userId = session?.user?.id;
+    const userId = (session?.user as any)?.id;
     
     // Allow fetching without user ID if there's no auth, but filter if user exists
     const metrics = await prisma.scorecard.findMany({
@@ -25,7 +25,7 @@ export async function GET(req: NextRequest) {
 export async function PATCH(req: NextRequest) {
   try {
     const session = await getServerSession(authOptions);
-    const userId = session?.user?.id;
+    const userId = (session?.user as any)?.id;
     
     const body = await req.json();
     const { id, metricName, value, target, category } = body;
