@@ -98,3 +98,35 @@ body {
 ::-webkit-scrollbar-thumb:hover {
   background: #2D2E35;
 }
+
+/* 24-Hour Circadian Solar Arc Animations */
+@keyframes circadian-tracer-flow {
+  from {
+    stroke-dashoffset: 36;
+  }
+  to {
+    stroke-dashoffset: 0;
+  }
+}
+
+@keyframes solar-node-pulse {
+  0%, 100% {
+    transform: scale(1);
+    opacity: 0.95;
+  }
+  50% {
+    transform: scale(1.28);
+    opacity: 0.45;
+  }
+}
+
+.circadian-tracer-animated {
+  stroke-dasharray: 6 6;
+  animation: circadian-tracer-flow 1.4s linear infinite;
+}
+
+.solar-pulse-ring {
+  transform-box: fill-box;
+  transform-origin: center;
+  animation: solar-node-pulse 2.4s ease-in-out infinite;
+}

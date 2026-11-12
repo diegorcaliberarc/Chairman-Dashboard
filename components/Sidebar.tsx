@@ -63,6 +63,7 @@ export function Sidebar({
     { id: "MASTER", label: "MASTER VIEW", icon: <LayoutDashboard size={18} />, route: "/" },
     { id: "BUSINESS", label: "BUSINESS", icon: <Briefcase size={18} />, route: "/" },
     { id: "PERSONAL", label: "PERSONAL", icon: <User size={18} />, route: "/" },
+    { id: "CALENDAR", label: "SOLAR CALENDAR", icon: <CalendarRange size={18} />, route: "/calendar" },
     { id: "KPI", label: "KPIs / VITAL SIGNS", icon: <Activity size={18} />, route: "/kpis" },
   ];
 

@@ -24,10 +24,11 @@ model User {
   emailVerified DateTime?
   image         String?
   role          Role        @default(USER)
-  accounts      Account[]
-  sessions      Session[]
-  tasks         Task[]
-  scorecards    Scorecard[]
+  accounts        Account[]
+  sessions        Session[]
+  tasks           Task[]
+  scorecards      Scorecard[]
+  circadianEvents CircadianEvent[]
 }
 
 model Account {
@@ -96,4 +97,60 @@ model Task {
   parentId    String?
   parent      Task?     @relation("SubTasks", fields: [parentId], references: [id], onDelete: Cascade)
   subtasks    Task[]    @relation("SubTasks")
+}
+
+// ─── 24-Hour Circadian Solar Arc Calendar Models ──────────────────────────────
+
+enum EventDomain {
+  engineering
+  physical_training
+  nutrition
+  family_pets
+  logistics
+
+  @@map("event_domain")
+}
+
+enum MediaTypeEnum {
+  image
+  video_loop
+
+  @@map("media_type_enum")
+}
+
+model CircadianEvent {
+  id               String                    @id @default(uuid()) @db.Uuid
+  userId           String?                   @map("user_id")
+  user             User?                     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  title            String                    @db.VarChar(120)
+  description      String?                   @db.Text
+  domain           EventDomain               @default(engineering)
+  startTime        DateTime                  @map("start_time") @db.Timestamptz(6)
+  endTime          DateTime                  @map("end_time") @db.Timestamptz(6)
+  isRecurring      Boolean                   @default(false) @map("is_recurring")
+  recurrenceRule   String?                   @map("recurrence_rule") @db.VarChar(100)
+  mediaUrl         String                    @map("media_url") @db.Text
+  mediaType        MediaTypeEnum             @default(image) @map("media_type")
+  mediaAspectRatio String                    @default("16:9") @map("media_aspect_ratio") @db.VarChar(10)
+  accentColor      String                    @default("#2563eb") @map("accent_color") @db.VarChar(9)
+  quadrantSlot     Int?                      @map("quadrant_slot")
+  linkedTaskId     String?                   @map("linked_task_id") @db.VarChar(64)
+  telemetrySource  String?                   @map("telemetry_source") @db.VarChar(32)
+  createdAt        DateTime                  @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt        DateTime                  @updatedAt @map("updated_at") @db.Timestamptz(6)
+  checklists       CircadianEventChecklist[]
+
+  @@index([userId, startTime, endTime], map: "idx_circadian_events_user_time")
+  @@map("circadian_events")
+}
+
+model CircadianEventChecklist {
+  id          String         @id @default(uuid()) @db.Uuid
+  eventId     String         @map("event_id") @db.Uuid
+  event       CircadianEvent @relation(fields: [eventId], references: [id], onDelete: Cascade)
+  label       String         @db.VarChar(255)
+  isCompleted Boolean        @default(false) @map("is_completed")
+  sortOrder   Int            @default(0) @map("sort_order")
+
+  @@map("circadian_event_checklists")
 }
