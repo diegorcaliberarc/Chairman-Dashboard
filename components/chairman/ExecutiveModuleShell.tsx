@@ -2,6 +2,7 @@
 
 import React, { useState } from "react";
 import { useSession, signIn, signOut } from "next-auth/react";
+import { Palette } from "lucide-react";
 import { Sidebar } from "@/components/Sidebar";
 
 interface ExecutiveModuleShellProps {
@@ -34,7 +35,7 @@ export function ExecutiveModuleShell({
   const [deepWork, setDeepWork] = useState(false);
 
   return (
-    <div className="min-h-screen bg-[#090b11] text-white flex flex-row overflow-x-hidden">
+    <div className="executive-glass-shell min-h-screen bg-transparent text-zinc-900 dark:text-zinc-50 flex flex-row overflow-x-hidden transition-colors duration-300">
       <Sidebar
         activeTab={activeTab}
         setActiveTab={setActiveTab}
@@ -52,36 +53,61 @@ export function ExecutiveModuleShell({
         tasksLoading={false}
       />
 
-      <div className="flex-1 ml-64 min-w-0 flex flex-col min-h-screen bg-[radial-gradient(ellipse_at_35%_15%,_#111827_0%,_#090b11_68%)]">
-        <header className="px-6 pt-5 pb-3.5 flex flex-wrap items-center justify-between gap-4 border-b border-white/[0.07] bg-[#090b11]/70 backdrop-blur-xl sticky top-0 z-30">
+      <div className="flex-1 ml-64 min-w-0 flex flex-col min-h-screen bg-transparent relative">
+        <header
+          className="px-6 pt-5 pb-3.5 flex flex-wrap items-center justify-between gap-4 sticky top-0 z-30 transition-all duration-300"
+          style={{
+            backgroundColor: "var(--glass-surface)",
+            backdropFilter: "blur(var(--glass-blur, 26px)) saturate(185%)",
+            WebkitBackdropFilter: "blur(var(--glass-blur, 26px)) saturate(185%)",
+            borderBottom: "1px solid var(--glass-border)",
+            boxShadow:
+              "inset 0 1px 0 0 var(--glass-specular), 0 10px 32px -14px rgba(0, 0, 0, 0.16)",
+          }}
+        >
           <div>
-            <div className="flex items-center gap-2.5">
+            <div className="flex items-center gap-2.5 flex-wrap">
               <span
-                className="w-2 h-2 rounded-full animate-pulse"
-                style={{ backgroundColor: accentColor }}
+                className="w-2 h-2 rounded-full animate-pulse shrink-0"
+                style={{
+                  backgroundColor: accentColor,
+                  boxShadow: `0 0 10px ${accentColor}88`,
+                }}
               />
               <span
-                className="px-2 py-0.5 rounded-full text-[9.5px] font-bold tracking-[0.16em] uppercase border"
+                className="px-2.5 py-0.5 rounded-full text-[9.5px] font-bold tracking-[0.16em] uppercase border"
                 style={{
                   color: accentColor,
-                  borderColor: `${accentColor}44`,
-                  backgroundColor: `${accentColor}14`,
+                  borderColor: `${accentColor}4D`,
+                  backgroundColor: `${accentColor}16`,
                 }}
               >
                 {eyebrow}
               </span>
-              <h1 className="text-sm md:text-base font-bold tracking-[0.14em] uppercase text-zinc-100">
+              <h1 className="text-sm md:text-base font-bold tracking-[0.14em] uppercase text-zinc-900 dark:text-zinc-100">
                 {title}
               </h1>
             </div>
-            <p className="text-[11px] text-zinc-400 mt-0.5">{subtitle}</p>
+            <p className="text-[11px] text-zinc-600 dark:text-zinc-400 mt-0.5">
+              {subtitle}
+            </p>
           </div>
 
-          {headerActions && (
-            <div className="flex flex-wrap items-center gap-2.5">
-              {headerActions}
-            </div>
-          )}
+          <div className="flex flex-wrap items-center gap-2.5">
+            {headerActions}
+            <button
+              type="button"
+              onClick={() => setIsAppearanceOpen(true)}
+              className="liquid-glass-pill px-2.5 py-1.5 rounded-xl text-[10.5px] font-semibold text-zinc-700 dark:text-zinc-200 hover:text-zinc-950 dark:hover:text-white flex items-center gap-1.5 transition-all"
+              title="Open Liquid Glass & 360° Gradient Studio"
+            >
+              <Palette
+                size={13}
+                style={{ color: "var(--theme-grad-start)" }}
+              />
+              <span className="hidden sm:inline">Glass Studio</span>
+            </button>
+          </div>
         </header>
 
         <main
@@ -97,4 +123,3 @@ export function ExecutiveModuleShell({
     </div>
   );
 }
-

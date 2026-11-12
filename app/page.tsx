@@ -305,7 +305,7 @@ function BusinessTab({ agents, onToggle, onDelete, onTaskClick, subtasksMap, onT
   subtasksMap?:  any;
   onToggleSubtask?: (taskId: string, subtaskId: string) => void;
 }) {
-  const PANEL_CLASS = "bg-white/80 dark:bg-black/60 backdrop-blur-xl border border-zinc-200/50 dark:border-white/10 shadow-[0_0_30px_rgba(0,0,0,0.08)] dark:shadow-[0_0_30px_rgba(255,255,255,0.02)] hover:shadow-[0_0_40px_rgba(0,0,0,0.12)] dark:hover:shadow-[0_0_40px_rgba(255,255,255,0.04)] transition-shadow duration-500";
+  const PANEL_CLASS = "liquid-glass-card bg-white/70 dark:bg-black/50 backdrop-blur-2xl border border-white/60 dark:border-white/[0.12] shadow-[0_12px_36px_rgba(0,0,0,0.06)] dark:shadow-[0_16px_40px_rgba(0,0,0,0.35)] hover:shadow-[0_16px_44px_rgba(0,0,0,0.1)] dark:hover:shadow-[0_20px_48px_rgba(0,0,0,0.45)] transition-all duration-300";
   const PANEL: React.CSSProperties = { borderRadius: 10, padding: "14px 16px", overflow: "hidden", minHeight: 0, minWidth: 0 };
 
   return (
@@ -332,7 +332,7 @@ function PersonalTab({ agents, onToggle, onDelete, onTaskClick, subtasksMap, onT
   subtasksMap?:  any;
   onToggleSubtask?: (taskId: string, subtaskId: string) => void;
 }) {
-  const PANEL_CLASS = "bg-white/80 dark:bg-black/60 backdrop-blur-xl border border-zinc-200/50 dark:border-white/10 shadow-[0_0_30px_rgba(0,0,0,0.08)] dark:shadow-[0_0_30px_rgba(255,255,255,0.02)] hover:shadow-[0_0_40px_rgba(0,0,0,0.12)] dark:hover:shadow-[0_0_40px_rgba(255,255,255,0.04)] transition-shadow duration-500";
+  const PANEL_CLASS = "liquid-glass-card bg-white/70 dark:bg-black/50 backdrop-blur-2xl border border-white/60 dark:border-white/[0.12] shadow-[0_12px_36px_rgba(0,0,0,0.06)] dark:shadow-[0_16px_40px_rgba(0,0,0,0.35)] hover:shadow-[0_16px_44px_rgba(0,0,0,0.1)] dark:hover:shadow-[0_20px_48px_rgba(0,0,0,0.45)] transition-all duration-300";
   const PANEL: React.CSSProperties = { borderRadius: 10, padding: "14px 16px", overflow: "hidden", minHeight: 0, minWidth: 0 };
 
   return (
@@ -632,11 +632,11 @@ function DomainBlock({
       <div className="flex-1 overflow-y-auto flex flex-col gap-1 pr-1">
         <div className="flex-1 overflow-y-auto flex flex-col gap-1.5 min-h-0">
           {tasks.map((t) => (
-            <div key={t.id} className={`flex items-center gap-1.5 p-1.5 rounded-md border ${t.status === "DONE" || (t as any).completed ? "opacity-40 border-transparent" : "bg-zinc-100/10 dark:bg-black/20 border-zinc-200/20 dark:border-white/5"}`}>
-              <button onClick={(e) => { e.stopPropagation(); onToggle(t.id); }} className="bg-none border-none cursor-pointer p-0 text-white shrink-0 flex">
+            <div key={t.id} className={`flex items-center gap-1.5 p-1.5 rounded-md border ${t.status === "DONE" || (t as any).completed ? "opacity-40 border-transparent" : "bg-white/40 dark:bg-black/20 border-zinc-300/40 dark:border-white/5"}`}>
+              <button onClick={(e) => { e.stopPropagation(); onToggle(t.id); }} className="bg-none border-none cursor-pointer p-0 text-zinc-700 dark:text-white shrink-0 flex">
                 {t.status === "DONE" || (t as any).completed ? <CheckCircle2 size={10} /> : <Circle size={10} />}
               </button>
-              <span className={`flex-1 text-[10px] text-white overflow-hidden text-ellipsis whitespace-nowrap cursor-pointer hover:underline flex items-center justify-between ${t.status === "DONE" || (t as any).completed ? "line-through opacity-50" : ""}`} onClick={() => onTaskClick(t, color)}>
+              <span className={`flex-1 text-[10px] text-zinc-900 dark:text-white overflow-hidden text-ellipsis whitespace-nowrap cursor-pointer hover:underline flex items-center justify-between ${t.status === "DONE" || (t as any).completed ? "line-through opacity-50" : ""}`} onClick={() => onTaskClick(t, color)}>
                 <span className="flex items-center gap-1.5 truncate">
                   {t.title}
                   {t.priority && t.priority !== "None" && (
@@ -734,7 +734,7 @@ function CSuiteCard({
                 </div>
                 <div className="shrink-0 pt-[6px] hidden">
                 </div>
-                <span className={`flex-1 text-sm leading-tight pt-[3px] flex items-center justify-between ${t.status === "DONE" || (t as any).completed ? "line-through opacity-50 text-white" : "text-white"}`}>
+                <span className={`flex-1 text-sm leading-tight pt-[3px] flex items-center justify-between ${t.status === "DONE" || (t as any).completed ? "line-through opacity-50 text-zinc-600 dark:text-white" : "text-zinc-900 dark:text-white"}`}>
                   <span className="flex items-center gap-2 truncate">
                     {t.title}
                     {t.priority && t.priority !== "None" && (
@@ -788,7 +788,7 @@ function CSuiteCard({
 // ─── KPI Tab ──────────────────────────────────────────────────────────────────
 
 function KPITab() {
-  const PANEL_CLASS = "bg-white/80 dark:bg-black/60 backdrop-blur-xl border border-zinc-200/50 dark:border-white/10 shadow-[0_0_30px_rgba(0,0,0,0.08)] dark:shadow-[0_0_30px_rgba(255,255,255,0.02)] hover:shadow-[0_0_40px_rgba(0,0,0,0.12)] dark:hover:shadow-[0_0_40px_rgba(255,255,255,0.04)] transition-shadow duration-500";
+  const PANEL_CLASS = "liquid-glass-card bg-white/70 dark:bg-black/50 backdrop-blur-2xl border border-white/60 dark:border-white/[0.12] shadow-[0_12px_36px_rgba(0,0,0,0.06)] dark:shadow-[0_16px_40px_rgba(0,0,0,0.35)] hover:shadow-[0_16px_44px_rgba(0,0,0,0.1)] dark:hover:shadow-[0_20px_48px_rgba(0,0,0,0.45)] transition-all duration-300";
   const PANEL: React.CSSProperties = { borderRadius: 10, padding: "24px", overflow: "hidden", minHeight: 0, minWidth: 0, display: "flex", flexDirection: "column", height: "100%" };
 
   return (
@@ -826,7 +826,7 @@ function MasterViewTab({
   const relateTasks = personal.find((a) => a.id === "relate")?.tasks ?? [];
   const joyTasks    = personal.find((a) => a.id === "joy")?.tasks ?? [];
 
-  const PANEL_CLASS = "bg-white/80 dark:bg-black/60 backdrop-blur-xl border border-zinc-200/50 dark:border-white/10 shadow-[0_0_30px_rgba(0,0,0,0.08)] dark:shadow-[0_0_30px_rgba(255,255,255,0.02)] hover:shadow-[0_0_40px_rgba(0,0,0,0.12)] dark:hover:shadow-[0_0_40px_rgba(255,255,255,0.04)] transition-shadow duration-500";
+  const PANEL_CLASS = "liquid-glass-card bg-white/70 dark:bg-black/50 backdrop-blur-2xl border border-white/60 dark:border-white/[0.12] shadow-[0_12px_36px_rgba(0,0,0,0.06)] dark:shadow-[0_16px_40px_rgba(0,0,0,0.35)] hover:shadow-[0_16px_44px_rgba(0,0,0,0.1)] dark:hover:shadow-[0_20px_48px_rgba(0,0,0,0.45)] transition-all duration-300";
   const PANEL: React.CSSProperties = {
     borderRadius:    10,
     padding:         "14px 16px",

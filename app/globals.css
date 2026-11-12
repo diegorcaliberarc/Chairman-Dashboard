@@ -3,24 +3,91 @@
 @tailwind utilities;
 
 :root {
-  --bg-primary:   #08090C;
-  --bg-surface:   #0C0D10;
-  --border-color: #1E1F24;
-  --text-primary: #E2E8F0;
+  --bg-primary:   #060813;
+  --bg-surface:   #0D1122;
+  --border-color: rgba(165, 180, 252, 0.16);
+  --text-primary: #F1F5F9;
   --gold:         #C9A961;
+
+  /* Theme Chromatic Gradient Stops (Northpeak Nebula Dark Default) */
+  --theme-grad-start:     #5B7CFA;
+  --theme-grad-end:       #9B5DE5;
+  --theme-grad-aura:      #2DD4BF;
+  --theme-grad-angle:     135deg;
+  --theme-grad-start-rgb: 91, 124, 250;
+  --theme-grad-end-rgb:   155, 93, 229;
+  --theme-grad-aura-rgb:  45, 212, 191;
+
+  --color-primary:       #5B7CFA;
+  --color-primary-hover: #9B5DE5;
+  --color-glow:          rgba(91, 124, 250, 0.45);
+
+  /* Liquid Glass Optical Physics */
+  --glass-bg-base:          #060813;
+  --glass-surface-rgb:      13, 17, 34;
+  --glass-surface:          rgba(13, 17, 34, 0.62);
+  --glass-surface-elevated: rgba(19, 25, 48, 0.74);
+  --glass-border:           rgba(165, 180, 252, 0.16);
+  --glass-specular:         rgba(255, 255, 255, 0.22);
+  --glass-specular-side:    rgba(147, 197, 253, 0.12);
+  --glass-shadow:           0 20px 50px -14px rgba(2, 4, 15, 0.68), 0 4px 16px -4px rgba(59, 130, 246, 0.12);
+  --glass-blur:             26px;
+  --glass-opacity:          0.62;
+  --glass-text-primary:     #F1F5F9;
+  --glass-text-muted:       #94A3B8;
+
+  /* Ambient Mesh Aura Orbs */
+  --glass-aura-1: rgba(67, 97, 238, 0.36);
+  --glass-aura-2: rgba(139, 61, 225, 0.32);
+  --glass-aura-3: rgba(20, 184, 166, 0.20);
+  --glass-aura-4: rgba(219, 39, 119, 0.18);
 }
 
 .light {
-  --bg-primary:   #F0EDE8;
-  --bg-surface:   #FAF8F5;
-  --border-color: #DDD8D0;
-  --text-primary: #1A1C28;
+  --bg-primary:   #EEF2FF;
+  --bg-surface:   #FFFFFF;
+  --border-color: rgba(255, 255, 255, 0.84);
+  --text-primary: #0F172A;
   --gold:         #9B7B30;
+
+  /* Northpeak Pastel Light Glass Defaults */
+  --glass-bg-base:          #EEF2FF;
+  --glass-surface-rgb:      255, 255, 255;
+  --glass-surface:          rgba(255, 255, 255, 0.72);
+  --glass-surface-elevated: rgba(255, 255, 255, 0.84);
+  --glass-border:           rgba(255, 255, 255, 0.84);
+  --glass-specular:         rgba(255, 255, 255, 0.98);
+  --glass-specular-side:    rgba(255, 255, 255, 0.68);
+  --glass-shadow:           0 18px 42px -14px rgba(59, 91, 175, 0.11), 0 4px 14px -4px rgba(15, 23, 42, 0.05);
+  --glass-text-primary:     #0F172A;
+  --glass-text-muted:       #475569;
+
+  --glass-aura-1: rgba(116, 150, 255, 0.44);
+  --glass-aura-2: rgba(255, 166, 198, 0.40);
+  --glass-aura-3: rgba(134, 239, 218, 0.36);
+  --glass-aura-4: rgba(196, 181, 253, 0.38);
 }
 
-:root {
-  --theme-grad-start: #3B82F6;
-  --theme-grad-end: #8B5CF6;
+:root[data-glass-preset="aura-spatial"],
+.light[data-glass-preset="aura-spatial"] {
+  --bg-primary:             #C9B7A2;
+  --bg-surface:             #EEE5D9;
+  --border-color:           rgba(255, 251, 245, 0.68);
+  --text-primary:           #1B1510;
+  --glass-bg-base:          #C9B7A2;
+  --glass-surface-rgb:      238, 229, 217;
+  --glass-surface:          rgba(238, 229, 217, 0.66);
+  --glass-surface-elevated: rgba(248, 242, 234, 0.80);
+  --glass-border:           rgba(255, 251, 245, 0.68);
+  --glass-specular:         rgba(255, 253, 249, 0.92);
+  --glass-specular-side:    rgba(255, 248, 238, 0.56);
+  --glass-shadow:           0 24px 56px -14px rgba(46, 31, 18, 0.26), 0 6px 18px -4px rgba(62, 42, 24, 0.12);
+  --glass-text-primary:     #1B1510;
+  --glass-text-muted:       #5C4E41;
+  --glass-aura-1:           rgba(96, 68, 44, 0.42);
+  --glass-aura-2:           rgba(250, 236, 216, 0.64);
+  --glass-aura-3:           rgba(168, 124, 81, 0.40);
+  --glass-aura-4:           rgba(74, 53, 36, 0.34);
 }
 
 :root[data-theme='crimson'] {
@@ -39,12 +106,151 @@
   box-sizing: border-box;
 }
 
-body {
-  background-color: var(--bg-primary);
-  color: var(--text-primary);
+/* Root canvas holds the zero-FOUC ambient mesh backdrop; body stays transparent so GlassThemeController (-z-10) shines through */
+html {
+  background-color: var(--glass-bg-base);
+  background-image:
+    radial-gradient(ellipse 68% 58% at 12% 14%, var(--glass-aura-1), transparent 70%),
+    radial-gradient(ellipse 62% 56% at 88% 16%, var(--glass-aura-2), transparent 72%),
+    radial-gradient(ellipse 66% 58% at 48% 92%, var(--glass-aura-3), transparent 74%);
+  background-attachment: fixed;
+  transition: background-color 0.35s ease;
+}
+
+body,
+body.bg-theme-gradient {
+  background-color: transparent !important;
+  background-image: none !important;
+  color: var(--glass-text-primary, var(--text-primary));
   font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
   -webkit-font-smoothing: antialiased;
-  transition: background-color 0.25s ease, color 0.25s ease;
+  transition: color 0.25s ease;
+}
+
+/* Dynamic Gradient Angle support for non-body theme-gradient elements */
+.bg-theme-gradient:not(body) {
+  background-image: linear-gradient(
+    var(--theme-grad-angle, 135deg),
+    var(--theme-grad-start),
+    var(--theme-grad-end)
+  );
+}
+
+/* ─── Liquid Glassmorphism Utility Classes (Northpeak + VisionOS Specular Physics) ─── */
+
+:root .liquid-glass-panel,
+.dark .liquid-glass-panel,
+.light .liquid-glass-panel {
+  background-color: var(--glass-surface-elevated);
+  backdrop-filter: blur(var(--glass-blur, 26px)) saturate(185%);
+  -webkit-backdrop-filter: blur(var(--glass-blur, 26px)) saturate(185%);
+  border: 1px solid var(--glass-border);
+  box-shadow:
+    inset 0 1px 0 0 var(--glass-specular),
+    inset 1px 0 0 0 var(--glass-specular-side),
+    var(--glass-shadow);
+}
+
+:root .liquid-glass-card,
+.dark .liquid-glass-card,
+.light .liquid-glass-card {
+  background-color: var(--glass-surface);
+  backdrop-filter: blur(var(--glass-blur, 26px)) saturate(185%);
+  -webkit-backdrop-filter: blur(var(--glass-blur, 26px)) saturate(185%);
+  border: 1px solid var(--glass-border);
+  box-shadow:
+    inset 0 1px 0 0 var(--glass-specular),
+    inset 1px 0 0 0 var(--glass-specular-side),
+    var(--glass-shadow);
+}
+
+:root .liquid-glass-pill,
+.dark .liquid-glass-pill,
+.light .liquid-glass-pill {
+  background-color: var(--glass-surface-elevated);
+  backdrop-filter: blur(calc(var(--glass-blur, 24px) * 0.85)) saturate(180%);
+  -webkit-backdrop-filter: blur(calc(var(--glass-blur, 24px) * 0.85)) saturate(180%);
+  border: 1px solid var(--glass-border);
+  box-shadow:
+    inset 0 1px 0 0 var(--glass-specular),
+    0 6px 20px -6px rgba(0, 0, 0, 0.16);
+}
+
+/* Global Sidebar Liquid Glass Rail Upgrade */
+:root aside.fixed.left-0.top-0.w-64,
+.dark aside.fixed.left-0.top-0.w-64,
+.light aside.fixed.left-0.top-0.w-64 {
+  background-color: var(--glass-surface);
+  backdrop-filter: blur(var(--glass-blur, 26px)) saturate(185%);
+  -webkit-backdrop-filter: blur(var(--glass-blur, 26px)) saturate(185%);
+  border-right: 1px solid var(--glass-border);
+  box-shadow:
+    inset -1px 0 0 0 var(--glass-specular-side),
+    8px 0 32px -12px rgba(0, 0, 0, 0.16);
+}
+
+/* ─── Executive Module Shell Adaptive Glass Harmonizer ─── */
+
+.dark .executive-glass-shell main [class*="bg-[#0"],
+.dark .executive-glass-shell main [class*="bg-[#1"] {
+  background-color: var(--glass-surface);
+  backdrop-filter: blur(var(--glass-blur, 24px)) saturate(180%);
+  -webkit-backdrop-filter: blur(var(--glass-blur, 24px)) saturate(180%);
+  border-color: var(--glass-border);
+  box-shadow:
+    inset 0 1px 0 0 var(--glass-specular),
+    var(--glass-shadow);
+}
+
+.light .executive-glass-shell main [class*="bg-[#0"],
+.light .executive-glass-shell main [class*="bg-[#1"],
+.light .executive-glass-shell main [class*="bg-zinc-900"],
+.light .executive-glass-shell main [class*="bg-slate-900"] {
+  background-color: var(--glass-surface) !important;
+  backdrop-filter: blur(var(--glass-blur, 26px)) saturate(185%);
+  -webkit-backdrop-filter: blur(var(--glass-blur, 26px)) saturate(185%);
+  border-color: var(--glass-border) !important;
+  box-shadow:
+    inset 0 1px 0 0 var(--glass-specular),
+    inset 1px 0 0 0 var(--glass-specular-side),
+    var(--glass-shadow);
+}
+
+.light .executive-glass-shell main [class*="bg-white/[0.0"] {
+  background-color: rgba(255, 255, 255, 0.52);
+  border-color: rgba(15, 23, 42, 0.09);
+}
+
+.light .executive-glass-shell main .text-zinc-100,
+.light .executive-glass-shell main .text-zinc-200 {
+  color: var(--glass-text-primary);
+}
+
+.light .executive-glass-shell main .text-zinc-300 {
+  color: #334155;
+}
+
+.light .executive-glass-shell main .text-zinc-400 {
+  color: var(--glass-text-muted);
+}
+
+/* ─── Ambient Aura Drift & Core Keyframe Animations ─── */
+
+@keyframes glass-orb-float {
+  0%, 100% {
+    transform: translate3d(0, 0, 0) scale(1);
+  }
+  50% {
+    transform: translate3d(2.5%, 3%, 0) scale(1.06);
+  }
+}
+
+.glass-aura-drift-slow {
+  animation: glass-orb-float 22s ease-in-out infinite;
+}
+
+.glass-aura-drift-reverse {
+  animation: glass-orb-float 28s ease-in-out infinite reverse;
 }
 
 @keyframes pulse-glow {
@@ -84,19 +290,20 @@ body {
   transform: translateY(-2px);
 }
 
-/* Scrollbar styling */
+/* Theme-Adaptive Scrollbar */
 ::-webkit-scrollbar {
-  width: 4px;
+  width: 5px;
+  height: 5px;
 }
 ::-webkit-scrollbar-track {
-  background: #08090C;
+  background: transparent;
 }
 ::-webkit-scrollbar-thumb {
-  background: #1E1F24;
-  border-radius: 2px;
+  background: rgba(148, 163, 184, 0.28);
+  border-radius: 9999px;
 }
 ::-webkit-scrollbar-thumb:hover {
-  background: #2D2E35;
+  background: rgba(148, 163, 184, 0.48);
 }
 
 /* 24-Hour Circadian Solar Arc Animations */

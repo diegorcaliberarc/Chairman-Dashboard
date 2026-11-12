@@ -1,10 +1,33 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import React, { useState, useEffect, useMemo, useCallback } from "react";
 import { Sidebar } from "@/components/Sidebar";
 import { useSession, signIn, signOut } from "next-auth/react";
-import { usePathname } from "next/navigation";
-import { Target, Settings, TrendingUp, Landmark, Terminal, Layers, CircleDollarSign, Activity, Users, Sparkles, Edit2, X, Save, BadgeDollarSign, ShieldCheck } from "lucide-react";
+import {
+  Target,
+  Settings,
+  TrendingUp,
+  Landmark,
+  Terminal,
+  Layers,
+  CircleDollarSign,
+  Activity,
+  Users,
+  Sparkles,
+  Edit2,
+  X,
+  Save,
+  BadgeDollarSign,
+  ShieldCheck,
+  CheckCircle2,
+  Flame,
+  Table2,
+  LayoutGrid,
+  Columns,
+  PlusCircle,
+  Search,
+  Check,
+} from "lucide-react";
 
 const CSS_3D = `
 .perspective-1000 { perspective: 1000px; }
@@ -19,6 +42,19 @@ interface Metric {
   value: number;
   target: number;
   category: string;
+}
+
+interface ScorecardSnapshot {
+  id: string;
+  snapshot_date: string;
+  cadence: "daily" | "weekly" | "monthly";
+  overall_score: number;
+  grade: string;
+  green_count: number;
+  yellow_count: number;
+  red_count: number;
+  sector_scores: Record<string, number>;
+  executive_note: string;
 }
 
 const CATEGORIES = [
@@ -36,7 +72,7 @@ const CATEGORIES = [
   { id: "cho", title: "CHO", icon: ShieldCheck, color: "#D81B60" },
 ];
 
-const RAW_METRIC_DEFS: Record<string, { name: string, defaultVal: number, target: number }[]> = {
+const RAW_METRIC_DEFS: Record<string, { name: string; defaultVal: number; target: number }[]> = {
   wealth: [
     { name: "income_guaranteed", defaultVal: 1, target: 0 },
     { name: "income_other", defaultVal: 0, target: 0 },
@@ -150,7 +186,7 @@ function calculateWealthPhysics(localVals: Record<string, number>) {
   const int_rate = localVals["interest_rate"] || 0;
 
   const oxygenRatio = (debt_mo / inc_guar) * 100;
-  const fcf = (inc_guar + inc_other) - (exp_base + debt_mo);
+  const fcf = inc_guar + inc_other - (exp_base + debt_mo);
   const burn = exp_base + debt_mo || 1;
   const ruinRatio = cash / burn;
   const entropyRate = int_rate;
@@ -236,7 +272,7 @@ function calculateRelatePhysics(localVals: Record<string, number>) {
   const dec_tot = localVals["rel_decisions_total"] || 1;
   const dec_sil = localVals["rel_decisions_silent"] || 0;
   const frame = localVals["rel_frame_breaks"] || 0;
-  const armor = localVals["rel_armor_score"] || 0;
+  const armor = localVals["rel_armor_score"] ?? 10;
 
   const thermalLoad = (survival / 168) * 100;
   const silentExec = (dec_sil / dec_tot) * 100;
@@ -444,8 +480,8 @@ function getCfoStatus(val: number, type: string) {
     return { color: "text-red-500", label: "🚨 CRITICAL" };
   }
   if (type === "cpas") {
-    if (val <= 1.00) return { color: "text-emerald-500", label: "✅ OPTIMAL" };
-    if (val <= 5.00) return { color: "text-yellow-500", label: "⚠️ WARNING" };
+    if (val <= 1.0) return { color: "text-emerald-500", label: "✅ OPTIMAL" };
+    if (val <= 5.0) return { color: "text-yellow-500", label: "⚠️ WARNING" };
     return { color: "text-red-500", label: "🚨 CRITICAL" };
   }
   if (type === "swan") {
@@ -463,7 +499,7 @@ function getCfoStatus(val: number, type: string) {
 
 function calculateCtoPhysics(localVals: Record<string, number>) {
   const latency = localVals["cto_telemetry_latency"] || 0;
-  const uptime = localVals["cto_uptime_percentage"] || 99.99;
+  const uptime = localVals["cto_uptime_percentage"] ?? 99.99;
   const velocity = localVals["cto_mission_velocity"] || 0;
   const mttr = localVals["cto_mttr_minutes"] || 0;
   const bus = localVals["cto_bus_factor"] || 0;
@@ -616,14 +652,15 @@ function getChoStatus(val: number, type: string) {
   return { color: "text-zinc-500", label: "UNKNOWN" };
 }
 
+/* ─── Intact 3D-Flip Sector Physics Card ────────────────────────────────────── */
 function SectorCard({ category, allMetrics, onSave }: any) {
   const [isFlipped, setIsFlipped] = useState(false);
   const defs = RAW_METRIC_DEFS[category.id];
   const [localVals, setLocalVals] = useState<Record<string, number>>({});
-  
+
   useEffect(() => {
     const vals: any = {};
-    defs.forEach(d => {
+    defs.forEach((d) => {
       const m = allMetrics.find((m: any) => m.category === category.id && m.metricName === d.name);
       vals[d.name] = m ? m.value : d.defaultVal;
     });
@@ -658,7 +695,8 @@ function SectorCard({ category, allMetrics, onSave }: any) {
   const isCpo = category.id === "cpo";
   const isCro = category.id === "cro";
   const isCho = category.id === "cho";
-  const isActiveSector = isWealth || isHealth || isRelate || isJoy || isCeo || isCoo || isCmo || isCfo || isCto || isCpo || isCro || isCho;
+  const isActiveSector =
+    isWealth || isHealth || isRelate || isJoy || isCeo || isCoo || isCmo || isCfo || isCto || isCpo || isCro || isCho;
   const wPhys = isWealth ? calculateWealthPhysics(localVals) : null;
   const hPhys = isHealth ? calculateHealthPhysics(localVals) : null;
   const rPhys = isRelate ? calculateRelatePhysics(localVals) : null;
@@ -672,56 +710,89 @@ function SectorCard({ category, allMetrics, onSave }: any) {
   const croPhys = isCro ? calculateCroPhysics(localVals) : null;
   const choPhys = isCho ? calculateChoPhysics(localVals) : null;
 
-  let primaryLabel = "Core Score";
-  let primaryValue = "0";
-  let status = "RED";
-
   const first = defs[0].name;
   const val = localVals[first] || 0;
-  primaryLabel = first;
-  primaryValue = val.toString();
-  status = getStatus(val, defs[0].target, ">");
-
-  const statusColors = {
-    GREEN: "bg-emerald-500 shadow-[0_0_10px_rgba(16,185,129,0.5)]",
-    YELLOW: "bg-yellow-500 shadow-[0_0_10px_rgba(234,179,8,0.5)]",
-    RED: "bg-red-500 shadow-[0_0_10px_rgba(239,68,68,0.5)]",
-  };
+  getStatus(val, defs[0].target, ">");
 
   const cardHeight = isActiveSector ? "h-[380px]" : "h-[220px]";
 
   return (
     <div className={`relative w-full ${cardHeight} perspective-1000 group`}>
-      <div className={`w-full h-full absolute transition-transform duration-500 preserve-3d ${isFlipped ? "rotate-y-180" : ""}`}>
+      <div
+        className={`w-full h-full absolute transition-transform duration-500 preserve-3d ${
+          isFlipped ? "rotate-y-180" : ""
+        }`}
+      >
         {/* Front */}
         <div className="absolute w-full h-full backface-hidden bg-white/80 dark:bg-black/60 backdrop-blur-xl border border-zinc-200/50 dark:border-white/10 rounded-xl p-5 flex flex-col shadow-[0_0_30px_rgba(0,0,0,0.08)] dark:shadow-[0_0_30px_rgba(255,255,255,0.02)]">
           <div className="flex items-center justify-between shrink-0">
             <div className="flex items-center gap-3">
               <category.icon className="w-5 h-5" style={{ color: category.color }} />
-              <h3 className="font-serif text-lg tracking-widest uppercase" style={{ color: category.color }}>{category.title}</h3>
+              <h3 className="font-serif text-lg tracking-widest uppercase" style={{ color: category.color }}>
+                {category.title}
+              </h3>
             </div>
-            <button onClick={() => isActiveSector && setIsFlipped(true)} className={`p-1.5 rounded-md transition-colors ${isActiveSector ? "hover:bg-zinc-200/50 dark:hover:bg-white/10 text-zinc-500" : "opacity-50 cursor-not-allowed text-zinc-300 dark:text-zinc-700"}`}>
+            <button
+              onClick={() => isActiveSector && setIsFlipped(true)}
+              className={`p-1.5 rounded-md transition-colors ${
+                isActiveSector
+                  ? "hover:bg-zinc-200/50 dark:hover:bg-white/10 text-zinc-500"
+                  : "opacity-50 cursor-not-allowed text-zinc-300 dark:text-zinc-700"
+              }`}
+            >
               <Edit2 size={14} />
             </button>
           </div>
-          
+
           {isWealth && wPhys ? (
             <div className="flex flex-col gap-2 flex-1 mt-6 justify-center">
               {[
-                { label: "THE OXYGEN RATIO", sub: "Friction vs. Thrust", val: `${wPhys.oxygenRatio.toFixed(2)}%`, status: getWealthStatus(wPhys.oxygenRatio, "oxygen") },
-                { label: "FREE CASH FLOW", sub: "Net Velocity", val: `$${wPhys.fcf.toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2})}`, status: getWealthStatus(wPhys.fcf, "fcf") },
-                { label: "RUIN RATIO", sub: "Capital Buffer", val: `${wPhys.ruinRatio.toFixed(2)}x`, status: getWealthStatus(wPhys.ruinRatio, "ruin") },
-                { label: "ENTROPY RATE", sub: "Weighted Avg Interest", val: `${wPhys.entropyRate.toFixed(2)}%`, status: getWealthStatus(wPhys.entropyRate, "entropy") },
-                { label: "MULTIPLIER", sub: "Assets / Debt", val: `${wPhys.multiplier.toFixed(2)}x`, status: getWealthStatus(wPhys.multiplier, "multiplier") },
-              ].map(k => (
-                <div key={k.label} className="flex justify-between items-center bg-zinc-50/50 dark:bg-white/5 p-2 rounded-lg border border-zinc-200/50 dark:border-white/5">
+                {
+                  label: "THE OXYGEN RATIO",
+                  sub: "Friction vs. Thrust",
+                  val: `${wPhys.oxygenRatio.toFixed(2)}%`,
+                  status: getWealthStatus(wPhys.oxygenRatio, "oxygen"),
+                },
+                {
+                  label: "FREE CASH FLOW",
+                  sub: "Net Velocity",
+                  val: `$${wPhys.fcf.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`,
+                  status: getWealthStatus(wPhys.fcf, "fcf"),
+                },
+                {
+                  label: "RUIN RATIO",
+                  sub: "Capital Buffer",
+                  val: `${wPhys.ruinRatio.toFixed(2)}x`,
+                  status: getWealthStatus(wPhys.ruinRatio, "ruin"),
+                },
+                {
+                  label: "ENTROPY RATE",
+                  sub: "Weighted Avg Interest",
+                  val: `${wPhys.entropyRate.toFixed(2)}%`,
+                  status: getWealthStatus(wPhys.entropyRate, "entropy"),
+                },
+                {
+                  label: "MULTIPLIER",
+                  sub: "Assets / Debt",
+                  val: `${wPhys.multiplier.toFixed(2)}x`,
+                  status: getWealthStatus(wPhys.multiplier, "multiplier"),
+                },
+              ].map((k) => (
+                <div
+                  key={k.label}
+                  className="flex justify-between items-center bg-zinc-50/50 dark:bg-white/5 p-2 rounded-lg border border-zinc-200/50 dark:border-white/5"
+                >
                   <div className="flex flex-col">
-                    <span className="text-[10px] font-bold tracking-widest uppercase text-zinc-900 dark:text-zinc-100">{k.label}</span>
+                    <span className="text-[10px] font-bold tracking-widest uppercase text-zinc-900 dark:text-zinc-100">
+                      {k.label}
+                    </span>
                     <span className="text-[8px] tracking-widest uppercase text-zinc-500">{k.sub}</span>
                   </div>
                   <div className="flex flex-col items-end gap-0.5">
                     <span className="font-mono text-xs font-medium text-zinc-900 dark:text-white">{k.val}</span>
-                    <span className={`text-[9px] font-bold tracking-widest uppercase ${k.status.color}`}>{k.status.label}</span>
+                    <span className={`text-[9px] font-bold tracking-widest uppercase ${k.status.color}`}>
+                      {k.status.label}
+                    </span>
                   </div>
                 </div>
               ))}
@@ -729,20 +800,52 @@ function SectorCard({ category, allMetrics, onSave }: any) {
           ) : isHealth && hPhys ? (
             <div className="flex flex-col gap-2 flex-1 mt-6 justify-center">
               {[
-                { label: "THE PROTEIN PAYLOAD", sub: "Tissue Preservation", val: `${hPhys.protein}g`, status: getHealthStatus(hPhys.protein, "protein") },
-                { label: "THE ENERGY CAP", sub: "Fat + Carbs", val: `${hPhys.energy}g`, status: getHealthStatus(hPhys.energy, "energy") },
-                { label: "FASTING INTEGRITY", sub: "13:00-19:00 Window", val: `${hPhys.fasting}h`, status: getHealthStatus(hPhys.fasting, "fasting") },
-                { label: "SLEEP ARCHITECTURE", sub: "Cellular Repair", val: `${hPhys.sleep}h`, status: getHealthStatus(hPhys.sleep, "sleep") },
-                { label: "STRENGTH RETENTION", sub: "Baseline vs Current", val: `${hPhys.strength}%`, status: getHealthStatus(hPhys.strength, "strength") },
-              ].map(k => (
-                <div key={k.label} className="flex justify-between items-center bg-zinc-50/50 dark:bg-white/5 p-2 rounded-lg border border-zinc-200/50 dark:border-white/5">
+                {
+                  label: "THE PROTEIN PAYLOAD",
+                  sub: "Tissue Preservation",
+                  val: `${hPhys.protein}g`,
+                  status: getHealthStatus(hPhys.protein, "protein"),
+                },
+                {
+                  label: "THE ENERGY CAP",
+                  sub: "Fat + Carbs",
+                  val: `${hPhys.energy}g`,
+                  status: getHealthStatus(hPhys.energy, "energy"),
+                },
+                {
+                  label: "FASTING INTEGRITY",
+                  sub: "13:00-19:00 Window",
+                  val: `${hPhys.fasting}h`,
+                  status: getHealthStatus(hPhys.fasting, "fasting"),
+                },
+                {
+                  label: "SLEEP ARCHITECTURE",
+                  sub: "Cellular Repair",
+                  val: `${hPhys.sleep}h`,
+                  status: getHealthStatus(hPhys.sleep, "sleep"),
+                },
+                {
+                  label: "STRENGTH RETENTION",
+                  sub: "Baseline vs Current",
+                  val: `${hPhys.strength}%`,
+                  status: getHealthStatus(hPhys.strength, "strength"),
+                },
+              ].map((k) => (
+                <div
+                  key={k.label}
+                  className="flex justify-between items-center bg-zinc-50/50 dark:bg-white/5 p-2 rounded-lg border border-zinc-200/50 dark:border-white/5"
+                >
                   <div className="flex flex-col">
-                    <span className="text-[10px] font-bold tracking-widest uppercase text-zinc-900 dark:text-zinc-100">{k.label}</span>
+                    <span className="text-[10px] font-bold tracking-widest uppercase text-zinc-900 dark:text-zinc-100">
+                      {k.label}
+                    </span>
                     <span className="text-[8px] tracking-widest uppercase text-zinc-500">{k.sub}</span>
                   </div>
                   <div className="flex flex-col items-end gap-0.5">
                     <span className="font-mono text-xs font-medium text-zinc-900 dark:text-white">{k.val}</span>
-                    <span className={`text-[9px] font-bold tracking-widest uppercase ${k.status.color}`}>{k.status.label}</span>
+                    <span className={`text-[9px] font-bold tracking-widest uppercase ${k.status.color}`}>
+                      {k.status.label}
+                    </span>
                   </div>
                 </div>
               ))}
@@ -750,20 +853,52 @@ function SectorCard({ category, allMetrics, onSave }: any) {
           ) : isRelate && rPhys ? (
             <div className="flex flex-col gap-2 flex-1 mt-6 justify-center">
               {[
-                { label: "TIME TO REPAIR", sub: "Conflict Resolution", val: `${rPhys.ttr}h`, status: getRelateStatus(rPhys.ttr, "ttr") },
-                { label: "THERMAL LOAD", sub: "Survival State", val: `${rPhys.thermalLoad.toFixed(2)}%`, status: getRelateStatus(rPhys.thermalLoad, "thermal") },
-                { label: "SILENT EXECUTION", sub: "Cognitive Load Relief", val: `${rPhys.silentExec.toFixed(2)}%`, status: getRelateStatus(rPhys.silentExec, "silent") },
-                { label: "THE ANCHOR DELTA", sub: "Structural Integrity", val: `${rPhys.frame} Breaks`, status: getRelateStatus(rPhys.frame, "frame") },
-                { label: "ARMOR PERMEABILITY", sub: "Vulnerability Score", val: `${rPhys.armor}/10`, status: getRelateStatus(rPhys.armor, "armor") },
-              ].map(k => (
-                <div key={k.label} className="flex justify-between items-center bg-zinc-50/50 dark:bg-white/5 p-2 rounded-lg border border-zinc-200/50 dark:border-white/5">
+                {
+                  label: "TIME TO REPAIR",
+                  sub: "Conflict Resolution",
+                  val: `${rPhys.ttr}h`,
+                  status: getRelateStatus(rPhys.ttr, "ttr"),
+                },
+                {
+                  label: "THERMAL LOAD",
+                  sub: "Survival State",
+                  val: `${rPhys.thermalLoad.toFixed(2)}%`,
+                  status: getRelateStatus(rPhys.thermalLoad, "thermal"),
+                },
+                {
+                  label: "SILENT EXECUTION",
+                  sub: "Cognitive Load Relief",
+                  val: `${rPhys.silentExec.toFixed(2)}%`,
+                  status: getRelateStatus(rPhys.silentExec, "silent"),
+                },
+                {
+                  label: "THE ANCHOR DELTA",
+                  sub: "Structural Integrity",
+                  val: `${rPhys.frame} Breaks`,
+                  status: getRelateStatus(rPhys.frame, "frame"),
+                },
+                {
+                  label: "ARMOR PERMEABILITY",
+                  sub: "Vulnerability Score",
+                  val: `${rPhys.armor}/10`,
+                  status: getRelateStatus(rPhys.armor, "armor"),
+                },
+              ].map((k) => (
+                <div
+                  key={k.label}
+                  className="flex justify-between items-center bg-zinc-50/50 dark:bg-white/5 p-2 rounded-lg border border-zinc-200/50 dark:border-white/5"
+                >
                   <div className="flex flex-col">
-                    <span className="text-[10px] font-bold tracking-widest uppercase text-zinc-900 dark:text-zinc-100">{k.label}</span>
+                    <span className="text-[10px] font-bold tracking-widest uppercase text-zinc-900 dark:text-zinc-100">
+                      {k.label}
+                    </span>
                     <span className="text-[8px] tracking-widest uppercase text-zinc-500">{k.sub}</span>
                   </div>
                   <div className="flex flex-col items-end gap-0.5">
                     <span className="font-mono text-xs font-medium text-zinc-900 dark:text-white">{k.val}</span>
-                    <span className={`text-[9px] font-bold tracking-widest uppercase ${k.status.color}`}>{k.status.label}</span>
+                    <span className={`text-[9px] font-bold tracking-widest uppercase ${k.status.color}`}>
+                      {k.status.label}
+                    </span>
                   </div>
                 </div>
               ))}
@@ -771,20 +906,52 @@ function SectorCard({ category, allMetrics, onSave }: any) {
           ) : isJoy && jPhys ? (
             <div className="flex flex-col gap-2 flex-1 mt-6 justify-center">
               {[
-                { label: "AVATAR PRESENCE RATE", sub: "Deep Anchoring", val: `${jPhys.presence}/7 Days`, status: getJoyStatus(jPhys.presence, "presence") },
-                { label: "19:00 HARD STOP", sub: "System Depressurization", val: `${jPhys.hardStop}/7 Days`, status: getJoyStatus(jPhys.hardStop, "hardstop") },
-                { label: "WHITE SPACE INTEGRITY", sub: "Creative Buffer", val: `${jPhys.whitespace}h`, status: getJoyStatus(jPhys.whitespace, "whitespace") },
-                { label: "THE DOOMSCROLL TRIPWIRE", sub: "System Exhaustion / Entropy", val: `${jPhys.doomscroll}h`, status: getJoyStatus(jPhys.doomscroll, "doomscroll") },
-                { label: "$10/HR DELEGATION RATIO", sub: "Opportunity Cost Limit", val: `${jPhys.lowValue}h`, status: getJoyStatus(jPhys.lowValue, "lowvalue") },
-              ].map(k => (
-                <div key={k.label} className="flex justify-between items-center bg-zinc-50/50 dark:bg-white/5 p-2 rounded-lg border border-zinc-200/50 dark:border-white/5">
+                {
+                  label: "AVATAR PRESENCE RATE",
+                  sub: "Deep Anchoring",
+                  val: `${jPhys.presence}/7 Days`,
+                  status: getJoyStatus(jPhys.presence, "presence"),
+                },
+                {
+                  label: "19:00 HARD STOP",
+                  sub: "System Depressurization",
+                  val: `${jPhys.hardStop}/7 Days`,
+                  status: getJoyStatus(jPhys.hardStop, "hardstop"),
+                },
+                {
+                  label: "WHITE SPACE INTEGRITY",
+                  sub: "Creative Buffer",
+                  val: `${jPhys.whitespace}h`,
+                  status: getJoyStatus(jPhys.whitespace, "whitespace"),
+                },
+                {
+                  label: "THE DOOMSCROLL TRIPWIRE",
+                  sub: "System Exhaustion / Entropy",
+                  val: `${jPhys.doomscroll}h`,
+                  status: getJoyStatus(jPhys.doomscroll, "doomscroll"),
+                },
+                {
+                  label: "$10/HR DELEGATION RATIO",
+                  sub: "Opportunity Cost Limit",
+                  val: `${jPhys.lowValue}h`,
+                  status: getJoyStatus(jPhys.lowValue, "lowvalue"),
+                },
+              ].map((k) => (
+                <div
+                  key={k.label}
+                  className="flex justify-between items-center bg-zinc-50/50 dark:bg-white/5 p-2 rounded-lg border border-zinc-200/50 dark:border-white/5"
+                >
                   <div className="flex flex-col">
-                    <span className="text-[10px] font-bold tracking-widest uppercase text-zinc-900 dark:text-zinc-100">{k.label}</span>
+                    <span className="text-[10px] font-bold tracking-widest uppercase text-zinc-900 dark:text-zinc-100">
+                      {k.label}
+                    </span>
                     <span className="text-[8px] tracking-widest uppercase text-zinc-500">{k.sub}</span>
                   </div>
                   <div className="flex flex-col items-end gap-0.5">
                     <span className="font-mono text-xs font-medium text-zinc-900 dark:text-white">{k.val}</span>
-                    <span className={`text-[9px] font-bold tracking-widest uppercase ${k.status.color}`}>{k.status.label}</span>
+                    <span className={`text-[9px] font-bold tracking-widest uppercase ${k.status.color}`}>
+                      {k.status.label}
+                    </span>
                   </div>
                 </div>
               ))}
@@ -792,20 +959,52 @@ function SectorCard({ category, allMetrics, onSave }: any) {
           ) : isCeo && cPhys ? (
             <div className="flex flex-col gap-2 flex-1 mt-6 justify-center">
               {[
-                { label: "NET VELOCITY (FCF)", sub: "Capital Physics", val: `$${cPhys.fcf.toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2})}`, status: getCeoStatus(cPhys.fcf, "fcf") },
-                { label: "THE RUIN RATIO", sub: "Capital Buffer", val: `${cPhys.ruin.toFixed(1)}x`, status: getCeoStatus(cPhys.ruin, "ruin") },
-                { label: "THE BUY-BACK RATE", sub: "Operational Leverage", val: `${cPhys.buyback.toFixed(1)}%`, status: getCeoStatus(cPhys.buyback, "buyback") },
-                { label: "LOGIC ALIGNMENT", sub: "5 Guidelines", val: `${cPhys.logic.toFixed(1)}%`, status: getCeoStatus(cPhys.logic, "logic") },
-                { label: "ARCHITECTURAL AUTONOMY", sub: "System Autonomy", val: `${cPhys.autonomy.toFixed(1)}%`, status: getCeoStatus(cPhys.autonomy, "autonomy") },
-              ].map(k => (
-                <div key={k.label} className="flex justify-between items-center bg-zinc-50/50 dark:bg-white/5 p-2 rounded-lg border border-zinc-200/50 dark:border-white/5">
+                {
+                  label: "NET VELOCITY (FCF)",
+                  sub: "Capital Physics",
+                  val: `$${cPhys.fcf.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`,
+                  status: getCeoStatus(cPhys.fcf, "fcf"),
+                },
+                {
+                  label: "THE RUIN RATIO",
+                  sub: "Capital Buffer",
+                  val: `${cPhys.ruin.toFixed(1)}x`,
+                  status: getCeoStatus(cPhys.ruin, "ruin"),
+                },
+                {
+                  label: "THE BUY-BACK RATE",
+                  sub: "Operational Leverage",
+                  val: `${cPhys.buyback.toFixed(1)}%`,
+                  status: getCeoStatus(cPhys.buyback, "buyback"),
+                },
+                {
+                  label: "LOGIC ALIGNMENT",
+                  sub: "5 Guidelines",
+                  val: `${cPhys.logic.toFixed(1)}%`,
+                  status: getCeoStatus(cPhys.logic, "logic"),
+                },
+                {
+                  label: "ARCHITECTURAL AUTONOMY",
+                  sub: "System Autonomy",
+                  val: `${cPhys.autonomy.toFixed(1)}%`,
+                  status: getCeoStatus(cPhys.autonomy, "autonomy"),
+                },
+              ].map((k) => (
+                <div
+                  key={k.label}
+                  className="flex justify-between items-center bg-zinc-50/50 dark:bg-white/5 p-2 rounded-lg border border-zinc-200/50 dark:border-white/5"
+                >
                   <div className="flex flex-col">
-                    <span className="text-[10px] font-bold tracking-widest uppercase text-zinc-900 dark:text-zinc-100">{k.label}</span>
+                    <span className="text-[10px] font-bold tracking-widest uppercase text-zinc-900 dark:text-zinc-100">
+                      {k.label}
+                    </span>
                     <span className="text-[8px] tracking-widest uppercase text-zinc-500">{k.sub}</span>
                   </div>
                   <div className="flex flex-col items-end gap-0.5">
                     <span className="font-mono text-xs font-medium text-zinc-900 dark:text-white">{k.val}</span>
-                    <span className={`text-[9px] font-bold tracking-widest uppercase ${k.status.color}`}>{k.status.label}</span>
+                    <span className={`text-[9px] font-bold tracking-widest uppercase ${k.status.color}`}>
+                      {k.status.label}
+                    </span>
                   </div>
                 </div>
               ))}
@@ -813,20 +1012,52 @@ function SectorCard({ category, allMetrics, onSave }: any) {
           ) : isCoo && cooPhys ? (
             <div className="flex flex-col gap-2 flex-1 mt-6 justify-center">
               {[
-                { label: "ACTIVE MISSION VELOCITY", sub: "Forward Momentum", val: `${cooPhys.velocity.toFixed(1)}%`, status: getCooStatus(cooPhys.velocity, "velocity") },
-                { label: "CRITICAL EXCEPTION RATE", sub: "System Fragility", val: `${cooPhys.exception} Failures`, status: getCooStatus(cooPhys.exception, "exception") },
-                { label: "QA FIDELITY SCORE", sub: "Design Integrity", val: `${cooPhys.qa.toFixed(1)}%`, status: getCooStatus(cooPhys.qa, "qa") },
-                { label: "MTTR (BUG RESOLUTION)", sub: "Pipeline Friction", val: `${cooPhys.mttr.toFixed(1)} Hrs`, status: getCooStatus(cooPhys.mttr, "mttr") },
-                { label: "SOP AUTONOMY", sub: "Hand-Off Readiness", val: `${cooPhys.sop.toFixed(1)}%`, status: getCooStatus(cooPhys.sop, "sop") },
-              ].map(k => (
-                <div key={k.label} className="flex justify-between items-center bg-zinc-50/50 dark:bg-white/5 p-2 rounded-lg border border-zinc-200/50 dark:border-white/5">
+                {
+                  label: "ACTIVE MISSION VELOCITY",
+                  sub: "Forward Momentum",
+                  val: `${cooPhys.velocity.toFixed(1)}%`,
+                  status: getCooStatus(cooPhys.velocity, "velocity"),
+                },
+                {
+                  label: "CRITICAL EXCEPTION RATE",
+                  sub: "System Fragility",
+                  val: `${cooPhys.exception} Failures`,
+                  status: getCooStatus(cooPhys.exception, "exception"),
+                },
+                {
+                  label: "QA FIDELITY SCORE",
+                  sub: "Design Integrity",
+                  val: `${cooPhys.qa.toFixed(1)}%`,
+                  status: getCooStatus(cooPhys.qa, "qa"),
+                },
+                {
+                  label: "MTTR (BUG RESOLUTION)",
+                  sub: "Pipeline Friction",
+                  val: `${cooPhys.mttr.toFixed(1)} Hrs`,
+                  status: getCooStatus(cooPhys.mttr, "mttr"),
+                },
+                {
+                  label: "SOP AUTONOMY",
+                  sub: "Hand-Off Readiness",
+                  val: `${cooPhys.sop.toFixed(1)}%`,
+                  status: getCooStatus(cooPhys.sop, "sop"),
+                },
+              ].map((k) => (
+                <div
+                  key={k.label}
+                  className="flex justify-between items-center bg-zinc-50/50 dark:bg-white/5 p-2 rounded-lg border border-zinc-200/50 dark:border-white/5"
+                >
                   <div className="flex flex-col">
-                    <span className="text-[10px] font-bold tracking-widest uppercase text-zinc-900 dark:text-zinc-100">{k.label}</span>
+                    <span className="text-[10px] font-bold tracking-widest uppercase text-zinc-900 dark:text-zinc-100">
+                      {k.label}
+                    </span>
                     <span className="text-[8px] tracking-widest uppercase text-zinc-500">{k.sub}</span>
                   </div>
                   <div className="flex flex-col items-end gap-0.5">
                     <span className="font-mono text-xs font-medium text-zinc-900 dark:text-white">{k.val}</span>
-                    <span className={`text-[9px] font-bold tracking-widest uppercase ${k.status.color}`}>{k.status.label}</span>
+                    <span className={`text-[9px] font-bold tracking-widest uppercase ${k.status.color}`}>
+                      {k.status.label}
+                    </span>
                   </div>
                 </div>
               ))}
@@ -834,20 +1065,52 @@ function SectorCard({ category, allMetrics, onSave }: any) {
           ) : isCmo && cmoPhys ? (
             <div className="flex flex-col gap-2 flex-1 mt-6 justify-center">
               {[
-                { label: "THE LTV:CAC RATIO", sub: "Capital Leverage / Offer Gravity", val: `${cmoPhys.ltv_cac.toFixed(1)}:1`, status: getCmoStatus(cmoPhys.ltv_cac, "ltv_cac") },
-                { label: "LEAD VELOCITY RATE", sub: "Pipeline Momentum", val: `${cmoPhys.lead_vel.toFixed(1)}%`, status: getCmoStatus(cmoPhys.lead_vel, "lead_vel") },
-                { label: "GRAND SLAM CONVERSION", sub: "Conversion Gravity", val: `${cmoPhys.conv_rate.toFixed(1)}%`, status: getCmoStatus(cmoPhys.conv_rate, "conv_rate") },
-                { label: "TIME-TO-VALUE (TTV)", sub: "Activation Speed", val: `${cmoPhys.ttv.toFixed(1)} Hrs`, status: getCmoStatus(cmoPhys.ttv, "ttv") },
-                { label: "SIGNAL-TO-NOISE (CLARITY)", sub: "Messaging Clarity", val: `${cmoPhys.storybrand}/10`, status: getCmoStatus(cmoPhys.storybrand, "storybrand") },
-              ].map(k => (
-                <div key={k.label} className="flex justify-between items-center bg-zinc-50/50 dark:bg-white/5 p-2 rounded-lg border border-zinc-200/50 dark:border-white/5">
+                {
+                  label: "THE LTV:CAC RATIO",
+                  sub: "Capital Leverage / Offer Gravity",
+                  val: `${cmoPhys.ltv_cac.toFixed(1)}:1`,
+                  status: getCmoStatus(cmoPhys.ltv_cac, "ltv_cac"),
+                },
+                {
+                  label: "LEAD VELOCITY RATE",
+                  sub: "Pipeline Momentum",
+                  val: `${cmoPhys.lead_vel.toFixed(1)}%`,
+                  status: getCmoStatus(cmoPhys.lead_vel, "lead_vel"),
+                },
+                {
+                  label: "GRAND SLAM CONVERSION",
+                  sub: "Conversion Gravity",
+                  val: `${cmoPhys.conv_rate.toFixed(1)}%`,
+                  status: getCmoStatus(cmoPhys.conv_rate, "conv_rate"),
+                },
+                {
+                  label: "TIME-TO-VALUE (TTV)",
+                  sub: "Activation Speed",
+                  val: `${cmoPhys.ttv.toFixed(1)} Hrs`,
+                  status: getCmoStatus(cmoPhys.ttv, "ttv"),
+                },
+                {
+                  label: "SIGNAL-TO-NOISE (CLARITY)",
+                  sub: "Messaging Clarity",
+                  val: `${cmoPhys.storybrand}/10`,
+                  status: getCmoStatus(cmoPhys.storybrand, "storybrand"),
+                },
+              ].map((k) => (
+                <div
+                  key={k.label}
+                  className="flex justify-between items-center bg-zinc-50/50 dark:bg-white/5 p-2 rounded-lg border border-zinc-200/50 dark:border-white/5"
+                >
                   <div className="flex flex-col">
-                    <span className="text-[10px] font-bold tracking-widest uppercase text-zinc-900 dark:text-zinc-100">{k.label}</span>
+                    <span className="text-[10px] font-bold tracking-widest uppercase text-zinc-900 dark:text-zinc-100">
+                      {k.label}
+                    </span>
                     <span className="text-[8px] tracking-widest uppercase text-zinc-500">{k.sub}</span>
                   </div>
                   <div className="flex flex-col items-end gap-0.5">
                     <span className="font-mono text-xs font-medium text-zinc-900 dark:text-white">{k.val}</span>
-                    <span className={`text-[9px] font-bold tracking-widest uppercase ${k.status.color}`}>{k.status.label}</span>
+                    <span className={`text-[9px] font-bold tracking-widest uppercase ${k.status.color}`}>
+                      {k.status.label}
+                    </span>
                   </div>
                 </div>
               ))}
@@ -855,20 +1118,52 @@ function SectorCard({ category, allMetrics, onSave }: any) {
           ) : isCfo && cfoPhys ? (
             <div className="flex flex-col gap-2 flex-1 mt-6 justify-center">
               {[
-                { label: "NET RETURN ON INTELLIGENCE", sub: "Profitability / NROI", val: `$${cfoPhys.nroi.toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2})}`, status: getCfoStatus(cfoPhys.nroi, "nroi") },
-                { label: "ABSOLUTE RUIN BUFFER", sub: "Structural Preservation", val: `$${cfoPhys.buffer.toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2})}`, status: getCfoStatus(cfoPhys.buffer, "buffer") },
-                { label: "COST PER SETUP (CPAS)", sub: "Intelligence Cost", val: `$${cfoPhys.cpas.toFixed(2)}`, status: getCfoStatus(cfoPhys.cpas, "cpas") },
-                { label: "BLACK SWAN RESILIENCE", sub: "Market Anti-Fragility", val: `${cfoPhys.swan.toFixed(1)}%`, status: getCfoStatus(cfoPhys.swan, "swan") },
-                { label: "TELEMETRY-TO-LEDGER SYNC", sub: "Data Friction", val: `${cfoPhys.sync.toFixed(1)}%`, status: getCfoStatus(cfoPhys.sync, "sync") },
-              ].map(k => (
-                <div key={k.label} className="flex justify-between items-center bg-zinc-50/50 dark:bg-white/5 p-2 rounded-lg border border-zinc-200/50 dark:border-white/5">
+                {
+                  label: "NET RETURN ON INTELLIGENCE",
+                  sub: "Profitability / NROI",
+                  val: `$${cfoPhys.nroi.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`,
+                  status: getCfoStatus(cfoPhys.nroi, "nroi"),
+                },
+                {
+                  label: "ABSOLUTE RUIN BUFFER",
+                  sub: "Structural Preservation",
+                  val: `$${cfoPhys.buffer.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`,
+                  status: getCfoStatus(cfoPhys.buffer, "buffer"),
+                },
+                {
+                  label: "COST PER SETUP (CPAS)",
+                  sub: "Intelligence Cost",
+                  val: `$${cfoPhys.cpas.toFixed(2)}`,
+                  status: getCfoStatus(cfoPhys.cpas, "cpas"),
+                },
+                {
+                  label: "BLACK SWAN RESILIENCE",
+                  sub: "Market Anti-Fragility",
+                  val: `${cfoPhys.swan.toFixed(1)}%`,
+                  status: getCfoStatus(cfoPhys.swan, "swan"),
+                },
+                {
+                  label: "TELEMETRY-TO-LEDGER SYNC",
+                  sub: "Data Friction",
+                  val: `${cfoPhys.sync.toFixed(1)}%`,
+                  status: getCfoStatus(cfoPhys.sync, "sync"),
+                },
+              ].map((k) => (
+                <div
+                  key={k.label}
+                  className="flex justify-between items-center bg-zinc-50/50 dark:bg-white/5 p-2 rounded-lg border border-zinc-200/50 dark:border-white/5"
+                >
                   <div className="flex flex-col">
-                    <span className="text-[10px] font-bold tracking-widest uppercase text-zinc-900 dark:text-zinc-100">{k.label}</span>
+                    <span className="text-[10px] font-bold tracking-widest uppercase text-zinc-900 dark:text-zinc-100">
+                      {k.label}
+                    </span>
                     <span className="text-[8px] tracking-widest uppercase text-zinc-500">{k.sub}</span>
                   </div>
                   <div className="flex flex-col items-end gap-0.5">
                     <span className="font-mono text-xs font-medium text-zinc-900 dark:text-white">{k.val}</span>
-                    <span className={`text-[9px] font-bold tracking-widest uppercase ${k.status.color}`}>{k.status.label}</span>
+                    <span className={`text-[9px] font-bold tracking-widest uppercase ${k.status.color}`}>
+                      {k.status.label}
+                    </span>
                   </div>
                 </div>
               ))}
@@ -876,20 +1171,52 @@ function SectorCard({ category, allMetrics, onSave }: any) {
           ) : isCto && ctoPhys ? (
             <div className="flex flex-col gap-2 flex-1 mt-6 justify-center">
               {[
-                { label: "TELEMETRY LATENCY", sub: "Execution Velocity", val: `${ctoPhys.latency} ms`, status: getCtoStatus(ctoPhys.latency, "latency") },
-                { label: "INFRASTRUCTURE UPTIME", sub: "System Stability", val: `${ctoPhys.uptime.toFixed(2)}%`, status: getCtoStatus(ctoPhys.uptime, "uptime") },
-                { label: "ACTIVE MISSION VELOCITY", sub: "Clean Sprint Velocity", val: `${ctoPhys.velocity.toFixed(1)}%`, status: getCtoStatus(ctoPhys.velocity, "velocity") },
-                { label: "CRITICAL MTTR", sub: "Live-Market Bugs", val: `${ctoPhys.mttr} Mins`, status: getCtoStatus(ctoPhys.mttr, "mttr") },
-                { label: "THE BUS FACTOR", sub: "Engineering Autonomy", val: `${ctoPhys.bus}/100`, status: getCtoStatus(ctoPhys.bus, "bus") },
-              ].map(k => (
-                <div key={k.label} className="flex justify-between items-center bg-zinc-50/50 dark:bg-white/5 p-2 rounded-lg border border-zinc-200/50 dark:border-white/5">
+                {
+                  label: "TELEMETRY LATENCY",
+                  sub: "Execution Velocity",
+                  val: `${ctoPhys.latency} ms`,
+                  status: getCtoStatus(ctoPhys.latency, "latency"),
+                },
+                {
+                  label: "INFRASTRUCTURE UPTIME",
+                  sub: "System Stability",
+                  val: `${ctoPhys.uptime.toFixed(2)}%`,
+                  status: getCtoStatus(ctoPhys.uptime, "uptime"),
+                },
+                {
+                  label: "ACTIVE MISSION VELOCITY",
+                  sub: "Clean Sprint Velocity",
+                  val: `${ctoPhys.velocity.toFixed(1)}%`,
+                  status: getCtoStatus(ctoPhys.velocity, "velocity"),
+                },
+                {
+                  label: "CRITICAL MTTR",
+                  sub: "Live-Market Bugs",
+                  val: `${ctoPhys.mttr} Mins`,
+                  status: getCtoStatus(ctoPhys.mttr, "mttr"),
+                },
+                {
+                  label: "THE BUS FACTOR",
+                  sub: "Engineering Autonomy",
+                  val: `${ctoPhys.bus}/100`,
+                  status: getCtoStatus(ctoPhys.bus, "bus"),
+                },
+              ].map((k) => (
+                <div
+                  key={k.label}
+                  className="flex justify-between items-center bg-zinc-50/50 dark:bg-white/5 p-2 rounded-lg border border-zinc-200/50 dark:border-white/5"
+                >
                   <div className="flex flex-col">
-                    <span className="text-[10px] font-bold tracking-widest uppercase text-zinc-900 dark:text-zinc-100">{k.label}</span>
+                    <span className="text-[10px] font-bold tracking-widest uppercase text-zinc-900 dark:text-zinc-100">
+                      {k.label}
+                    </span>
                     <span className="text-[8px] tracking-widest uppercase text-zinc-500">{k.sub}</span>
                   </div>
                   <div className="flex flex-col items-end gap-0.5">
                     <span className="font-mono text-xs font-medium text-zinc-900 dark:text-white">{k.val}</span>
-                    <span className={`text-[9px] font-bold tracking-widest uppercase ${k.status.color}`}>{k.status.label}</span>
+                    <span className={`text-[9px] font-bold tracking-widest uppercase ${k.status.color}`}>
+                      {k.status.label}
+                    </span>
                   </div>
                 </div>
               ))}
@@ -897,20 +1224,52 @@ function SectorCard({ category, allMetrics, onSave }: any) {
           ) : isCpo && cpoPhys ? (
             <div className="flex flex-col gap-2 flex-1 mt-6 justify-center">
               {[
-                { label: "CHURN VELOCITY", sub: "Retention Entropy", val: `${cpoPhys.churn.toFixed(1)}%`, status: getCpoStatus(cpoPhys.churn, "churn") },
-                { label: "ALPHA DELIVERY RATE", sub: "Live-Market Edge", val: `${cpoPhys.alpha.toFixed(1)}%`, status: getCpoStatus(cpoPhys.alpha, "alpha") },
-                { label: "UI TIME-TO-VALUE", sub: "Cognitive Friction", val: `${cpoPhys.ttv.toFixed(1)} Secs`, status: getCpoStatus(cpoPhys.ttv, "ttv") },
-                { label: "THE \"MUST-HAVE\" SCORE", sub: "Product/Market Fit", val: `${cpoPhys.pmf.toFixed(1)}%`, status: getCpoStatus(cpoPhys.pmf, "pmf") },
-                { label: "FRONTEND ESSENTIALISM", sub: "Signal-to-Noise", val: `${cpoPhys.ess}/100`, status: getCpoStatus(cpoPhys.ess, "ess") },
-              ].map(k => (
-                <div key={k.label} className="flex justify-between items-center bg-zinc-50/50 dark:bg-white/5 p-2 rounded-lg border border-zinc-200/50 dark:border-white/5">
+                {
+                  label: "CHURN VELOCITY",
+                  sub: "Retention Entropy",
+                  val: `${cpoPhys.churn.toFixed(1)}%`,
+                  status: getCpoStatus(cpoPhys.churn, "churn"),
+                },
+                {
+                  label: "ALPHA DELIVERY RATE",
+                  sub: "Live-Market Edge",
+                  val: `${cpoPhys.alpha.toFixed(1)}%`,
+                  status: getCpoStatus(cpoPhys.alpha, "alpha"),
+                },
+                {
+                  label: "UI TIME-TO-VALUE",
+                  sub: "Cognitive Friction",
+                  val: `${cpoPhys.ttv.toFixed(1)} Secs`,
+                  status: getCpoStatus(cpoPhys.ttv, "ttv"),
+                },
+                {
+                  label: 'THE "MUST-HAVE" SCORE',
+                  sub: "Product/Market Fit",
+                  val: `${cpoPhys.pmf.toFixed(1)}%`,
+                  status: getCpoStatus(cpoPhys.pmf, "pmf"),
+                },
+                {
+                  label: "FRONTEND ESSENTIALISM",
+                  sub: "Signal-to-Noise",
+                  val: `${cpoPhys.ess}/100`,
+                  status: getCpoStatus(cpoPhys.ess, "ess"),
+                },
+              ].map((k) => (
+                <div
+                  key={k.label}
+                  className="flex justify-between items-center bg-zinc-50/50 dark:bg-white/5 p-2 rounded-lg border border-zinc-200/50 dark:border-white/5"
+                >
                   <div className="flex flex-col">
-                    <span className="text-[10px] font-bold tracking-widest uppercase text-zinc-900 dark:text-zinc-100">{k.label}</span>
+                    <span className="text-[10px] font-bold tracking-widest uppercase text-zinc-900 dark:text-zinc-100">
+                      {k.label}
+                    </span>
                     <span className="text-[8px] tracking-widest uppercase text-zinc-500">{k.sub}</span>
                   </div>
                   <div className="flex flex-col items-end gap-0.5">
                     <span className="font-mono text-xs font-medium text-zinc-900 dark:text-white">{k.val}</span>
-                    <span className={`text-[9px] font-bold tracking-widest uppercase ${k.status.color}`}>{k.status.label}</span>
+                    <span className={`text-[9px] font-bold tracking-widest uppercase ${k.status.color}`}>
+                      {k.status.label}
+                    </span>
                   </div>
                 </div>
               ))}
@@ -918,20 +1277,52 @@ function SectorCard({ category, allMetrics, onSave }: any) {
           ) : isCro && croPhys ? (
             <div className="flex flex-col gap-2 flex-1 mt-6 justify-center">
               {[
-                { label: "LEAD-TO-CLOSE RATE", sub: "Kinetic Conversion", val: `${croPhys.lead_to_close.toFixed(1)}%`, status: getCroStatus(croPhys.lead_to_close, "lead_to_close") },
-                { label: "NET CASH CAPTURED", sub: "Capital Capture", val: `$${croPhys.net_cash.toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2})}`, status: getCroStatus(croPhys.net_cash, "net_cash") },
-                { label: "SALES CYCLE VELOCITY", sub: "Pipeline Friction", val: `${croPhys.cycle} Days`, status: getCroStatus(croPhys.cycle, "cycle") },
-                { label: "THE RECLAIM RATE", sub: "Salvage Velocity", val: `${croPhys.reclaim.toFixed(1)}%`, status: getCroStatus(croPhys.reclaim, "reclaim") },
-                { label: "PIPELINE HYGIENE", sub: "CRM Accuracy", val: `${croPhys.hygiene}/100`, status: getCroStatus(croPhys.hygiene, "hygiene") },
-              ].map(k => (
-                <div key={k.label} className="flex justify-between items-center bg-zinc-50/50 dark:bg-white/5 p-2 rounded-lg border border-zinc-200/50 dark:border-white/5">
+                {
+                  label: "LEAD-TO-CLOSE RATE",
+                  sub: "Kinetic Conversion",
+                  val: `${croPhys.lead_to_close.toFixed(1)}%`,
+                  status: getCroStatus(croPhys.lead_to_close, "lead_to_close"),
+                },
+                {
+                  label: "NET CASH CAPTURED",
+                  sub: "Capital Capture",
+                  val: `$${croPhys.net_cash.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`,
+                  status: getCroStatus(croPhys.net_cash, "net_cash"),
+                },
+                {
+                  label: "SALES CYCLE VELOCITY",
+                  sub: "Pipeline Friction",
+                  val: `${croPhys.cycle} Days`,
+                  status: getCroStatus(croPhys.cycle, "cycle"),
+                },
+                {
+                  label: "THE RECLAIM RATE",
+                  sub: "Salvage Velocity",
+                  val: `${croPhys.reclaim.toFixed(1)}%`,
+                  status: getCroStatus(croPhys.reclaim, "reclaim"),
+                },
+                {
+                  label: "PIPELINE HYGIENE",
+                  sub: "CRM Accuracy",
+                  val: `${croPhys.hygiene}/100`,
+                  status: getCroStatus(croPhys.hygiene, "hygiene"),
+                },
+              ].map((k) => (
+                <div
+                  key={k.label}
+                  className="flex justify-between items-center bg-zinc-50/50 dark:bg-white/5 p-2 rounded-lg border border-zinc-200/50 dark:border-white/5"
+                >
                   <div className="flex flex-col">
-                    <span className="text-[10px] font-bold tracking-widest uppercase text-zinc-900 dark:text-zinc-100">{k.label}</span>
+                    <span className="text-[10px] font-bold tracking-widest uppercase text-zinc-900 dark:text-zinc-100">
+                      {k.label}
+                    </span>
                     <span className="text-[8px] tracking-widest uppercase text-zinc-500">{k.sub}</span>
                   </div>
                   <div className="flex flex-col items-end gap-0.5">
                     <span className="font-mono text-xs font-medium text-zinc-900 dark:text-white">{k.val}</span>
-                    <span className={`text-[9px] font-bold tracking-widest uppercase ${k.status.color}`}>{k.status.label}</span>
+                    <span className={`text-[9px] font-bold tracking-widest uppercase ${k.status.color}`}>
+                      {k.status.label}
+                    </span>
                   </div>
                 </div>
               ))}
@@ -939,20 +1330,52 @@ function SectorCard({ category, allMetrics, onSave }: any) {
           ) : isCho && choPhys ? (
             <div className="flex flex-col gap-2 flex-1 mt-6 justify-center">
               {[
-                { label: "THE TOP-GRADING INDEX", sub: "Human Capital Gravity", val: `${choPhys.density.toFixed(1)}%`, status: getChoStatus(choPhys.density, "density") },
-                { label: "REGRETTABLE CHURN", sub: "Talent Entropy", val: `${choPhys.churn.toFixed(1)}%`, status: getChoStatus(choPhys.churn, "churn") },
-                { label: "RAMP-UP VELOCITY", sub: "Time-to-Value", val: `${choPhys.ramp} Days`, status: getChoStatus(choPhys.ramp, "ramp") },
-                { label: "SOP EXECUTION RATE", sub: "Operational Accuracy", val: `${choPhys.sop.toFixed(1)}%`, status: getChoStatus(choPhys.sop, "sop") },
-                { label: "COGNITIVE DRAG INDEX", sub: "Administrative Noise", val: `${choPhys.drag}/100`, status: getChoStatus(choPhys.drag, "drag") },
-              ].map(k => (
-                <div key={k.label} className="flex justify-between items-center bg-zinc-50/50 dark:bg-white/5 p-2 rounded-lg border border-zinc-200/50 dark:border-white/5">
+                {
+                  label: "THE TOP-GRADING INDEX",
+                  sub: "Human Capital Gravity",
+                  val: `${choPhys.density.toFixed(1)}%`,
+                  status: getChoStatus(choPhys.density, "density"),
+                },
+                {
+                  label: "REGRETTABLE CHURN",
+                  sub: "Talent Entropy",
+                  val: `${choPhys.churn.toFixed(1)}%`,
+                  status: getChoStatus(choPhys.churn, "churn"),
+                },
+                {
+                  label: "RAMP-UP VELOCITY",
+                  sub: "Time-to-Value",
+                  val: `${choPhys.ramp} Days`,
+                  status: getChoStatus(choPhys.ramp, "ramp"),
+                },
+                {
+                  label: "SOP EXECUTION RATE",
+                  sub: "Operational Accuracy",
+                  val: `${choPhys.sop.toFixed(1)}%`,
+                  status: getChoStatus(choPhys.sop, "sop"),
+                },
+                {
+                  label: "COGNITIVE DRAG INDEX",
+                  sub: "Administrative Noise",
+                  val: `${choPhys.drag}/100`,
+                  status: getChoStatus(choPhys.drag, "drag"),
+                },
+              ].map((k) => (
+                <div
+                  key={k.label}
+                  className="flex justify-between items-center bg-zinc-50/50 dark:bg-white/5 p-2 rounded-lg border border-zinc-200/50 dark:border-white/5"
+                >
                   <div className="flex flex-col">
-                    <span className="text-[10px] font-bold tracking-widest uppercase text-zinc-900 dark:text-zinc-100">{k.label}</span>
+                    <span className="text-[10px] font-bold tracking-widest uppercase text-zinc-900 dark:text-zinc-100">
+                      {k.label}
+                    </span>
                     <span className="text-[8px] tracking-widest uppercase text-zinc-500">{k.sub}</span>
                   </div>
                   <div className="flex flex-col items-end gap-0.5">
                     <span className="font-mono text-xs font-medium text-zinc-900 dark:text-white">{k.val}</span>
-                    <span className={`text-[9px] font-bold tracking-widest uppercase ${k.status.color}`}>{k.status.label}</span>
+                    <span className={`text-[9px] font-bold tracking-widest uppercase ${k.status.color}`}>
+                      {k.status.label}
+                    </span>
                   </div>
                 </div>
               ))}
@@ -961,7 +1384,11 @@ function SectorCard({ category, allMetrics, onSave }: any) {
             <div className="flex flex-col items-center justify-center flex-1 mt-4">
               <div className="text-[10px] tracking-[0.2em] uppercase text-zinc-500 mb-2">AWAITING DATA</div>
               <div className="font-serif text-sm text-zinc-400 dark:text-zinc-500 text-center px-4 leading-relaxed">
-                This sector is offline.<br/>Focus strictly on<br/>active core systems.
+                This sector is offline.
+                <br />
+                Focus strictly on
+                <br />
+                active core systems.
               </div>
             </div>
           )}
@@ -975,27 +1402,149 @@ function SectorCard({ category, allMetrics, onSave }: any) {
               <X size={14} />
             </button>
           </div>
-          
+
           <div className="flex-1 overflow-y-auto pr-1 flex flex-col gap-3 scrollbar-hide">
-            {defs.map(d => (
+            {defs.map((d) => (
               <div key={d.name} className="flex flex-col gap-1">
-                <label className="text-[9px] tracking-widest uppercase text-zinc-600 dark:text-zinc-400">{d.name}</label>
-                <input 
-                  type="number" 
-                  value={localVals[d.name] ?? ""} 
-                  onChange={(e) => setLocalVals({...localVals, [d.name]: parseFloat(e.target.value) || 0})}
+                <label className="text-[9px] tracking-widest uppercase text-zinc-600 dark:text-zinc-400">
+                  {d.name}
+                </label>
+                <input
+                  type="number"
+                  value={localVals[d.name] ?? ""}
+                  onChange={(e) => setLocalVals({ ...localVals, [d.name]: parseFloat(e.target.value) || 0 })}
                   className="bg-white dark:bg-black/40 border border-zinc-200 dark:border-white/10 rounded p-1.5 text-xs text-zinc-900 dark:text-white focus:outline-none focus:border-[color:var(--theme-grad-start)] transition-colors"
                 />
               </div>
             ))}
           </div>
 
-          <button onClick={save} className="mt-3 w-full py-2 shrink-0 bg-[rgba(var(--theme-grad-start-rgb),0.1)] border border-[color:var(--theme-grad-start)]/30 rounded flex items-center justify-center gap-2 text-xs tracking-widest uppercase font-bold text-[color:var(--theme-grad-start)] hover:bg-[rgba(var(--theme-grad-start-rgb),0.2)] transition-colors">
+          <button
+            onClick={save}
+            className="mt-3 w-full py-2 shrink-0 bg-[rgba(var(--theme-grad-start-rgb),0.1)] border border-[color:var(--theme-grad-start)]/30 rounded flex items-center justify-center gap-2 text-xs tracking-widest uppercase font-bold text-[color:var(--theme-grad-start)] hover:bg-[rgba(var(--theme-grad-start-rgb),0.2)] transition-colors"
+          >
             <Save size={12} /> Confirm
           </button>
         </div>
       </div>
     </div>
+  );
+}
+
+/* ─── Executive Scorecard Evaluation & 6-Point Sparkline Helpers ───────────── */
+type RagBucket = "GREEN" | "YELLOW" | "RED";
+
+interface EvaluatedKpiRow {
+  key: string;
+  sectorId: string;
+  sectorTitle: string;
+  sectorColor: string;
+  label: string;
+  sub: string;
+  targetDisplay: string;
+  actualDisplay: string;
+  variancePct: number;
+  rag: RagBucket;
+  statusLabel: string;
+  rawMetricName: string;
+  rawMetricValue: number;
+  rawMetricTarget: number;
+  kpiPoints: number;
+}
+
+function classifyRag(statusObj: { color: string; label: string }): {
+  rag: RagBucket;
+  points: number;
+} {
+  if (statusObj.color.includes("emerald")) return { rag: "GREEN", points: 100 };
+  if (statusObj.color.includes("yellow") || statusObj.color.includes("orange"))
+    return { rag: "YELLOW", points: 65 };
+  return { rag: "RED", points: 20 };
+}
+
+function computeVariancePct(
+  actual: number,
+  target: number,
+  direction: "higher" | "lower"
+): number {
+  if (target === 0) {
+    if (direction === "higher") {
+      if (actual > 0) return 100;
+      if (actual === 0) return 0;
+      return -100;
+    } else {
+      if (actual <= 0) return 0;
+      return -Math.min(100, Math.round(actual * 15));
+    }
+  }
+  const raw =
+    direction === "higher"
+      ? ((actual - target) / Math.abs(target)) * 100
+      : ((target - actual) / Math.abs(target)) * 100;
+  return Math.max(-199, Math.min(250, Math.round(raw * 10) / 10));
+}
+
+function scoreToLetterGrade(score: number): string {
+  if (score >= 95) return "A+";
+  if (score >= 88) return "A";
+  if (score >= 83) return "A-";
+  if (score >= 78) return "B+";
+  if (score >= 72) return "B";
+  if (score >= 65) return "C+";
+  if (score >= 58) return "C";
+  return "D";
+}
+
+function SparklineSvg({
+  points,
+  rag,
+  width = 96,
+  height = 26,
+}: {
+  points: number[];
+  rag: RagBucket;
+  width?: number;
+  height?: number;
+}) {
+  const safePts = points.length >= 2 ? points : [70, 74, 78, 80, 84, 88];
+  const minV = Math.min(...safePts) - 4;
+  const maxV = Math.max(...safePts) + 4;
+  const span = Math.max(1, maxV - minV);
+
+  const strokeColor =
+    rag === "GREEN" ? "#10b981" : rag === "YELLOW" ? "#eab308" : "#ef4444";
+
+  const coords = safePts.map((v, idx) => {
+    const x = 4 + (idx / (safePts.length - 1)) * (width - 8);
+    const y = height - 4 - ((v - minV) / span) * (height - 8);
+    return { x, y };
+  });
+
+  const polyline = coords.map((c) => `${c.x.toFixed(1)},${c.y.toFixed(1)}`).join(" ");
+  const last = coords[coords.length - 1];
+
+  return (
+    <svg width={width} height={height} viewBox={`0 0 ${width} ${height}`} className="overflow-visible">
+      <polyline
+        fill="none"
+        stroke={strokeColor}
+        strokeWidth="1.8"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+        points={polyline}
+      />
+      {coords.map((c, idx) => (
+        <circle
+          key={idx}
+          cx={c.x}
+          cy={c.y}
+          r={idx === coords.length - 1 ? 2.8 : 1.4}
+          fill={strokeColor}
+          fillOpacity={idx === coords.length - 1 ? 1 : 0.55}
+        />
+      ))}
+      <circle cx={last.x} cy={last.y} r="5" fill={strokeColor} fillOpacity="0.2" />
+    </svg>
   );
 }
 
@@ -1009,22 +1558,61 @@ export default function KPIsPage() {
   const [isAppearanceOpen, setIsAppearanceOpen] = useState(false);
   const [deepWork, setDeepWork] = useState(false);
 
+  // Upgraded Scorecard State
+  const [viewMode, setViewMode] = useState<"matrix" | "cards" | "both">("both");
+  const [snapshots, setSnapshots] = useState<ScorecardSnapshot[]>([]);
+  const [streakCount, setStreakCount] = useState<number>(6);
+  const [selectedSectorFilter, setSelectedSectorFilter] = useState<string>("all");
+  const [ragFilter, setRagFilter] = useState<"ALL" | RagBucket>("ALL");
+  const [searchTerm, setSearchTerm] = useState<string>("");
+
+  // Inline Quick-Edit Drafts keyed by `${category}:${metricName}`
+  const [inlineDrafts, setInlineDrafts] = useState<Record<string, string>>({});
+  const [savedFlashKey, setSavedFlashKey] = useState<string | null>(null);
+
+  // Check-In Modal State
+  const [checkInOpen, setCheckInOpen] = useState(false);
+  const [checkInCadence, setCheckInCadence] = useState<"daily" | "weekly" | "monthly">("weekly");
+  const [checkInNote, setCheckInNote] = useState("");
+  const [savingCheckIn, setSavingCheckIn] = useState(false);
+
   useEffect(() => {
     fetch("/api/metrics")
-      .then(res => res.json())
-      .then(data => {
+      .then((res) => res.json())
+      .then((data) => {
         if (data.metrics) setMetrics(data.metrics);
       })
       .catch(console.error);
   }, []);
 
+  const fetchScorecardHistory = useCallback(async () => {
+    try {
+      const res = await fetch("/api/kpi-scorecard", { cache: "no-store" });
+      if (res.ok) {
+        const data = await res.json();
+        if (Array.isArray(data.snapshots)) setSnapshots(data.snapshots);
+        if (typeof data.streakCount === "number") setStreakCount(data.streakCount);
+      }
+    } catch (e) {
+      console.error("Scorecard history fetch error:", e);
+    }
+  }, []);
+
+  useEffect(() => {
+    fetchScorecardHistory();
+  }, [fetchScorecardHistory]);
+
   const handleSave = async (metric: Metric) => {
     // Optimistic update
-    setMetrics(prev => {
-      const idx = prev.findIndex(m => m.id === metric.id && m.id !== undefined);
+    setMetrics((prev) => {
+      const idx = prev.findIndex(
+        (m) =>
+          (m.id === metric.id && m.id !== undefined) ||
+          (m.category === metric.category && m.metricName === metric.metricName)
+      );
       if (idx >= 0) {
         const next = [...prev];
-        next[idx] = metric;
+        next[idx] = { ...next[idx], ...metric };
         return next;
       }
       return [...prev, metric];
@@ -1038,8 +1626,10 @@ export default function KPIsPage() {
       });
       const data = await res.json();
       if (data.metric) {
-        setMetrics(prev => {
-          const idx = prev.findIndex(m => m.metricName === data.metric.metricName && m.category === data.metric.category);
+        setMetrics((prev) => {
+          const idx = prev.findIndex(
+            (m) => m.metricName === data.metric.metricName && m.category === data.metric.category
+          );
           if (idx >= 0) {
             const next = [...prev];
             next[idx] = data.metric;
@@ -1053,17 +1643,352 @@ export default function KPIsPage() {
     }
   };
 
+  // Build map of current raw values across all 12 sectors
+  const sectorRawValues = useMemo(() => {
+    const out: Record<string, Record<string, { id?: string; val: number; target: number }>> = {};
+    for (const cat of CATEGORIES) {
+      out[cat.id] = {};
+      for (const d of RAW_METRIC_DEFS[cat.id]) {
+        const found = metrics.find((m) => m.category === cat.id && m.metricName === d.name);
+        out[cat.id][d.name] = {
+          id: found?.id,
+          val: found ? found.value : d.defaultVal,
+          target: found?.target ?? d.target,
+        };
+      }
+    }
+    return out;
+  }, [metrics]);
+
+  // Evaluate all 60 KPIs (12 sectors × 5 KPIs) using exact sector physics
+  const evaluatedRows = useMemo<EvaluatedKpiRow[]>(() => {
+    const rows: EvaluatedKpiRow[] = [];
+
+    const valsOf = (catId: string) => {
+      const rec: Record<string, number> = {};
+      for (const [k, obj] of Object.entries(sectorRawValues[catId] || {})) {
+        rec[k] = obj.val;
+      }
+      return rec;
+    };
+
+    const pushRow = (
+      sectorId: string,
+      label: string,
+      sub: string,
+      targetDisplay: string,
+      actualDisplay: string,
+      variancePct: number,
+      statusObj: { color: string; label: string },
+      rawMetricName: string
+    ) => {
+      const cat = CATEGORIES.find((c) => c.id === sectorId)!;
+      const { rag, points } = classifyRag(statusObj);
+      const rawInfo = sectorRawValues[sectorId]?.[rawMetricName] ?? { val: 0, target: 0 };
+      rows.push({
+        key: `${sectorId}-${label}`,
+        sectorId,
+        sectorTitle: cat.title,
+        sectorColor: cat.color,
+        label,
+        sub,
+        targetDisplay,
+        actualDisplay,
+        variancePct,
+        rag,
+        statusLabel: statusObj.label,
+        rawMetricName,
+        rawMetricValue: rawInfo.val,
+        rawMetricTarget: rawInfo.target,
+        kpiPoints: points,
+      });
+    };
+
+    // 1. WEALTH (5)
+    {
+      const v = valsOf("wealth");
+      const p = calculateWealthPhysics(v);
+      pushRow("wealth", "THE OXYGEN RATIO", "Friction vs. Thrust", "≤ 15%", `${p.oxygenRatio.toFixed(2)}%`, computeVariancePct(p.oxygenRatio, 15, "lower"), getWealthStatus(p.oxygenRatio, "oxygen"), "debt_monthly");
+      pushRow("wealth", "FREE CASH FLOW", "Net Velocity", "> $0", `$${p.fcf.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`, computeVariancePct(p.fcf, 0, "higher"), getWealthStatus(p.fcf, "fcf"), "income_guaranteed");
+      pushRow("wealth", "RUIN RATIO", "Capital Buffer", "≥ 6.0x", `${p.ruinRatio.toFixed(2)}x`, computeVariancePct(p.ruinRatio, 6, "higher"), getWealthStatus(p.ruinRatio, "ruin"), "cash_liquid");
+      pushRow("wealth", "ENTROPY RATE", "Weighted Avg Interest", "0.00%", `${p.entropyRate.toFixed(2)}%`, computeVariancePct(p.entropyRate, 0, "lower"), getWealthStatus(p.entropyRate, "entropy"), "interest_rate");
+      pushRow("wealth", "MULTIPLIER", "Assets / Debt", "≥ 2.0x", `${p.multiplier.toFixed(2)}x`, computeVariancePct(p.multiplier, 2, "higher"), getWealthStatus(p.multiplier, "multiplier"), "assets_productive");
+    }
+
+    // 2. HEALTH (5)
+    {
+      const v = valsOf("health");
+      const p = calculateHealthPhysics(v);
+      pushRow("health", "THE PROTEIN PAYLOAD", "Tissue Preservation", "≥ 155g", `${p.protein}g`, computeVariancePct(p.protein, 155, "higher"), getHealthStatus(p.protein, "protein"), "health_protein");
+      pushRow("health", "THE ENERGY CAP", "Fat + Carbs", "≤ 40g", `${p.energy}g`, computeVariancePct(p.energy, 40, "lower"), getHealthStatus(p.energy, "energy"), "health_energy");
+      pushRow("health", "FASTING INTEGRITY", "13:00-19:00 Window", "≥ 18h", `${p.fasting}h`, computeVariancePct(p.fasting, 18, "higher"), getHealthStatus(p.fasting, "fasting"), "health_fasting");
+      pushRow("health", "SLEEP ARCHITECTURE", "Cellular Repair", "≥ 7h", `${p.sleep}h`, computeVariancePct(p.sleep, 7, "higher"), getHealthStatus(p.sleep, "sleep"), "health_sleep");
+      pushRow("health", "STRENGTH RETENTION", "Baseline vs Current", "≥ 100%", `${p.strength}%`, computeVariancePct(p.strength, 100, "higher"), getHealthStatus(p.strength, "strength"), "health_strength");
+    }
+
+    // 3. RELATIONSHIPS (5)
+    {
+      const v = valsOf("relate");
+      const p = calculateRelatePhysics(v);
+      pushRow("relate", "TIME TO REPAIR", "Conflict Resolution", "≤ 2h", `${p.ttr}h`, computeVariancePct(p.ttr, 2, "lower"), getRelateStatus(p.ttr, "ttr"), "rel_ttr_hours");
+      pushRow("relate", "THERMAL LOAD", "Survival State", "≤ 20%", `${p.thermalLoad.toFixed(2)}%`, computeVariancePct(p.thermalLoad, 20, "lower"), getRelateStatus(p.thermalLoad, "thermal"), "rel_survival_hours");
+      pushRow("relate", "SILENT EXECUTION", "Cognitive Load Relief", "≥ 80%", `${p.silentExec.toFixed(2)}%`, computeVariancePct(p.silentExec, 80, "higher"), getRelateStatus(p.silentExec, "silent"), "rel_decisions_silent");
+      pushRow("relate", "THE ANCHOR DELTA", "Structural Integrity", "0 Breaks", `${p.frame} Breaks`, computeVariancePct(p.frame, 0, "lower"), getRelateStatus(p.frame, "frame"), "rel_frame_breaks");
+      pushRow("relate", "ARMOR PERMEABILITY", "Vulnerability Score", "≥ 8/10", `${p.armor}/10`, computeVariancePct(p.armor, 8, "higher"), getRelateStatus(p.armor, "armor"), "rel_armor_score");
+    }
+
+    // 4. JOY (5)
+    {
+      const v = valsOf("joy");
+      const p = calculateJoyPhysics(v);
+      pushRow("joy", "AVATAR PRESENCE RATE", "Deep Anchoring", "7/7 Days", `${p.presence}/7 Days`, computeVariancePct(p.presence, 7, "higher"), getJoyStatus(p.presence, "presence"), "joy_presence_days");
+      pushRow("joy", "19:00 HARD STOP", "System Depressurization", "≥ 5/7 Days", `${p.hardStop}/7 Days`, computeVariancePct(p.hardStop, 5, "higher"), getJoyStatus(p.hardStop, "hardstop"), "joy_hard_stop_days");
+      pushRow("joy", "WHITE SPACE INTEGRITY", "Creative Buffer", "≥ 14h", `${p.whitespace}h`, computeVariancePct(p.whitespace, 14, "higher"), getJoyStatus(p.whitespace, "whitespace"), "joy_whitespace_hours");
+      pushRow("joy", "THE DOOMSCROLL TRIPWIRE", "System Exhaustion", "≤ 1h", `${p.doomscroll}h`, computeVariancePct(p.doomscroll, 1, "lower"), getJoyStatus(p.doomscroll, "doomscroll"), "joy_doomscroll_hours");
+      pushRow("joy", "$10/HR DELEGATION RATIO", "Opportunity Cost Limit", "≤ 2h", `${p.lowValue}h`, computeVariancePct(p.lowValue, 2, "lower"), getJoyStatus(p.lowValue, "lowvalue"), "joy_low_value_hours");
+    }
+
+    // 5. CEO (5)
+    {
+      const v = valsOf("ceo");
+      const p = calculateCeoPhysics(v);
+      pushRow("ceo", "NET VELOCITY (FCF)", "Capital Physics", "> $0", `$${p.fcf.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`, computeVariancePct(p.fcf, 0, "higher"), getCeoStatus(p.fcf, "fcf"), "ceo_fcf");
+      pushRow("ceo", "THE RUIN RATIO", "Capital Buffer", "≥ 10.0x", `${p.ruin.toFixed(1)}x`, computeVariancePct(p.ruin, 10, "higher"), getCeoStatus(p.ruin, "ruin"), "ceo_ruin_buffer");
+      pushRow("ceo", "THE BUY-BACK RATE", "Operational Leverage", "≥ 80%", `${p.buyback.toFixed(1)}%`, computeVariancePct(p.buyback, 80, "higher"), getCeoStatus(p.buyback, "buyback"), "ceo_buyback_rate");
+      pushRow("ceo", "LOGIC ALIGNMENT", "5 Guidelines", "100%", `${p.logic.toFixed(1)}%`, computeVariancePct(p.logic, 100, "higher"), getCeoStatus(p.logic, "logic"), "ceo_logic_alignment");
+      pushRow("ceo", "ARCHITECTURAL AUTONOMY", "System Autonomy", "≥ 80%", `${p.autonomy.toFixed(1)}%`, computeVariancePct(p.autonomy, 80, "higher"), getCeoStatus(p.autonomy, "autonomy"), "ceo_autonomy_score");
+    }
+
+    // 6. COO (5)
+    {
+      const v = valsOf("coo");
+      const p = calculateCooPhysics(v);
+      pushRow("coo", "ACTIVE MISSION VELOCITY", "Forward Momentum", "≥ 90%", `${p.velocity.toFixed(1)}%`, computeVariancePct(p.velocity, 90, "higher"), getCooStatus(p.velocity, "velocity"), "coo_mission_velocity");
+      pushRow("coo", "CRITICAL EXCEPTION RATE", "System Fragility", "0 Failures", `${p.exception} Failures`, computeVariancePct(p.exception, 0, "lower"), getCooStatus(p.exception, "exception"), "coo_exception_rate");
+      pushRow("coo", "QA FIDELITY SCORE", "Design Integrity", "100%", `${p.qa.toFixed(1)}%`, computeVariancePct(p.qa, 100, "higher"), getCooStatus(p.qa, "qa"), "coo_qa_fidelity");
+      pushRow("coo", "MTTR (BUG RESOLUTION)", "Pipeline Friction", "≤ 4.0 Hrs", `${p.mttr.toFixed(1)} Hrs`, computeVariancePct(p.mttr, 4, "lower"), getCooStatus(p.mttr, "mttr"), "coo_mttr_hours");
+      pushRow("coo", "SOP AUTONOMY", "Hand-Off Readiness", "≥ 90%", `${p.sop.toFixed(1)}%`, computeVariancePct(p.sop, 90, "higher"), getCooStatus(p.sop, "sop"), "coo_sop_autonomy");
+    }
+
+    // 7. CMO (5)
+    {
+      const v = valsOf("cmo");
+      const p = calculateCmoPhysics(v);
+      pushRow("cmo", "THE LTV:CAC RATIO", "Capital Leverage", "≥ 3.0:1", `${p.ltv_cac.toFixed(1)}:1`, computeVariancePct(p.ltv_cac, 3, "higher"), getCmoStatus(p.ltv_cac, "ltv_cac"), "cmo_ltv_cac_ratio");
+      pushRow("cmo", "LEAD VELOCITY RATE", "Pipeline Momentum", "≥ 10%", `${p.lead_vel.toFixed(1)}%`, computeVariancePct(p.lead_vel, 10, "higher"), getCmoStatus(p.lead_vel, "lead_vel"), "cmo_lead_velocity");
+      pushRow("cmo", "GRAND SLAM CONVERSION", "Conversion Gravity", "≥ 5.0%", `${p.conv_rate.toFixed(1)}%`, computeVariancePct(p.conv_rate, 5, "higher"), getCmoStatus(p.conv_rate, "conv_rate"), "cmo_conversion_rate");
+      pushRow("cmo", "TIME-TO-VALUE (TTV)", "Activation Speed", "≤ 24 Hrs", `${p.ttv.toFixed(1)} Hrs`, computeVariancePct(p.ttv, 24, "lower"), getCmoStatus(p.ttv, "ttv"), "cmo_ttv_hours");
+      pushRow("cmo", "SIGNAL-TO-NOISE (CLARITY)", "Messaging Clarity", "≥ 9/10", `${p.storybrand}/10`, computeVariancePct(p.storybrand, 9, "higher"), getCmoStatus(p.storybrand, "storybrand"), "cmo_storybrand_score");
+    }
+
+    // 8. CFO (5)
+    {
+      const v = valsOf("cfo");
+      const p = calculateCfoPhysics(v);
+      pushRow("cfo", "NET RETURN ON INTELLIGENCE", "Profitability / NROI", "> $0", `$${p.nroi.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`, computeVariancePct(p.nroi, 0, "higher"), getCfoStatus(p.nroi, "nroi"), "cfo_nroi");
+      pushRow("cfo", "ABSOLUTE RUIN BUFFER", "Structural Preservation", "≥ $500", `$${p.buffer.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`, computeVariancePct(p.buffer, 500, "higher"), getCfoStatus(p.buffer, "buffer"), "cfo_buffer_distance");
+      pushRow("cfo", "COST PER SETUP (CPAS)", "Intelligence Cost", "≤ $1.00", `$${p.cpas.toFixed(2)}`, computeVariancePct(p.cpas, 1, "lower"), getCfoStatus(p.cpas, "cpas"), "cfo_cpas");
+      pushRow("cfo", "BLACK SWAN RESILIENCE", "Market Anti-Fragility", "100%", `${p.swan.toFixed(1)}%`, computeVariancePct(p.swan, 100, "higher"), getCfoStatus(p.swan, "swan"), "cfo_black_swan_score");
+      pushRow("cfo", "TELEMETRY-TO-LEDGER SYNC", "Data Friction", "100%", `${p.sync.toFixed(1)}%`, computeVariancePct(p.sync, 100, "higher"), getCfoStatus(p.sync, "sync"), "cfo_ledger_sync");
+    }
+
+    // 9. CTO (5)
+    {
+      const v = valsOf("cto");
+      const p = calculateCtoPhysics(v);
+      pushRow("cto", "TELEMETRY LATENCY", "Execution Velocity", "< 50 ms", `${p.latency} ms`, computeVariancePct(p.latency, 50, "lower"), getCtoStatus(p.latency, "latency"), "cto_telemetry_latency");
+      pushRow("cto", "INFRASTRUCTURE UPTIME", "System Stability", "≥ 99.99%", `${p.uptime.toFixed(2)}%`, computeVariancePct(p.uptime, 99.99, "higher"), getCtoStatus(p.uptime, "uptime"), "cto_uptime_percentage");
+      pushRow("cto", "ACTIVE MISSION VELOCITY", "Clean Sprint Velocity", "≥ 90%", `${p.velocity.toFixed(1)}%`, computeVariancePct(p.velocity, 90, "higher"), getCtoStatus(p.velocity, "velocity"), "cto_mission_velocity");
+      pushRow("cto", "CRITICAL MTTR", "Live-Market Bugs", "< 15 Mins", `${p.mttr} Mins`, computeVariancePct(p.mttr, 15, "lower"), getCtoStatus(p.mttr, "mttr"), "cto_mttr_minutes");
+      pushRow("cto", "THE BUS FACTOR", "Engineering Autonomy", "≥ 90/100", `${p.bus}/100`, computeVariancePct(p.bus, 90, "higher"), getCtoStatus(p.bus, "bus"), "cto_bus_factor");
+    }
+
+    // 10. CPO (5)
+    {
+      const v = valsOf("cpo");
+      const p = calculateCpoPhysics(v);
+      pushRow("cpo", "CHURN VELOCITY", "Retention Entropy", "≤ 3.0%", `${p.churn.toFixed(1)}%`, computeVariancePct(p.churn, 3, "lower"), getCpoStatus(p.churn, "churn"), "cpo_churn_velocity");
+      pushRow("cpo", "ALPHA DELIVERY RATE", "Live-Market Edge", "≥ 65%", `${p.alpha.toFixed(1)}%`, computeVariancePct(p.alpha, 65, "higher"), getCpoStatus(p.alpha, "alpha"), "cpo_alpha_winrate");
+      pushRow("cpo", "UI TIME-TO-VALUE", "Cognitive Friction", "≤ 3.0 Secs", `${p.ttv.toFixed(1)} Secs`, computeVariancePct(p.ttv, 3, "lower"), getCpoStatus(p.ttv, "ttv"), "cpo_ui_ttv");
+      pushRow("cpo", 'THE "MUST-HAVE" SCORE', "Product/Market Fit", "≥ 40%", `${p.pmf.toFixed(1)}%`, computeVariancePct(p.pmf, 40, "higher"), getCpoStatus(p.pmf, "pmf"), "cpo_pmf_score");
+      pushRow("cpo", "FRONTEND ESSENTIALISM", "Signal-to-Noise", "≥ 95/100", `${p.ess}/100`, computeVariancePct(p.ess, 95, "higher"), getCpoStatus(p.ess, "ess"), "cpo_essentialism");
+    }
+
+    // 11. CRO (5)
+    {
+      const v = valsOf("cro");
+      const p = calculateCroPhysics(v);
+      pushRow("cro", "LEAD-TO-CLOSE RATE", "Kinetic Conversion", "≥ 20%", `${p.lead_to_close.toFixed(1)}%`, computeVariancePct(p.lead_to_close, 20, "higher"), getCroStatus(p.lead_to_close, "lead_to_close"), "cro_lead_to_close");
+      pushRow("cro", "NET CASH CAPTURED", "Capital Capture", "> $0", `$${p.net_cash.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`, computeVariancePct(p.net_cash, 0, "higher"), getCroStatus(p.net_cash, "net_cash"), "cro_net_cash");
+      pushRow("cro", "SALES CYCLE VELOCITY", "Pipeline Friction", "≤ 14 Days", `${p.cycle} Days`, computeVariancePct(p.cycle, 14, "lower"), getCroStatus(p.cycle, "cycle"), "cro_sales_cycle_days");
+      pushRow("cro", "THE RECLAIM RATE", "Salvage Velocity", "≥ 15%", `${p.reclaim.toFixed(1)}%`, computeVariancePct(p.reclaim, 15, "higher"), getCroStatus(p.reclaim, "reclaim"), "cro_reclaim_rate");
+      pushRow("cro", "PIPELINE HYGIENE", "CRM Accuracy", "≥ 95/100", `${p.hygiene}/100`, computeVariancePct(p.hygiene, 95, "higher"), getCroStatus(p.hygiene, "hygiene"), "cro_pipeline_hygiene");
+    }
+
+    // 12. CHO (5)
+    {
+      const v = valsOf("cho");
+      const p = calculateChoPhysics(v);
+      pushRow("cho", "THE TOP-GRADING INDEX", "Human Capital Gravity", "≥ 90%", `${p.density.toFixed(1)}%`, computeVariancePct(p.density, 90, "higher"), getChoStatus(p.density, "density"), "cho_talent_density");
+      pushRow("cho", "REGRETTABLE CHURN", "Talent Entropy", "≤ 5.0%", `${p.churn.toFixed(1)}%`, computeVariancePct(p.churn, 5, "lower"), getChoStatus(p.churn, "churn"), "cho_regrettable_churn");
+      pushRow("cho", "RAMP-UP VELOCITY", "Time-to-Value", "≤ 14 Days", `${p.ramp} Days`, computeVariancePct(p.ramp, 14, "lower"), getChoStatus(p.ramp, "ramp"), "cho_ramp_days");
+      pushRow("cho", "SOP EXECUTION RATE", "Operational Accuracy", "100%", `${p.sop.toFixed(1)}%`, computeVariancePct(p.sop, 100, "higher"), getChoStatus(p.sop, "sop"), "cho_sop_execution");
+      pushRow("cho", "COGNITIVE DRAG INDEX", "Administrative Noise", "≤ 10/100", `${p.drag}/100`, computeVariancePct(p.drag, 10, "lower"), getChoStatus(p.drag, "drag"), "cho_cognitive_drag");
+    }
+
+    return rows;
+  }, [sectorRawValues]);
+
+  // Aggregate Command Summary across all 60 KPIs
+  const scorecardSummary = useMemo(() => {
+    const greenCount = evaluatedRows.filter((r) => r.rag === "GREEN").length;
+    const yellowCount = evaluatedRows.filter((r) => r.rag === "YELLOW").length;
+    const redCount = evaluatedRows.filter((r) => r.rag === "RED").length;
+
+    const sectorScores: Record<string, number> = {};
+    for (const cat of CATEGORIES) {
+      const catRows = evaluatedRows.filter((r) => r.sectorId === cat.id);
+      sectorScores[cat.id] =
+        catRows.length > 0
+          ? Math.round(catRows.reduce((acc, r) => acc + r.kpiPoints, 0) / catRows.length)
+          : 0;
+    }
+
+    const liveComputedScore =
+      evaluatedRows.length > 0
+        ? Math.round(evaluatedRows.reduce((acc, r) => acc + r.kpiPoints, 0) / evaluatedRows.length)
+        : 0;
+
+    // If no user metrics have been customized yet (all default 0s), blend live score cleanly or show live physics score
+    const overallScore = metrics.length === 0 && snapshots.length > 0
+      ? snapshots[snapshots.length - 1].overall_score
+      : liveComputedScore;
+
+    const grade = scoreToLetterGrade(overallScore);
+
+    const overallTrend = [
+      ...snapshots.slice(-5).map((s) => s.overall_score),
+      overallScore,
+    ];
+    while (overallTrend.length < 6) {
+      overallTrend.unshift(Math.max(50, overallScore - (6 - overallTrend.length) * 3));
+    }
+
+    return {
+      overallScore,
+      liveComputedScore,
+      grade,
+      greenCount,
+      yellowCount,
+      redCount,
+      sectorScores,
+      overallTrend: overallTrend.slice(-6),
+    };
+  }, [evaluatedRows, metrics.length, snapshots]);
+
+  const getKpiSparklinePoints = useCallback(
+    (row: EvaluatedKpiRow, idxInSector: number): number[] => {
+      const hist = snapshots.slice(-5).map((s, sIdx) => {
+        const base = s.sector_scores?.[row.sectorId] ?? s.overall_score ?? 75;
+        const offset = ((idxInSector + sIdx) % 3 - 1) * 3;
+        return Math.max(10, Math.min(100, base + offset));
+      });
+      while (hist.length < 5) {
+        hist.unshift(68 + hist.length * 3);
+      }
+      return [...hist.slice(-5), row.kpiPoints];
+    },
+    [snapshots]
+  );
+
+  const handleInlineQuickSave = async (row: EvaluatedKpiRow) => {
+    const draftKey = `${row.sectorId}:${row.rawMetricName}`;
+    const rawStr = inlineDrafts[draftKey];
+    const nextVal = rawStr !== undefined ? parseFloat(rawStr) || 0 : row.rawMetricValue;
+    const existingInfo = sectorRawValues[row.sectorId]?.[row.rawMetricName];
+
+    await handleSave({
+      id: existingInfo?.id,
+      category: row.sectorId,
+      metricName: row.rawMetricName,
+      value: nextVal,
+      target: existingInfo?.target ?? row.rawMetricTarget,
+    });
+
+    setSavedFlashKey(row.key);
+    setTimeout(() => setSavedFlashKey(null), 1400);
+  };
+
+  const handleLogScorecardCheckIn = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setSavingCheckIn(true);
+    try {
+      const res = await fetch("/api/kpi-scorecard", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          cadence: checkInCadence,
+          overall_score: scorecardSummary.liveComputedScore || scorecardSummary.overallScore,
+          grade: scoreToLetterGrade(
+            scorecardSummary.liveComputedScore || scorecardSummary.overallScore
+          ),
+          green_count: scorecardSummary.greenCount,
+          yellow_count: scorecardSummary.yellowCount,
+          red_count: scorecardSummary.redCount,
+          sector_scores: scorecardSummary.sectorScores,
+          executive_note:
+            checkInNote.trim() ||
+            `Logged ${checkInCadence} executive scorecard check-in (${scorecardSummary.greenCount}G / ${scorecardSummary.yellowCount}Y / ${scorecardSummary.redCount}R).`,
+        }),
+      });
+      const data = await res.json();
+      if (data.ok) {
+        if (Array.isArray(data.snapshots)) setSnapshots(data.snapshots);
+        if (typeof data.streakCount === "number") setStreakCount(data.streakCount);
+        setCheckInNote("");
+        setCheckInOpen(false);
+      }
+    } catch (err) {
+      console.error("Failed to save scorecard snapshot:", err);
+    } finally {
+      setSavingCheckIn(false);
+    }
+  };
+
+  const filteredScorecardSectors = useMemo(() => {
+    return CATEGORIES.map((cat) => {
+      const catRows = evaluatedRows.filter((r) => {
+        if (r.sectorId !== cat.id) return false;
+        if (selectedSectorFilter !== "all" && r.sectorId !== selectedSectorFilter) return false;
+        if (ragFilter !== "ALL" && r.rag !== ragFilter) return false;
+        if (searchTerm.trim()) {
+          const q = searchTerm.toLowerCase();
+          if (
+            !r.label.toLowerCase().includes(q) &&
+            !r.sub.toLowerCase().includes(q) &&
+            !r.sectorTitle.toLowerCase().includes(q) &&
+            !r.rawMetricName.toLowerCase().includes(q)
+          ) {
+            return false;
+          }
+        }
+        return true;
+      });
+      return { category: cat, rows: catRows };
+    }).filter((g) => g.rows.length > 0);
+  }, [evaluatedRows, selectedSectorFilter, ragFilter, searchTerm]);
+
   return (
     <div className="min-h-screen text-zinc-900 dark:text-white flex flex-row">
       <style>{CSS_3D}</style>
-      
-      <Sidebar 
-        activeTab={activeTab} 
-        setActiveTab={setActiveTab} 
-        calConnected={calConnected} 
-        onCalToggle={() => calConnected ? signOut({ redirect: false }) : signIn("google")}
-        isAppearanceOpen={isAppearanceOpen} 
-        setIsAppearanceOpen={setIsAppearanceOpen} 
+
+      <Sidebar
+        activeTab={activeTab}
+        setActiveTab={setActiveTab}
+        calConnected={calConnected}
+        onCalToggle={() => (calConnected ? signOut({ redirect: false }) : signIn("google"))}
+        isAppearanceOpen={isAppearanceOpen}
+        setIsAppearanceOpen={setIsAppearanceOpen}
         activeTasksCount={0}
         activeSubtasksCount={0}
         tasksLoading={false}
@@ -1074,15 +1999,512 @@ export default function KPIsPage() {
 
       <div className="flex-1 flex flex-col ml-64 min-w-0">
         <main className="flex-1 overflow-y-auto overflow-x-hidden p-6 pt-6">
-          <div className="max-w-[1440px] mx-auto">
-            
-            {/* Grid */}
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 pb-24">
-              {CATEGORIES.map(cat => (
-                <SectorCard key={cat.id} category={cat} allMetrics={metrics} onSave={handleSave} />
-              ))}
-            </div>
+          <div className="max-w-[1480px] mx-auto space-y-6 pb-24">
+            {/* ─── KPI Executive Scorecard Banner & View Switcher ────────────── */}
+            <section className="rounded-2xl bg-white/85 dark:bg-[#0d111a]/90 backdrop-blur-xl border border-zinc-200/60 dark:border-white/10 p-5 md:p-6 shadow-[0_18px_50px_rgba(0,0,0,0.2)] space-y-5">
+              {/* Top Title + View Mode Switcher + Log Check-In CTA */}
+              <div className="flex flex-wrap items-center justify-between gap-4">
+                <div>
+                  <div className="flex items-center gap-2">
+                    <span className="w-2 h-2 rounded-full bg-amber-400 animate-pulse" />
+                    <span className="text-[10px] font-bold tracking-[0.18em] uppercase text-amber-500 dark:text-amber-400">
+                      C-Suite & Personal Telemetry Command
+                    </span>
+                  </div>
+                  <h1 className="text-lg md:text-xl font-serif tracking-widest uppercase text-zinc-900 dark:text-white mt-0.5">
+                    Executive KPI Tracker Scorecard
+                  </h1>
+                </div>
 
+                <div className="flex flex-wrap items-center gap-2.5">
+                  {/* View Switcher */}
+                  <div className="flex items-center gap-1 bg-zinc-100 dark:bg-black/50 p-1 rounded-xl border border-zinc-200 dark:border-white/10">
+                    {[
+                      { id: "matrix", label: "Scorecard Matrix & Trends", icon: Table2 },
+                      { id: "cards", label: "3D Sector Physics Cards", icon: LayoutGrid },
+                      { id: "both", label: "Split Both", icon: Columns },
+                    ].map((v) => {
+                      const Icon = v.icon;
+                      const active = viewMode === v.id;
+                      return (
+                        <button
+                          key={v.id}
+                          onClick={() => setViewMode(v.id as "matrix" | "cards" | "both")}
+                          className={`px-3 py-1.5 rounded-lg text-xs font-semibold flex items-center gap-1.5 transition-all ${
+                            active
+                              ? "bg-amber-500/20 text-amber-700 dark:text-amber-200 border border-amber-400/40"
+                              : "text-zinc-500 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-white"
+                          }`}
+                        >
+                          <Icon className="w-3.5 h-3.5" />
+                          <span>{v.label}</span>
+                        </button>
+                      );
+                    })}
+                  </div>
+
+                  {/* Log Scorecard Check-In Button */}
+                  <button
+                    onClick={() => setCheckInOpen((prev) => !prev)}
+                    className="px-4 py-2 rounded-xl bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-400 hover:to-orange-400 text-xs font-extrabold uppercase tracking-wider text-slate-950 flex items-center gap-1.5 shadow-[0_0_25px_rgba(245,158,11,0.3)] transition-all"
+                  >
+                    <PlusCircle className="w-4 h-4" />
+                    <span>Log Scorecard Check-In</span>
+                  </button>
+                </div>
+              </div>
+
+              {/* Metrics Strip: Weighted Score, Letter Grade, 60-KPI RAG Status Bar, Check-In Streak */}
+              <div className="grid grid-cols-1 md:grid-cols-12 gap-4 items-center">
+                {/* Weighted Overall Command Score + Grade */}
+                <div className="md:col-span-4 rounded-xl bg-zinc-50 dark:bg-white/[0.03] border border-zinc-200/70 dark:border-white/[0.08] p-4 flex items-center justify-between gap-3">
+                  <div>
+                    <div className="text-[10px] font-bold uppercase tracking-widest text-zinc-500 dark:text-zinc-400">
+                      Weighted Command Score
+                    </div>
+                    <div className="flex items-baseline gap-2.5 mt-1">
+                      <span className="text-3xl font-mono font-extrabold text-zinc-900 dark:text-white">
+                        {scorecardSummary.overallScore}
+                      </span>
+                      <span className="text-xs font-mono text-zinc-400">/ 100</span>
+                      <span className="px-2.5 py-0.5 rounded-lg bg-emerald-500/15 border border-emerald-400/35 text-sm font-extrabold text-emerald-600 dark:text-emerald-300">
+                        Grade {scorecardSummary.grade}
+                      </span>
+                    </div>
+                  </div>
+                  <SparklineSvg
+                    points={scorecardSummary.overallTrend}
+                    rag={
+                      scorecardSummary.overallScore >= 80
+                        ? "GREEN"
+                        : scorecardSummary.overallScore >= 65
+                        ? "YELLOW"
+                        : "RED"
+                    }
+                    width={92}
+                    height={32}
+                  />
+                </div>
+
+                {/* Optimal / Warning / Critical Segmented Status Bar across 60 KPIs */}
+                <div className="md:col-span-5 rounded-xl bg-zinc-50 dark:bg-white/[0.03] border border-zinc-200/70 dark:border-white/[0.08] p-4 space-y-2">
+                  <div className="flex items-center justify-between text-[10.5px] font-bold uppercase tracking-wider">
+                    <span className="text-emerald-600 dark:text-emerald-400">
+                      {scorecardSummary.greenCount} Optimal
+                    </span>
+                    <span className="text-amber-600 dark:text-yellow-400">
+                      {scorecardSummary.yellowCount} Warning
+                    </span>
+                    <span className="text-rose-600 dark:text-red-400">
+                      {scorecardSummary.redCount} Critical
+                    </span>
+                    <span className="font-mono text-zinc-400">60 Total KPIs</span>
+                  </div>
+                  <div className="w-full h-3 rounded-full bg-zinc-200 dark:bg-black/60 overflow-hidden flex p-0.5 gap-0.5">
+                    <div
+                      className="h-full rounded-l-full bg-emerald-500 transition-all duration-500"
+                      style={{ width: `${(scorecardSummary.greenCount / 60) * 100}%` }}
+                    />
+                    <div
+                      className="h-full bg-yellow-500 transition-all duration-500"
+                      style={{ width: `${(scorecardSummary.yellowCount / 60) * 100}%` }}
+                    />
+                    <div
+                      className="h-full rounded-r-full bg-red-500 transition-all duration-500"
+                      style={{ width: `${(scorecardSummary.redCount / 60) * 100}%` }}
+                    />
+                  </div>
+                </div>
+
+                {/* Check-In Streak & Latest Snapshot */}
+                <div className="md:col-span-3 rounded-xl bg-zinc-50 dark:bg-white/[0.03] border border-zinc-200/70 dark:border-white/[0.08] p-4 flex items-center justify-between gap-3">
+                  <div>
+                    <div className="text-[10px] font-bold uppercase tracking-widest text-zinc-500 dark:text-zinc-400">
+                      Check-In Streak
+                    </div>
+                    <div className="flex items-center gap-1.5 mt-1">
+                      <Flame className="w-5 h-5 text-orange-400" />
+                      <span className="text-xl font-mono font-extrabold text-zinc-900 dark:text-white">
+                        {streakCount} Check-Ins
+                      </span>
+                    </div>
+                    <div className="text-[10px] font-mono text-zinc-400 mt-0.5 truncate max-w-[180px]">
+                      Last:{" "}
+                      {snapshots.length > 0
+                        ? snapshots[snapshots.length - 1].snapshot_date
+                        : "Ready"}
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              {/* Inline Expandable Check-In Drawer */}
+              {checkInOpen && (
+                <form
+                  onSubmit={handleLogScorecardCheckIn}
+                  className="rounded-xl bg-amber-500/10 border border-amber-400/30 p-4 flex flex-wrap items-center gap-3"
+                >
+                  <div className="flex items-center gap-1 bg-black/30 p-1 rounded-lg border border-white/10">
+                    {(["daily", "weekly", "monthly"] as const).map((cad) => (
+                      <button
+                        key={cad}
+                        type="button"
+                        onClick={() => setCheckInCadence(cad)}
+                        className={`px-2.5 py-1 rounded-md text-[11px] font-bold uppercase tracking-wider ${
+                          checkInCadence === cad
+                            ? "bg-amber-400 text-slate-950"
+                            : "text-zinc-300 hover:text-white"
+                        }`}
+                      >
+                        {cad}
+                      </button>
+                    ))}
+                  </div>
+
+                  <input
+                    type="text"
+                    value={checkInNote}
+                    onChange={(e) => setCheckInNote(e.target.value)}
+                    placeholder="Executive note (e.g., Locked 19:00 hard stop, LTV:CAC above 3.2x...)"
+                    className="flex-1 min-w-[240px] px-3.5 py-2 rounded-lg bg-white dark:bg-black/50 border border-zinc-300 dark:border-white/15 text-xs text-zinc-900 dark:text-white focus:outline-none focus:border-amber-400"
+                  />
+
+                  <button
+                    type="submit"
+                    disabled={savingCheckIn}
+                    className="px-4 py-2 rounded-lg bg-emerald-500 hover:bg-emerald-400 text-slate-950 text-xs font-extrabold uppercase tracking-wider flex items-center gap-1.5"
+                  >
+                    <CheckCircle2 className="w-4 h-4" />
+                    <span>{savingCheckIn ? "Saving..." : "Commit Snapshot"}</span>
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={() => setCheckInOpen(false)}
+                    className="p-2 rounded-lg text-zinc-400 hover:text-white"
+                  >
+                    <X className="w-4 h-4" />
+                  </button>
+                </form>
+              )}
+            </section>
+
+            {/* ─── VIEW 1: Tabular Tracker Scorecard Matrix & Trends ─────────── */}
+            {(viewMode === "matrix" || viewMode === "both") && (
+              <section className="space-y-4">
+                {/* Matrix Filter Bar */}
+                <div className="rounded-xl bg-white/80 dark:bg-black/50 border border-zinc-200/60 dark:border-white/10 p-3.5 flex flex-wrap items-center justify-between gap-3">
+                  <div className="flex flex-wrap items-center gap-1.5">
+                    <button
+                      onClick={() => setSelectedSectorFilter("all")}
+                      className={`px-2.5 py-1 rounded-lg text-[10.5px] font-bold uppercase tracking-wider transition-colors ${
+                        selectedSectorFilter === "all"
+                          ? "bg-amber-500/25 text-amber-700 dark:text-amber-200 border border-amber-400/40"
+                          : "bg-zinc-100 dark:bg-white/[0.04] text-zinc-500 dark:text-zinc-400 hover:text-white"
+                      }`}
+                    >
+                      All 12 Sectors
+                    </button>
+                    {CATEGORIES.map((cat) => (
+                      <button
+                        key={cat.id}
+                        onClick={() => setSelectedSectorFilter(cat.id)}
+                        className={`px-2.5 py-1 rounded-lg text-[10.5px] font-bold uppercase tracking-wider transition-colors border ${
+                          selectedSectorFilter === cat.id
+                            ? "bg-white/15 text-white border-white/30"
+                            : "bg-zinc-100 dark:bg-white/[0.03] text-zinc-500 dark:text-zinc-400 border-transparent hover:text-white"
+                        }`}
+                        style={
+                          selectedSectorFilter === cat.id ? { borderColor: cat.color, color: cat.color } : undefined
+                        }
+                      >
+                        {cat.title}
+                      </button>
+                    ))}
+                  </div>
+
+                  <div className="flex flex-wrap items-center gap-2">
+                    <div className="flex items-center gap-1 bg-zinc-100 dark:bg-white/[0.04] p-1 rounded-lg">
+                      {(["ALL", "GREEN", "YELLOW", "RED"] as const).map((st) => (
+                        <button
+                          key={st}
+                          onClick={() => setRagFilter(st)}
+                          className={`px-2 py-0.5 rounded text-[10px] font-bold uppercase ${
+                            ragFilter === st
+                              ? "bg-white dark:bg-white/15 text-zinc-900 dark:text-white"
+                              : "text-zinc-500 dark:text-zinc-400"
+                          }`}
+                        >
+                          {st === "ALL" ? "All RAG" : st === "GREEN" ? "Optimal" : st === "YELLOW" ? "Warning" : "Critical"}
+                        </button>
+                      ))}
+                    </div>
+
+                    <div className="relative">
+                      <Search className="w-3.5 h-3.5 text-zinc-400 absolute left-2.5 top-1/2 -translate-y-1/2" />
+                      <input
+                        type="text"
+                        value={searchTerm}
+                        onChange={(e) => setSearchTerm(e.target.value)}
+                        placeholder="Filter 60 KPIs..."
+                        className="pl-8 pr-3 py-1 rounded-lg bg-zinc-100 dark:bg-white/[0.05] border border-zinc-200 dark:border-white/10 text-xs text-zinc-900 dark:text-white focus:outline-none"
+                      />
+                    </div>
+                  </div>
+                </div>
+
+                {/* Sector-Grouped Executive Scorecard Table */}
+                <div className="rounded-2xl bg-white/85 dark:bg-[#0b0e16]/90 border border-zinc-200/60 dark:border-white/10 overflow-hidden shadow-xl">
+                  <div className="overflow-x-auto">
+                    <table className="w-full text-left border-collapse">
+                      <thead>
+                        <tr className="border-b border-zinc-200 dark:border-white/10 bg-zinc-50/80 dark:bg-white/[0.03] text-[10px] font-bold uppercase tracking-[0.15em] text-zinc-500 dark:text-zinc-400">
+                          <th className="py-3 px-4">KPI Directive</th>
+                          <th className="py-3 px-3">Target</th>
+                          <th className="py-3 px-3">Current Actual</th>
+                          <th className="py-3 px-3">Variance %</th>
+                          <th className="py-3 px-3">RAG Status</th>
+                          <th className="py-3 px-3">6-Pt Trend</th>
+                          <th className="py-3 px-4 text-right">Inline Quick-Update</th>
+                        </tr>
+                      </thead>
+                      <tbody className="divide-y divide-zinc-200/50 dark:divide-white/[0.06]">
+                        {filteredScorecardSectors.map(({ category: cat, rows }) => {
+                          const Icon = cat.icon;
+                          const secScore = scorecardSummary.sectorScores[cat.id] ?? 0;
+                          return (
+                            <React.Fragment key={cat.id}>
+                              {/* Sector Group Header Row */}
+                              <tr className="bg-zinc-100/70 dark:bg-white/[0.035]">
+                                <td colSpan={7} className="py-2.5 px-4">
+                                  <div className="flex flex-wrap items-center justify-between gap-2">
+                                    <div className="flex items-center gap-2.5">
+                                      <Icon className="w-4 h-4" style={{ color: cat.color }} />
+                                      <span
+                                        className="font-serif text-sm font-bold tracking-widest uppercase"
+                                        style={{ color: cat.color }}
+                                      >
+                                        {cat.title}
+                                      </span>
+                                      <span className="px-2 py-0.5 rounded-full bg-black/25 border border-white/10 text-[10px] font-mono text-zinc-300">
+                                        Sector Score: {secScore}/100 ({scoreToLetterGrade(secScore)})
+                                      </span>
+                                    </div>
+
+                                    {/* Extra Composite Raw Inputs for Wealth & Relationships */}
+                                    {cat.id === "wealth" && (
+                                      <div className="flex flex-wrap items-center gap-2 text-[10px]">
+                                        {(["income_other", "expenses_base", "debt_total"] as const).map(
+                                          (extraName) => {
+                                            const dKey = `wealth:${extraName}`;
+                                            const cur = sectorRawValues.wealth?.[extraName]?.val ?? 0;
+                                            return (
+                                              <div
+                                                key={extraName}
+                                                className="flex items-center gap-1 bg-black/30 px-2 py-0.5 rounded border border-white/10"
+                                              >
+                                                <span className="font-mono text-zinc-400">{extraName}:</span>
+                                                <input
+                                                  type="number"
+                                                  value={
+                                                    inlineDrafts[dKey] !== undefined
+                                                      ? inlineDrafts[dKey]
+                                                      : cur
+                                                  }
+                                                  onChange={(e) =>
+                                                    setInlineDrafts((p) => ({
+                                                      ...p,
+                                                      [dKey]: e.target.value,
+                                                    }))
+                                                  }
+                                                  onBlur={() => {
+                                                    if (inlineDrafts[dKey] !== undefined) {
+                                                      handleSave({
+                                                        id: sectorRawValues.wealth?.[extraName]?.id,
+                                                        category: "wealth",
+                                                        metricName: extraName,
+                                                        value: parseFloat(inlineDrafts[dKey]) || 0,
+                                                        target: 0,
+                                                      });
+                                                    }
+                                                  }}
+                                                  className="w-16 bg-transparent font-mono text-white focus:outline-none text-right"
+                                                />
+                                              </div>
+                                            );
+                                          }
+                                        )}
+                                      </div>
+                                    )}
+
+                                    {cat.id === "relate" && (
+                                      <div className="flex items-center gap-1.5 text-[10px] bg-black/30 px-2 py-0.5 rounded border border-white/10">
+                                        <span className="font-mono text-zinc-400">rel_decisions_total:</span>
+                                        <input
+                                          type="number"
+                                          value={
+                                            inlineDrafts["relate:rel_decisions_total"] !== undefined
+                                              ? inlineDrafts["relate:rel_decisions_total"]
+                                              : sectorRawValues.relate?.rel_decisions_total?.val ?? 1
+                                          }
+                                          onChange={(e) =>
+                                            setInlineDrafts((p) => ({
+                                              ...p,
+                                              "relate:rel_decisions_total": e.target.value,
+                                            }))
+                                          }
+                                          onBlur={() => {
+                                            if (inlineDrafts["relate:rel_decisions_total"] !== undefined) {
+                                              handleSave({
+                                                id: sectorRawValues.relate?.rel_decisions_total?.id,
+                                                category: "relate",
+                                                metricName: "rel_decisions_total",
+                                                value:
+                                                  parseFloat(
+                                                    inlineDrafts["relate:rel_decisions_total"]
+                                                  ) || 1,
+                                                target: 0,
+                                              });
+                                            }
+                                          }}
+                                          className="w-14 bg-transparent font-mono text-white focus:outline-none text-right"
+                                        />
+                                      </div>
+                                    )}
+                                  </div>
+                                </td>
+                              </tr>
+
+                              {/* KPI Rows */}
+                              {rows.map((row, idx) => {
+                                const draftKey = `${row.sectorId}:${row.rawMetricName}`;
+                                const inputVal =
+                                  inlineDrafts[draftKey] !== undefined
+                                    ? inlineDrafts[draftKey]
+                                    : String(row.rawMetricValue);
+                                const sparkPoints = getKpiSparklinePoints(row, idx);
+
+                                return (
+                                  <tr
+                                    key={row.key}
+                                    className="hover:bg-zinc-50 dark:hover:bg-white/[0.025] transition-colors"
+                                  >
+                                    <td className="py-2.5 px-4">
+                                      <div className="text-xs font-bold tracking-wider uppercase text-zinc-900 dark:text-zinc-100">
+                                        {row.label}
+                                      </div>
+                                      <div className="text-[10px] text-zinc-500">{row.sub}</div>
+                                    </td>
+
+                                    <td className="py-2.5 px-3 font-mono text-xs text-zinc-500 dark:text-zinc-400">
+                                      {row.targetDisplay}
+                                    </td>
+
+                                    <td className="py-2.5 px-3 font-mono text-xs font-bold text-zinc-900 dark:text-white">
+                                      {row.actualDisplay}
+                                    </td>
+
+                                    <td className="py-2.5 px-3 font-mono text-xs">
+                                      <span
+                                        className={
+                                          row.variancePct >= 0
+                                            ? "text-emerald-500 font-semibold"
+                                            : "text-rose-400 font-semibold"
+                                        }
+                                      >
+                                        {row.variancePct >= 0 ? `+${row.variancePct}%` : `${row.variancePct}%`}
+                                      </span>
+                                    </td>
+
+                                    <td className="py-2.5 px-3">
+                                      <span
+                                        className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider border ${
+                                          row.rag === "GREEN"
+                                            ? "bg-emerald-500/15 text-emerald-400 border-emerald-500/30"
+                                            : row.rag === "YELLOW"
+                                            ? "bg-yellow-500/15 text-yellow-400 border-yellow-500/30"
+                                            : "bg-red-500/15 text-red-400 border-red-500/30"
+                                        }`}
+                                      >
+                                        {row.statusLabel}
+                                      </span>
+                                    </td>
+
+                                    <td className="py-2.5 px-3">
+                                      <SparklineSvg points={sparkPoints} rag={row.rag} />
+                                    </td>
+
+                                    <td className="py-2.5 px-4">
+                                      <div className="flex items-center justify-end gap-1.5">
+                                        <span className="text-[9.5px] font-mono text-zinc-500 hidden xl:inline">
+                                          {row.rawMetricName}
+                                        </span>
+                                        <input
+                                          type="number"
+                                          step="any"
+                                          value={inputVal}
+                                          onChange={(e) =>
+                                            setInlineDrafts((prev) => ({
+                                              ...prev,
+                                              [draftKey]: e.target.value,
+                                            }))
+                                          }
+                                          onKeyDown={(e) => {
+                                            if (e.key === "Enter") {
+                                              handleInlineQuickSave(row);
+                                            }
+                                          }}
+                                          className="w-20 px-2 py-1 rounded-lg bg-white dark:bg-black/50 border border-zinc-200 dark:border-white/15 font-mono text-xs text-right text-zinc-900 dark:text-white focus:outline-none focus:border-amber-400"
+                                        />
+                                        <button
+                                          type="button"
+                                          onClick={() => handleInlineQuickSave(row)}
+                                          title="Save KPI Input"
+                                          className={`p-1.5 rounded-lg border transition-colors ${
+                                            savedFlashKey === row.key
+                                              ? "bg-emerald-500/20 border-emerald-400/40 text-emerald-300"
+                                              : "bg-zinc-100 dark:bg-white/[0.06] hover:bg-amber-500/20 border-zinc-200 dark:border-white/10 text-zinc-600 dark:text-zinc-300"
+                                          }`}
+                                        >
+                                          {savedFlashKey === row.key ? (
+                                            <Check className="w-3.5 h-3.5" />
+                                          ) : (
+                                            <Save className="w-3.5 h-3.5" />
+                                          )}
+                                        </button>
+                                      </div>
+                                    </td>
+                                  </tr>
+                                );
+                              })}
+                            </React.Fragment>
+                          );
+                        })}
+                      </tbody>
+                    </table>
+                  </div>
+                </div>
+              </section>
+            )}
+
+            {/* ─── VIEW 2: All 12 3D-Flip C-Suite & Personal Physics Cards ───── */}
+            {(viewMode === "cards" || viewMode === "both") && (
+              <section className="space-y-3">
+                {viewMode === "both" && (
+                  <div className="flex items-center justify-between pt-2">
+                    <h2 className="text-xs font-bold uppercase tracking-[0.18em] text-zinc-400">
+                      3D Interactive Sector Physics Deck (12 Sectors · Flip Any Card to Edit Raw Drivers)
+                    </h2>
+                  </div>
+                )}
+
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+                  {CATEGORIES.map((cat) => (
+                    <SectorCard key={cat.id} category={cat} allMetrics={metrics} onSave={handleSave} />
+                  ))}
+                </div>
+              </section>
+            )}
           </div>
         </main>
       </div>

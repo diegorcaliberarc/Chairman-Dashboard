@@ -44,17 +44,31 @@
   "screenshots": [],
   "shortcuts": [
     {
-      "name": "Business Suite",
-      "short_name": "Business",
-      "description": "Open Business agent grid",
-      "url": "/?tab=business",
+      "name": "Solar Calendar & Shifts",
+      "short_name": "Calendar",
+      "description": "24-Hour Circadian Solar Arc, Habits & Shift Pay",
+      "url": "/calendar",
       "icons": [{ "src": "/icons/icon-192.png", "sizes": "192x192" }]
     },
     {
-      "name": "Personal Stack",
-      "short_name": "Personal",
-      "description": "Open Personal 4-hour blocks",
-      "url": "/?tab=personal",
+      "name": "Mobile Widgets (Big & Small)",
+      "short_name": "Widgets",
+      "description": "iPhone & Android Big & Small Live Widgets",
+      "url": "/widgets",
+      "icons": [{ "src": "/icons/icon-192.png", "sizes": "192x192" }]
+    },
+    {
+      "name": "Education Academy",
+      "short_name": "Academy",
+      "description": "Gamified Systems Engineering Master Curriculum",
+      "url": "/education",
+      "icons": [{ "src": "/icons/icon-192.png", "sizes": "192x192" }]
+    },
+    {
+      "name": "12-Month Budget",
+      "short_name": "Budget",
+      "description": "Connected 12-Month Budget & Shift Pay Ledger",
+      "url": "/budget",
       "icons": [{ "src": "/icons/icon-192.png", "sizes": "192x192" }]
     }
   ]

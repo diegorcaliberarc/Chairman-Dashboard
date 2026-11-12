@@ -3,6 +3,8 @@ import "./globals.css";
 import { Providers } from "./providers";
 import { NovaCoreWrapper } from "@/components/NovaCoreWrapper";
 import { ChairmanCopilotHUD } from "@/components/chairman/copilot/ChairmanCopilotHUD";
+import { GlassThemeController } from "@/components/GlassThemeController";
+import { DittoGengarPals } from "@/components/chairman/pixel-pals/DittoGengarPals";
 
 export const metadata: Metadata = {
   title: "Pristine Command",
@@ -75,7 +77,9 @@ export default function RootLayout({
       </head>
       <body className="min-h-screen bg-theme-gradient text-zinc-900 dark:text-zinc-50 antialiased overscroll-none">
         <Providers>
+          <GlassThemeController />
           {children}
+          <DittoGengarPals />
           <NovaCoreWrapper />
           <ChairmanCopilotHUD />
         </Providers>

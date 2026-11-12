@@ -7,12 +7,22 @@ export type EventDomain =
 
 export type MediaTypeEnum = "image" | "video_loop";
 
+export type SubtaskListStyle = "roman" | "bullets";
+
 export interface ChecklistItem {
   id: string;
   eventId?: string;
   label: string;
   isCompleted: boolean;
   sortOrder: number;
+  timeWindow?: string;
+}
+
+export interface NestedSubtaskItem {
+  id: string;
+  label: string;
+  timeWindow?: string;
+  isCompleted: boolean;
 }
 
 export interface CircadianEventDTO {
@@ -34,7 +44,212 @@ export interface CircadianEventDTO {
   telemetrySource?: string | null;
   checklists: ChecklistItem[];
   showOnWedge?: boolean; // Whether to feature as outer curved photo wedge
+  subtaskStyle?: SubtaskListStyle;
+  dailyMoneyUsed?: number;
+  anticipatedPay?: number;
+  actualPay?: number;
+  isHighlightedSpan?: boolean;
 }
+
+export interface CalendarHabitDTO {
+  id: string;
+  title: string;
+  subtitle: string;
+  unit: string;
+  targetValue: number;
+  currentValue: number;
+  pct: number;
+  ringColor: string;
+  iconName: string;
+  sortOrder: number;
+}
+
+export interface CalendarHighlightSpanDTO {
+  id: string;
+  label: string;
+  spanType: "hours" | "multi_day";
+  startMinute: number;
+  endMinute: number;
+  startDate?: string | null;
+  endDate?: string | null;
+  color: string;
+  opacity: number;
+  isActive: boolean;
+}
+
+export interface WorkShiftConfigDTO {
+  roleLabel: string;
+  payPerShift: number;
+  hourlyRate: number;
+  hoursPerShift: number;
+  totalScheduledDays: number;
+  shiftsPerWeek: number;
+}
+
+export interface WorkShiftLogDTO {
+  id: string;
+  workDate: string;
+  shiftsCount: number;
+  payRateOverride?: number | null;
+  anticipatedPay: number;
+  actualPay: number;
+  dailyExpense: number;
+  status: "worked" | "scheduled" | "off";
+  notes: string;
+  subtaskStyle: SubtaskListStyle;
+  subtasks: NestedSubtaskItem[];
+}
+
+export interface WorkPaySummaryDTO {
+  payRate: number;
+  daysWorked: number;
+  totalScheduledDays: number;
+  workedPct: number;
+  todayLogged: boolean;
+  dailyShifts: number;
+  dailyPay: number;
+  dailyExpense: number;
+  weeklyShifts: number;
+  weeklyPay: number;
+  weeklyTargetPay: number;
+  biWeeklyShifts: number;
+  biWeeklyPay: number;
+  biWeeklyTargetPay: number;
+  monthlyShifts: number;
+  monthlyPay: number;
+  monthlyActualPaid: number;
+  scheduledMonthlyTotal: number;
+  monthlyExpenseTotal: number;
+}
+
+export type AppointmentCategory =
+  | "work"
+  | "client"
+  | "medical"
+  | "personal"
+  | "financial";
+
+export interface YearlyAppointmentDTO {
+  id: string;
+  title: string;
+  category: AppointmentCategory;
+  appointmentDate: string; // YYYY-MM-DD
+  startTime: string;       // HH:MM
+  endTime: string;         // HH:MM
+  accentColor: string;
+  dailyMoneyUsed: number;
+  anticipatedPay: number;
+  actualPay: number;
+  subtaskStyle: SubtaskListStyle;
+  subtasks: NestedSubtaskItem[];
+  notes: string;
+}
+
+export interface BudgetMonthDTO {
+  id?: string;
+  budgetYear: number;
+  budgetMonth: number; // 1..12
+  incomeTarget: number;
+  expenseCap: number;
+  savingsTarget: number;
+  notes: string;
+}
+
+export interface BudgetEntryDTO {
+  id: string;
+  budgetYear: number;
+  budgetMonth: number;
+  entryDate: string;
+  entryType: "income" | "expense" | "savings";
+  category: string;
+  label: string;
+  plannedAmount: number;
+  actualAmount: number;
+  linkedSource: "manual" | "shift" | "appointment" | "life_ops";
+}
+
+export interface ConnectedMonthRollupDTO {
+  month: number; // 1..12
+  monthShort: string;
+  monthLabel: string;
+  targets: BudgetMonthDTO;
+  workedDays: number;
+  workedShifts: number;
+  scheduledDays: number;
+  shiftAnticipatedPay: number;
+  shiftActualPay: number;
+  shiftDailyExpenses: number;
+  appointmentCount: number;
+  apptAnticipatedPay: number;
+  apptActualPay: number;
+  apptDailyMoneyUsed: number;
+  manualPlannedIncome: number;
+  manualActualIncome: number;
+  manualPlannedExpense: number;
+  manualActualExpense: number;
+  manualPlannedSavings: number;
+  manualActualSavings: number;
+  totalAnticipatedIncome: number;
+  totalActualIncome: number;
+  totalActualSpend: number;
+  totalSavings: number;
+  netCashFlow: number;
+  freeCashFlowAfterSavings: number;
+  incomeVariance: number;
+}
+
+/**
+ * Convert 1-based positive integer into classic Roman Numerals (I, II, III, IV, V...)
+ */
+export function toRomanNumeral(num: number): string {
+  const n = Math.max(1, Math.min(3999, Math.floor(num)));
+  const pairs: Array<[number, string]> = [
+    [1000, "M"],
+    [900, "CM"],
+    [500, "D"],
+    [400, "CD"],
+    [100, "C"],
+    [90, "XC"],
+    [50, "L"],
+    [40, "XL"],
+    [10, "X"],
+    [9, "IX"],
+    [5, "V"],
+    [4, "IV"],
+    [1, "I"],
+  ];
+  let rem = n;
+  let out = "";
+  for (const [val, sym] of pairs) {
+    while (rem >= val) {
+      out += sym;
+      rem -= val;
+    }
+  }
+  return out;
+}
+
+export function formatSubtaskMarker(
+  indexZeroBased: number,
+  style: SubtaskListStyle = "roman"
+): string {
+  return style === "roman" ? `${toRomanNumeral(indexZeroBased + 1)}.` : "•";
+}
+
+export const CURATED_BLOCK_PALETTE: Array<{ hex: string; name: string }> = [
+  { hex: "#10b981", name: "Emerald Pulse" },
+  { hex: "#38bdf8", name: "Solar Cerulean" },
+  { hex: "#f59e0b", name: "Chairman Amber" },
+  { hex: "#8b5cf6", name: "Astral Violet" },
+  { hex: "#f97316", name: "Forge Tangerine" },
+  { hex: "#06b6d4", name: "Cryo Cyan" },
+  { hex: "#ec4899", name: "Neon Rose" },
+  { hex: "#2563eb", name: "Deep Cobalt" },
+  { hex: "#eab308", name: "Apex Gold" },
+  { hex: "#14b8a6", name: "Bio Teal" },
+  { hex: "#f43f5e", name: "Crimson Spark" },
+  { hex: "#84cc16", name: "Kinetic Lime" },
+];
 
 export const DOMAIN_CONFIG: Record<
   EventDomain,

@@ -24,6 +24,10 @@ import {
   ShieldAlert,
   Flame,
   PlugZap,
+  GraduationCap,
+  Wallet,
+  Smartphone,
+  Radar,
 } from "lucide-react";
 import { useRouter, usePathname } from "next/navigation";
 import { UserAccountModal } from "./UserAccountModal";
@@ -101,7 +105,10 @@ export function Sidebar({
       items: [
         { id: "MASTER", label: "MASTER VIEW", icon: <LayoutDashboard size={16} />, route: "/" },
         { id: "CALENDAR", label: "SOLAR CALENDAR", icon: <CalendarRange size={16} />, route: "/calendar" },
-        { id: "KPI", label: "KPIs / VITAL SIGNS", icon: <Activity size={16} />, route: "/kpis" },
+        { id: "EDUCATION", label: "EDUCATION ACADEMY", icon: <GraduationCap size={16} />, route: "/education", badge: "XP" },
+        { id: "BUDGET", label: "12M BUDGET LEDGER", icon: <Wallet size={16} />, route: "/budget" },
+        { id: "KPI", label: "KPI SCORECARD", icon: <Activity size={16} />, route: "/kpis" },
+        { id: "WIDGETS", label: "MOBILE WIDGETS", icon: <Smartphone size={16} />, route: "/widgets" },
         { id: "BUSINESS", label: "BUSINESS", icon: <Briefcase size={16} />, route: "/" },
         { id: "PERSONAL", label: "PERSONAL", icon: <User size={16} />, route: "/" },
       ],
@@ -109,6 +116,7 @@ export function Sidebar({
     {
       heading: "Execution & Strategy",
       items: [
+        { id: "MARKETING_AGENT", label: "TREND SCRUBBER", icon: <Radar size={16} />, route: "/marketing-agent", badge: "AI" },
         { id: "MACRO_OPS", label: "MACRO OPS", icon: <Utensils size={16} />, route: "/macro-ops" },
         { id: "CALIBER_ARC", label: "CALIBER ARC", icon: <TrendingUp size={16} />, route: "/caliber-arc" },
         { id: "PMS", label: "SOVEREIGN PMS", icon: <KanbanSquare size={16} />, route: "/pms" },
@@ -131,7 +139,7 @@ export function Sidebar({
 
   return (
     <>
-      <aside className="fixed left-0 top-0 h-screen w-64 flex flex-col bg-white/80 dark:bg-black/60 backdrop-blur-xl border-r border-zinc-200/50 dark:border-white/10 z-50">
+      <aside className="fixed left-0 top-0 h-screen w-64 flex flex-col liquid-glass-panel bg-white/70 dark:bg-black/55 backdrop-blur-2xl border-r border-zinc-200/60 dark:border-white/[0.12] z-50">
         
         {/* Brand / Header */}
         <div className="px-5 py-4 border-b border-zinc-200/50 dark:border-white/10 flex items-center gap-3">
