@@ -159,10 +159,10 @@ export const NUMBER_FONT_PRESETS: Array<{
 ];
 
 export const DEFAULT_FONT_KIT: FontKitConfig = {
-  letterFont: FONT_KIT_PRESETS[0].fontFamily,
-  letterFontId: "inter",
-  numberFont: NUMBER_FONT_PRESETS[1].fontFamily,
-  numberFontId: "jetbrains-mono",
+  letterFont: FONT_KIT_PRESETS[1].fontFamily, // Plus Jakarta Sans
+  letterFontId: "jakarta",
+  numberFont: NUMBER_FONT_PRESETS[5].fontFamily, // Inter Tabular Clean Sans
+  numberFontId: "tabular-sans",
   fontSize: "medium",
 };
 

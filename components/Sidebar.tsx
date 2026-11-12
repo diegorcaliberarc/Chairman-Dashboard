@@ -38,6 +38,7 @@ import {
   PanelLeft,
   Menu,
   X,
+  Dumbbell,
 } from "lucide-react";
 import { useRouter, usePathname } from "next/navigation";
 import { UserAccountModal } from "./UserAccountModal";
@@ -86,6 +87,24 @@ interface NavModuleItem {
 const ALL_MODULE_ITEMS: NavModuleItem[] = [
   // Health
   {
+    id: "WORKOUTS",
+    label: "TITAN WORKOUTS",
+    pillar: "health",
+    icon: <Dumbbell size={15} />,
+    route: "/workouts",
+    badge: "Gym",
+    description: "Bodybuilding logger, sets, rest timer & 1RM",
+  },
+  {
+    id: "CALENDAR_HABITS",
+    label: "CIRCADIAN SOLAR ARC",
+    pillar: "health",
+    icon: <CalendarRange size={15} />,
+    route: "/calendar",
+    badge: "24H",
+    description: "24-Hour solar calendar & time-lapse wheel",
+  },
+  {
     id: "MACRO_OPS",
     label: "MACRO OPS",
     pillar: "health",
@@ -93,23 +112,6 @@ const ALL_MODULE_ITEMS: NavModuleItem[] = [
     route: "/macro-ops",
     badge: "Nutrition",
     description: "Portion weighing & metabolic curves",
-  },
-  {
-    id: "CALENDAR_HABITS",
-    label: "CIRCADIAN & HABITS",
-    pillar: "health",
-    icon: <CalendarRange size={15} />,
-    route: "/calendar",
-    badge: "360°",
-    description: "24-Hour solar arc & weight-loss walk ring",
-  },
-  {
-    id: "HEALTH_KPIS",
-    label: "HEALTH VITALS",
-    pillar: "health",
-    icon: <Activity size={15} />,
-    route: "/kpis",
-    description: "Protein, fasting & sleep architecture",
   },
 
   // Wealth
@@ -157,14 +159,6 @@ const ALL_MODULE_ITEMS: NavModuleItem[] = [
     route: "/pms",
     description: "ClickUp PMS & sprint velocity",
   },
-  {
-    id: "BUSINESS",
-    label: "BUSINESS VIEW",
-    pillar: "wealth",
-    icon: <Briefcase size={15} />,
-    route: "/",
-    description: "C-Suite executive delegation grid",
-  },
 
   // Relationships
   {
@@ -175,14 +169,6 @@ const ALL_MODULE_ITEMS: NavModuleItem[] = [
     route: "/pods",
     badge: "Shared",
     description: "Shared goals, bucket list & connection",
-  },
-  {
-    id: "PERSONAL",
-    label: "PERSONAL STACK",
-    pillar: "relationships",
-    icon: <User size={15} />,
-    route: "/",
-    description: "Personal power blocks & strike cards",
   },
   {
     id: "MINDSET",

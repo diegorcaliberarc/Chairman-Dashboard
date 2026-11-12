@@ -1,4 +1,5 @@
 export type GlassPresetId =
+  | "eco-glass"
   | "northpeak-light"
   | "northpeak-dark"
   | "aura-spatial"
@@ -223,6 +224,40 @@ export function makeStopFromHsl(
 // ─── 6 Rich Built-In Liquid Glass Presets ─────────────────────────────────────
 
 export const GLASS_PRESETS: GlassPresetDefinition[] = [
+  {
+    id: "eco-glass",
+    name: "Eco Ambient Glass (Zia)",
+    subtitle: "Warm out-of-focus architectural depth with smoky frosted glass, specular highlights & serene spacing",
+    badge: "ECO HOME GLASS",
+    colorMode: "dark",
+    isSpatial: true,
+    bgBase: "#090B10",
+    surfaceRgb: "14, 18, 28",
+    surfaceElevatedRgb: "22, 28, 42",
+    borderRgba: "rgba(255, 255, 255, 0.12)",
+    specularTopRgba: "rgba(255, 255, 255, 0.36)",
+    specularSideRgba: "rgba(255, 255, 255, 0.14)",
+    shadowCss:
+      "0 24px 60px -16px rgba(0, 0, 0, 0.78), 0 4px 18px -4px rgba(245, 158, 11, 0.08)",
+    textPrimary: "#F8FAFC",
+    textMuted: "#94A3B8",
+    aura1: "rgba(245, 158, 11, 0.22)",
+    aura2: "rgba(99, 102, 241, 0.18)",
+    aura3: "rgba(16, 185, 129, 0.14)",
+    aura4: "rgba(217, 119, 6, 0.20)",
+    defaultConfig: {
+      presetId: "eco-glass",
+      colorMode: "dark",
+      wheelStops: [
+        makeStopFromHex("primary", "#F59E0B"),
+        makeStopFromHex("secondary", "#6366F1"),
+        makeStopFromHex("aura", "#10B981"),
+      ],
+      gradAngle: 145,
+      glassBlur: 28,
+      glassOpacity: 0.58,
+    },
+  },
   {
     id: "northpeak-light",
     name: "Northpeak Pastel Glass",

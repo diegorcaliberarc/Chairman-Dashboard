@@ -10,6 +10,7 @@ import {
   Minimize2,
   Move,
   Shuffle,
+  GripVertical,
 } from "lucide-react";
 
 /* ============================================================================
@@ -32,6 +33,7 @@ interface PersistedPalsState {
   dockPosition: DockPosition;
   mode: PalsMode;
   bondClicks: number;
+  customCoords?: { x: number; y: number } | null;
 }
 
 interface FloatingHeart {
@@ -637,6 +639,16 @@ export function DittoGengarPals() {
   const [mode, setMode] = useState<PalsMode>("auto");
   const [activeScenario, setActiveScenario] = useState<ScenarioId>("playing");
   const [bondClicks, setBondClicks] = useState<number>(0);
+  const [customCoords, setCustomCoords] = useState<{ x: number; y: number } | null>(null);
+  const [isDragging, setIsDragging] = useState(false);
+
+  const containerRef = useRef<HTMLDivElement | null>(null);
+  const dragStartRef = useRef<{
+    startX: number;
+    startY: number;
+    initX: number;
+    initY: number;
+  }>({ startX: 0, startY: 0, initX: 0, initY: 0 });
 
   const [frameTick, setFrameTick] = useState(0);
   const [countdown, setCountdown] = useState(AUTO_ROTATE_SECONDS);
@@ -666,6 +678,9 @@ export function DittoGengarPals() {
           parsed.dockPosition === "top-center"
         ) {
           setDockPosition(parsed.dockPosition);
+        }
+        if (parsed.customCoords && typeof parsed.customCoords.x === "number" && typeof parsed.customCoords.y === "number") {
+          setCustomCoords(parsed.customCoords);
         }
         if (typeof parsed.bondClicks === "number" && parsed.bondClicks >= 0) {
           setBondClicks(parsed.bondClicks);
@@ -701,12 +716,55 @@ export function DittoGengarPals() {
         dockPosition,
         mode,
         bondClicks,
+        customCoords,
       };
       window.localStorage.setItem(STORAGE_KEY, JSON.stringify(stateToSave));
     } catch {
       // Ignore storage quota errors
     }
-  }, [hydrated, minimized, dockPosition, mode, bondClicks]);
+  }, [hydrated, minimized, dockPosition, mode, bondClicks, customCoords]);
+
+  // Pointer Drag Handlers
+  const handleDragPointerDown = useCallback((e: React.PointerEvent) => {
+    if ((e.target as HTMLElement).closest("button:not([data-drag-handle])") || (e.target as HTMLElement).closest("input")) {
+      return;
+    }
+    const rect = containerRef.current?.getBoundingClientRect();
+    const curX = rect ? rect.left : (customCoords?.x ?? 280);
+    const curY = rect ? rect.top : (customCoords?.y ?? (typeof window !== "undefined" ? window.innerHeight - 130 : 500));
+    dragStartRef.current = {
+      startX: e.clientX,
+      startY: e.clientY,
+      initX: curX,
+      initY: curY,
+    };
+    setIsDragging(true);
+    try {
+      (e.currentTarget as HTMLElement).setPointerCapture(e.pointerId);
+    } catch {}
+  }, [customCoords]);
+
+  const handleDragPointerMove = useCallback((e: React.PointerEvent) => {
+    if (!isDragging) return;
+    const dx = e.clientX - dragStartRef.current.startX;
+    const dy = e.clientY - dragStartRef.current.startY;
+    const width = minimized ? 150 : 315;
+    const height = minimized ? 44 : 120;
+    const winW = typeof window !== "undefined" ? window.innerWidth : 1200;
+    const winH = typeof window !== "undefined" ? window.innerHeight : 800;
+    const nextX = Math.max(8, Math.min(winW - width, dragStartRef.current.initX + dx));
+    const nextY = Math.max(8, Math.min(winH - height, dragStartRef.current.initY + dy));
+    setCustomCoords({ x: Math.round(nextX), y: Math.round(nextY) });
+  }, [isDragging, minimized]);
+
+  const handleDragPointerUp = useCallback((e: React.PointerEvent) => {
+    if (isDragging) {
+      setIsDragging(false);
+      try {
+        (e.currentTarget as HTMLElement).releasePointerCapture(e.pointerId);
+      } catch {}
+    }
+  }, [isDragging]);
 
   // 280ms crisp 16-bit animation frame clock
   useEffect(() => {
@@ -788,9 +846,14 @@ export function DittoGengarPals() {
     };
   }, []);
 
-  // 1-click Position Cycling: Bottom-Left -> Bottom-Center -> Top-Center -> Minimized Pill
+  // 1-click Position Cycling: Bottom-Left -> Bottom-Center -> Top-Center -> Minimized Pill (or reset custom drag)
   const handleCyclePosition = useCallback(() => {
     setPickerOpen(false);
+    if (customCoords) {
+      setCustomCoords(null);
+      showAnnouncement("Snapped back to dock mode");
+      return;
+    }
     if (minimized) {
       setMinimized(false);
       setDockPosition("bottom-left");
@@ -803,7 +866,7 @@ export function DittoGengarPals() {
     } else {
       setMinimized(true);
     }
-  }, [dockPosition, minimized]);
+  }, [customCoords, dockPosition, minimized, showAnnouncement]);
 
   const handleSelectScenario = useCallback(
     (target: PalsMode) => {
@@ -879,16 +942,33 @@ export function DittoGengarPals() {
   }, [dockPosition]);
 
   const positionLabel = useMemo(() => {
+    if (customCoords) return `Custom (${customCoords.x}px, ${customCoords.y}px)`;
     if (minimized) return "Mini-Heart Pill";
     if (dockPosition === "bottom-left") return "Bottom-Left";
     if (dockPosition === "bottom-center") return "Bottom-Center";
     return "Top-Center Island";
-  }, [dockPosition, minimized]);
+  }, [customCoords, dockPosition, minimized]);
 
   const bondPercent = justPetted ? 100 : 99;
   const isEvenFrame = frameTick % 2 === 0;
   const phase4 = frameTick % 4;
   const strollX = 8 + ((frameTick * 4) % 86); // Smooth horizontal pixel parade across the grass
+
+  const containerStyle = useMemo(() => {
+    if (customCoords) {
+      return {
+        position: "fixed" as const,
+        left: `${customCoords.x}px`,
+        top: `${customCoords.y}px`,
+        zIndex: 75,
+      };
+    }
+    return undefined;
+  }, [customCoords]);
+
+  const activePositionClasses = customCoords
+    ? "fixed z-[75]"
+    : positionClasses;
 
   if (typeof window !== "undefined" && window.location.search.includes("embed=")) {
     return null;
@@ -900,14 +980,21 @@ export function DittoGengarPals() {
   if (minimized) {
     return (
       <div
-        className={`${positionClasses} pointer-events-none select-none transition-all duration-300`}
+        ref={containerRef}
+        style={containerStyle}
+        onPointerDown={handleDragPointerDown}
+        onPointerMove={handleDragPointerMove}
+        onPointerUp={handleDragPointerUp}
+        onPointerCancel={handleDragPointerUp}
+        className={`${activePositionClasses} pointer-events-none select-none transition-all duration-300`}
       >
         <button
           type="button"
           onClick={() => setMinimized(false)}
-          title={`Expand His, Hers & Ours Pixel Pals (${currentMeta.label})`}
-          className="pointer-events-auto group flex items-center gap-2 w-[146px] h-[38px] px-3 rounded-full bg-[#090a10]/92 backdrop-blur-xl border border-purple-500/35 shadow-[0_8px_28px_rgba(0,0,0,0.65),0_0_16px_rgba(168,85,247,0.22)] hover:border-pink-400/60 transition-all"
+          title={`Expand His, Hers & Ours Pixel Pals (${currentMeta.label}) • Drag anywhere to move`}
+          className="pointer-events-auto cursor-grab active:cursor-grabbing group flex items-center gap-2 w-[156px] h-[38px] px-3 rounded-full bg-[#090a10]/92 backdrop-blur-xl border border-purple-500/35 shadow-[0_8px_28px_rgba(0,0,0,0.65),0_0_16px_rgba(168,85,247,0.22)] hover:border-pink-400/60 transition-all"
         >
+          <GripVertical className="w-3 h-3 text-purple-400/50 -ml-1" />
           <span
             className="transition-transform duration-200"
             style={{ transform: isEvenFrame ? "translateY(-1px)" : "translateY(1px)" }}
@@ -936,11 +1023,13 @@ export function DittoGengarPals() {
   /* ==========================================================================
    * EXPANDED PIXEL-PALS TERRARIUM STAGE (~310px x 116px)
    * ======================================================================== */
-  const popoverOpensDown = dockPosition === "top-center";
+  const popoverOpensDown = dockPosition === "top-center" || (customCoords && customCoords.y < 200);
 
   return (
     <div
-      className={`${positionClasses} pointer-events-none select-none transition-all duration-300`}
+      ref={containerRef}
+      style={containerStyle}
+      className={`${activePositionClasses} pointer-events-none select-none transition-all duration-300`}
       aria-label="His, Hers & Ours Pixel Pals Stage"
     >
       {/* Atmospheric Outer Sparkles / Floating Particles — pointer-events-none so clicks pass right through! */}
@@ -1055,14 +1144,21 @@ export function DittoGengarPals() {
           />
         )}
 
-        {/* Top Header Bar: HIS • HERS • OURS + Sync Bond + Controls */}
-        <div className="relative z-20 flex items-center justify-between px-2.5 pt-1.5">
+        {/* Top Header Bar: HIS • HERS • OURS + Sync Bond + Controls + Drag Handle */}
+        <div
+          onPointerDown={handleDragPointerDown}
+          onPointerMove={handleDragPointerMove}
+          onPointerUp={handleDragPointerUp}
+          onPointerCancel={handleDragPointerUp}
+          title="Drag header to move anywhere on screen"
+          className="relative z-20 flex items-center justify-between px-2.5 pt-1.5 cursor-grab active:cursor-grabbing select-none"
+        >
           {/* HIS • HERS • OURS Connection Pill */}
           <button
             type="button"
             onClick={() => setPickerOpen((o) => !o)}
             title="Choose Scenario or Toggle Auto Surprise"
-            className="flex items-center gap-1.5 px-2 py-0.5 rounded-full bg-white/[0.06] hover:bg-white/[0.12] border border-white/10 transition-colors"
+            className="flex items-center gap-1.5 px-2 py-0.5 rounded-full bg-white/[0.06] hover:bg-white/[0.12] border border-white/10 transition-colors cursor-pointer"
           >
             <span className="w-1.5 h-1.5 rounded-full bg-purple-500 shadow-[0_0_6px_#a855f7]" />
             <span className="text-[9px] font-mono font-bold tracking-wider bg-gradient-to-r from-purple-300 via-pink-200 to-pink-300 bg-clip-text text-transparent">
@@ -1077,7 +1173,7 @@ export function DittoGengarPals() {
           </button>
 
           {/* Live Sync Bond Meter + Action Buttons */}
-          <div className="flex items-center gap-1">
+          <div className="flex items-center gap-1" onPointerDown={(e) => e.stopPropagation()}>
             <span
               title={`His & Hers Bond Sync (${bondClicks} pets)`}
               className="flex items-center gap-1 px-1.5 py-0.5 rounded-full bg-pink-500/12 border border-pink-400/25 text-[9.5px] font-mono font-semibold text-pink-200"
@@ -1101,12 +1197,25 @@ export function DittoGengarPals() {
               <span>{mode === "auto" ? `${countdown}s` : "Play"}</span>
             </button>
 
-            {/* 1-Click Position Cycling Button */}
+            {/* Draggable Grip Handle */}
+            <div
+              onPointerDown={handleDragPointerDown}
+              title="Click and drag to move His & Hers Pals anywhere"
+              className="cursor-grab active:cursor-grabbing p-1 rounded-md text-purple-300 hover:text-white hover:bg-white/10 transition-colors flex items-center"
+            >
+              <GripVertical className="w-3.5 h-3.5" />
+            </div>
+
+            {/* 1-Click Position Cycling Button / Dock Snap */}
             <button
               type="button"
               onClick={handleCyclePosition}
-              title={`Cycle Stage Position (Current: ${positionLabel})`}
-              className="p-1 rounded-md text-slate-400 hover:text-white hover:bg-white/10 transition-colors"
+              title={customCoords ? "Snap back to dock" : `Cycle Stage Position (Current: ${positionLabel})`}
+              className={`p-1 rounded-md transition-colors ${
+                customCoords
+                  ? "text-pink-300 bg-purple-500/20 hover:bg-purple-500/30"
+                  : "text-slate-400 hover:text-white hover:bg-white/10"
+              }`}
             >
               <Move className="w-3 h-3" />
             </button>
