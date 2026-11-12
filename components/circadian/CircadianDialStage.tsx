@@ -17,6 +17,8 @@ import {
 } from "@/lib/circadianTypes";
 import {
   assignOrbitalTracks,
+  buildTimelapseProgressArcs,
+  buildTimelapseWheelSegments,
   cartesianToMinutes,
   dateToMinutes,
   describeAnnularWedge,
@@ -24,6 +26,7 @@ import {
   describeTimeArc,
   getCircadianPhase,
   getDurationMinutes,
+  getTimelapseColorAtMinutes,
   minutesTo12Hour,
   minutesToAngleRad,
   polarToCartesian,
@@ -32,6 +35,7 @@ import {
 
 interface CircadianDialStageProps {
   events: CircadianEventDTO[];
+  highlightedTelemetry?: string | null;
   currentMinutes: number;
   isLiveTime: boolean;
   onScrubMinutes: (mins: number) => void;
@@ -45,27 +49,9 @@ interface CircadianDialStageProps {
   onAddChecklist: (eventId: string, label: string) => void;
 }
 
-// Deterministic starfield coordinates inside the night hemisphere of the dial
-const NIGHT_STARS = Array.from({ length: 46 }, (_, i) => {
-  // Spread across bottom night hemisphere (angle 15deg -> 165deg, i.e., ~19:00 to ~05:00)
-  const seed1 = Math.sin(i * 12.9898) * 43758.5453;
-  const f1 = seed1 - Math.floor(seed1);
-  const seed2 = Math.sin((i + 77) * 78.233) * 19341.123;
-  const f2 = seed2 - Math.floor(seed2);
-  const deg = 10 + f1 * 160; // Bottom hemisphere (0deg is 6PM right, 90deg is 12AM bottom, 180deg is 6AM left)
-  const rad = (deg * Math.PI) / 180;
-  const dist = 28 + Math.sqrt(f2) * 138;
-  return {
-    id: i,
-    dx: Math.cos(rad) * dist,
-    dy: Math.sin(rad) * dist,
-    r: i % 5 === 0 ? 1.45 : i % 2 === 0 ? 1.0 : 0.65,
-    opacity: 0.25 + (i % 7) * 0.1,
-  };
-});
-
 export function CircadianDialStage({
   events,
+  highlightedTelemetry = null,
   currentMinutes,
   isLiveTime,
   onScrubMinutes,
@@ -83,21 +69,54 @@ export function CircadianDialStage({
   const [isDraggingTime, setIsDraggingTime] = useState(false);
   const [quickItemText, setQuickItemText] = useState("");
 
-  // Stage coordinate space
-  const VB_W = 1040;
+  // Pure isotropic SVG coordinate space — guarantees 100% geometric circle at every screen aspect ratio
+  const VB_W = 1000;
   const VB_H = 760;
-  const CX = VB_W / 2; // 520
+  const CX = VB_W / 2; // 500
   const CY = VB_H / 2; // 380
 
-  // Radii adapted gracefully between full Solar Wedges mode & 4-Quadrant Tracer Cards mode
-  const scaleFactor = viewMode === "quadrants" ? 0.76 : 1;
-  const R_SKY = 174 * scaleFactor;
-  const R_SOLAR_ARC = 88 * scaleFactor;
-  const R_ORBITAL_TRACKS = [142, 125, 108].map((r) => r * scaleFactor);
-  const R_WEDGE_INNER = 192 * scaleFactor;
-  const R_WEDGE_OUTER = 278 * scaleFactor;
+  const scaleFactor = viewMode === "quadrants" ? 0.75 : 1;
+  const R_SKY = 180 * scaleFactor;
+  const R_TIMELAPSE_INNER = 180 * scaleFactor;
+  const R_TIMELAPSE_OUTER = 195 * scaleFactor;
+  const R_SOLAR_ARC = 90 * scaleFactor;
+  const R_ORBITAL_TRACKS = [148, 131, 114].map((r) => r * scaleFactor);
+  const R_WEDGE_INNER = 204 * scaleFactor;
+  const R_WEDGE_OUTER = 290 * scaleFactor;
 
   const activeId = hoveredEventId ?? selectedEventId;
+
+  // 144-step 24-Hour Day-to-Night Time-Lapse Wheel Ring
+  const timelapseWheelSegments = useMemo(
+    () =>
+      buildTimelapseWheelSegments(
+        CX,
+        CY,
+        R_TIMELAPSE_INNER,
+        R_TIMELAPSE_OUTER,
+        144
+      ),
+    [CX, CY, R_TIMELAPSE_INNER, R_TIMELAPSE_OUTER]
+  );
+
+  // Subtle outer ambient time-lapse guide band behind wedges so open hours also show day->night progression
+  const outerTimelapseTrackSegments = useMemo(
+    () =>
+      buildTimelapseWheelSegments(
+        CX,
+        CY,
+        R_WEDGE_INNER,
+        R_WEDGE_INNER + 4 * scaleFactor,
+        96
+      ),
+    [CX, CY, R_WEDGE_INNER, scaleFactor]
+  );
+
+  // Multi-stop time-lapse progress arc from 00:00 up to currentMinutes
+  const solarProgressArcs = useMemo(
+    () => buildTimelapseProgressArcs(CX, CY, R_SOLAR_ARC, currentMinutes, 96),
+    [CX, CY, R_SOLAR_ARC, currentMinutes]
+  );
 
   // Orbital track assignment for nested concentric bands
   const orbitalMap = useMemo(() => assignOrbitalTracks(events), [events]);
@@ -108,6 +127,7 @@ export function CircadianDialStage({
       const startMin = dateToMinutes(new Date(ev.startTime));
       const endMin = dateToMinutes(new Date(ev.endTime));
       const durMin = getDurationMinutes(startMin, endMin);
+      const midMin = (startMin + durMin / 2) % 1440;
       const wedge = describeAnnularWedge(
         CX,
         CY,
@@ -144,6 +164,8 @@ export function CircadianDialStage({
         startMin,
         endMin,
         durMin,
+        midMin,
+        timelapseColor: getTimelapseColorAtMinutes(midMin),
         wedge,
         trackRadius,
         ribbonPath,
@@ -172,7 +194,6 @@ export function CircadianDialStage({
 
   // Assign up to 4 quadrant cards for PRD Section 2.3 Quadrant Mode
   const quadrantAssignments = useMemo(() => {
-    // Slots: 1 = Top-Left, 2 = Top-Right, 3 = Bottom-Left, 4 = Bottom-Right
     const slots: Record<number, (typeof wedgeItems)[number] | null> = {
       1: null,
       2: null,
@@ -180,7 +201,6 @@ export function CircadianDialStage({
       4: null,
     };
 
-    // First honor explicit quadrantSlot
     for (const item of wedgeItems) {
       const slot = item.event.quadrantSlot;
       if (slot && slot >= 1 && slot <= 4 && !slots[slot]) {
@@ -188,7 +208,6 @@ export function CircadianDialStage({
       }
     }
 
-    // Fill remaining open slots by circadian time of day
     for (const item of wedgeItems) {
       if (Object.values(slots).some((v) => v?.event.id === item.event.id)) continue;
       const m = item.startMin;
@@ -208,34 +227,33 @@ export function CircadianDialStage({
       }
     }
 
-    // Quadrant card anchor coordinates in SVG viewBox (1040 x 760)
     const cardAnchors: Record<
       number,
       { cardX: number; cardY: number; isLeft: boolean; posClass: string }
     > = {
       1: {
-        cardX: 252,
+        cardX: 242,
         cardY: 165,
         isLeft: true,
-        posClass: "left-3 top-4",
+        posClass: "left-2 top-4",
       },
       2: {
-        cardX: VB_W - 252,
+        cardX: VB_W - 242,
         cardY: 165,
         isLeft: false,
-        posClass: "right-3 top-4",
+        posClass: "right-2 top-4",
       },
       3: {
-        cardX: 252,
+        cardX: 242,
         cardY: VB_H - 175,
         isLeft: true,
-        posClass: "left-3 bottom-4",
+        posClass: "left-2 bottom-4",
       },
       4: {
-        cardX: VB_W - 252,
+        cardX: VB_W - 242,
         cardY: VB_H - 175,
         isLeft: false,
-        posClass: "right-3 bottom-4",
+        posClass: "right-2 bottom-4",
       },
     };
 
@@ -257,7 +275,7 @@ export function CircadianDialStage({
           anchor.cardX,
           anchor.cardY,
           anchor.isLeft,
-          58
+          56
         );
         return {
           slot,
@@ -285,10 +303,12 @@ export function CircadianDialStage({
   const selectedInspectorGeometry = useMemo(() => {
     if (!selectedWedgeItem || viewMode !== "solar") return null;
     const isRightEvent = selectedWedgeItem.cosM >= 0;
-    // Place floating inspector card on the side with clearest space or matching side
     const placeLeft = !isRightEvent;
-    const cardX = placeLeft ? 258 : VB_W - 258;
-    const cardY = Math.max(175, Math.min(VB_H - 185, selectedWedgeItem.wedge.outerMidPoint.y));
+    const cardX = placeLeft ? 248 : VB_W - 248;
+    const cardY = Math.max(
+      175,
+      Math.min(VB_H - 185, selectedWedgeItem.wedge.outerMidPoint.y)
+    );
     const dialPt = selectedWedgeItem.wedge.outerMidPoint;
     const tracerPath = describeCubicTracer(
       dialPt.x,
@@ -312,30 +332,42 @@ export function CircadianDialStage({
   const nowRad = minutesToAngleRad(currentMinutes);
   const solarInnerPt = polarToCartesian(CX, CY, R_SOLAR_ARC, nowRad);
   const solarMidnightPt = timeToCartesian(CX, CY, R_SOLAR_ARC, 0);
-  const solarRimPt = polarToCartesian(CX, CY, R_SKY, nowRad);
-  const solarProgressPath = describeTimeArc(CX, CY, R_SOLAR_ARC, 0, currentMinutes);
-  const solarTagPt = polarToCartesian(CX, CY, R_SOLAR_ARC + 26 * scaleFactor, nowRad);
+  const solarRimPt = polarToCartesian(CX, CY, R_TIMELAPSE_OUTER, nowRad);
+  const solarTagPt = polarToCartesian(
+    CX,
+    CY,
+    R_SOLAR_ARC + 26 * scaleFactor,
+    nowRad
+  );
   const currentPhase = getCircadianPhase(currentMinutes);
+  const liveSolarColor = getTimelapseColorAtMinutes(currentMinutes);
 
-  // Interactive pointer time scrubbing along inner dial
+  // Interactive pointer time scrubbing using exact SVG screen CTM (zero aspect distortion)
   const updateScrubFromPointer = (clientX: number, clientY: number) => {
     if (!svgRef.current) return;
+    const ctm = svgRef.current.getScreenCTM();
+    if (ctm) {
+      const pt = svgRef.current.createSVGPoint();
+      pt.x = clientX;
+      pt.y = clientY;
+      const svgPt = pt.matrixTransform(ctm.inverse());
+      const mins = cartesianToMinutes(CX, CY, svgPt.x, svgPt.y);
+      onScrubMinutes(Math.round(mins));
+      return;
+    }
     const rect = svgRef.current.getBoundingClientRect();
-    const scaleX = VB_W / rect.width;
-    const scaleY = VB_H / rect.height;
-    const x = (clientX - rect.left) * scaleX;
-    const y = (clientY - rect.top) * scaleY;
-    const mins = cartesianToMinutes(CX, CY, x, y);
-    onScrubMinutes(Math.round(mins));
+    const x = ((clientX - rect.left) / rect.width) * VB_W;
+    const y = ((clientY - rect.top) / rect.height) * VB_H;
+    onScrubMinutes(Math.round(cartesianToMinutes(CX, CY, x, y)));
   };
 
-  // Sky sphere percentage positioning inside the responsive stage
-  const skyDiameterPctW = ((R_SKY * 2) / VB_W) * 100;
-  const skyDiameterPctH = ((R_SKY * 2) / VB_H) * 100;
+  // Bleed factor so sky-timelapse.jpg's inner spherical horizon aligns seamlessly at R_SKY
+  const skyImgBleed = 1.18;
+  const skyImgSize = R_SKY * 2 * skyImgBleed;
 
   return (
     <div
-      className="relative w-full aspect-[1040/760] max-h-[760px] mx-auto select-none"
+      className="relative w-full flex items-center justify-center select-none"
       onPointerMove={(e) => {
         if (isDraggingTime) {
           updateScrubFromPointer(e.clientX, e.clientY);
@@ -344,71 +376,18 @@ export function CircadianDialStage({
       onPointerUp={() => setIsDraggingTime(false)}
       onPointerLeave={() => setIsDraggingTime(false)}
     >
-      {/* 1. Ambient Celestial Backdrop Glow */}
-      <div
-        className="pointer-events-none absolute inset-0 opacity-60 transition-all duration-700"
-        style={{
-          background: `radial-gradient(circle at 50% 50%, rgba(56, 189, 248, 0.12) 0%, rgba(249, 115, 22, 0.06) 36%, rgba(9, 13, 22, 0) 68%)`,
-        }}
-      />
-
-      {/* 2. Precision Conic Diurnal Sky Sphere (Layered seamlessly behind SVG ticks & solar ring) */}
-      <div
-        className="pointer-events-none absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 rounded-full overflow-hidden shadow-[inset_0_0_55px_rgba(0,0,0,0.75)]"
-        style={{
-          width: `${skyDiameterPctW}%`,
-          height: `${skyDiameterPctH}%`,
-          // CSS conic-gradient: 0deg = 12:00 PM (top), 90deg = 6:00 PM (right), 180deg = 12:00 AM (bottom), 270deg = 6:00 AM (left)
-          background: `
-            radial-gradient(circle at 50% 50%, rgba(255,255,255,0.08) 0%, rgba(9,13,22,0.12) 55%, rgba(4,6,12,0.68) 100%),
-            conic-gradient(
-              from 0deg at 50% 50%,
-              #3b82f6 0deg,
-              #60a5fa 28deg,
-              #fde68a 62deg,
-              #fbbf24 82deg,
-              #ea580c 98deg,
-              #581c87 122deg,
-              #1e1b4b 145deg,
-              #060913 180deg,
-              #0b132b 215deg,
-              #1e3a5f 248deg,
-              #38bdf8 275deg,
-              #2563eb 322deg,
-              #3b82f6 360deg
-            )
-          `,
-        }}
-      >
-        {/* Subtle Horizon City Glow at Midnight Bottom (12:00 AM) */}
-        <div
-          className="absolute inset-x-0 bottom-0 h-[24%]"
-          style={{
-            background:
-              "radial-gradient(ellipse at 50% 100%, rgba(251, 191, 36, 0.24) 0%, rgba(56, 189, 248, 0.08) 42%, transparent 78%)",
-          }}
-        />
-        {/* Conical Radar Brushed Sheen */}
-        <div
-          className="absolute inset-0 opacity-35 mix-blend-overlay"
-          style={{
-            background:
-              "conic-gradient(from 215deg at 50% 50%, transparent 0deg, rgba(255,255,255,0.45) 45deg, transparent 95deg, rgba(0,0,0,0.5) 185deg, rgba(255,255,255,0.3) 290deg, transparent 360deg)",
-          }}
-        />
-      </div>
-
-      {/* 3. Master SVG Vector Viewport */}
+      {/* Master Isotropic SVG Viewport — 100% Pure Vector + Clipped Texture Circle */}
       <svg
         ref={svgRef}
         viewBox={`0 0 ${VB_W} ${VB_H}`}
-        className="relative z-10 w-full h-full overflow-visible"
+        preserveAspectRatio="xMidYMid meet"
+        className="relative z-10 w-full h-auto max-h-[calc(100vh-132px)] block mx-auto overflow-visible"
       >
         <defs>
           {/* Multi-layered Solar Beacon Glow */}
           <filter id="solarNodeGlow" x="-120%" y="-120%" width="340%" height="340%">
             <feGaussianBlur stdDeviation="4" result="blur1" />
-            <feGaussianBlur stdDeviation="11" result="blur2" />
+            <feGaussianBlur stdDeviation="10" result="blur2" />
             <feMerge>
               <feMergeNode in="blur2" />
               <feMergeNode in="blur1" />
@@ -425,19 +404,30 @@ export function CircadianDialStage({
             </feMerge>
           </filter>
 
-          {/* Golden Solar Progress Gradient */}
-          <linearGradient id="solarProgressGrad" x1="0%" y1="100%" x2="100%" y2="0%">
-            <stop offset="0%" stopColor="#f59e0b" stopOpacity="0.55" />
-            <stop offset="55%" stopColor="#fbbf24" stopOpacity="0.95" />
-            <stop offset="100%" stopColor="#fef08a" stopOpacity="1" />
-          </linearGradient>
+          {/* Soft Ambient Halo Blur for Outer Time-Lapse Glow */}
+          <filter id="timelapseHaloBlur" x="-30%" y="-30%" width="160%" height="160%">
+            <feGaussianBlur stdDeviation="14" />
+          </filter>
 
-          {/* Wedge Dark Vignette Overlay so text & borders pop */}
-          <radialGradient id="wedgeVignette" cx="50%" cy="50%" r="55%">
-            <stop offset="58%" stopColor="#05070d" stopOpacity="0.38" />
-            <stop offset="82%" stopColor="#05070d" stopOpacity="0.08" />
-            <stop offset="100%" stopColor="#05070d" stopOpacity="0.48" />
+          {/* Inner Spherical Depth Vignette over Day-to-Night Sky Time-Lapse */}
+          <radialGradient id="skyDepthVignette" cx="50%" cy="50%" r="50%">
+            <stop offset="0%" stopColor="#050814" stopOpacity="0.32" />
+            <stop offset="55%" stopColor="#050814" stopOpacity="0.06" />
+            <stop offset="86%" stopColor="#050814" stopOpacity="0.18" />
+            <stop offset="100%" stopColor="#04060e" stopOpacity="0.62" />
           </radialGradient>
+
+          {/* Wedge Dark Vignette Overlay so borders & labels stay razor-sharp */}
+          <radialGradient id="wedgeVignette" cx="50%" cy="50%" r="55%">
+            <stop offset="58%" stopColor="#05070d" stopOpacity="0.34" />
+            <stop offset="82%" stopColor="#05070d" stopOpacity="0.06" />
+            <stop offset="100%" stopColor="#05070d" stopOpacity="0.45" />
+          </radialGradient>
+
+          {/* Exact Mathematical Circle ClipPath for the Day-to-Night Time-Lapse Sphere */}
+          <clipPath id="skySphereCircleClip">
+            <circle cx={CX} cy={CY} r={R_SKY} />
+          </clipPath>
 
           {/* ClipPaths for each Curved Annular Media Wedge */}
           {wedgeItems.map(({ event, wedge }) => (
@@ -447,55 +437,75 @@ export function CircadianDialStage({
           ))}
         </defs>
 
-        {/* Starfield Pinpoints inside Night Hemisphere */}
-        <g className="pointer-events-none">
-          {NIGHT_STARS.map((s) => (
-            <circle
-              key={s.id}
-              cx={CX + s.dx * scaleFactor}
-              cy={CY + s.dy * scaleFactor}
-              r={s.r}
-              fill="#f8fafc"
-              opacity={s.opacity}
-            />
-          ))}
+        {/* 1. Soft Ambient 24-Hour Time-Lapse Atmospheric Halo Behind the Wheel */}
+        <g opacity="0.26" filter="url(#timelapseHaloBlur)" className="pointer-events-none">
+          {timelapseWheelSegments
+            .filter((_, i) => i % 2 === 0)
+            .map((seg, idx) => (
+              <path key={`halo-${idx}`} d={seg.d} fill={seg.color} />
+            ))}
         </g>
 
-        {/* Outer Faint Radar Guide Ring */}
-        <circle
-          cx={CX}
-          cy={CY}
-          r={R_WEDGE_OUTER + 8}
-          fill="none"
-          stroke="rgba(255,255,255,0.04)"
-          strokeWidth="1"
-          strokeDasharray="3 7"
-        />
-
-        {/* Sky Sphere Rim & Interactive Scrubbing Ring */}
-        <circle
-          cx={CX}
-          cy={CY}
-          r={R_SKY}
-          fill="transparent"
-          stroke="rgba(255,255,255,0.2)"
-          strokeWidth="1.5"
+        {/* 2. Pure-Circle Clipped 24-Hour Day-to-Night Sky & Milky Way Time-Lapse Sphere */}
+        <g
+          clipPath="url(#skySphereCircleClip)"
           className="cursor-crosshair"
           onPointerDown={(e) => {
             setIsDraggingTime(true);
             updateScrubFromPointer(e.clientX, e.clientY);
           }}
-        />
-        <circle
-          cx={CX}
-          cy={CY}
-          r={R_WEDGE_INNER - 6}
-          fill="none"
-          stroke="rgba(148, 163, 184, 0.16)"
-          strokeWidth="1"
-        />
+        >
+          <circle cx={CX} cy={CY} r={R_SKY} fill="#070b18" />
+          <image
+            href="/circadian/sky-timelapse.jpg"
+            x={CX - skyImgSize / 2}
+            y={CY - skyImgSize / 2}
+            width={skyImgSize}
+            height={skyImgSize}
+            preserveAspectRatio="xMidYMid slice"
+          />
+          {/* Subtle glass depth vignette */}
+          <circle cx={CX} cy={CY} r={R_SKY} fill="url(#skyDepthVignette)" />
+        </g>
 
-        {/* 24-Hour Precision Ticks (48 half-hour intervals) */}
+        {/* 3. Continuous 360° 24-Hour Day-to-Night Time-Lapse Color Spectrum Wheel Band */}
+        <g
+          className="cursor-crosshair"
+          onPointerDown={(e) => {
+            setIsDraggingTime(true);
+            updateScrubFromPointer(e.clientX, e.clientY);
+          }}
+        >
+          {timelapseWheelSegments.map((seg, idx) => (
+            <path key={`tl-${idx}`} d={seg.d} fill={seg.color} opacity="0.92" />
+          ))}
+          {/* Crisp inner & outer glass bevel strokes framing the time-lapse wheel */}
+          <circle
+            cx={CX}
+            cy={CY}
+            r={R_TIMELAPSE_INNER}
+            fill="none"
+            stroke="rgba(255,255,255,0.28)"
+            strokeWidth="1"
+          />
+          <circle
+            cx={CX}
+            cy={CY}
+            r={R_TIMELAPSE_OUTER}
+            fill="none"
+            stroke="rgba(255,255,255,0.34)"
+            strokeWidth="1.2"
+          />
+        </g>
+
+        {/* Subtle Outer Time-Lapse Continuum Guide Track (connects open hours between wedges) */}
+        <g opacity="0.5" className="pointer-events-none">
+          {outerTimelapseTrackSegments.map((seg, idx) => (
+            <path key={`otl-${idx}`} d={seg.d} fill={seg.color} />
+          ))}
+        </g>
+
+        {/* 4. 24-Hour Precision Ticks Etched Across the Time-Lapse Rim */}
         <g className="pointer-events-none">
           {Array.from({ length: 48 }, (_, idx) => {
             const mins = idx * 30;
@@ -503,11 +513,13 @@ export function CircadianDialStage({
             const isHour = mins % 60 === 0;
             const rad = minutesToAngleRad(mins);
             const r1 = isCardinal
-              ? R_SKY - 13 * scaleFactor
+              ? R_SKY - 12 * scaleFactor
               : isHour
-              ? R_SKY - 8 * scaleFactor
-              : R_SKY - 4 * scaleFactor;
-            const r2 = R_SKY + (isCardinal ? 5 : 2) * scaleFactor;
+              ? R_TIMELAPSE_INNER + 2 * scaleFactor
+              : R_TIMELAPSE_INNER + 5 * scaleFactor;
+            const r2 = isCardinal
+              ? R_TIMELAPSE_OUTER + 3 * scaleFactor
+              : R_TIMELAPSE_OUTER - 1.5 * scaleFactor;
             const p1 = polarToCartesian(CX, CY, r1, rad);
             const p2 = polarToCartesian(CX, CY, r2, rad);
             return (
@@ -519,47 +531,51 @@ export function CircadianDialStage({
                 y2={p2.y}
                 stroke={
                   isCardinal
-                    ? "rgba(255,255,255,0.85)"
+                    ? "#ffffff"
                     : isHour
-                    ? "rgba(255,255,255,0.42)"
-                    : "rgba(255,255,255,0.16)"
+                    ? "rgba(255,255,255,0.75)"
+                    : "rgba(255,255,255,0.35)"
                 }
-                strokeWidth={isCardinal ? 1.8 : isHour ? 1.1 : 0.75}
+                strokeWidth={isCardinal ? 2 : isHour ? 1.2 : 0.75}
               />
             );
           })}
         </g>
 
-        {/* Cardinal Hour Markers Inside Rim (Exact Reference Positions) */}
+        {/* 5. Cardinal & Intermediate Hour Labels with Crisp Contrast Backing */}
         <g
           className="pointer-events-none"
           style={{ fontFamily: "Inter, sans-serif" }}
         >
           {[
             { mins: 720, label: "12:00 PM", dx: 0, dy: 24 * scaleFactor },
-            { mins: 1080, label: "6:00 PM", dx: -34 * scaleFactor, dy: 4 },
-            { mins: 0, label: "12:00 AM", dx: 0, dy: -18 * scaleFactor },
-            { mins: 360, label: "6:00 AM", dx: 34 * scaleFactor, dy: 4 },
+            { mins: 1080, label: "6:00 PM", dx: -36 * scaleFactor, dy: 4 },
+            { mins: 0, label: "12:00 AM", dx: 0, dy: -16 * scaleFactor },
+            { mins: 360, label: "6:00 AM", dx: 36 * scaleFactor, dy: 4 },
           ].map((c) => {
             const pt = timeToCartesian(CX, CY, R_SKY, c.mins);
             return (
-              <text
-                key={c.label}
-                x={pt.x + c.dx}
-                y={pt.y + c.dy}
-                textAnchor="middle"
-                fill="rgba(248, 250, 252, 0.92)"
-                fontSize={11.5 * scaleFactor}
-                fontWeight={600}
-                letterSpacing="0.04em"
-              >
-                {c.label}
-              </text>
+              <g key={c.label}>
+                <text
+                  x={pt.x + c.dx}
+                  y={pt.y + c.dy}
+                  textAnchor="middle"
+                  fill="#ffffff"
+                  stroke="rgba(5, 8, 18, 0.75)"
+                  strokeWidth="3.5"
+                  paintOrder="stroke"
+                  fontSize={11.5 * scaleFactor}
+                  fontWeight={700}
+                  letterSpacing="0.04em"
+                >
+                  {c.label}
+                </text>
+              </g>
             );
           })}
         </g>
 
-        {/* Nested Inner Orbital Event Bands (PRD Section 2.2: R = 140, 120, 100) */}
+        {/* 6. Nested Inner Orbital Event Bands (PRD Section 2.2) */}
         <g>
           {R_ORBITAL_TRACKS.map((r, idx) => (
             <circle
@@ -568,15 +584,18 @@ export function CircadianDialStage({
               cy={CY}
               r={r}
               fill="none"
-              stroke="rgba(255,255,255,0.06)"
-              strokeWidth={4.5 * scaleFactor}
+              stroke="rgba(255,255,255,0.1)"
+              strokeWidth={4 * scaleFactor}
             />
           ))}
 
-          {wedgeItems.map(({ event, ribbonPath }) => {
+          {wedgeItems.map(({ event, ribbonPath, timelapseColor }) => {
             const isHighlighted = activeId === event.id;
+            const matchesTelemetry =
+              !highlightedTelemetry ||
+              event.telemetrySource === highlightedTelemetry;
             const domainColor =
-              DOMAIN_CONFIG[event.domain]?.color ?? event.accentColor;
+              DOMAIN_CONFIG[event.domain]?.color ?? timelapseColor;
             return (
               <path
                 key={`ribbon-${event.id}`}
@@ -585,7 +604,13 @@ export function CircadianDialStage({
                 stroke={domainColor}
                 strokeWidth={(isHighlighted ? 7.5 : 5) * scaleFactor}
                 strokeLinecap="round"
-                opacity={activeId && !isHighlighted ? 0.42 : 0.92}
+                opacity={
+                  !matchesTelemetry
+                    ? 0.25
+                    : activeId && !isHighlighted
+                    ? 0.45
+                    : 0.94
+                }
                 filter={isHighlighted ? "url(#arcNeonGlow)" : undefined}
                 className="cursor-pointer transition-all duration-300"
                 onMouseEnter={() => setHoveredEventId(event.id)}
@@ -598,58 +623,62 @@ export function CircadianDialStage({
           })}
         </g>
 
-        {/* Inner Solar Orbit Ring & Real-Time Pulsing Solar Beacon */}
+        {/* 7. Inner Solar Orbit Ring with 24-Hour Time-Lapse Gradient Trail & Live Beacon */}
         <g>
-          {/* Faint full inner solar orbit guide */}
           <circle
             cx={CX}
             cy={CY}
             r={R_SOLAR_ARC}
-            fill="rgba(8, 11, 20, 0.26)"
-            stroke="rgba(255,255,255,0.12)"
+            fill="rgba(6, 9, 19, 0.34)"
+            stroke="rgba(255,255,255,0.18)"
             strokeWidth="1.5"
           />
 
-          {/* Radial solar ray from center through solar node to rim */}
+          {/* Radial solar vector from center through solar node to time-lapse rim */}
           <line
             x1={CX}
             y1={CY}
             x2={solarRimPt.x}
             y2={solarRimPt.y}
-            stroke="rgba(251, 191, 36, 0.22)"
-            strokeWidth="1"
+            stroke={liveSolarColor}
+            strokeOpacity="0.5"
+            strokeWidth="1.2"
             strokeDasharray="3 4"
             className="pointer-events-none"
           />
 
-          {/* Illuminated Solar Progress Arc from 00:00 Nadir -> Current Time */}
-          <path
-            d={solarProgressPath}
-            fill="none"
-            stroke="url(#solarProgressGrad)"
-            strokeWidth={5.5 * scaleFactor}
-            strokeLinecap="round"
-            filter="url(#solarNodeGlow)"
-            className="pointer-events-none"
-          />
+          {/* Time-Lapse Colored Solar Progress Arc (shifts organically from Midnight -> Dawn -> Noon -> Sunset -> Night) */}
+          <g filter="url(#arcNeonGlow)" className="pointer-events-none">
+            {solarProgressArcs.map((seg, i) => (
+              <path
+                key={`sp-${i}`}
+                d={seg.d}
+                fill="none"
+                stroke={seg.color}
+                strokeWidth={5.5 * scaleFactor}
+                strokeLinecap="round"
+              />
+            ))}
+          </g>
 
           {/* Origin Anchor Node at 00:00 Midnight Nadir */}
           <circle
             cx={solarMidnightPt.x}
             cy={solarMidnightPt.y}
-            r={4.5 * scaleFactor}
-            fill="#fde68a"
-            filter="url(#solarNodeGlow)"
+            r={4 * scaleFactor}
+            fill="#818cf8"
+            stroke="#e0e7ff"
+            strokeWidth="1.2"
           />
 
-          {/* Rim Time Indicator Pip */}
+          {/* Rim Time Indicator Pip on the 24-Hour Time-Lapse Ring */}
           <circle
             cx={solarRimPt.x}
             cy={solarRimPt.y}
-            r={4 * scaleFactor}
-            fill="#fbbf24"
+            r={4.8 * scaleFactor}
+            fill={liveSolarColor}
             stroke="#ffffff"
-            strokeWidth="1.2"
+            strokeWidth="1.6"
             filter="url(#solarNodeGlow)"
             className="cursor-grab active:cursor-grabbing"
             onPointerDown={(e) => {
@@ -658,21 +687,22 @@ export function CircadianDialStage({
             }}
           />
 
-          {/* Real-Time Pulsing Solar Sphere (PRD Section 2.1: r = 7px with multi-layer glow) */}
+          {/* Real-Time Pulsing Solar Sphere (r = 7px with multi-layer glow) */}
           <circle
             cx={solarInnerPt.x}
             cy={solarInnerPt.y}
-            r={12 * scaleFactor}
-            fill="rgba(251, 191, 36, 0.28)"
+            r={13 * scaleFactor}
+            fill={liveSolarColor}
+            fillOpacity="0.32"
             className="solar-pulse-ring pointer-events-none"
           />
           <circle
             cx={solarInnerPt.x}
             cy={solarInnerPt.y}
             r={7 * scaleFactor}
-            fill="#fef9c3"
+            fill="#fefce8"
             stroke="#f59e0b"
-            strokeWidth="2"
+            strokeWidth="2.2"
             filter="url(#solarNodeGlow)"
             className="cursor-grab active:cursor-grabbing"
             onPointerDown={(e) => {
@@ -687,14 +717,14 @@ export function CircadianDialStage({
             className="pointer-events-none"
           >
             <rect
-              x={-36 * scaleFactor}
-              y={-10 * scaleFactor}
-              width={72 * scaleFactor}
-              height={20 * scaleFactor}
-              rx={10 * scaleFactor}
-              fill="rgba(9, 13, 22, 0.82)"
-              stroke="rgba(251, 191, 36, 0.55)"
-              strokeWidth="1"
+              x={-37 * scaleFactor}
+              y={-10.5 * scaleFactor}
+              width={74 * scaleFactor}
+              height={21 * scaleFactor}
+              rx={10.5 * scaleFactor}
+              fill="rgba(7, 10, 19, 0.88)"
+              stroke="rgba(251, 191, 36, 0.65)"
+              strokeWidth="1.1"
             />
             <text
               x={0}
@@ -711,13 +741,16 @@ export function CircadianDialStage({
 
           {/* Center Phase Readout */}
           <g className="pointer-events-none">
-            <circle cx={CX} cy={CY} r={3} fill="rgba(255,255,255,0.65)" />
+            <circle cx={CX} cy={CY} r={3} fill="#ffffff" opacity="0.85" />
             <text
               x={CX}
               y={CY + 52 * scaleFactor}
               textAnchor="middle"
-              fill="rgba(248, 250, 252, 0.88)"
-              fontSize={10 * scaleFactor}
+              fill="#ffffff"
+              stroke="rgba(5, 8, 18, 0.8)"
+              strokeWidth="3"
+              paintOrder="stroke"
+              fontSize={9.5 * scaleFactor}
               fontWeight={700}
               letterSpacing="0.14em"
             >
@@ -726,15 +759,35 @@ export function CircadianDialStage({
           </g>
         </g>
 
-        {/* Outer Curved Annular Visual Media Wedges (Reference Image Signature!) */}
+        {/* 8. Outer Curved Annular Visual Media Wedges */}
         <g>
           {wedgeItems.map((item) => {
-            const { event, wedge, startMin, endMin, labelX, labelY, textAnchor } =
-              item;
+            const {
+              event,
+              wedge,
+              startMin,
+              endMin,
+              timelapseColor,
+              labelX,
+              labelY,
+              textAnchor,
+            } = item;
             const isSelected = selectedEventId === event.id;
             const isHovered = hoveredEventId === event.id;
-            const isHighlighted = isSelected || isHovered;
-            const strokeColor = event.accentColor || DOMAIN_CONFIG[event.domain].color;
+            const matchesTelemetry =
+              !highlightedTelemetry ||
+              event.telemetrySource === highlightedTelemetry;
+            const isHighlighted =
+              isSelected ||
+              isHovered ||
+              Boolean(
+                highlightedTelemetry &&
+                  event.telemetrySource === highlightedTelemetry
+              );
+            // Blend wedge frame naturally with its circadian time-of-day sky color unless overridden
+            const strokeColor = isHighlighted
+              ? event.accentColor || timelapseColor
+              : timelapseColor;
 
             return (
               <g
@@ -749,7 +802,13 @@ export function CircadianDialStage({
                 {/* Clipped High-Impact Visual Media Inside Curved Annular Wedge */}
                 <g
                   clipPath={`url(#wedge-clip-${event.id})`}
-                  opacity={activeId && !isHighlighted ? 0.72 : 1}
+                  opacity={
+                    !matchesTelemetry
+                      ? 0.28
+                      : activeId && !isHighlighted
+                      ? 0.76
+                      : 1
+                  }
                   className="transition-opacity duration-300"
                 >
                   <rect
@@ -785,7 +844,6 @@ export function CircadianDialStage({
                       preserveAspectRatio="xMidYMid slice"
                     />
                   )}
-                  {/* Subtle Dark Edge Contrast Vignette */}
                   <rect
                     x={wedge.bbox.x}
                     y={wedge.bbox.y}
@@ -795,21 +853,29 @@ export function CircadianDialStage({
                   />
                 </g>
 
-                {/* Glowing Domain-Colored Annular Frame */}
+                {/* Time-Lapse Harmonized Glowing Annular Frame */}
                 <path
                   d={wedge.path}
                   fill="none"
                   stroke={strokeColor}
-                  strokeWidth={isHighlighted ? 3.2 : 2.1}
+                  strokeWidth={isHighlighted ? 3.2 : 2.2}
                   strokeLinejoin="round"
                   filter={isHighlighted ? "url(#arcNeonGlow)" : undefined}
-                  opacity={activeId && !isHighlighted ? 0.65 : 0.96}
+                  opacity={
+                    !matchesTelemetry
+                      ? 0.3
+                      : activeId && !isHighlighted
+                      ? 0.72
+                      : 0.98
+                  }
                 />
 
-                {/* External Wedge Callout Label (Shown in Solar Wedges Mode) */}
+                {/* External Wedge Callout Label (Solar Mode) */}
                 {viewMode === "solar" && (
-                  <g className="transition-opacity duration-200">
-                    {/* Tiny Radial Leader Tick */}
+                  <g
+                    opacity={!matchesTelemetry ? 0.35 : 1}
+                    className="transition-opacity duration-200"
+                  >
                     <line
                       x1={wedge.outerMidPoint.x}
                       y1={wedge.outerMidPoint.y}
@@ -822,8 +888,8 @@ export function CircadianDialStage({
                         (R_WEDGE_OUTER + 12) * Math.sin(wedge.midAngleRad)
                       }
                       stroke={strokeColor}
-                      strokeWidth={isHighlighted ? 2 : 1.2}
-                      opacity={0.85}
+                      strokeWidth={isHighlighted ? 2 : 1.3}
+                      opacity={0.9}
                     />
                     <text
                       x={labelX}
@@ -854,22 +920,25 @@ export function CircadianDialStage({
           })}
         </g>
 
-        {/* Illuminated Cubic Bezier Callout Tracers — Solar Inspector Mode */}
+        {/* 9. Illuminated Cubic Bezier Callout Tracers — Solar Inspector Mode */}
         {viewMode === "solar" && selectedWedgeItem && selectedInspectorGeometry && (
           <g className="pointer-events-none">
             <path
               d={selectedInspectorGeometry.tracerPath}
               fill="none"
-              stroke={selectedWedgeItem.event.accentColor}
+              stroke={selectedWedgeItem.timelapseColor}
               strokeWidth="4"
-              opacity="0.22"
+              opacity="0.26"
               filter="url(#arcNeonGlow)"
             />
             <path
               d={selectedInspectorGeometry.tracerPath}
               fill="none"
-              stroke={selectedWedgeItem.event.accentColor}
-              strokeWidth="1.9"
+              stroke={
+                selectedWedgeItem.event.accentColor ||
+                selectedWedgeItem.timelapseColor
+              }
+              strokeWidth="2"
               className="circadian-tracer-animated"
             />
             <circle
@@ -877,7 +946,7 @@ export function CircadianDialStage({
               cy={selectedInspectorGeometry.dialPt.y}
               r="4.5"
               fill="#ffffff"
-              stroke={selectedWedgeItem.event.accentColor}
+              stroke={selectedWedgeItem.timelapseColor}
               strokeWidth="2"
               filter="url(#arcNeonGlow)"
             />
@@ -890,12 +959,11 @@ export function CircadianDialStage({
           </g>
         )}
 
-        {/* Illuminated Cubic Bezier Callout Tracers — 4-Quadrant Simultaneous Mode (PRD 2.3 & 4.3) */}
+        {/* 10. Illuminated Cubic Bezier Callout Tracers — 4-Quadrant Simultaneous Mode */}
         {viewMode === "quadrants" &&
           quadrantAssignments.map(({ slot, item, anchor, dialPt, tracerPath }) => {
             const isHighlighted = activeId === item.event.id;
-            const color =
-              item.event.accentColor || DOMAIN_CONFIG[item.event.domain].color;
+            const color = item.timelapseColor || item.event.accentColor;
             return (
               <g key={`q-tracer-${slot}`} className="pointer-events-none">
                 <path
@@ -903,15 +971,15 @@ export function CircadianDialStage({
                   fill="none"
                   stroke={color}
                   strokeWidth={isHighlighted ? 5 : 2.5}
-                  opacity={isHighlighted ? 0.35 : 0.14}
+                  opacity={isHighlighted ? 0.38 : 0.16}
                   filter="url(#arcNeonGlow)"
                 />
                 <path
                   d={tracerPath}
                   fill="none"
                   stroke={color}
-                  strokeWidth={isHighlighted ? 2.4 : 1.5}
-                  opacity={activeId && !isHighlighted ? 0.38 : 0.92}
+                  strokeWidth={isHighlighted ? 2.4 : 1.6}
+                  opacity={activeId && !isHighlighted ? 0.4 : 0.94}
                   className="circadian-tracer-animated"
                 />
                 <circle
@@ -938,10 +1006,10 @@ export function CircadianDialStage({
       {!isLiveTime && (
         <button
           onClick={onResetLive}
-          className="absolute top-3 left-1/2 -translate-x-1/2 z-30 flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-amber-500/20 hover:bg-amber-500/30 border border-amber-400/50 text-amber-200 text-[11px] font-semibold tracking-wider uppercase backdrop-blur-md shadow-lg transition-all"
+          className="absolute top-2 left-1/2 -translate-x-1/2 z-30 flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-amber-500/20 hover:bg-amber-500/30 border border-amber-400/50 text-amber-200 text-[11px] font-semibold tracking-wider uppercase backdrop-blur-md shadow-lg transition-all"
         >
           <Radio size={12} className="animate-pulse text-amber-400" />
-          Previewing {minutesTo12Hour(currentMinutes)} · Snap to Live Orbit
+          Time-Lapse Scrub: {minutesTo12Hour(currentMinutes)} · Snap to Live
         </button>
       )}
 
@@ -952,11 +1020,16 @@ export function CircadianDialStage({
             selectedInspectorGeometry.placeLeft ? "left-2" : "right-2"
           }`}
           style={{
-            top: `${Math.max(8, Math.min(54, ((selectedInspectorGeometry.cardY - 120) / VB_H) * 100))}%`,
+            top: `${Math.max(
+              8,
+              Math.min(
+                54,
+                ((selectedInspectorGeometry.cardY - 120) / VB_H) * 100
+              )
+            )}%`,
             borderColor: `${selectedWedgeItem.event.accentColor}66`,
           }}
         >
-          {/* 16:9 Visual Media Header */}
           <div className="relative aspect-video w-full overflow-hidden bg-zinc-900">
             {selectedWedgeItem.event.mediaType === "video_loop" ? (
               <video
@@ -1024,7 +1097,6 @@ export function CircadianDialStage({
             </div>
           </div>
 
-          {/* Card Body: Micro-Checklist & Telemetry */}
           <div className="p-3 space-y-2.5">
             {selectedWedgeItem.event.description && (
               <p className="text-[11px] text-zinc-400 leading-relaxed line-clamp-2">
@@ -1067,7 +1139,6 @@ export function CircadianDialStage({
               ))}
             </div>
 
-            {/* Quick Add Micro-Checklist Input */}
             <form
               onSubmit={(e) => {
                 e.preventDefault();
@@ -1107,12 +1178,12 @@ export function CircadianDialStage({
         </div>
       )}
 
-      {/* 4 Flanking Quadrant Visual Event Cards (PRD Section 2.3 Simultaneous View) */}
+      {/* 4 Flanking Quadrant Visual Event Cards (Quadrants Mode) */}
       {viewMode === "quadrants" &&
         quadrantAssignments.map(({ slot, item, anchor }) => {
-          const { event, startMin, endMin, durMin } = item;
+          const { event, startMin, durMin, timelapseColor } = item;
           const isHighlighted = activeId === event.id;
-          const color = event.accentColor || DOMAIN_CONFIG[event.domain].color;
+          const color = timelapseColor || event.accentColor;
           const slotLabel =
             slot === 1
               ? "EARLY MORNING"
@@ -1128,7 +1199,7 @@ export function CircadianDialStage({
               onMouseEnter={() => setHoveredEventId(event.id)}
               onMouseLeave={() => setHoveredEventId(null)}
               onClick={() => onEditEvent(event)}
-              className={`hidden xl:flex flex-col absolute z-20 w-[238px] rounded-2xl bg-[#0b0e17]/90 backdrop-blur-xl border transition-all duration-300 cursor-pointer overflow-hidden ${
+              className={`hidden xl:flex flex-col absolute z-20 w-[232px] rounded-2xl bg-[#0b0e17]/90 backdrop-blur-xl border transition-all duration-300 cursor-pointer overflow-hidden ${
                 anchor.posClass
               } ${
                 isHighlighted
@@ -1222,4 +1293,3 @@ export function CircadianDialStage({
     </div>
   );
 }
-

@@ -358,3 +358,119 @@ export function getCircadianPhase(minutes: number): {
   };
 }
 
+// ─── 24-Hour Day-to-Night Time-Lapse Color Continuum ──────────────────────────
+
+const TIMELAPSE_STOPS: Array<{ min: number; rgb: [number, number, number] }> = [
+  { min: 0,    rgb: [7, 11, 25] },     // 00:00 Pitch-black Milky Way midnight
+  { min: 150,  rgb: [13, 21, 48] },    // 02:30 Deep astral night
+  { min: 270,  rgb: [28, 46, 108] },   // 04:30 Pre-dawn cobalt indigo
+  { min: 330,  rgb: [14, 132, 199] },  // 05:30 Nautical dawn cyan
+  { min: 365,  rgb: [56, 189, 248] },  // 06:05 Dawn horizon break (#38bdf8)
+  { min: 405,  rgb: [251, 191, 36] },  // 06:45 Sunrise golden crest
+  { min: 470,  rgb: [96, 185, 250] },  // 07:50 Crisp morning cerulean sky
+  { min: 600,  rgb: [59, 158, 248] },  // 10:00 High morning azure
+  { min: 720,  rgb: [147, 213, 255] }, // 12:00 Radiant High Noon zenith sky
+  { min: 825,  rgb: [253, 224, 71] },  // 13:45 Solar apex warm crown
+  { min: 945,  rgb: [251, 191, 36] },  // 15:45 Afternoon solar amber (#fbbf24)
+  { min: 1050, rgb: [249, 115, 22] },  // 17:30 Golden hour tangerine (#f97316)
+  { min: 1105, rgb: [234, 88, 12] },   // 18:25 Fiery sunset ember (#ea580c)
+  { min: 1165, rgb: [147, 51, 234] },  // 19:25 Twilight dusk magenta (#9333ea)
+  { min: 1245, rgb: [49, 46, 129] },   // 20:45 Cosmic nightfall indigo (#312e81)
+  { min: 1350, rgb: [17, 20, 48] },    // 22:30 Starfield midnight navy
+  { min: 1440, rgb: [7, 11, 25] },     // 24:00 Seamless wrap to 00:00
+];
+
+export function getTimelapseColorAtMinutes(minutes: number): string {
+  const m = ((minutes % 1440) + 1440) % 1440;
+  for (let i = 0; i < TIMELAPSE_STOPS.length - 1; i++) {
+    const a = TIMELAPSE_STOPS[i];
+    const b = TIMELAPSE_STOPS[i + 1];
+    if (m >= a.min && m <= b.min) {
+      const t = (m - a.min) / Math.max(1, b.min - a.min);
+      const r = Math.round(a.rgb[0] + (b.rgb[0] - a.rgb[0]) * t);
+      const g = Math.round(a.rgb[1] + (b.rgb[1] - a.rgb[1]) * t);
+      const bl = Math.round(a.rgb[2] + (b.rgb[2] - a.rgb[2]) * t);
+      return `rgb(${r}, ${g}, ${bl})`;
+    }
+  }
+  return "rgb(7, 11, 25)";
+}
+
+/**
+ * Generates seamless pure-SVG annular slices around the 360° wheel
+ * to render a true vector 24-hour Day-to-Night Time-Lapse color ring
+ */
+export function buildTimelapseWheelSegments(
+  cx: number,
+  cy: number,
+  rInner: number,
+  rOuter: number,
+  steps = 144
+): Array<{ d: string; color: string; midMin: number }> {
+  const stepMin = 1440 / steps;
+  const overlapDeg = 0.55; // Slight overlap prevents anti-aliasing hairline seams
+  const segments: Array<{ d: string; color: string; midMin: number }> = [];
+
+  for (let i = 0; i < steps; i++) {
+    const startMin = i * stepMin;
+    const midMin = startMin + stepMin / 2;
+    const startDeg = minutesToAngleDeg(startMin) - overlapDeg / 2;
+    const endDeg = minutesToAngleDeg(startMin + stepMin) + overlapDeg / 2;
+    const sRad = (startDeg * Math.PI) / 180;
+    const eRad = (endDeg * Math.PI) / 180;
+
+    const pOS = polarToCartesian(cx, cy, rOuter, sRad);
+    const pOE = polarToCartesian(cx, cy, rOuter, eRad);
+    const pIE = polarToCartesian(cx, cy, rInner, eRad);
+    const pIS = polarToCartesian(cx, cy, rInner, sRad);
+
+    const d = [
+      `M ${pOS.x.toFixed(2)} ${pOS.y.toFixed(2)}`,
+      `A ${rOuter} ${rOuter} 0 0 1 ${pOE.x.toFixed(2)} ${pOE.y.toFixed(2)}`,
+      `L ${pIE.x.toFixed(2)} ${pIE.y.toFixed(2)}`,
+      `A ${rInner} ${rInner} 0 0 0 ${pIS.x.toFixed(2)} ${pIS.y.toFixed(2)}`,
+      "Z",
+    ].join(" ");
+
+    segments.push({
+      d,
+      color: getTimelapseColorAtMinutes(midMin),
+      midMin,
+    });
+  }
+
+  return segments;
+}
+
+/**
+ * Generates multi-stop time-lapse stroke segments from 00:00 up to currentMinutes
+ * so the inner solar progress trail shifts organically from night -> dawn -> noon -> sunset -> night
+ */
+export function buildTimelapseProgressArcs(
+  cx: number,
+  cy: number,
+  radius: number,
+  currentMinutes: number,
+  maxSteps = 96
+): Array<{ d: string; color: string }> {
+  const clamped = Math.max(6, Math.min(1438, currentMinutes));
+  const steps = Math.max(4, Math.round((clamped / 1440) * maxSteps));
+  const stepMin = clamped / steps;
+  const arcs: Array<{ d: string; color: string }> = [];
+
+  for (let i = 0; i < steps; i++) {
+    const m1 = Math.max(0, i * stepMin - 0.8);
+    const m2 = Math.min(1439.5, (i + 1) * stepMin + 0.8);
+    const r1 = minutesToAngleRad(m1);
+    const r2 = minutesToAngleRad(m2);
+    const p1 = polarToCartesian(cx, cy, radius, r1);
+    const p2 = polarToCartesian(cx, cy, radius, r2);
+    arcs.push({
+      d: `M ${p1.x.toFixed(2)} ${p1.y.toFixed(2)} A ${radius} ${radius} 0 0 1 ${p2.x.toFixed(2)} ${p2.y.toFixed(2)}`,
+      color: getTimelapseColorAtMinutes((m1 + m2) / 2),
+    });
+  }
+
+  return arcs;
+}
+

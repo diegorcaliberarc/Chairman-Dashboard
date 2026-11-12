@@ -380,11 +380,6 @@ export default function CircadianCalendarPage() {
   const effectiveMinutes = scrubbedMinutes ?? liveMinutes;
   const currentPhase = getCircadianPhase(effectiveMinutes);
 
-  const displayedEvents = useMemo(() => {
-    if (!activeTelemetryFilter) return events;
-    return events.filter((e) => e.telemetrySource === activeTelemetryFilter);
-  }, [events, activeTelemetryFilter]);
-
   // Sorted Agenda items
   const sortedAgenda = useMemo(() => {
     return [...events]
@@ -569,7 +564,8 @@ export default function CircadianCalendarPage() {
           {/* LEFT / CENTER STAGE: 24-Hour Celestial Dial + Bottom-Left Micro-Statistics */}
           <div className="relative flex-1 flex flex-col items-center justify-center min-h-[580px]">
             <CircadianDialStage
-              events={displayedEvents}
+              events={events}
+              highlightedTelemetry={activeTelemetryFilter}
               currentMinutes={effectiveMinutes}
               isLiveTime={scrubbedMinutes === null}
               onScrubMinutes={(mins) => setScrubbedMinutes(mins)}
