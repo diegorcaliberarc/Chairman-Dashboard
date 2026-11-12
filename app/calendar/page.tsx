@@ -890,21 +890,21 @@ export default function CircadianCalendarPage() {
       />
 
       {/* Main Circadian Solar Command Deck */}
-      <div className="flex-1 ml-64 min-w-0 flex flex-col min-h-screen">
+      <div className="flex-1 ml-0 lg:ml-[26rem] min-w-0 flex flex-col min-h-screen pt-14 lg:pt-0 transition-all duration-300">
         {/* Top Control Header */}
-        <header className="px-6 pt-5 pb-2.5 flex flex-wrap items-center justify-between gap-4 border-b border-zinc-200/50 dark:border-white/[0.08] liquid-glass-panel sticky top-0 z-30">
-          <div className="flex items-center gap-4">
+        <header className="px-4 sm:px-6 pt-4 pb-2.5 flex flex-wrap items-center justify-between gap-3 border-b border-zinc-200/50 dark:border-white/[0.08] liquid-glass-panel sticky top-14 lg:top-0 z-30">
+          <div className="flex items-center gap-3">
             <div>
-              <div className="flex items-center gap-2.5">
+              <div className="flex items-center gap-2">
                 <span
                   className="w-2 h-2 rounded-full animate-pulse"
                   style={{ backgroundColor: currentPhase.pillColor }}
                 />
-                <h1 className="text-sm font-bold tracking-[0.18em] uppercase text-zinc-100">
+                <h1 className="text-xs sm:text-sm font-bold tracking-[0.18em] uppercase text-zinc-100">
                   Circadian Solar Arc
                 </h1>
                 <span
-                  className="px-2.5 py-0.5 rounded-full text-[10px] font-bold tracking-widest uppercase border"
+                  className="px-2 py-0.5 rounded-full text-[9.5px] font-bold tracking-widest uppercase border"
                   style={{
                     color: currentPhase.pillColor,
                     borderColor: `${currentPhase.pillColor}44`,
@@ -914,79 +914,46 @@ export default function CircadianCalendarPage() {
                   {currentPhase.name}
                 </span>
               </div>
-              <p className="text-[11px] text-zinc-400 mt-0.5">
+              <p className="text-[10.5px] text-zinc-400 mt-0.5 hidden sm:block">
                 {currentPhase.subtitle}
               </p>
             </div>
           </div>
 
-          {/* Date Controls + Quick Batch/Randomize/Budget + View Switcher + Add Event */}
+          {/* Date Controls + View Switcher + Add Block */}
           <div className="flex flex-wrap items-center gap-2">
             {/* Date Stepper */}
-            <div className="flex items-center bg-[#12151f] border border-white/10 rounded-xl p-1">
+            <div className="flex items-center bg-[#12151f] border border-white/10 rounded-xl p-0.5">
               <button
                 onClick={() => shiftDate(-1)}
-                className="p-1.5 rounded-lg text-zinc-400 hover:text-white hover:bg-white/5 transition-colors"
+                className="p-1 rounded-lg text-zinc-400 hover:text-white hover:bg-white/5 transition-colors"
                 title="Previous Day"
               >
-                <ChevronLeft size={14} />
+                <ChevronLeft size={13} />
               </button>
               <button
                 onClick={() =>
                   setSelectedDate(toLocalDateInputValue(new Date()))
                 }
-                className="px-3 py-1 text-xs font-semibold text-zinc-200 hover:text-amber-300 transition-colors flex items-center gap-1.5"
+                className="px-2.5 py-0.5 text-xs font-semibold text-zinc-200 hover:text-amber-300 transition-colors flex items-center gap-1.5"
               >
                 <CalendarIcon size={12} className="text-amber-400" />
                 {formattedSelectedDate}
               </button>
               <button
                 onClick={() => shiftDate(1)}
-                className="p-1.5 rounded-lg text-zinc-400 hover:text-white hover:bg-white/5 transition-colors"
+                className="p-1 rounded-lg text-zinc-400 hover:text-white hover:bg-white/5 transition-colors"
                 title="Next Day"
               >
-                <ChevronRight size={14} />
+                <ChevronRight size={13} />
               </button>
             </div>
 
-            {/* Quick Auto-Batch Tasks */}
-            <button
-              type="button"
-              onClick={handleAutoBatchTasks}
-              disabled={busyOpsAction === "auto_batch"}
-              className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-sky-500/15 hover:bg-sky-500/25 border border-sky-400/35 text-sky-200 text-[11px] font-semibold transition-all"
-              title="Auto-batch pending tasks into focused calendar blocks"
-            >
-              <Layers size={13} className="text-sky-400" />
-              Auto-Batch Tasks
-            </button>
-
-            {/* Quick Randomize Block Colors */}
-            <button
-              type="button"
-              onClick={handleRandomizeColors}
-              disabled={busyOpsAction === "randomize_colors"}
-              className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-violet-500/15 hover:bg-violet-500/25 border border-violet-400/35 text-violet-200 text-[11px] font-semibold transition-all"
-              title="Randomize harmonious block colors across Solar Dial & Agenda"
-            >
-              <Shuffle size={13} className="text-violet-400" />
-              Randomize Colors
-            </button>
-
-            {/* Connected 12-Month Budget Link */}
-            <Link
-              href="/budget"
-              className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-emerald-500/15 hover:bg-emerald-500/25 border border-emerald-400/35 text-emerald-200 text-[11px] font-semibold transition-all"
-            >
-              <Wallet size={13} className="text-emerald-400" />
-              12-Mo Budget
-            </Link>
-
-            {/* Solar Wedges vs Quadrant Bezier Cards Mode */}
-            <div className="flex items-center bg-[#12151f] border border-white/10 rounded-xl p-1">
+            {/* Solar Wedges vs Quadrants Mode */}
+            <div className="flex items-center bg-[#12151f] border border-white/10 rounded-xl p-0.5">
               <button
                 onClick={() => setViewMode("solar")}
-                className={`flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-[11px] font-semibold transition-all ${
+                className={`flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-[11px] font-semibold transition-all ${
                   viewMode === "solar"
                     ? "bg-white/10 text-white shadow"
                     : "text-zinc-400 hover:text-zinc-200"
@@ -997,7 +964,7 @@ export default function CircadianCalendarPage() {
               </button>
               <button
                 onClick={() => setViewMode("quadrants")}
-                className={`flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-[11px] font-semibold transition-all ${
+                className={`flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-[11px] font-semibold transition-all ${
                   viewMode === "quadrants"
                     ? "bg-white/10 text-white shadow"
                     : "text-zinc-400 hover:text-zinc-200"
@@ -1014,137 +981,13 @@ export default function CircadianCalendarPage() {
                 setEditingEvent(null);
                 setModalOpen(true);
               }}
-              className="flex items-center gap-1.5 px-4 py-2 rounded-xl bg-gradient-to-r from-amber-400 to-orange-500 text-black text-xs font-bold tracking-wider uppercase shadow-[0_0_20px_rgba(251,191,36,0.28)] hover:brightness-110 transition-all"
+              className="flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl bg-gradient-to-r from-amber-400 to-orange-500 text-black text-xs font-bold tracking-wider uppercase shadow-[0_0_20px_rgba(251,191,36,0.28)] hover:brightness-110 transition-all"
             >
               <Plus size={14} strokeWidth={2.5} />
               Add Block
             </button>
           </div>
         </header>
-
-        {/* Section 18: Sleek Weather-Radar Layer Multi-Toggle Bar */}
-        <div className="px-6 py-2.5 flex flex-wrap items-center justify-between gap-3 border-b border-white/[0.05] bg-[#0c0f18]/75 backdrop-blur-md">
-          <div className="flex items-center gap-2">
-            <span className="flex items-center gap-1.5 text-[10px] font-bold tracking-[0.16em] uppercase text-zinc-400">
-              <Radar
-                size={13}
-                className={
-                  activeRadarTypes.length > 0
-                    ? "text-sky-400 animate-spin"
-                    : "text-zinc-500"
-                }
-                style={{ animationDuration: "6s" }}
-              />
-              Weather-Radar Layers
-            </span>
-            <span className="hidden sm:inline text-[10px] font-mono text-zinc-500">
-              96×15m Polar Isobars
-            </span>
-          </div>
-
-          <div className="flex flex-wrap items-center gap-2">
-            {(
-              [
-                {
-                  key: "energy_forecast" as RadarLayerKey,
-                  label: "Energy Forecast",
-                  color: "#38bdf8",
-                  Icon: Zap,
-                },
-                {
-                  key: "activity_density" as RadarLayerKey,
-                  label: "Activity Heatmap",
-                  color: "#10b981",
-                  Icon: Activity,
-                },
-                {
-                  key: "posture_biometrics" as RadarLayerKey,
-                  label: "Posture Load",
-                  color: "#a855f7",
-                  Icon: UserCheck,
-                },
-                {
-                  key: "metabolic_burn" as RadarLayerKey,
-                  label: "Metabolic Burn",
-                  color: "#f97316",
-                  Icon: Flame,
-                },
-              ] as const
-            ).map(({ key, label, color, Icon }) => {
-              const isActive = activeRadarTypes.includes(key);
-              const layerObj = radarLayers.find((l) => l.layerType === key);
-              const liveBucketIdx = Math.min(
-                95,
-                Math.max(
-                  0,
-                  Math.floor((((effectiveMinutes % 1440) + 1440) % 1440) / 15)
-                )
-              );
-              const livePct = layerObj?.bucketValues?.[liveBucketIdx];
-
-              return (
-                <button
-                  key={key}
-                  type="button"
-                  onClick={() => toggleRadarLayer(key)}
-                  className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-[11px] font-semibold border transition-all ${
-                    isActive
-                      ? "text-white shadow-[0_0_16px_rgba(0,0,0,0.45)]"
-                      : "bg-[#12151f]/90 border-white/[0.08] text-zinc-400 hover:text-zinc-200 hover:border-white/15"
-                  }`}
-                  style={
-                    isActive
-                      ? {
-                          backgroundColor: `${color}22`,
-                          borderColor: `${color}88`,
-                        }
-                      : undefined
-                  }
-                >
-                  <Icon size={12} style={{ color }} />
-                  <span>{label}</span>
-                  {typeof livePct === "number" && (
-                    <span
-                      className="ml-0.5 px-1.5 py-0.5 rounded-md text-[9.5px] font-mono"
-                      style={{
-                        backgroundColor: isActive
-                          ? `${color}30`
-                          : "rgba(255,255,255,0.06)",
-                        color: isActive ? "#ffffff" : "rgba(212,212,216,0.9)",
-                      }}
-                    >
-                      {livePct}%
-                    </span>
-                  )}
-                </button>
-              );
-            })}
-
-            {activeRadarTypes.length > 0 && (
-              <>
-                <button
-                  type="button"
-                  onClick={handleRecalibrateRadar}
-                  disabled={recalibratingRadar}
-                  className="flex items-center gap-1 px-2.5 py-1.5 rounded-xl bg-white/[0.06] hover:bg-white/10 border border-white/10 text-[10px] font-semibold text-amber-300 transition-colors"
-                >
-                  <RefreshCw
-                    size={11}
-                    className={recalibratingRadar ? "animate-spin" : ""}
-                  />
-                  Sync Curve
-                </button>
-                <button
-                  type="button"
-                  onClick={() => setActiveRadarTypes([])}
-                  className="px-2 py-1.5 rounded-xl text-[10px] font-semibold text-zinc-400 hover:text-white transition-colors"
-                >
-                  Clear
-                </button>
-              </>
-            )}
-          </div>
-        </div>
 
         {/* Multi-Day Active Highlight Banner + Ops Notification Toast */}
         {(activeMultiDaySpans.length > 0 || opsBannerMsg) && (
@@ -1275,31 +1118,6 @@ export default function CircadianCalendarPage() {
                   </div>
                 </div>
               </div>
-
-              {/* Primary 360° Walk Habit Quick Bar */}
-              {primaryWalkHabit && (
-                <div className="pt-2.5 border-t border-white/[0.08] flex items-center justify-between gap-2">
-                  <div className="min-w-0">
-                    <div className="text-[10.5px] font-bold text-emerald-300 truncate">
-                      360° {primaryWalkHabit.title}
-                    </div>
-                    <div className="text-[10px] font-mono text-zinc-400">
-                      {primaryWalkHabit.currentValue.toLocaleString()} /{" "}
-                      {primaryWalkHabit.targetValue.toLocaleString()}{" "}
-                      {primaryWalkHabit.unit} ({Math.round(primaryWalkHabit.pct)}%)
-                    </div>
-                  </div>
-                  <button
-                    type="button"
-                    onClick={() =>
-                      handleLogHabit(primaryWalkHabit.id, { delta: 1000 })
-                    }
-                    className="px-2.5 py-1 rounded-lg bg-emerald-500/20 hover:bg-emerald-500/30 border border-emerald-400/40 text-[10px] font-mono font-bold text-emerald-300 shrink-0 transition-colors"
-                  >
-                    +1k
-                  </button>
-                </div>
-              )}
             </div>
 
             {/* Domain Color Legend Pill Bar */}

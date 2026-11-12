@@ -136,7 +136,6 @@ export function CircadianDialStage({
 }: CircadianDialStageProps) {
   const svgRef = useRef<SVGSVGElement | null>(null);
   const [hoveredEventId, setHoveredEventId] = useState<string | null>(null);
-  const [hoveredHabitId, setHoveredHabitId] = useState<string | null>(null);
   const [isDraggingTime, setIsDraggingTime] = useState(false);
   const [quickItemText, setQuickItemText] = useState("");
 
@@ -150,29 +149,11 @@ export function CircadianDialStage({
   const R_SKY = 168 * scaleFactor;
   const R_TIMELAPSE_INNER = 168 * scaleFactor;
   const R_TIMELAPSE_OUTER = 182 * scaleFactor;
-  const R_SOLAR_ARC = 92 * scaleFactor;
-  const R_ORBITAL_TRACKS: number[] = []; // Exterior orbital rings removed per user request
-  const R_WEDGE_INNER = 190 * scaleFactor;
-  const R_WEDGE_OUTER = 268 * scaleFactor;
+  const R_SOLAR_ARC = 96 * scaleFactor;
+  const R_WEDGE_INNER = 196 * scaleFactor;
+  const R_WEDGE_OUTER = 278 * scaleFactor;
 
   const activeId = hoveredEventId ?? selectedEventId;
-
-  // Filter active highlight spans matching selectedDate
-  const visibleHighlightSpans = useMemo(() => {
-    return highlightSpans.filter((sp) => {
-      if (!sp.isActive) return false;
-      if (sp.spanType === "multi_day" && selectedDate) {
-        if (sp.startDate && selectedDate < sp.startDate) return false;
-        if (sp.endDate && selectedDate > sp.endDate) return false;
-      }
-      return true;
-    });
-  }, [highlightSpans, selectedDate]);
-
-  // Concentric 360° Full-Circle Habit Rings around outer dial perimeter
-  const dialHabits = useMemo(() => habits.slice(0, 3), [habits]);
-  const habitOuterPadding =
-    dialHabits.length > 0 ? (10 + dialHabits.length * 8.5) * scaleFactor : 0;
 
   // 144-step 24-Hour Day-to-Night Time-Lapse Wheel Ring
   const timelapseWheelSegments = useMemo(
@@ -206,111 +187,6 @@ export function CircadianDialStage({
     [CX, CY, R_SOLAR_ARC, currentMinutes]
   );
 
-  // Section 18: Precompute GPU-friendly 96-point Polar Radar Isobar Polygons & Thermal Arcs
-  const rRadarMin = 52 * scaleFactor;
-  const rRadarMax = 163 * scaleFactor;
-  const computedRadarOverlays = useMemo(() => {
-    if (!activeRadarTypes.length || !radarLayers.length) return [];
-    const activeSet = new Set(activeRadarTypes);
-    const filtered = radarLayers.filter((l) => activeSet.has(l.layerType));
-
-    return filtered.map((layer, layerIdx) => {
-      const vals =
-        layer.bucketValues.length === 96
-          ? layer.bucketValues
-          : Array.from(
-              { length: 96 },
-              (_, i) =>
-                layer.bucketValues[i % Math.max(1, layer.bucketValues.length)] ??
-                50
-            );
-
-      const pts = vals.map((v, b) => {
-        const mins = b * 15 + 7.5;
-        const rad = minutesToAngleRad(mins);
-        const norm = Math.max(0, Math.min(100, v)) / 100;
-        const r = rRadarMin + norm * (rRadarMax - rRadarMin);
-        return polarToCartesian(CX, CY, r, rad);
-      });
-
-      const smoothIsobarPath = buildSmoothClosedSpline(pts);
-
-      let peakIdx = layer.peakBucket ?? 0;
-      if (layer.peakBucket === undefined) {
-        for (let i = 1; i < vals.length; i++) {
-          if (vals[i] > vals[peakIdx]) peakIdx = i;
-        }
-      }
-      const peakMins = peakIdx * 15 + 7.5;
-      const peakNorm = Math.max(0, Math.min(100, vals[peakIdx] ?? 80)) / 100;
-      const peakPt = polarToCartesian(
-        CX,
-        CY,
-        rRadarMin + peakNorm * (rRadarMax - rRadarMin),
-        minutesToAngleRad(peakMins)
-      );
-
-      const liveBucket = Math.min(
-        95,
-        Math.max(0, Math.floor((((currentMinutes % 1440) + 1440) % 1440) / 15))
-      );
-      const liveVal = vals[liveBucket] ?? 50;
-      const livePt = polarToCartesian(
-        CX,
-        CY,
-        rRadarMin +
-          (Math.max(0, Math.min(100, liveVal)) / 100) *
-            (rRadarMax - rRadarMin),
-        minutesToAngleRad(currentMinutes)
-      );
-
-      const rThermalRadius =
-        R_WEDGE_OUTER + habitOuterPadding + (6 + layerIdx * 5.5) * scaleFactor;
-      const thermalSegments: Array<{ d: string; opacity: number }> = [];
-      for (let b = 0; b < 96; b++) {
-        const v = vals[b] ?? 0;
-        if (v < 45) continue;
-        const m1 = b * 15 + 0.6;
-        const m2 = (b + 1) * 15 - 0.6;
-        const p1 = polarToCartesian(CX, CY, rThermalRadius, minutesToAngleRad(m1));
-        const p2 = polarToCartesian(CX, CY, rThermalRadius, minutesToAngleRad(m2));
-        thermalSegments.push({
-          d: `M ${p1.x.toFixed(2)} ${p1.y.toFixed(2)} A ${rThermalRadius.toFixed(2)} ${rThermalRadius.toFixed(2)} 0 0 1 ${p2.x.toFixed(2)} ${p2.y.toFixed(2)}`,
-          opacity: Number((0.28 + ((v - 45) / 55) * 0.68).toFixed(2)),
-        });
-      }
-
-      return {
-        layer,
-        smoothIsobarPath,
-        peakPt,
-        peakVal: vals[peakIdx] ?? 0,
-        livePt,
-        liveVal,
-        thermalSegments,
-      };
-    });
-  }, [
-    activeRadarTypes,
-    radarLayers,
-    CX,
-    CY,
-    rRadarMin,
-    rRadarMax,
-    R_WEDGE_OUTER,
-    habitOuterPadding,
-    scaleFactor,
-    currentMinutes,
-  ]);
-
-  const radarOuterPadding =
-    computedRadarOverlays.length > 0
-      ? (6 + computedRadarOverlays.length * 5.5) * scaleFactor
-      : 0;
-
-  // Orbital track assignment for nested concentric bands
-  const orbitalMap = useMemo(() => assignOrbitalTracks(events), [events]);
-
   // Precompute wedge geometries + non-colliding label anchors
   const wedgeItems = useMemo(() => {
     const raw = events.map((ev) => {
@@ -325,25 +201,10 @@ export function CircadianDialStage({
         R_WEDGE_OUTER,
         startMin,
         endMin,
-        1.5
-      );
-      const orbital = orbitalMap.get(ev.id) ?? {
-        track: 0,
-        startMin,
-        endMin,
-      };
-      const trackRadius =
-        R_ORBITAL_TRACKS[Math.min(2, orbital.track)] ?? R_ORBITAL_TRACKS[0];
-      const ribbonPath = describeTimeArc(
-        CX,
-        CY,
-        trackRadius,
-        startMin,
-        endMin
+        2.2
       );
 
-      const labelRadius =
-        R_WEDGE_OUTER + 18 + habitOuterPadding + radarOuterPadding;
+      const labelRadius = R_WEDGE_OUTER + 16 * scaleFactor;
       const anchorPt = polarToCartesian(CX, CY, labelRadius, wedge.midAngleRad);
       const cosM = Math.cos(wedge.midAngleRad);
       const textAnchor: "start" | "end" | "middle" =
@@ -357,8 +218,6 @@ export function CircadianDialStage({
         midMin,
         timelapseColor: getTimelapseColorAtMinutes(midMin),
         wedge,
-        trackRadius,
-        ribbonPath,
         labelX: anchorPt.x,
         labelY: anchorPt.y,
         textAnchor,
@@ -385,10 +244,7 @@ export function CircadianDialStage({
     CY,
     R_WEDGE_INNER,
     R_WEDGE_OUTER,
-    R_ORBITAL_TRACKS,
-    orbitalMap,
-    habitOuterPadding,
-    radarOuterPadding,
+    scaleFactor,
   ]);
 
   // Assign up to 4 quadrant cards for Quadrant Mode
@@ -465,7 +321,7 @@ export function CircadianDialStage({
         const dialPt = polarToCartesian(
           CX,
           CY,
-          R_WEDGE_OUTER + habitOuterPadding,
+          R_WEDGE_OUTER,
           item.wedge.midAngleRad
         );
         const tracerPath = describeCubicTracer(
@@ -492,7 +348,7 @@ export function CircadianDialStage({
       dialPt: { x: number; y: number };
       tracerPath: string;
     }>;
-  }, [wedgeItems, CX, CY, R_WEDGE_OUTER, habitOuterPadding, VB_W, VB_H]);
+  }, [wedgeItems, CX, CY, R_WEDGE_OUTER, VB_W, VB_H]);
 
   const selectedWedgeItem = useMemo(
     () => wedgeItems.find((w) => w.event.id === selectedEventId) ?? null,
@@ -627,24 +483,6 @@ export function CircadianDialStage({
             <circle cx={CX} cy={CY} r={R_SKY} />
           </clipPath>
 
-          {computedRadarOverlays.map(({ layer }) => (
-            <radialGradient
-              key={`radar-grad-${layer.layerType}`}
-              id={`radar-grad-${layer.layerType}`}
-              cx="50%"
-              cy="50%"
-              r="50%"
-            >
-              <stop offset="0%" stopColor={layer.color} stopOpacity="0.04" />
-              <stop offset="55%" stopColor={layer.color} stopOpacity="0.18" />
-              <stop
-                offset="100%"
-                stopColor={layer.secondaryColor || layer.color}
-                stopOpacity="0.42"
-              />
-            </radialGradient>
-          ))}
-
           {wedgeItems.map(({ event, wedge }) => (
             <clipPath key={`clip-${event.id}`} id={`wedge-clip-${event.id}`}>
               <path d={wedge.path} />
@@ -680,161 +518,7 @@ export function CircadianDialStage({
             preserveAspectRatio="xMidYMid slice"
           />
           <circle cx={CX} cy={CY} r={R_SKY} fill="url(#skyDepthVignette)" />
-
-          {/* Section 18: Smooth 96-Point Polar Radar Isobars */}
-          {computedRadarOverlays.length > 0 && (
-            <g className="pointer-events-none">
-              {[0.25, 0.5, 0.75, 1].map((frac) => {
-                const rr = rRadarMin + frac * (rRadarMax - rRadarMin);
-                return (
-                  <circle
-                    key={`radar-grid-${frac}`}
-                    cx={CX}
-                    cy={CY}
-                    r={rr}
-                    fill="none"
-                    stroke="rgba(148, 163, 184, 0.22)"
-                    strokeWidth="0.85"
-                    strokeDasharray={frac === 1 ? undefined : "2 4"}
-                  />
-                );
-              })}
-
-              {computedRadarOverlays.map(
-                ({ layer, smoothIsobarPath, peakPt, peakVal, livePt }) => (
-                  <g key={`isobar-${layer.layerType}`}>
-                    <path
-                      d={smoothIsobarPath}
-                      fill={`url(#radar-grad-${layer.layerType})`}
-                      stroke={layer.color}
-                      strokeWidth={2 * scaleFactor}
-                      strokeLinejoin="round"
-                      filter="url(#arcNeonGlow)"
-                    />
-                    <circle
-                      cx={peakPt.x}
-                      cy={peakPt.y}
-                      r={3.8 * scaleFactor}
-                      fill="#ffffff"
-                      stroke={layer.color}
-                      strokeWidth="1.8"
-                    />
-                    <text
-                      x={peakPt.x}
-                      y={peakPt.y - 6 * scaleFactor}
-                      textAnchor="middle"
-                      fill="#ffffff"
-                      stroke="rgba(4, 7, 16, 0.85)"
-                      strokeWidth="2.5"
-                      paintOrder="stroke"
-                      fontSize={8.5 * scaleFactor}
-                      fontWeight={700}
-                    >
-                      {layer.shortLabel} {peakVal}%
-                    </text>
-                    <circle
-                      cx={livePt.x}
-                      cy={livePt.y}
-                      r={3.4 * scaleFactor}
-                      fill={layer.color}
-                      stroke="#ffffff"
-                      strokeWidth="1.3"
-                    />
-                  </g>
-                )
-              )}
-            </g>
-          )}
         </g>
-
-        {/* 2.5 Long-Period Luminous Highlight Spans (Hours & Multi-Day Arc Sectors) */}
-        {visibleHighlightSpans.length > 0 && (
-          <g className="pointer-events-none">
-            {visibleHighlightSpans.map((sp) => {
-              const rInnerSpan = R_SOLAR_ARC + 6 * scaleFactor;
-              const rOuterSpan = R_WEDGE_OUTER + 4 * scaleFactor;
-              const sector = describeAnnularWedge(
-                CX,
-                CY,
-                rInnerSpan,
-                rOuterSpan,
-                sp.startMinute,
-                sp.endMinute,
-                0.4
-              );
-              const startRayIn = timeToCartesian(CX, CY, rInnerSpan, sp.startMinute);
-              const startRayOut = timeToCartesian(CX, CY, rOuterSpan, sp.startMinute);
-              const endRayIn = timeToCartesian(CX, CY, rInnerSpan, sp.endMinute);
-              const endRayOut = timeToCartesian(CX, CY, rOuterSpan, sp.endMinute);
-              const rimArc = describeTimeArc(
-                CX,
-                CY,
-                rOuterSpan,
-                sp.startMinute,
-                sp.endMinute
-              );
-              const tagPos = polarToCartesian(
-                CX,
-                CY,
-                (R_TIMELAPSE_INNER - 16 * scaleFactor),
-                sector.midAngleRad
-              );
-
-              return (
-                <g key={`hl-span-${sp.id}`}>
-                  <path
-                    d={sector.path}
-                    fill={sp.color}
-                    fillOpacity={Math.max(0.08, Math.min(0.45, sp.opacity))}
-                  />
-                  <path
-                    d={rimArc}
-                    fill="none"
-                    stroke={sp.color}
-                    strokeWidth={2.6 * scaleFactor}
-                    strokeDasharray={sp.spanType === "multi_day" ? "6 4" : undefined}
-                    filter="url(#arcNeonGlow)"
-                    opacity="0.92"
-                  />
-                  <line
-                    x1={startRayIn.x}
-                    y1={startRayIn.y}
-                    x2={startRayOut.x}
-                    y2={startRayOut.y}
-                    stroke={sp.color}
-                    strokeWidth={1.3 * scaleFactor}
-                    strokeDasharray="3 3"
-                    opacity="0.75"
-                  />
-                  <line
-                    x1={endRayIn.x}
-                    y1={endRayIn.y}
-                    x2={endRayOut.x}
-                    y2={endRayOut.y}
-                    stroke={sp.color}
-                    strokeWidth={1.3 * scaleFactor}
-                    strokeDasharray="3 3"
-                    opacity="0.75"
-                  />
-                  <text
-                    x={tagPos.x}
-                    y={tagPos.y}
-                    textAnchor="middle"
-                    fill={sp.color}
-                    stroke="rgba(5, 8, 18, 0.88)"
-                    strokeWidth="3"
-                    paintOrder="stroke"
-                    fontSize={8 * scaleFactor}
-                    fontWeight={800}
-                    letterSpacing="0.08em"
-                  >
-                    {sp.label.toUpperCase().slice(0, 24)}
-                  </text>
-                </g>
-              );
-            })}
-          </g>
-        )}
 
         {/* 3. Continuous 360° 24-Hour Day-to-Night Time-Lapse Color Spectrum Wheel Band */}
         <g
@@ -1019,56 +703,6 @@ export function CircadianDialStage({
                   {sol.label}
                 </text>
               </g>
-            );
-          })}
-        </g>
-
-        {/* 6. Nested Inner Orbital Event Bands (Honors Custom & Randomized Accent Colors) */}
-        <g>
-          {R_ORBITAL_TRACKS.map((r, idx) => (
-            <circle
-              key={idx}
-              cx={CX}
-              cy={CY}
-              r={r}
-              fill="none"
-              stroke="rgba(255,255,255,0.1)"
-              strokeWidth={4 * scaleFactor}
-            />
-          ))}
-
-          {wedgeItems.map(({ event, ribbonPath, timelapseColor }) => {
-            const isHighlighted = activeId === event.id;
-            const matchesTelemetry =
-              !highlightedTelemetry ||
-              event.telemetrySource === highlightedTelemetry;
-            const ribbonColor =
-              event.accentColor ||
-              DOMAIN_CONFIG[event.domain]?.color ||
-              timelapseColor;
-            return (
-              <path
-                key={`ribbon-${event.id}`}
-                d={ribbonPath}
-                fill="none"
-                stroke={ribbonColor}
-                strokeWidth={(isHighlighted ? 7.5 : 5) * scaleFactor}
-                strokeLinecap="round"
-                opacity={
-                  !matchesTelemetry
-                    ? 0.25
-                    : activeId && !isHighlighted
-                    ? 0.45
-                    : 0.94
-                }
-                filter={isHighlighted ? "url(#arcNeonGlow)" : undefined}
-                className="cursor-pointer transition-all duration-300"
-                onMouseEnter={() => setHoveredEventId(event.id)}
-                onMouseLeave={() => setHoveredEventId(null)}
-                onClick={() =>
-                  onSelectEvent(selectedEventId === event.id ? null : event.id)
-                }
-              />
             );
           })}
         </g>
@@ -1368,12 +1002,12 @@ export function CircadianDialStage({
                       y1={wedge.outerMidPoint.y}
                       x2={
                         CX +
-                        (R_WEDGE_OUTER + 10 + habitOuterPadding + radarOuterPadding) *
+                        (R_WEDGE_OUTER + 8 * scaleFactor) *
                           Math.cos(wedge.midAngleRad)
                       }
                       y2={
                         CY +
-                        (R_WEDGE_OUTER + 10 + habitOuterPadding + radarOuterPadding) *
+                        (R_WEDGE_OUTER + 8 * scaleFactor) *
                           Math.sin(wedge.midAngleRad)
                       }
                       stroke={strokeColor}
@@ -1408,128 +1042,6 @@ export function CircadianDialStage({
             );
           })}
         </g>
-
-        {/* 8.2 Concentric 360° Full-Circle Habit Completion Rings (Closes into Full Glowing Circle at 100%!) */}
-        {dialHabits.length > 0 && (
-          <g>
-            {dialHabits.map((habit, hIdx) => {
-              const rHabit =
-                R_WEDGE_OUTER + (10 + hIdx * 8.5) * scaleFactor;
-              const circumference = 2 * Math.PI * rHabit;
-              const clampedPct = Math.max(0, Math.min(100, habit.pct));
-              const isFullCircle = clampedPct >= 99.9;
-              const dashLen = (clampedPct / 100) * circumference;
-              const tipAngleRad =
-                ((-90 + (clampedPct / 100) * 360) * Math.PI) / 180;
-              const tipPt = polarToCartesian(CX, CY, rHabit, tipAngleRad);
-              const isHoveredHabit = hoveredHabitId === habit.id;
-              const stepDelta =
-                habit.unit === "steps"
-                  ? 1000
-                  : habit.unit === "oz"
-                  ? 15
-                  : habit.unit === "hrs"
-                  ? 0.5
-                  : Math.max(1, Math.round(habit.targetValue * 0.1));
-
-              return (
-                <g
-                  key={`dial-habit-${habit.id}`}
-                  className={onQuickIncrementHabit ? "cursor-pointer" : undefined}
-                  onMouseEnter={() => setHoveredHabitId(habit.id)}
-                  onMouseLeave={() => setHoveredHabitId(null)}
-                  onClick={() => {
-                    if (onQuickIncrementHabit) {
-                      onQuickIncrementHabit(habit.id, stepDelta);
-                    }
-                  }}
-                >
-                  {/* 360° Background Track Circle */}
-                  <circle
-                    cx={CX}
-                    cy={CY}
-                    r={rHabit}
-                    fill="none"
-                    stroke="rgba(255,255,255,0.08)"
-                    strokeWidth={4.5 * scaleFactor}
-                  />
-
-                  {/* Glowing Halo when 100% Full 360° Circle Achieved */}
-                  {isFullCircle && (
-                    <circle
-                      cx={CX}
-                      cy={CY}
-                      r={rHabit}
-                      fill="none"
-                      stroke={habit.ringColor}
-                      strokeWidth={9.5 * scaleFactor}
-                      opacity="0.24"
-                    />
-                  )}
-
-                  {/* Active 360° Progress Ring */}
-                  {clampedPct > 0 && (
-                    <circle
-                      cx={CX}
-                      cy={CY}
-                      r={rHabit}
-                      fill="none"
-                      stroke={habit.ringColor}
-                      strokeWidth={
-                        (isFullCircle || isHoveredHabit ? 5.6 : 4.5) * scaleFactor
-                      }
-                      strokeLinecap="round"
-                      strokeDasharray={
-                        isFullCircle
-                          ? undefined
-                          : `${dashLen.toFixed(2)} ${circumference.toFixed(2)}`
-                      }
-                      transform={`rotate(-90 ${CX} ${CY})`}
-                      filter={
-                        isFullCircle || hIdx === 0 || isHoveredHabit
-                          ? "url(#arcNeonGlow)"
-                          : undefined
-                      }
-                    />
-                  )}
-
-                  {/* Leading Progress Jewel / Full-Circle Crown Node */}
-                  {clampedPct > 0 && (
-                    <circle
-                      cx={isFullCircle ? CX : tipPt.x}
-                      cy={isFullCircle ? CY - rHabit : tipPt.y}
-                      r={(isFullCircle ? 4.4 : 3.4) * scaleFactor}
-                      fill="#ffffff"
-                      stroke={habit.ringColor}
-                      strokeWidth="1.8"
-                    />
-                  )}
-                </g>
-              );
-            })}
-          </g>
-        )}
-
-        {/* 8.5 Section 18 Outer Circumferential Thermal Doppler Radar Arcs */}
-        {computedRadarOverlays.length > 0 && (
-          <g className="pointer-events-none">
-            {computedRadarOverlays.map(({ layer, thermalSegments }) => (
-              <g key={`thermal-${layer.layerType}`} filter="url(#arcNeonGlow)">
-                {thermalSegments.map((seg, idx) => (
-                  <path
-                    key={`tseg-${layer.layerType}-${idx}`}
-                    d={seg.d}
-                    fill="none"
-                    stroke={layer.color}
-                    strokeWidth={3.2 * scaleFactor}
-                    strokeLinecap="round"
-                    opacity={seg.opacity}
-                  />
-                ))}
-              </g>
-            ))}
-          </g>
-        )}
 
         {/* 9. Illuminated Cubic Bezier Callout Tracers — Solar Inspector Mode */}
         {viewMode === "solar" && selectedWedgeItem && selectedInspectorGeometry && (
@@ -1618,32 +1130,6 @@ export function CircadianDialStage({
             );
           })}
       </svg>
-
-      {/* Hovered 360° Habit Ring Floating HUD Pill */}
-      {hoveredHabitId && (
-        <div className="pointer-events-none absolute top-2 right-2 z-30 rounded-xl bg-[#0b0e17]/95 border border-white/15 px-3 py-1.5 backdrop-blur-xl shadow-xl">
-          {(() => {
-            const h = dialHabits.find((x) => x.id === hoveredHabitId);
-            if (!h) return null;
-            return (
-              <div className="flex items-center gap-2 text-[11px]">
-                <span
-                  className="w-2.5 h-2.5 rounded-full"
-                  style={{ backgroundColor: h.ringColor }}
-                />
-                <span className="font-semibold text-white">{h.title}:</span>
-                <span className="font-mono text-zinc-200">
-                  {h.currentValue.toLocaleString()} / {h.targetValue.toLocaleString()}{" "}
-                  {h.unit} ({h.pct}%)
-                </span>
-                <span className="text-[10px] text-emerald-400">
-                  {h.pct >= 100 ? "· 360° CLOSED!" : "· Click ring to +log"}
-                </span>
-              </div>
-            );
-          })()}
-        </div>
-      )}
 
       {/* Live / Scrubbed Time Reset Pill */}
       {!isLiveTime && (

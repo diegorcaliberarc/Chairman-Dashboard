@@ -36,6 +36,8 @@ import {
   Layers,
   PanelLeftClose,
   PanelLeft,
+  Menu,
+  X,
 } from "lucide-react";
 import { useRouter, usePathname } from "next/navigation";
 import { UserAccountModal } from "./UserAccountModal";
@@ -237,14 +239,6 @@ const ALL_MODULE_ITEMS: NavModuleItem[] = [
     description: "Second brain knowledge graph",
   },
   {
-    id: "WIDGETS",
-    label: "MOBILE WIDGETS",
-    pillar: "happiness",
-    icon: <Smartphone size={15} />,
-    route: "/widgets",
-    description: "iOS & Android home-screen studio",
-  },
-  {
     id: "EPISTEMIC",
     label: "EPISTEMIC MATRIX",
     pillar: "happiness",
@@ -358,6 +352,12 @@ export function Sidebar({
   const [col1Collapsed, setCol1Collapsed] = useState(false);
   const [col2Collapsed, setCol2Collapsed] = useState(false);
   const [activePillar, setActivePillar] = useState<LifePillarFilter>("all");
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+
+  // Close mobile drawer on navigation
+  useEffect(() => {
+    setMobileMenuOpen(false);
+  }, [pathname]);
 
   useEffect(() => {
     try {
@@ -428,7 +428,51 @@ export function Sidebar({
 
   return (
     <>
-      <aside className="fixed left-0 top-0 h-screen flex flex-row liquid-glass-panel bg-white/75 dark:bg-black/60 backdrop-blur-2xl border-r border-zinc-200/60 dark:border-white/[0.12] z-50 transition-all duration-300 shadow-2xl">
+      {/* Mobile Top Navigation Bar (iPhone & Android Viewports) */}
+      <div className="lg:hidden fixed top-0 left-0 right-0 h-14 bg-[#070911]/90 backdrop-blur-xl border-b border-white/10 z-40 flex items-center justify-between px-4 text-white">
+        <button
+          type="button"
+          onClick={() => setMobileMenuOpen((p) => !p)}
+          className="p-2 rounded-xl bg-white/[0.06] hover:bg-white/10 text-zinc-200 transition-colors flex items-center gap-2"
+          aria-label="Toggle Navigation Menu"
+        >
+          {mobileMenuOpen ? <X size={20} /> : <Menu size={20} />}
+          <span className="text-xs font-bold tracking-wider uppercase text-zinc-300">
+            {currentPillarMeta.label}
+          </span>
+        </button>
+
+        <div className="flex items-center gap-2">
+          <div className="w-2 h-2 rounded-full animate-pulse" style={{ backgroundColor: currentPillarMeta.color }} />
+          <span className="text-xs font-bold tracking-[0.16em] uppercase bg-theme-gradient bg-clip-text text-transparent">
+            PRISTINE DESIGNS
+          </span>
+        </div>
+
+        <button
+          type="button"
+          onClick={() => setIsAppearanceOpen(true)}
+          className="p-2 rounded-xl text-zinc-400 hover:text-white hover:bg-white/10 transition-colors"
+          title="Theme & Typography Settings"
+        >
+          <Palette size={18} />
+        </button>
+      </div>
+
+      {/* Mobile Backdrop Overlay */}
+      {mobileMenuOpen && (
+        <div
+          className="lg:hidden fixed inset-0 bg-black/75 backdrop-blur-sm z-40 transition-opacity animate-in fade-in duration-200"
+          onClick={() => setMobileMenuOpen(false)}
+        />
+      )}
+
+      {/* Main Dual-Column Sidebar: Slide-over Drawer on Mobile, Fixed Rail on Desktop */}
+      <aside
+        className={`fixed left-0 top-0 h-screen flex flex-row liquid-glass-panel bg-white/95 dark:bg-[#07090e]/95 backdrop-blur-2xl border-r border-zinc-200/60 dark:border-white/[0.12] z-50 transition-transform duration-300 shadow-2xl ${
+          mobileMenuOpen ? "translate-x-0" : "-translate-x-full lg:translate-x-0"
+        }`}
+      >
         {/* ====================================================================
          * COLUMN 1: LIFE PILLARS SELECTOR (Health, Wealth, Relate, Fam, Joy & All)
          * ================================================================== */}
@@ -605,6 +649,7 @@ export function Sidebar({
                 <button
                   key={item.id}
                   onClick={() => {
+                    setMobileMenuOpen(false);
                     if (item.route === pathname) {
                       if (item.route === "/") setActiveTab(item.id);
                     } else {

@@ -1364,7 +1364,7 @@ export default function ChairmanDashboard() {
         setDeepWork={setDeepWork}
       />
 
-      <div className="flex-1 flex flex-col ml-64 min-w-0">
+      <div className="flex-1 flex flex-col ml-0 lg:ml-[26rem] pt-14 lg:pt-0 min-w-0 transition-all duration-300">
 
       {/* ── DEEP WORK OVERLAY ─────────────────────────────────────────────── */}
       {deepWork && (

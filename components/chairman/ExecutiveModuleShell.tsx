@@ -53,9 +53,9 @@ export function ExecutiveModuleShell({
         tasksLoading={false}
       />
 
-      <div className="flex-1 ml-64 min-w-0 flex flex-col min-h-screen bg-transparent relative">
+      <div className="flex-1 ml-0 lg:ml-[26rem] min-w-0 flex flex-col min-h-screen bg-transparent relative pt-14 lg:pt-0 transition-all duration-300">
         <header
-          className="px-6 pt-5 pb-3.5 flex flex-wrap items-center justify-between gap-4 sticky top-0 z-30 transition-all duration-300"
+          className="px-4 sm:px-6 pt-4 pb-3.5 flex flex-wrap items-center justify-between gap-4 sticky top-14 lg:top-0 z-30 transition-all duration-300"
           style={{
             backgroundColor: "var(--glass-surface)",
             backdropFilter: "blur(var(--glass-blur, 26px)) saturate(185%)",
