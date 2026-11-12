@@ -3,19 +3,28 @@
 import React, { useCallback, useEffect, useMemo, useState } from "react";
 import { useSession, signIn, signOut } from "next-auth/react";
 import {
+  Activity,
   Calendar as CalendarIcon,
   Check,
   ChevronLeft,
   ChevronRight,
+  Flame,
   HeartPulse,
   Layers,
   MoreHorizontal,
   Orbit,
   Plus,
+  Radar,
   RefreshCw,
+  UserCheck,
+  Zap,
 } from "lucide-react";
 import { Sidebar } from "@/components/Sidebar";
-import { CircadianDialStage } from "@/components/circadian/CircadianDialStage";
+import {
+  CircadianDialStage,
+  CircadianRadarLayerDTO,
+  RadarLayerKey,
+} from "@/components/circadian/CircadianDialStage";
 import { CircadianEventModal } from "@/components/circadian/CircadianEventModal";
 import { buildDefaultCircadianEvents } from "@/lib/circadianDefaults";
 import {
@@ -84,6 +93,11 @@ export default function CircadianCalendarPage() {
   >(null);
   const [syncingGCal, setSyncingGCal] = useState<boolean>(false);
 
+  // Section 18: Circadian Weather-Radar Layer states
+  const [radarLayers, setRadarLayers] = useState<CircadianRadarLayerDTO[]>([]);
+  const [activeRadarTypes, setActiveRadarTypes] = useState<RadarLayerKey[]>([]);
+  const [recalibratingRadar, setRecalibratingRadar] = useState<boolean>(false);
+
   // Real-Time Solar Beacon ticker (updates smoothly every 5s)
   useEffect(() => {
     const tick = () => setLiveMinutes(dateToMinutes(new Date(), true));
@@ -115,6 +129,58 @@ export default function CircadianCalendarPage() {
   useEffect(() => {
     fetchCircadianEvents(selectedDate);
   }, [selectedDate, fetchCircadianEvents]);
+
+  // Section 18: Fetch 96-point Circadian Radar Curves for selected date
+  const fetchRadarLayers = useCallback(async (dateStr: string) => {
+    try {
+      const res = await fetch(`/api/circadian/radar?date=${dateStr}`);
+      if (res.ok) {
+        const data = await res.json();
+        if (Array.isArray(data.layers)) {
+          setRadarLayers(data.layers);
+        }
+      }
+    } catch (err) {
+      console.error("Failed to fetch circadian radar layers:", err);
+    }
+  }, []);
+
+  useEffect(() => {
+    fetchRadarLayers(selectedDate);
+  }, [selectedDate, fetchRadarLayers]);
+
+  const toggleRadarLayer = (layerType: RadarLayerKey) => {
+    setActiveRadarTypes((prev) =>
+      prev.includes(layerType)
+        ? prev.filter((t) => t !== layerType)
+        : [...prev, layerType]
+    );
+  };
+
+  const handleRecalibrateRadar = async () => {
+    setRecalibratingRadar(true);
+    try {
+      const res = await fetch("/api/circadian/radar", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          action: "recalibrate",
+          date: selectedDate,
+          events,
+        }),
+      });
+      if (res.ok) {
+        const data = await res.json();
+        if (Array.isArray(data.layers)) {
+          setRadarLayers(data.layers);
+        }
+      }
+    } catch (err) {
+      console.error("Failed to recalibrate radar:", err);
+    } finally {
+      setRecalibratingRadar(false);
+    }
+  };
 
   // Load Chairman Dashboard Tasks & Health KPIs for Daily Focus + Micro-Statistics
   useEffect(() => {
@@ -559,6 +625,131 @@ export default function CircadianCalendarPage() {
           </div>
         </header>
 
+        {/* Section 18: Sleek Weather-Radar Layer Multi-Toggle Bar */}
+        <div className="px-6 py-2.5 flex flex-wrap items-center justify-between gap-3 border-b border-white/[0.05] bg-[#0c0f18]/75 backdrop-blur-md">
+          <div className="flex items-center gap-2">
+            <span className="flex items-center gap-1.5 text-[10px] font-bold tracking-[0.16em] uppercase text-zinc-400">
+              <Radar
+                size={13}
+                className={
+                  activeRadarTypes.length > 0
+                    ? "text-sky-400 animate-spin"
+                    : "text-zinc-500"
+                }
+                style={{ animationDuration: "6s" }}
+              />
+              Weather-Radar Layers
+            </span>
+            <span className="hidden sm:inline text-[10px] font-mono text-zinc-500">
+              96×15m Polar Isobars
+            </span>
+          </div>
+
+          <div className="flex flex-wrap items-center gap-2">
+            {(
+              [
+                {
+                  key: "energy_forecast" as RadarLayerKey,
+                  label: "Energy Forecast",
+                  color: "#38bdf8",
+                  Icon: Zap,
+                },
+                {
+                  key: "activity_density" as RadarLayerKey,
+                  label: "Activity Heatmap",
+                  color: "#10b981",
+                  Icon: Activity,
+                },
+                {
+                  key: "posture_biometrics" as RadarLayerKey,
+                  label: "Posture Load",
+                  color: "#a855f7",
+                  Icon: UserCheck,
+                },
+                {
+                  key: "metabolic_burn" as RadarLayerKey,
+                  label: "Metabolic Burn",
+                  color: "#f97316",
+                  Icon: Flame,
+                },
+              ] as const
+            ).map(({ key, label, color, Icon }) => {
+              const isActive = activeRadarTypes.includes(key);
+              const layerObj = radarLayers.find((l) => l.layerType === key);
+              const liveBucketIdx = Math.min(
+                95,
+                Math.max(
+                  0,
+                  Math.floor((((effectiveMinutes % 1440) + 1440) % 1440) / 15)
+                )
+              );
+              const livePct = layerObj?.bucketValues?.[liveBucketIdx];
+
+              return (
+                <button
+                  key={key}
+                  type="button"
+                  onClick={() => toggleRadarLayer(key)}
+                  className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-[11px] font-semibold border transition-all ${
+                    isActive
+                      ? "text-white shadow-[0_0_16px_rgba(0,0,0,0.45)]"
+                      : "bg-[#12151f]/90 border-white/[0.08] text-zinc-400 hover:text-zinc-200 hover:border-white/15"
+                  }`}
+                  style={
+                    isActive
+                      ? {
+                          backgroundColor: `${color}22`,
+                          borderColor: `${color}88`,
+                        }
+                      : undefined
+                  }
+                >
+                  <Icon size={12} style={{ color }} />
+                  <span>{label}</span>
+                  {typeof livePct === "number" && (
+                    <span
+                      className="ml-0.5 px-1.5 py-0.5 rounded-md text-[9.5px] font-mono"
+                      style={{
+                        backgroundColor: isActive
+                          ? `${color}30`
+                          : "rgba(255,255,255,0.06)",
+                        color: isActive ? "#ffffff" : "rgba(212,212,216,0.9)",
+                      }}
+                    >
+                      {livePct}%
+                    </span>
+                  )}
+                </button>
+              );
+            })}
+
+            {activeRadarTypes.length > 0 && (
+              <>
+                <button
+                  type="button"
+                  onClick={handleRecalibrateRadar}
+                  disabled={recalibratingRadar}
+                  className="flex items-center gap-1 px-2.5 py-1.5 rounded-xl bg-white/[0.06] hover:bg-white/10 border border-white/10 text-[10px] font-semibold text-amber-300 transition-colors"
+                  title="Recalibrate 96-point radar curves against scheduled circadian blocks"
+                >
+                  <RefreshCw
+                    size={11}
+                    className={recalibratingRadar ? "animate-spin" : ""}
+                  />
+                  Sync Curve
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setActiveRadarTypes([])}
+                  className="px-2 py-1.5 rounded-xl text-[10px] font-semibold text-zinc-400 hover:text-white transition-colors"
+                >
+                  Clear
+                </button>
+              </>
+            )}
+          </div>
+        </div>
+
         {/* Main Workspace Split: Center Celestial Dial + Right Executive Rail */}
         <div className="flex-1 flex flex-col xl:flex-row gap-5 px-6 py-4 items-stretch">
           {/* LEFT / CENTER STAGE: 24-Hour Celestial Dial + Bottom-Left Micro-Statistics */}
@@ -580,6 +771,8 @@ export default function CircadianCalendarPage() {
               }}
               onDeleteEvent={handleDeleteEvent}
               onAddChecklist={handleAddChecklist}
+              radarLayers={radarLayers}
+              activeRadarTypes={activeRadarTypes}
             />
 
             {/* Bottom-Left Floating Card: MICRO-STATISTICS (Reference Image Exact Match) */}

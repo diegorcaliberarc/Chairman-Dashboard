@@ -4,8 +4,6 @@ import React, { useEffect, useState } from "react";
 import {
   CalendarPlus,
   Check,
-  Film,
-  Image as ImageIcon,
   Plus,
   Sparkles,
   Trash2,
@@ -15,9 +13,9 @@ import {
   CircadianEventDTO,
   DOMAIN_CONFIG,
   EventDomain,
-  MEDIA_PRESETS,
   MediaTypeEnum,
 } from "@/lib/circadianTypes";
+import { EventMediaUploader } from "@/components/chairman/circadian/EventMediaUploader";
 import {
   dateToMinutes,
   getDurationMinutes,
@@ -282,78 +280,22 @@ export function CircadianEventModal({
             </div>
           </div>
 
-          {/* Visual Media Presets + Custom URL */}
-          <div>
-            <div className="flex items-center justify-between mb-2">
-              <label className="text-[10px] font-bold tracking-widest uppercase text-zinc-400">
-                Visual Media Anchor (16:9 Wedge & Card)
-              </label>
-              <div className="flex items-center gap-1 bg-white/5 rounded-lg p-0.5 border border-white/10">
-                <button
-                  type="button"
-                  onClick={() => setMediaType("image")}
-                  className={`flex items-center gap-1 px-2 py-1 rounded text-[10px] font-semibold ${
-                    mediaType === "image"
-                      ? "bg-white/15 text-white"
-                      : "text-zinc-400"
-                  }`}
-                >
-                  <ImageIcon size={11} /> Image
-                </button>
-                <button
-                  type="button"
-                  onClick={() => setMediaType("video_loop")}
-                  className={`flex items-center gap-1 px-2 py-1 rounded text-[10px] font-semibold ${
-                    mediaType === "video_loop"
-                      ? "bg-white/15 text-white"
-                      : "text-zinc-400"
-                  }`}
-                >
-                  <Film size={11} /> MP4 Loop
-                </button>
-              </div>
-            </div>
-
-            <div className="grid grid-cols-5 gap-2 mb-3">
-              {MEDIA_PRESETS.map((p) => {
-                const active = mediaUrl === p.url;
-                return (
-                  <button
-                    type="button"
-                    key={p.id}
-                    onClick={() => {
-                      setMediaUrl(p.url);
-                      setMediaType("image");
-                      setAccentColor(p.accent);
-                    }}
-                    className={`group relative aspect-video rounded-lg overflow-hidden border transition-all ${
-                      active
-                        ? "border-amber-400 ring-2 ring-amber-400/40 scale-[1.02]"
-                        : "border-white/10 opacity-75 hover:opacity-100"
-                    }`}
-                  >
-                    <img
-                      src={p.url}
-                      alt={p.label}
-                      className="w-full h-full object-cover"
-                    />
-                    <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-transparent" />
-                    <span className="absolute bottom-1 left-1 right-1 text-[8.5px] font-semibold text-white truncate">
-                      {p.label.split(" (")[0]}
-                    </span>
-                  </button>
-                );
-              })}
-            </div>
-
-            <input
-              type="text"
-              value={mediaUrl}
-              onChange={(e) => setMediaUrl(e.target.value)}
-              placeholder="/circadian/gym-workout.jpg or https://..."
-              className="w-full rounded-xl bg-white/5 border border-white/10 px-3.5 py-2 text-xs font-mono text-zinc-200 focus:outline-none focus:border-amber-400/60"
-            />
-          </div>
+          {/* Drag-and-Drop Visual Media Uploader + Curated Presets + URL */}
+          <EventMediaUploader
+            mediaUrl={mediaUrl}
+            mediaType={mediaType}
+            onChangeMedia={({
+              mediaUrl: nextUrl,
+              mediaType: nextType,
+              accentColor: nextAccent,
+            }) => {
+              setMediaUrl(nextUrl);
+              setMediaType(nextType);
+              if (nextAccent) {
+                setAccentColor(nextAccent);
+              }
+            }}
+          />
 
           {/* Accent Color & Description */}
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">

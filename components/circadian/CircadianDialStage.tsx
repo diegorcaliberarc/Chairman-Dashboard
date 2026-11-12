@@ -33,6 +33,55 @@ import {
   timeToCartesian,
 } from "@/lib/circadianMath";
 
+export type RadarLayerKey =
+  | "energy_forecast"
+  | "activity_density"
+  | "posture_biometrics"
+  | "metabolic_burn";
+
+export interface CircadianRadarLayerDTO {
+  id: string;
+  layerType: RadarLayerKey;
+  label: string;
+  shortLabel: string;
+  unit: string;
+  color: string;
+  secondaryColor?: string;
+  description?: string;
+  bucketValues: number[]; // 96 15-min buckets [0..100]
+  peakBucket?: number;
+  troughBucket?: number;
+  peakValue?: number;
+  troughValue?: number;
+  averageValue?: number;
+}
+
+function buildSmoothClosedSpline(points: Array<{ x: number; y: number }>): string {
+  const n = points.length;
+  if (n < 3) return "";
+  const tension = 0.22;
+  const cmds: string[] = [
+    `M ${points[0].x.toFixed(2)} ${points[0].y.toFixed(2)}`,
+  ];
+  for (let i = 0; i < n; i++) {
+    const p0 = points[(i - 1 + n) % n];
+    const p1 = points[i];
+    const p2 = points[(i + 1) % n];
+    const p3 = points[(i + 2) % n];
+
+    const cp1x = p1.x + (p2.x - p0.x) * tension;
+    const cp1y = p1.y + (p2.y - p0.y) * tension;
+    const cp2x = p2.x - (p3.x - p1.x) * tension;
+    const cp2y = p2.y - (p3.y - p1.y) * tension;
+
+    cmds.push(
+      `C ${cp1x.toFixed(2)} ${cp1y.toFixed(2)}, ${cp2x.toFixed(2)} ${cp2y.toFixed(2)}, ${p2.x.toFixed(2)} ${p2.y.toFixed(2)}`
+    );
+  }
+  cmds.push("Z");
+  return cmds.join(" ");
+}
+
 interface CircadianDialStageProps {
   events: CircadianEventDTO[];
   highlightedTelemetry?: string | null;
@@ -47,6 +96,8 @@ interface CircadianDialStageProps {
   onEditEvent: (event: CircadianEventDTO) => void;
   onDeleteEvent: (eventId: string) => void;
   onAddChecklist: (eventId: string, label: string) => void;
+  radarLayers?: CircadianRadarLayerDTO[];
+  activeRadarTypes?: RadarLayerKey[];
 }
 
 export function CircadianDialStage({
@@ -63,6 +114,8 @@ export function CircadianDialStage({
   onEditEvent,
   onDeleteEvent,
   onAddChecklist,
+  radarLayers = [],
+  activeRadarTypes = [],
 }: CircadianDialStageProps) {
   const svgRef = useRef<SVGSVGElement | null>(null);
   const [hoveredEventId, setHoveredEventId] = useState<string | null>(null);
@@ -118,6 +171,97 @@ export function CircadianDialStage({
     [CX, CY, R_SOLAR_ARC, currentMinutes]
   );
 
+  // Section 18: Precompute GPU-friendly 96-point Polar Radar Isobar Polygons & Thermal Arcs
+  const rRadarMin = 56 * scaleFactor;
+  const rRadarMax = 175 * scaleFactor;
+  const computedRadarOverlays = useMemo(() => {
+    if (!activeRadarTypes.length || !radarLayers.length) return [];
+    const activeSet = new Set(activeRadarTypes);
+    const filtered = radarLayers.filter((l) => activeSet.has(l.layerType));
+
+    return filtered.map((layer, layerIdx) => {
+      const vals = layer.bucketValues.length === 96
+        ? layer.bucketValues
+        : Array.from({ length: 96 }, (_, i) => layer.bucketValues[i % Math.max(1, layer.bucketValues.length)] ?? 50);
+
+      const pts = vals.map((v, b) => {
+        const mins = b * 15 + 7.5;
+        const rad = minutesToAngleRad(mins);
+        const norm = Math.max(0, Math.min(100, v)) / 100;
+        const r = rRadarMin + norm * (rRadarMax - rRadarMin);
+        return polarToCartesian(CX, CY, r, rad);
+      });
+
+      const smoothIsobarPath = buildSmoothClosedSpline(pts);
+
+      // Peak & Trough anchor coordinates
+      let peakIdx = layer.peakBucket ?? 0;
+      if (layer.peakBucket === undefined) {
+        for (let i = 1; i < vals.length; i++) {
+          if (vals[i] > vals[peakIdx]) peakIdx = i;
+        }
+      }
+      const peakMins = peakIdx * 15 + 7.5;
+      const peakNorm = Math.max(0, Math.min(100, vals[peakIdx] ?? 80)) / 100;
+      const peakPt = polarToCartesian(
+        CX,
+        CY,
+        rRadarMin + peakNorm * (rRadarMax - rRadarMin),
+        minutesToAngleRad(peakMins)
+      );
+
+      // Live reading along currentMinutes vector
+      const liveBucket = Math.min(95, Math.max(0, Math.floor((((currentMinutes % 1440) + 1440) % 1440) / 15)));
+      const liveVal = vals[liveBucket] ?? 50;
+      const livePt = polarToCartesian(
+        CX,
+        CY,
+        rRadarMin + (Math.max(0, Math.min(100, liveVal)) / 100) * (rRadarMax - rRadarMin),
+        minutesToAngleRad(currentMinutes)
+      );
+
+      // Outer circumferential thermal Doppler arcs (for intensity >= 45%)
+      const rThermalRadius = R_WEDGE_OUTER + (6 + layerIdx * 5.5) * scaleFactor;
+      const thermalSegments: Array<{ d: string; opacity: number }> = [];
+      for (let b = 0; b < 96; b++) {
+        const v = vals[b] ?? 0;
+        if (v < 45) continue;
+        const m1 = b * 15 + 0.6;
+        const m2 = (b + 1) * 15 - 0.6;
+        const p1 = polarToCartesian(CX, CY, rThermalRadius, minutesToAngleRad(m1));
+        const p2 = polarToCartesian(CX, CY, rThermalRadius, minutesToAngleRad(m2));
+        thermalSegments.push({
+          d: `M ${p1.x.toFixed(2)} ${p1.y.toFixed(2)} A ${rThermalRadius.toFixed(2)} ${rThermalRadius.toFixed(2)} 0 0 1 ${p2.x.toFixed(2)} ${p2.y.toFixed(2)}`,
+          opacity: Number((0.28 + ((v - 45) / 55) * 0.68).toFixed(2)),
+        });
+      }
+
+      return {
+        layer,
+        smoothIsobarPath,
+        peakPt,
+        peakVal: vals[peakIdx] ?? 0,
+        livePt,
+        liveVal,
+        thermalSegments,
+      };
+    });
+  }, [
+    activeRadarTypes,
+    radarLayers,
+    CX,
+    CY,
+    rRadarMin,
+    rRadarMax,
+    R_WEDGE_OUTER,
+    scaleFactor,
+    currentMinutes,
+  ]);
+
+  const radarOuterPadding = computedRadarOverlays.length > 0
+    ? (6 + computedRadarOverlays.length * 5.5) * scaleFactor
+    : 0;
+
   // Orbital track assignment for nested concentric bands
   const orbitalMap = useMemo(() => assignOrbitalTracks(events), [events]);
 
@@ -152,8 +296,8 @@ export function CircadianDialStage({
         endMin
       );
 
-      // External label anchor
-      const labelRadius = R_WEDGE_OUTER + 22;
+      // External label anchor (expands cleanly when outer thermal radar rings are toggled)
+      const labelRadius = R_WEDGE_OUTER + 22 + radarOuterPadding;
       const anchorPt = polarToCartesian(CX, CY, labelRadius, wedge.midAngleRad);
       const cosM = Math.cos(wedge.midAngleRad);
       const textAnchor: "start" | "end" | "middle" =
@@ -190,7 +334,7 @@ export function CircadianDialStage({
     resolveSide(raw.filter((i) => i.cosM < 0));
 
     return raw;
-  }, [events, CX, CY, R_WEDGE_INNER, R_WEDGE_OUTER, R_ORBITAL_TRACKS, orbitalMap]);
+  }, [events, CX, CY, R_WEDGE_INNER, R_WEDGE_OUTER, R_ORBITAL_TRACKS, orbitalMap, radarOuterPadding]);
 
   // Assign up to 4 quadrant cards for PRD Section 2.3 Quadrant Mode
   const quadrantAssignments = useMemo(() => {
@@ -429,6 +573,25 @@ export function CircadianDialStage({
             <circle cx={CX} cy={CY} r={R_SKY} />
           </clipPath>
 
+          {/* Section 18 Radial Thermal Isobar Gradients */}
+          {computedRadarOverlays.map(({ layer }) => (
+            <radialGradient
+              key={`radar-grad-${layer.layerType}`}
+              id={`radar-grad-${layer.layerType}`}
+              cx="50%"
+              cy="50%"
+              r="50%"
+            >
+              <stop offset="0%" stopColor={layer.color} stopOpacity="0.04" />
+              <stop offset="55%" stopColor={layer.color} stopOpacity="0.18" />
+              <stop
+                offset="100%"
+                stopColor={layer.secondaryColor || layer.color}
+                stopOpacity="0.42"
+              />
+            </radialGradient>
+          ))}
+
           {/* ClipPaths for each Curved Annular Media Wedge */}
           {wedgeItems.map(({ event, wedge }) => (
             <clipPath key={`clip-${event.id}`} id={`wedge-clip-${event.id}`}>
@@ -466,6 +629,76 @@ export function CircadianDialStage({
           />
           {/* Subtle glass depth vignette */}
           <circle cx={CX} cy={CY} r={R_SKY} fill="url(#skyDepthVignette)" />
+
+          {/* Section 18: Meteorological Range Grid + Smooth 96-Point Polar Radar Isobar Polygons */}
+          {computedRadarOverlays.length > 0 && (
+            <g
+              className="pointer-events-none"
+              style={{ willChange: "transform, opacity" }}
+            >
+              {[0.25, 0.5, 0.75, 1].map((frac) => {
+                const rr = rRadarMin + frac * (rRadarMax - rRadarMin);
+                return (
+                  <circle
+                    key={`radar-grid-${frac}`}
+                    cx={CX}
+                    cy={CY}
+                    r={rr}
+                    fill="none"
+                    stroke="rgba(148, 163, 184, 0.22)"
+                    strokeWidth="0.85"
+                    strokeDasharray={frac === 1 ? undefined : "2 4"}
+                  />
+                );
+              })}
+
+              {computedRadarOverlays.map(
+                ({ layer, smoothIsobarPath, peakPt, peakVal, livePt }) => (
+                  <g key={`isobar-${layer.layerType}`}>
+                    <path
+                      d={smoothIsobarPath}
+                      fill={`url(#radar-grad-${layer.layerType})`}
+                      stroke={layer.color}
+                      strokeWidth={2 * scaleFactor}
+                      strokeLinejoin="round"
+                      filter="url(#arcNeonGlow)"
+                    />
+                    {/* Peak Isobar Telemetry Node */}
+                    <circle
+                      cx={peakPt.x}
+                      cy={peakPt.y}
+                      r={3.8 * scaleFactor}
+                      fill="#ffffff"
+                      stroke={layer.color}
+                      strokeWidth="1.8"
+                    />
+                    <text
+                      x={peakPt.x}
+                      y={peakPt.y - 6 * scaleFactor}
+                      textAnchor="middle"
+                      fill="#ffffff"
+                      stroke="rgba(4, 7, 16, 0.85)"
+                      strokeWidth="2.5"
+                      paintOrder="stroke"
+                      fontSize={8.5 * scaleFactor}
+                      fontWeight={700}
+                    >
+                      {layer.shortLabel} {peakVal}%
+                    </text>
+                    {/* Live Solar Vector Intersection Pip */}
+                    <circle
+                      cx={livePt.x}
+                      cy={livePt.y}
+                      r={3.4 * scaleFactor}
+                      fill={layer.color}
+                      stroke="#ffffff"
+                      strokeWidth="1.3"
+                    />
+                  </g>
+                )
+              )}
+            </g>
+          )}
         </g>
 
         {/* 3. Continuous 360° 24-Hour Day-to-Night Time-Lapse Color Spectrum Wheel Band */}
@@ -881,11 +1114,13 @@ export function CircadianDialStage({
                       y1={wedge.outerMidPoint.y}
                       x2={
                         CX +
-                        (R_WEDGE_OUTER + 12) * Math.cos(wedge.midAngleRad)
+                        (R_WEDGE_OUTER + 12 + radarOuterPadding) *
+                          Math.cos(wedge.midAngleRad)
                       }
                       y2={
                         CY +
-                        (R_WEDGE_OUTER + 12) * Math.sin(wedge.midAngleRad)
+                        (R_WEDGE_OUTER + 12 + radarOuterPadding) *
+                          Math.sin(wedge.midAngleRad)
                       }
                       stroke={strokeColor}
                       strokeWidth={isHighlighted ? 2 : 1.3}
@@ -919,6 +1154,30 @@ export function CircadianDialStage({
             );
           })}
         </g>
+
+        {/* 8.5 Section 18 Outer Circumferential Thermal Doppler Radar Arcs */}
+        {computedRadarOverlays.length > 0 && (
+          <g
+            className="pointer-events-none"
+            style={{ willChange: "transform, opacity" }}
+          >
+            {computedRadarOverlays.map(({ layer, thermalSegments }) => (
+              <g key={`thermal-${layer.layerType}`} filter="url(#arcNeonGlow)">
+                {thermalSegments.map((seg, idx) => (
+                  <path
+                    key={`tseg-${layer.layerType}-${idx}`}
+                    d={seg.d}
+                    fill="none"
+                    stroke={layer.color}
+                    strokeWidth={3.2 * scaleFactor}
+                    strokeLinecap="round"
+                    opacity={seg.opacity}
+                  />
+                ))}
+              </g>
+            ))}
+          </g>
+        )}
 
         {/* 9. Illuminated Cubic Bezier Callout Tracers — Solar Inspector Mode */}
         {viewMode === "solar" && selectedWedgeItem && selectedInspectorGeometry && (

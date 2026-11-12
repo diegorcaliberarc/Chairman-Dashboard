@@ -1,6 +1,30 @@
 "use client";
 
-import { Bot, Brain, CalendarDays, Palette, Map, LayoutDashboard, Briefcase, User, BarChart, CalendarRange, Archive, CheckCircle2, Activity } from "lucide-react";
+import {
+  Bot,
+  Brain,
+  CalendarDays,
+  Palette,
+  Map,
+  LayoutDashboard,
+  Briefcase,
+  User,
+  CalendarRange,
+  Archive,
+  CheckCircle2,
+  Activity,
+  Utensils,
+  TrendingUp,
+  KanbanSquare,
+  Dog,
+  Users,
+  Network,
+  Wrench,
+  Sunrise,
+  ShieldAlert,
+  Flame,
+  PlugZap,
+} from "lucide-react";
 import { useRouter, usePathname } from "next/navigation";
 import { UserAccountModal } from "./UserAccountModal";
 import { useState, useEffect } from "react";
@@ -59,12 +83,50 @@ export function Sidebar({
     return () => window.removeEventListener("toggleNovaCore", handleToggle);
   }, []);
 
-  const TABS = [
-    { id: "MASTER", label: "MASTER VIEW", icon: <LayoutDashboard size={18} />, route: "/" },
-    { id: "BUSINESS", label: "BUSINESS", icon: <Briefcase size={18} />, route: "/" },
-    { id: "PERSONAL", label: "PERSONAL", icon: <User size={18} />, route: "/" },
-    { id: "CALENDAR", label: "SOLAR CALENDAR", icon: <CalendarRange size={18} />, route: "/calendar" },
-    { id: "KPI", label: "KPIs / VITAL SIGNS", icon: <Activity size={18} />, route: "/kpis" },
+  // Section 23.2: Global Quick-Action Shortcut (Cmd+Shift+M / Ctrl+Shift+M) -> Mindset Massage
+  useEffect(() => {
+    const onKeyDown = (e: KeyboardEvent) => {
+      if ((e.metaKey || e.ctrlKey) && e.shiftKey && e.key.toLowerCase() === "m") {
+        e.preventDefault();
+        router.push("/mindset");
+      }
+    };
+    window.addEventListener("keydown", onKeyDown);
+    return () => window.removeEventListener("keydown", onKeyDown);
+  }, [router]);
+
+  const NAV_SECTIONS = [
+    {
+      heading: "Command Cockpit",
+      items: [
+        { id: "MASTER", label: "MASTER VIEW", icon: <LayoutDashboard size={16} />, route: "/" },
+        { id: "CALENDAR", label: "SOLAR CALENDAR", icon: <CalendarRange size={16} />, route: "/calendar" },
+        { id: "KPI", label: "KPIs / VITAL SIGNS", icon: <Activity size={16} />, route: "/kpis" },
+        { id: "BUSINESS", label: "BUSINESS", icon: <Briefcase size={16} />, route: "/" },
+        { id: "PERSONAL", label: "PERSONAL", icon: <User size={16} />, route: "/" },
+      ],
+    },
+    {
+      heading: "Execution & Strategy",
+      items: [
+        { id: "MACRO_OPS", label: "MACRO OPS", icon: <Utensils size={16} />, route: "/macro-ops" },
+        { id: "CALIBER_ARC", label: "CALIBER ARC", icon: <TrendingUp size={16} />, route: "/caliber-arc" },
+        { id: "PMS", label: "SOVEREIGN PMS", icon: <KanbanSquare size={16} />, route: "/pms" },
+        { id: "HORIZON", label: "HORIZON & ZOOM", icon: <Sunrise size={16} />, route: "/horizon" },
+        { id: "EPISTEMIC", label: "EPISTEMIC MATRIX", icon: <ShieldAlert size={16} />, route: "/epistemic" },
+      ],
+    },
+    {
+      heading: "Life OS & Collective",
+      items: [
+        { id: "FAMILY_HUB", label: "5-WHEEL FAMILY HUB", icon: <Dog size={16} />, route: "/family-hub" },
+        { id: "PODS", label: "HIS & HERS PODS", icon: <Users size={16} />, route: "/pods" },
+        { id: "LIFE_OPS", label: "LIFE OPS & FLEET", icon: <Wrench size={16} />, route: "/life-ops" },
+        { id: "VAULT", label: "NEURAL VAULT", icon: <Network size={16} />, route: "/vault" },
+        { id: "MINDSET", label: "MINDSET COUNSEL", icon: <Flame size={16} />, route: "/mindset", badge: "⌘⇧M" },
+        { id: "INTEGRATIONS", label: "MCP & CONSOLE", icon: <PlugZap size={16} />, route: "/integrations" },
+      ],
+    },
   ];
 
   return (
@@ -72,62 +134,76 @@ export function Sidebar({
       <aside className="fixed left-0 top-0 h-screen w-64 flex flex-col bg-white/80 dark:bg-black/60 backdrop-blur-xl border-r border-zinc-200/50 dark:border-white/10 z-50">
         
         {/* Brand / Header */}
-        <div className="p-6 border-b border-zinc-200/50 dark:border-white/10 flex items-center gap-3">
+        <div className="px-5 py-4 border-b border-zinc-200/50 dark:border-white/10 flex items-center gap-3">
           <Map size={18} className="text-[color:var(--theme-grad-start)] shrink-0" />
           <h1 className="bg-theme-gradient bg-clip-text text-transparent font-bold" style={{ fontFamily: "Georgia, serif", fontSize: 16, letterSpacing: "0.04em", lineHeight: 1.2 }}>
             Pristine Designs
           </h1>
         </div>
 
-        {/* Navigation Tabs (Top) */}
-        <div className="flex flex-col gap-2 p-4 flex-1 overflow-y-auto">
-          <div className="text-[10px] tracking-widest uppercase text-zinc-500 dark:text-zinc-400 mb-2 px-2">Navigation</div>
-          {TABS.map((tab) => {
-            const isActive = tab.route === "/" 
-              ? (pathname === "/" && activeTab === tab.id)
-              : pathname === tab.route;
-            return (
-              <button
-                key={tab.id}
-                onClick={() => {
-                  if (tab.route === pathname) {
-                    if (tab.route === "/") setActiveTab(tab.id);
-                  } else {
-                    if (tab.route === "/") {
-                      // Store tab intent or just go back
-                      setActiveTab(tab.id);
-                    }
-                    router.push(tab.route);
-                  }
-                }}
-                className={`flex items-center gap-3 w-full px-4 py-3 rounded-xl text-xs tracking-widest transition-all ${
-                  isActive 
-                    ? "bg-[rgba(var(--theme-grad-start-rgb),0.1)] border border-[color:var(--theme-grad-start)]/30" 
-                    : "font-bold text-zinc-500 dark:text-zinc-400 hover:bg-zinc-100 dark:hover:bg-white/5 border border-transparent"
-                }`}
-                style={isActive ? { borderColor: "rgba(179,136,235,0.3)" } : {}}
-              >
-                <div className={isActive ? "text-themeAccent" : "text-zinc-500 dark:text-zinc-400"}>
-                  {tab.icon}
-                </div>
-                <span className={isActive ? "bg-theme-gradient bg-clip-text text-transparent font-semibold" : ""}>
-                  {tab.label}
-                </span>
-              </button>
-            );
-          })}
+        {/* Navigation Sections */}
+        <div className="flex flex-col gap-1 p-3 flex-1 overflow-y-auto">
+          {NAV_SECTIONS.map((sec, sIdx) => (
+            <div key={sec.heading} className={sIdx > 0 ? "mt-3" : ""}>
+              <div className="text-[9px] font-semibold tracking-[0.16em] uppercase text-zinc-500 dark:text-zinc-500 mb-1 px-2.5">
+                {sec.heading}
+              </div>
+              <div className="flex flex-col gap-0.5">
+                {sec.items.map((tab) => {
+                  const isActive = tab.route === "/"
+                    ? (pathname === "/" && activeTab === tab.id)
+                    : pathname === tab.route;
+                  return (
+                    <button
+                      key={tab.id}
+                      onClick={() => {
+                        if (tab.route === pathname) {
+                          if (tab.route === "/") setActiveTab(tab.id);
+                        } else {
+                          if (tab.route === "/") {
+                            setActiveTab(tab.id);
+                          }
+                          router.push(tab.route);
+                        }
+                      }}
+                      className={`flex items-center justify-between gap-2.5 w-full px-3 py-2 rounded-xl text-[11px] tracking-widest transition-all ${
+                        isActive
+                          ? "bg-[rgba(var(--theme-grad-start-rgb),0.12)] border border-[color:var(--theme-grad-start)]/30"
+                          : "font-semibold text-zinc-500 dark:text-zinc-400 hover:bg-zinc-100 dark:hover:bg-white/5 border border-transparent"
+                      }`}
+                      style={isActive ? { borderColor: "rgba(179,136,235,0.3)" } : {}}
+                    >
+                      <span className="flex items-center gap-2.5 min-w-0 truncate">
+                        <span className={isActive ? "text-themeAccent shrink-0" : "text-zinc-500 dark:text-zinc-400 shrink-0"}>
+                          {tab.icon}
+                        </span>
+                        <span className={isActive ? "bg-theme-gradient bg-clip-text text-transparent font-bold truncate" : "truncate"}>
+                          {tab.label}
+                        </span>
+                      </span>
+                      {(tab as any).badge && (
+                        <span className="text-[8.5px] font-mono px-1.5 py-0.5 rounded bg-white/5 border border-white/10 text-zinc-400 shrink-0">
+                          {(tab as any).badge}
+                        </span>
+                      )}
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+          ))}
 
-          <div className="text-[10px] tracking-widest uppercase text-zinc-500 dark:text-zinc-400 mt-6 mb-2 px-2">Systems</div>
+          <div className="text-[9px] font-semibold tracking-[0.16em] uppercase text-zinc-500 dark:text-zinc-500 mt-3 mb-1 px-2.5">Systems</div>
           
           <button
             onClick={() => setDeepWork((p) => !p)}
-            className={`flex items-center gap-3 px-4 py-3 rounded-xl font-bold text-xs tracking-widest transition-all ${
+            className={`flex items-center gap-2.5 px-3 py-2 rounded-xl font-semibold text-[11px] tracking-widest transition-all ${
               deepWork 
                 ? "bg-blue-500/10 text-[color:var(--theme-grad-start)] border border-blue-500/30" 
                 : "text-zinc-500 dark:text-zinc-400 hover:bg-zinc-100 dark:hover:bg-white/5 border border-transparent"
             }`}
           >
-            <Brain size={16} />
+            <Brain size={15} />
             DEEP WORK
           </button>
           
@@ -136,25 +212,28 @@ export function Sidebar({
               e.preventDefault();
               window.dispatchEvent(new Event("toggleNovaCore"));
             }}
-            className={`flex items-center gap-3 px-4 py-3 rounded-xl font-bold text-xs tracking-widest transition-all ${
+            className={`flex items-center gap-2.5 px-3 py-2 rounded-xl font-semibold text-[11px] tracking-widest transition-all ${
               novaOpen 
                 ? "bg-[rgba(var(--theme-grad-start-rgb),0.1)] text-[color:var(--theme-grad-start)] border border-[color:var(--theme-grad-start)]/30" 
                 : "text-zinc-500 dark:text-zinc-400 hover:bg-zinc-100 dark:hover:bg-white/5 border border-transparent"
             }`}
           >
-            <Bot size={16} />
+            <Bot size={15} />
             NOVA CORE
           </button>
           
           <button
-            onClick={() => setActiveTab("ARCHIVE")}
-            className={`flex items-center gap-3 px-4 py-3 rounded-xl font-bold text-xs tracking-widest transition-all ${
-              activeTab === "ARCHIVE"
+            onClick={() => {
+              if (pathname !== "/") router.push("/");
+              setActiveTab("ARCHIVE");
+            }}
+            className={`flex items-center gap-2.5 px-3 py-2 rounded-xl font-semibold text-[11px] tracking-widest transition-all ${
+              pathname === "/" && activeTab === "ARCHIVE"
                 ? "bg-[rgba(var(--theme-grad-start-rgb),0.1)] text-[color:var(--theme-grad-start)] border border-[color:var(--theme-grad-start)]/30" 
                 : "text-zinc-500 dark:text-zinc-400 hover:bg-zinc-100 dark:hover:bg-white/5 border border-transparent"
             }`}
           >
-            <Archive size={16} />
+            <Archive size={15} />
             ARCHIVE
           </button>
         </div>

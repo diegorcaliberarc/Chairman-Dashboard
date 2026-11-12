@@ -2,6 +2,7 @@ import type { Metadata, Viewport } from "next";
 import "./globals.css";
 import { Providers } from "./providers";
 import { NovaCoreWrapper } from "@/components/NovaCoreWrapper";
+import { ChairmanCopilotHUD } from "@/components/chairman/copilot/ChairmanCopilotHUD";
 
 export const metadata: Metadata = {
   title: "Pristine Command",
@@ -76,6 +77,7 @@ export default function RootLayout({
         <Providers>
           {children}
           <NovaCoreWrapper />
+          <ChairmanCopilotHUD />
         </Providers>
       </body>
     </html>
