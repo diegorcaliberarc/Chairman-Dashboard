@@ -429,3 +429,4 @@ export function FoodLoggerCard({ logDate, onEntriesAdded }: FoodLoggerCardProps)
     </div>
   );
 }
+

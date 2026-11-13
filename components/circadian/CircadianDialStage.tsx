@@ -149,7 +149,8 @@ export function CircadianDialStage({
   const R_SKY = 168 * scaleFactor;
   const R_TIMELAPSE_INNER = 168 * scaleFactor;
   const R_TIMELAPSE_OUTER = 182 * scaleFactor;
-  const R_SOLAR_ARC = 96 * scaleFactor;
+  const R_CLOCK_CORE = 78 * scaleFactor;
+  const R_SOLAR_ARC = 104 * scaleFactor;
   const R_WEDGE_INNER = 196 * scaleFactor;
   const R_WEDGE_OUTER = 278 * scaleFactor;
 
@@ -246,6 +247,49 @@ export function CircadianDialStage({
     R_WEDGE_OUTER,
     scaleFactor,
   ]);
+
+  // Compute glowing empty slate / free-time arcs between scheduled events
+  const freeArcs = useMemo(() => {
+    if (events.length === 0) return [];
+    // Sort intervals by startMin
+    const intervals = events
+      .map((ev) => {
+        const s = dateToMinutes(new Date(ev.startTime));
+        const e = dateToMinutes(new Date(ev.endTime));
+        return { s, e };
+      })
+      .sort((a, b) => a.s - b.s);
+
+    const gaps: { startMin: number; endMin: number }[] = [];
+    for (let i = 0; i < intervals.length; i++) {
+      const current = intervals[i];
+      const next = intervals[(i + 1) % intervals.length];
+      const gapStart = current.e % 1440;
+      const gapEnd = next.s % 1440;
+      const gapDur = (gapEnd - gapStart + 1440) % 1440;
+      if (gapDur > 20) {
+        gaps.push({ startMin: gapStart, endMin: gapEnd });
+      }
+    }
+
+    return gaps.map((gap, idx) => {
+      const wedge = describeAnnularWedge(
+        CX,
+        CY,
+        R_WEDGE_INNER,
+        R_WEDGE_OUTER,
+        gap.startMin,
+        gap.endMin,
+        2.2
+      );
+      return {
+        id: `gap-${idx}`,
+        path: wedge.path,
+        startMin: gap.startMin,
+        endMin: gap.endMin,
+      };
+    });
+  }, [events, CX, CY, R_WEDGE_INNER, R_WEDGE_OUTER]);
 
   // Assign up to 4 quadrant cards for Quadrant Mode
   const quadrantAssignments = useMemo(() => {
@@ -593,47 +637,33 @@ export function CircadianDialStage({
           })}
         </g>
 
-        {/* 5. Regular-Style Clock Hour Labels: 12 (Top), 3 (Right), 6 (Bottom), 9 (Left) */}
+        {/* 5. Celestial Canvas Primary Anchors (12:00 PM Top, 6:00 PM Right, 12:00 AM Bottom, 6:00 AM Left) */}
         <g
-          className="pointer-events-none"
-          style={{ fontFamily: "var(--font-numbers, inherit)" }}
+          className="pointer-events-none select-none"
+          style={{ fontFamily: "var(--font-letters, sans-serif)" }}
         >
           {[
-            { mins: 720, num: "12", sub: "12 PM", dx: 0, dy: 24 * scaleFactor },
-            { mins: 1080, num: "3", sub: "6 PM", dx: -34 * scaleFactor, dy: 4 },
-            { mins: 0, num: "6", sub: "12 AM", dx: 0, dy: -14 * scaleFactor },
-            { mins: 360, num: "9", sub: "6 AM", dx: 34 * scaleFactor, dy: 4 },
+            { mins: 720, label: "12:00 PM", dx: 0, dy: 16 * scaleFactor },
+            { mins: 1080, label: "6:00 PM", dx: -34 * scaleFactor, dy: 3 * scaleFactor },
+            { mins: 0, label: "12:00 AM", dx: 0, dy: -12 * scaleFactor },
+            { mins: 360, label: "6:00 AM", dx: 34 * scaleFactor, dy: 3 * scaleFactor },
           ].map((c) => {
-            const pt = timeToCartesian(CX, CY, R_SKY, c.mins);
+            const pt = timeToCartesian(CX, CY, R_SKY - 4 * scaleFactor, c.mins);
             return (
-              <g key={c.num}>
-                {/* Regular style primary clock number */}
+              <g key={c.label}>
                 <text
                   x={pt.x + c.dx}
-                  y={pt.y + c.dy - 3}
+                  y={pt.y + c.dy}
                   textAnchor="middle"
-                  fill="#ffffff"
-                  stroke="rgba(5, 8, 18, 0.85)"
-                  strokeWidth="3.5"
+                  fill="rgba(255, 255, 255, 0.88)"
+                  stroke="rgba(8, 11, 20, 0.85)"
+                  strokeWidth="2.8"
                   paintOrder="stroke"
-                  fontSize={14 * scaleFactor}
-                  fontWeight={800}
-                >
-                  {c.num}
-                </text>
-                {/* Circadian 24h subtitle */}
-                <text
-                  x={pt.x + c.dx}
-                  y={pt.y + c.dy + 9 * scaleFactor}
-                  textAnchor="middle"
-                  fill="rgba(255,255,255,0.6)"
-                  stroke="rgba(5, 8, 18, 0.75)"
-                  strokeWidth="2.5"
-                  paintOrder="stroke"
-                  fontSize={8.5 * scaleFactor}
+                  fontSize={10.5 * scaleFactor}
                   fontWeight={600}
+                  letterSpacing="0.04em"
                 >
-                  {c.sub}
+                  {c.label}
                 </text>
               </g>
             );
@@ -817,76 +847,65 @@ export function CircadianDialStage({
             </text>
           </g>
 
-          {/* Hollow Center Dynamic Glass Disc with Clean Digital Clock Display */}
-          <g className="pointer-events-none">
-            {/* Hollow Center Circular Recess */}
+          {/* Hollow Center Clock Core with Giant Digital Time Display */}
+          <g className="pointer-events-none select-none">
+            {/* Dark navy/black backplate core */}
             <circle
               cx={CX}
               cy={CY}
-              r={48 * scaleFactor}
-              fill="rgba(5, 7, 16, 0.88)"
-              stroke="rgba(255,255,255,0.18)"
-              strokeWidth="1.5"
+              r={R_CLOCK_CORE}
+              fill="#0E111A"
+              stroke="rgba(255, 255, 255, 0.16)"
+              strokeWidth="1.8"
             />
+            {/* Subtle outer glowing gradient ring */}
             <circle
               cx={CX}
               cy={CY}
-              r={44 * scaleFactor}
+              r={R_CLOCK_CORE - 4 * scaleFactor}
               fill="none"
-              stroke={liveSolarColor}
-              strokeOpacity="0.45"
+              stroke="rgba(226, 241, 255, 0.22)"
               strokeWidth="1"
-              strokeDasharray="3 3"
+              strokeDasharray="4 4"
             />
 
-            {/* Live Digital Clock Time Readout */}
+            {/* Giant Digital Time Display e.g. "10:37 AM" with soft white-blue glow */}
             <text
               x={CX}
-              y={CY - 4 * scaleFactor}
+              y={CY + 11 * scaleFactor}
               textAnchor="middle"
               fill="#ffffff"
               style={{
-                fontFamily: "var(--font-numbers, monospace)",
+                fontFamily: "var(--font-numbers, inherit)",
                 fontVariantNumeric: "tabular-nums",
+                filter: "drop-shadow(0 0 12px rgba(226, 241, 255, 0.55)) drop-shadow(0 0 24px rgba(56, 189, 248, 0.25))",
               }}
-              fontSize={18 * scaleFactor}
+              fontSize={32 * scaleFactor}
               fontWeight={800}
-              letterSpacing="0.04em"
+              letterSpacing="-0.02em"
             >
-              {minutesTo12Hour(currentMinutes, false).split(" ")[0]}
-            </text>
-
-            {/* AM / PM and Live Indicator */}
-            <text
-              x={CX}
-              y={CY + 12 * scaleFactor}
-              textAnchor="middle"
-              fill={liveSolarColor}
-              fontSize={8.5 * scaleFactor}
-              fontWeight={700}
-              letterSpacing="0.16em"
-              style={{ fontFamily: "var(--font-letters, sans-serif)" }}
-            >
-              {minutesTo12Hour(currentMinutes, false).split(" ")[1]} · LIVE
-            </text>
-
-            {/* Phase Subtitle Pill underneath Digital Clock */}
-            <text
-              x={CX}
-              y={CY + 26 * scaleFactor}
-              textAnchor="middle"
-              fill="rgba(203, 213, 225, 0.75)"
-              fontSize={6.8 * scaleFactor}
-              fontWeight={700}
-              letterSpacing="0.12em"
-              style={{ fontFamily: "var(--font-letters, sans-serif)" }}
-            >
-              {currentPhase.name}
+              {minutesTo12Hour(currentMinutes, false)}
             </text>
           </g>
         </g>
 
-        {/* 8. Outer Curved Annular Visual Media Wedges */}
+        {/* 8. Empty Slates / Free Time Arc Outlines (Subtle glowing translucent blue arcs) */}
+        <g className="pointer-events-none">
+          {freeArcs.map((gap) => (
+            <path
+              key={gap.id}
+              d={gap.path}
+              fill="none"
+              stroke="rgba(56, 189, 248, 0.42)"
+              strokeWidth={1.8 * scaleFactor}
+              strokeDasharray="6 6"
+              filter="url(#arcNeonGlow)"
+              opacity="0.8"
+            />
+          ))}
+        </g>
+
+        {/* 9. Outer Curved Annular Visual Media Wedges */}
         <g>
           {wedgeItems.map((item) => {
             const {

@@ -132,3 +132,4 @@ export function resolveFoodImage(key?: string): { url: string; label: string; ac
   }
   return FOOD_IMAGES.default_food;
 }
+

@@ -343,3 +343,4 @@ Return a JSON array of parsed food objects.
     );
   }
 }
+
