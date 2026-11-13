@@ -24,8 +24,14 @@ import {
   UserCheck,
   Wallet,
   Zap,
+  Grid,
+  Clock,
 } from "lucide-react";
 import { Sidebar } from "@/components/Sidebar";
+import { MonthView, CalendarEventItem } from "@/components/calendar/MonthView";
+import { WeekView } from "@/components/calendar/WeekView";
+import { DayView } from "@/components/calendar/DayView";
+import { CalendarEventModal as TraditionalEventModal } from "@/components/calendar/CalendarEventModal";
 import {
   CircadianDialStage,
   CircadianRadarLayerDTO,
@@ -196,45 +202,14 @@ export default function CircadianCalendarPage() {
     Record<string, string>
   >({});
 
+  // Multi-View Calendar State (Solar Arc, Traditional Month Grid, Week Timeline, Day Timeline)
+  const [calendarView, setCalendarView] = useState<"solar" | "month" | "week" | "day">("solar");
+  const [tradModalOpen, setTradModalOpen] = useState(false);
+  const [tradSelectedEvent, setTradSelectedEvent] = useState<CalendarEventItem | null>(null);
+  const [tradInitialTime, setTradInitialTime] = useState<string | undefined>(undefined);
+
   // Calendar Operations State (Habits, Highlight Spans, Work Shifts, Year Appointments)
-  const [habits, setHabits] = useState<CalendarHabitDTO[]>([
-    {
-      id: "seed-walk",
-      title: "Weight-Loss Daily Walk",
-      subtitle: "3.5 miles · Fat-burn full 360° ring closure",
-      unit: "steps",
-      targetValue: 10000,
-      currentValue: 7500,
-      pct: 75,
-      ringColor: "#10b981",
-      iconName: "footprints",
-      sortOrder: 0,
-    },
-    {
-      id: "seed-water",
-      title: "Hydration Protocol",
-      subtitle: "Electrolyte + spring water daily intake",
-      unit: "oz",
-      targetValue: 100,
-      currentValue: 80,
-      pct: 80,
-      ringColor: "#38bdf8",
-      iconName: "droplets",
-      sortOrder: 1,
-    },
-    {
-      id: "seed-focus",
-      title: "Deep Focus Hours",
-      subtitle: "Zero-distraction architectural build time",
-      unit: "hrs",
-      targetValue: 4,
-      currentValue: 3,
-      pct: 75,
-      ringColor: "#f59e0b",
-      iconName: "zap",
-      sortOrder: 2,
-    },
-  ]);
+  const [habits, setHabits] = useState<CalendarHabitDTO[]>([]);
   const [highlightSpans, setHighlightSpans] = useState<
     CalendarHighlightSpanDTO[]
   >([
@@ -910,6 +885,55 @@ export default function CircadianCalendarPage() {
     };
   }, [healthScore, paySummary.workedPct]);
 
+  const calendarEventItems = useMemo<CalendarEventItem[]>(() => {
+    return events.map((e) => ({
+      id: e.id,
+      title: e.title,
+      description: e.description || undefined,
+      start_time: e.startTime,
+      end_time: e.endTime,
+      category: ((e.domain as string) === "engineering" ? "work" : (e.domain as string) === "physical_training" ? "workout" : "personal") as any,
+      color_hex: e.accentColor || "#0969DA",
+    }));
+  }, [events]);
+
+  const handleSaveTradEvent = async (eventData: Partial<CalendarEventItem>) => {
+    if (eventData.id && !eventData.id.startsWith("default-") && !eventData.id.startsWith("local-")) {
+      await fetch("/api/calendar-events", {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          id: eventData.id,
+          title: eventData.title,
+          description: eventData.description,
+          startTime: eventData.start_time,
+          endTime: eventData.end_time,
+          colorHex: eventData.color_hex,
+          category: eventData.category,
+        }),
+      });
+    } else {
+      await fetch("/api/calendar-events", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          title: eventData.title,
+          description: eventData.description,
+          startTime: eventData.start_time,
+          endTime: eventData.end_time,
+          colorHex: eventData.color_hex || "#0969DA",
+          category: eventData.category || "work",
+        }),
+      });
+    }
+    await fetchCircadianEvents(selectedDate);
+  };
+
+  const handleDeleteTradEvent = async (id: string) => {
+    await handleDeleteEvent(id);
+    await fetchCircadianEvents(selectedDate);
+  };
+
   return (
     <div className="executive-glass-shell min-h-screen text-zinc-900 dark:text-white flex flex-row overflow-x-hidden">
       {/* Shared Executive Sidebar */}
@@ -998,37 +1022,92 @@ export default function CircadianCalendarPage() {
               </button>
             </div>
 
-            {/* Solar Wedges vs Quadrants Mode */}
+            {/* Calendar Engine View Switcher: Solar Arc | Month Grid | Week Timeline | Day Timeline */}
             <div className="flex items-center bg-[#12151f] border border-white/10 rounded-xl p-0.5">
               <button
-                onClick={() => setViewMode("solar")}
+                onClick={() => setCalendarView("solar")}
                 className={`flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-[11px] font-semibold transition-all ${
-                  viewMode === "solar"
-                    ? "bg-white/10 text-white shadow"
+                  calendarView === "solar"
+                    ? "bg-[#0969DA] text-white shadow"
                     : "text-zinc-400 hover:text-zinc-200"
                 }`}
               >
                 <Orbit size={13} className="text-amber-400" />
-                Solar Arc
+                Solar Wheel
               </button>
               <button
-                onClick={() => setViewMode("quadrants")}
+                onClick={() => setCalendarView("month")}
                 className={`flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-[11px] font-semibold transition-all ${
-                  viewMode === "quadrants"
-                    ? "bg-white/10 text-white shadow"
+                  calendarView === "month"
+                    ? "bg-[#0969DA] text-white shadow"
                     : "text-zinc-400 hover:text-zinc-200"
                 }`}
               >
-                <Layers size={13} className="text-sky-400" />
-                Quadrants
+                <Grid size={13} className="text-sky-400" />
+                Month
+              </button>
+              <button
+                onClick={() => setCalendarView("week")}
+                className={`flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-[11px] font-semibold transition-all ${
+                  calendarView === "week"
+                    ? "bg-[#0969DA] text-white shadow"
+                    : "text-zinc-400 hover:text-zinc-200"
+                }`}
+              >
+                <CalendarIcon size={13} className="text-emerald-400" />
+                Week
+              </button>
+              <button
+                onClick={() => setCalendarView("day")}
+                className={`flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-[11px] font-semibold transition-all ${
+                  calendarView === "day"
+                    ? "bg-[#0969DA] text-white shadow"
+                    : "text-zinc-400 hover:text-zinc-200"
+                }`}
+              >
+                <Clock size={13} className="text-orange-400" />
+                Day
               </button>
             </div>
 
-            {/* New Circadian Block Button */}
+            {/* Solar Wedges vs Quadrants Mode (only when in Solar Wheel) */}
+            {calendarView === "solar" && (
+              <div className="flex items-center bg-[#12151f] border border-white/10 rounded-xl p-0.5">
+                <button
+                  onClick={() => setViewMode("solar")}
+                  className={`flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-[11px] font-semibold transition-all ${
+                    viewMode === "solar"
+                      ? "bg-white/10 text-white shadow"
+                      : "text-zinc-400 hover:text-zinc-200"
+                  }`}
+                >
+                  <Orbit size={13} className="text-amber-400" />
+                  Solar Arc
+                </button>
+                <button
+                  onClick={() => setViewMode("quadrants")}
+                  className={`flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-[11px] font-semibold transition-all ${
+                    viewMode === "quadrants"
+                      ? "bg-white/10 text-white shadow"
+                      : "text-zinc-400 hover:text-zinc-200"
+                  }`}
+                >
+                  <Layers size={13} className="text-sky-400" />
+                  Quadrants
+                </button>
+              </div>
+            )}
+
+            {/* New Block Button */}
             <button
               onClick={() => {
-                setEditingEvent(null);
-                setModalOpen(true);
+                if (calendarView === "solar") {
+                  setEditingEvent(null);
+                  setModalOpen(true);
+                } else {
+                  setTradSelectedEvent(null);
+                  setTradModalOpen(true);
+                }
               }}
               className="flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl bg-gradient-to-r from-amber-400 to-orange-500 text-black text-xs font-bold tracking-wider uppercase shadow-[0_0_20px_rgba(251,191,36,0.28)] hover:brightness-110 transition-all"
             >
@@ -1073,100 +1152,166 @@ export default function CircadianCalendarPage() {
 
         {/* Main Workspace Split: Center Celestial Dial / Multi-Horizon Stage + Right Executive Rail */}
         <div className="flex flex-col xl:flex-row gap-5 px-6 py-4 items-stretch">
-          {/* LEFT / CENTER STAGE: Unified Multi-Horizon Radial Engine & 3D Geospatial Map */}
+          {/* LEFT / CENTER STAGE: Unified Multi-Horizon Radial Engine & Traditional Calendar */}
           <div className="relative flex-1 flex flex-col items-center justify-center min-h-[580px]">
-            {/* Horizon Condition 1: DAY Horizon (Solar Wheel OR 3D Geospatial Map) */}
-            {activeHorizon === "DAY" && dayMode === "SOLAR_WHEEL" && (
-              <CircadianDialStage
-                events={events}
-                highlightedTelemetry={activeTelemetryFilter}
-                currentMinutes={effectiveMinutes}
-                isLiveTime={scrubbedMinutes === null}
-                onScrubMinutes={(mins) => setScrubbedMinutes(mins)}
-                onResetLive={() => setScrubbedMinutes(null)}
-                viewMode={viewMode}
-                selectedEventId={selectedEventId}
-                onSelectEvent={setSelectedEventId}
-                onToggleChecklist={handleToggleChecklist}
-                onEditEvent={(ev) => {
-                  setEditingEvent(ev);
-                  setModalOpen(true);
-                }}
-                onDeleteEvent={handleDeleteEvent}
-                onAddChecklist={handleAddChecklist}
-                radarLayers={radarLayers}
-                activeRadarTypes={activeRadarTypes}
-                habits={habits}
-                highlightSpans={highlightSpans}
-                selectedDate={selectedDate}
-                subtaskStylesById={subtaskStylesById}
-                onToggleSubtaskStyle={handleToggleSubtaskStyleForEvent}
-                onQuickIncrementHabit={(habitId, delta) =>
-                  handleLogHabit(habitId, { delta })
-                }
-              />
+            {calendarView === "month" && (
+              <div className="w-full">
+                <MonthView
+                  currentDate={new Date(selectedDate + "T12:00:00Z")}
+                  events={calendarEventItems}
+                  onSelectDate={(d) => {
+                    setSelectedDate(d);
+                    setCalendarView("day");
+                  }}
+                  onSelectEvent={(ev) => {
+                    setTradSelectedEvent(ev);
+                    setTradModalOpen(true);
+                  }}
+                  onCreateEvent={(d) => {
+                    setSelectedDate(d);
+                    setTradSelectedEvent(null);
+                    setTradModalOpen(true);
+                  }}
+                />
+              </div>
             )}
 
-            {/* Horizon Condition 1b: DAY Horizon (3D Geospatial Tactical Mode) */}
-            {activeHorizon === "DAY" && dayMode === "GEOSPATIAL_3D" && (
-              <GeospatialTacticalMap
-                waypoints={EL_PASO_TACTICAL_WAYPOINTS}
-                routeLegs={EL_PASO_ROUTE_LEGS}
-                scrubbedMinutes={effectiveMinutes}
-                onScrubMinutes={(mins) => setScrubbedMinutes(mins)}
-                isLiveTime={scrubbedMinutes === null}
-                onResetLive={() => setScrubbedMinutes(null)}
-              />
+            {calendarView === "week" && (
+              <div className="w-full">
+                <WeekView
+                  currentDate={new Date(selectedDate + "T12:00:00Z")}
+                  events={calendarEventItems}
+                  onSelectDate={(d) => {
+                    setSelectedDate(d);
+                    setCalendarView("day");
+                  }}
+                  onSelectEvent={(ev) => {
+                    setTradSelectedEvent(ev);
+                    setTradModalOpen(true);
+                  }}
+                  onCreateEvent={(d, t) => {
+                    setSelectedDate(d);
+                    setTradInitialTime(t);
+                    setTradSelectedEvent(null);
+                    setTradModalOpen(true);
+                  }}
+                />
+              </div>
             )}
 
-            {/* Horizon Condition 2: WEEK Horizon */}
-            {activeHorizon === "WEEK" && (
-              <WeeklyRadialView
-                weekNumber={46}
-                dateSpanLabel="NOV 09 - 15"
-                telemetry={concentricTelemetry}
-                weekDays={currentWeekDays}
-                onSelectDay={(dateStr) => {
-                  setSelectedDate(dateStr);
-                  setActiveHorizon("DAY");
-                }}
-              />
+            {calendarView === "day" && (
+              <div className="w-full">
+                <DayView
+                  currentDate={new Date(selectedDate + "T12:00:00Z")}
+                  events={calendarEventItems}
+                  onSelectEvent={(ev) => {
+                    setTradSelectedEvent(ev);
+                    setTradModalOpen(true);
+                  }}
+                  onCreateEvent={(t) => {
+                    setTradInitialTime(t);
+                    setTradSelectedEvent(null);
+                    setTradModalOpen(true);
+                  }}
+                />
+              </div>
             )}
 
-            {/* Horizon Condition 3: MONTH Horizon */}
-            {activeHorizon === "MONTH" && (
-              <MonthlyRadialView
-                year={selectedYear}
-                monthName="November"
-                telemetry={concentricTelemetry}
-                monthNodes={currentMonthNodes}
-                activeWeekDays={currentWeekDays}
-                onSelectDate={(dateStr) => {
-                  setSelectedDate(dateStr);
-                  setActiveHorizon("DAY");
-                }}
-                onDrillDownDay={(dateStr) => {
-                  setSelectedDate(dateStr);
-                  setActiveHorizon("DAY");
-                }}
-              />
-            )}
+            {calendarView === "solar" && (
+              <>
+                {/* Horizon Condition 1: DAY Horizon (Solar Wheel OR 3D Geospatial Map) */}
+                {activeHorizon === "DAY" && dayMode === "SOLAR_WHEEL" && (
+                  <CircadianDialStage
+                    events={events}
+                    currentMinutes={effectiveMinutes}
+                    isLiveTime={scrubbedMinutes === null}
+                    onScrubMinutes={(mins) => setScrubbedMinutes(mins)}
+                    onResetLive={() => setScrubbedMinutes(null)}
+                    viewMode={viewMode}
+                    selectedEventId={selectedEventId}
+                    onSelectEvent={setSelectedEventId}
+                    onToggleChecklist={handleToggleChecklist}
+                    onEditEvent={(ev) => {
+                      setEditingEvent(ev);
+                      setModalOpen(true);
+                    }}
+                    onDeleteEvent={handleDeleteEvent}
+                    onAddChecklist={handleAddChecklist}
+                    radarLayers={radarLayers}
+                    activeRadarTypes={activeRadarTypes}
+                    habits={habits}
+                    highlightSpans={highlightSpans}
+                    selectedDate={selectedDate}
+                    subtaskStylesById={subtaskStylesById}
+                    onToggleSubtaskStyle={handleToggleSubtaskStyleForEvent}
+                    onQuickIncrementHabit={(habitId, delta) =>
+                      handleLogHabit(habitId, { delta })
+                    }
+                  />
+                )}
 
-            {/* Horizon Condition 4: YEAR Horizon */}
-            {activeHorizon === "YEAR" && (
-              <YearlyRadialView
-                selectedYear={selectedYear}
-                activeMonth={activeMonthIndex}
-                telemetry={concentricTelemetry}
-                seasons={seasonalCards}
-                onSelectMonth={(mIdx) => {
-                  setActiveMonthIndex(mIdx);
-                  setActiveHorizon("MONTH");
-                }}
-                onSelectSeason={(seasonId) => {
-                  setActiveHorizon("MONTH");
-                }}
-              />
+                {/* Horizon Condition 1b: DAY Horizon (3D Geospatial Tactical Mode) */}
+                {activeHorizon === "DAY" && dayMode === "GEOSPATIAL_3D" && (
+                  <GeospatialTacticalMap
+                    waypoints={EL_PASO_TACTICAL_WAYPOINTS}
+                    routeLegs={EL_PASO_ROUTE_LEGS}
+                    scrubbedMinutes={effectiveMinutes}
+                    onScrubMinutes={(mins) => setScrubbedMinutes(mins)}
+                    isLiveTime={scrubbedMinutes === null}
+                    onResetLive={() => setScrubbedMinutes(null)}
+                  />
+                )}
+
+                {/* Horizon Condition 2: WEEK Horizon */}
+                {activeHorizon === "WEEK" && (
+                  <WeeklyRadialView
+                    weekNumber={46}
+                    dateSpanLabel="NOV 09 - 15"
+                    telemetry={concentricTelemetry}
+                    weekDays={currentWeekDays}
+                    onSelectDay={(dateStr) => {
+                      setSelectedDate(dateStr);
+                      setActiveHorizon("DAY");
+                    }}
+                  />
+                )}
+
+                {/* Horizon Condition 3: MONTH Horizon */}
+                {activeHorizon === "MONTH" && (
+                  <MonthlyRadialView
+                    year={selectedYear}
+                    monthName="November"
+                    telemetry={concentricTelemetry}
+                    monthNodes={currentMonthNodes}
+                    activeWeekDays={currentWeekDays}
+                    onSelectDate={(dateStr) => {
+                      setSelectedDate(dateStr);
+                      setActiveHorizon("DAY");
+                    }}
+                    onDrillDownDay={(dateStr) => {
+                      setSelectedDate(dateStr);
+                      setActiveHorizon("DAY");
+                    }}
+                  />
+                )}
+
+                {/* Horizon Condition 4: YEAR Horizon */}
+                {activeHorizon === "YEAR" && (
+                  <YearlyRadialView
+                    selectedYear={selectedYear}
+                    activeMonth={activeMonthIndex}
+                    telemetry={concentricTelemetry}
+                    seasons={seasonalCards}
+                    onSelectMonth={(mIdx) => {
+                      setActiveMonthIndex(mIdx);
+                      setActiveHorizon("MONTH");
+                    }}
+                    onSelectSeason={(seasonId) => {
+                      setActiveHorizon("MONTH");
+                    }}
+                  />
+                )}
+              </>
             )}
 
             {/* Bottom-Left Floating Card: MICRO-STATISTICS + 360° Walk Ring Quick Readout */}
@@ -1675,14 +1820,6 @@ export default function CircadianCalendarPage() {
                 <h3 className="text-[10px] font-bold tracking-[0.14em] uppercase text-zinc-300">
                   INTEGRATION BADGES
                 </h3>
-                {activeTelemetryFilter && (
-                  <button
-                    onClick={() => setActiveTelemetryFilter(null)}
-                    className="text-[10px] text-amber-400 hover:underline"
-                  >
-                    Show All
-                  </button>
-                )}
               </div>
 
               <div className="grid grid-cols-4 gap-2">
@@ -1745,29 +1882,19 @@ export default function CircadianCalendarPage() {
                       </svg>
                     ),
                   },
-                ].map((badge) => {
-                  const isFiltered = activeTelemetryFilter === badge.id;
-                  return (
-                    <button
-                      key={badge.id}
-                      onClick={() =>
-                        setActiveTelemetryFilter(isFiltered ? null : badge.id)
-                      }
-                      className={`flex flex-col items-center justify-center gap-1.5 py-2.5 px-1 rounded-xl border transition-all ${
-                        isFiltered
-                          ? "bg-white/15 border-amber-400/60"
-                          : "bg-[#191d29] hover:bg-[#202636] border-white/[0.05]"
-                      }`}
-                    >
-                      <div className="w-8 h-8 rounded-lg bg-black/40 flex items-center justify-center">
-                        {badge.icon}
-                      </div>
-                      <span className="text-[10px] font-medium text-zinc-300">
-                        {badge.label}
-                      </span>
-                    </button>
-                  );
-                })}
+                ].map((badge) => (
+                  <div
+                    key={badge.id}
+                    className="flex flex-col items-center justify-center gap-1.5 py-2.5 px-1 rounded-xl border border-white/[0.05] bg-[#191d29]"
+                  >
+                    <div className="w-8 h-8 rounded-lg bg-black/40 flex items-center justify-center">
+                      {badge.icon}
+                    </div>
+                    <span className="text-[10px] font-medium text-zinc-300">
+                      {badge.label}
+                    </span>
+                  </div>
+                ))}
               </div>
             </div>
           </aside>
@@ -1860,6 +1987,21 @@ export default function CircadianCalendarPage() {
           setEditingEvent(null);
         }}
         onSave={handleSaveEvent}
+      />
+
+      {/* Traditional Calendar Event Modal */}
+      <TraditionalEventModal
+        isOpen={tradModalOpen}
+        event={tradSelectedEvent}
+        initialDate={selectedDate}
+        initialTime={tradInitialTime}
+        onClose={() => {
+          setTradModalOpen(false);
+          setTradSelectedEvent(null);
+          setTradInitialTime(undefined);
+        }}
+        onSave={handleSaveTradEvent}
+        onDelete={handleDeleteTradEvent}
       />
     </div>
   );

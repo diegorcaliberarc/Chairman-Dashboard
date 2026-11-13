@@ -39,6 +39,7 @@ import {
   Menu,
   X,
   Dumbbell,
+  Database,
 } from "lucide-react";
 import { useRouter, usePathname } from "next/navigation";
 import { UserAccountModal } from "./UserAccountModal";
@@ -240,6 +241,22 @@ const ALL_MODULE_ITEMS: NavModuleItem[] = [
     route: "/integrations",
     description: "Tools, connections & credentials",
   },
+  {
+    id: "ORG_CHART",
+    label: "TOPOLOGY MAP",
+    pillar: "happiness",
+    icon: <Network size={15} />,
+    route: "/org-chart",
+    description: "System architecture node tree",
+  },
+  {
+    id: "RESOURCES",
+    label: "RESOURCES & SOPS",
+    pillar: "happiness",
+    icon: <Database size={15} />,
+    route: "/resources",
+    description: "Architecture matrix & operational SOPs",
+  },
 ];
 
 const PILLARS_CONFIG: Array<{
@@ -429,20 +446,11 @@ export function Sidebar({
         </button>
 
         <div className="flex items-center gap-2">
-          <div className="w-2 h-2 rounded-full animate-pulse" style={{ backgroundColor: currentPillarMeta.color }} />
-          <span className="text-xs font-bold tracking-[0.16em] uppercase bg-theme-gradient bg-clip-text text-transparent">
+          <div className="w-2 h-2 rounded-full animate-pulse" style={{ backgroundColor: "#0969DA" }} />
+          <span className="text-xs font-bold tracking-[0.16em] uppercase text-zinc-100">
             PRISTINE DESIGNS
           </span>
         </div>
-
-        <button
-          type="button"
-          onClick={() => setIsAppearanceOpen(true)}
-          className="p-2 rounded-xl text-zinc-400 hover:text-white hover:bg-white/10 transition-colors"
-          title="Theme & Typography Settings"
-        >
-          <Palette size={18} />
-        </button>
       </div>
 
       {/* Mobile Backdrop Overlay */}
@@ -693,90 +701,24 @@ export function Sidebar({
                 </button>
               );
             })}
-
-            {/* Quick Systems Buttons */}
-            {!col2Collapsed && (
-              <div className="text-[9px] font-bold tracking-[0.16em] uppercase text-zinc-500 dark:text-zinc-500 mt-3 mb-1 px-2">
-                Systems &amp; State
-              </div>
-            )}
-
-            <button
-              onClick={() => setDeepWork((p) => !p)}
-              className={`flex items-center gap-2 px-2.5 py-2 rounded-xl font-semibold text-[11px] tracking-wider transition-all ${
-                deepWork
-                  ? "bg-blue-500/15 text-blue-500 border border-blue-500/30"
-                  : "text-zinc-500 dark:text-zinc-400 hover:bg-zinc-100 dark:hover:bg-white/5 border border-transparent"
-              }`}
-              title="Deep Work Mode"
-            >
-              <Brain size={14} className="shrink-0" />
-              {!col2Collapsed && <span>DEEP WORK</span>}
-            </button>
-
-            <button
-              onClick={(e) => {
-                e.preventDefault();
-                window.dispatchEvent(new Event("toggleNovaCore"));
-              }}
-              className={`flex items-center gap-2 px-2.5 py-2 rounded-xl font-semibold text-[11px] tracking-wider transition-all ${
-                novaOpen
-                  ? "bg-[rgba(var(--theme-grad-start-rgb),0.1)] text-[color:var(--theme-grad-start)] border border-[color:var(--theme-grad-start)]/30"
-                  : "text-zinc-500 dark:text-zinc-400 hover:bg-zinc-100 dark:hover:bg-white/5 border border-transparent"
-              }`}
-              title="Nova Core AI Assistant"
-            >
-              <Bot size={14} className="shrink-0" />
-              {!col2Collapsed && <span>NOVA CORE</span>}
-            </button>
-
-            <button
-              onClick={() => {
-                if (pathname !== "/") router.push("/");
-                setActiveTab("ARCHIVE");
-              }}
-              className={`flex items-center gap-2 px-2.5 py-2 rounded-xl font-semibold text-[11px] tracking-wider transition-all ${
-                pathname === "/" && activeTab === "ARCHIVE"
-                  ? "bg-[rgba(var(--theme-grad-start-rgb),0.1)] text-[color:var(--theme-grad-start)] border border-[color:var(--theme-grad-start)]/30"
-                  : "text-zinc-500 dark:text-zinc-400 hover:bg-zinc-100 dark:hover:bg-white/5 border border-transparent"
-              }`}
-              title="Missions Archive"
-            >
-              <Archive size={14} className="shrink-0" />
-              {!col2Collapsed && <span>ARCHIVE</span>}
-            </button>
           </div>
 
           {/* Telemetry (Mission Progress & Clock) */}
           {!col2Collapsed && (
             <div className="px-3 pb-3">
-              <button
-                onClick={() => {
-                  window.dispatchEvent(new Event("openMissionControl"));
-                }}
-                className="w-full text-left p-3 rounded-xl bg-zinc-50/50 dark:bg-white/5 border border-zinc-200/50 dark:border-white/10 flex flex-col gap-2.5 shadow-inner hover:bg-zinc-100 dark:hover:bg-white/10 transition-colors"
-              >
-                {activeTasksCount === 0 && activeSubtasksCount === 0 && !tasksLoading ? (
-                  <div className="flex flex-col items-center justify-center py-2 gap-1 select-none">
-                    <CheckCircle2 className="text-[color:var(--theme-grad-start)]" size={22} />
-                    <span className="text-[10px] font-bold tracking-widest text-[color:var(--theme-grad-start)] uppercase">
-                      Inbox Zero
-                    </span>
+              <div className="w-full text-left p-3 rounded-xl bg-white/[0.03] border border-white/10 flex flex-col gap-2.5 shadow-inner">
+                <div className="select-none flex flex-col gap-1.5">
+                  <div className="text-[8.5px] tracking-widest uppercase text-zinc-400">
+                    {tasksLoading ? "Syncing…" : "Mission Progress"}
                   </div>
-                ) : (
-                  <div className="select-none flex flex-col gap-1.5">
-                    <div className="text-[8.5px] tracking-widest uppercase text-zinc-500 dark:text-zinc-400">
-                      {tasksLoading ? "Syncing…" : "Mission Progress"}
-                    </div>
-                    <div className="flex items-center justify-between text-xs font-bold text-zinc-900 dark:text-white">
-                      <span>{activeTasksCount} Pending Tasks</span>
-                      <span className="font-mono text-zinc-400">{activeSubtasksCount} Subs</span>
-                    </div>
+                  <div className="flex items-center justify-between text-xs font-bold text-white">
+                    <span>{activeTasksCount} Pending Tasks</span>
+                    <span className="font-mono text-zinc-400">{activeSubtasksCount} Subs</span>
                   </div>
-                )}
-                <div style={{ height: 1, backgroundColor: "var(--theme-grad-start)", opacity: 0.15 }} />
+                </div>
+                <div className="h-px bg-white/10" />
                 <LiveClock />
-              </button>
+              </div>
             </div>
           )}
 

@@ -637,16 +637,16 @@ export function CircadianDialStage({
           })}
         </g>
 
-        {/* 5. Celestial Canvas Primary Anchors (12:00 PM Top, 6:00 PM Right, 12:00 AM Bottom, 6:00 AM Left) */}
+        {/* 5. Regular Clock Style Anchors: 12 on Top, 3 on Right, 6 on Bottom, 9 on Left */}
         <g
           className="pointer-events-none select-none"
           style={{ fontFamily: "var(--font-letters, sans-serif)" }}
         >
           {[
-            { mins: 720, label: "12:00 PM", dx: 0, dy: 16 * scaleFactor },
-            { mins: 1080, label: "6:00 PM", dx: -34 * scaleFactor, dy: 3 * scaleFactor },
-            { mins: 0, label: "12:00 AM", dx: 0, dy: -12 * scaleFactor },
-            { mins: 360, label: "6:00 AM", dx: 34 * scaleFactor, dy: 3 * scaleFactor },
+            { mins: 720, label: "12", dx: 0, dy: 16 * scaleFactor },
+            { mins: 1080, label: "3", dx: -24 * scaleFactor, dy: 4 * scaleFactor },
+            { mins: 0, label: "6", dx: 0, dy: -12 * scaleFactor },
+            { mins: 360, label: "9", dx: 24 * scaleFactor, dy: 4 * scaleFactor },
           ].map((c) => {
             const pt = timeToCartesian(CX, CY, R_SKY - 4 * scaleFactor, c.mins);
             return (
@@ -655,12 +655,12 @@ export function CircadianDialStage({
                   x={pt.x + c.dx}
                   y={pt.y + c.dy}
                   textAnchor="middle"
-                  fill="rgba(255, 255, 255, 0.88)"
+                  fill="rgba(255, 255, 255, 0.95)"
                   stroke="rgba(8, 11, 20, 0.85)"
                   strokeWidth="2.8"
                   paintOrder="stroke"
-                  fontSize={10.5 * scaleFactor}
-                  fontWeight={600}
+                  fontSize={14 * scaleFactor}
+                  fontWeight={800}
                   letterSpacing="0.04em"
                 >
                   {c.label}

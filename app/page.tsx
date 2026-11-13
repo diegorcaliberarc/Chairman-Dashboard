@@ -49,12 +49,8 @@ interface FocusTask {
   timeEstimate?: string;
 }
 
-const INITIAL_TASKS: FocusTask[] = [
-  { id: "t1", title: "Push Day Hypertrophy: Heavy DB Incline & Bench", completed: true, priority: "high", timeEstimate: "60m" },
-  { id: "t2", title: "Review Q4 SaaS Architecture & Supabase RLS policies", completed: false, priority: "high", timeEstimate: "45m" },
-  { id: "t3", title: "Walk Nova & Astro through canyon trail", completed: false, priority: "normal", timeEstimate: "40m" },
-  { id: "t4", title: "12-Month budget ledger reconciliation & cash reserves", completed: false, priority: "normal", timeEstimate: "30m" },
-];
+// Zero Dummy Data: Hydrate Focus Tasks from Supabase / empty state
+const INITIAL_TASKS: FocusTask[] = [];
 
 /* ============================================================================
  * MAIN EXECUTIVE DASHBOARD COCKPIT
@@ -80,7 +76,7 @@ export default function ChairmanCockpitPage() {
   const [calError, setCalError] = useState<string | null>(null);
 
   // Daily Focus Tasks
-  const [tasks, setTasks] = useState<FocusTask[]>(INITIAL_TASKS);
+  const [tasks, setTasks] = useState<FocusTask[]>([]);
   const [newTaskInput, setNewTaskInput] = useState("");
   const [taskFilter, setTaskFilter] = useState<"all" | "active" | "completed">("all");
 
@@ -242,21 +238,10 @@ export default function ChairmanCockpitPage() {
                     calConnected ? "bg-emerald-400 shadow-[0_0_8px_#34d399]" : "bg-amber-400 animate-pulse"
                   }`}
                 />
-                <span className="text-zinc-700 dark:text-zinc-200">
+                <span className="text-zinc-200">
                   {calConnected ? "Google Calendar Connected" : "Connect Google Calendar"}
                 </span>
                 <RefreshCw className={`w-3 h-3 text-zinc-400 ${calLoading ? "animate-spin" : ""}`} />
-              </button>
-
-              {/* Theme & Glass Style Controller */}
-              <button
-                type="button"
-                onClick={() => setIsAppearanceOpen(true)}
-                className="eco-glass-pill px-3.5 py-2 rounded-full flex items-center gap-1.5 text-xs font-semibold text-zinc-700 dark:text-zinc-300 hover:text-white transition-all cursor-pointer"
-                title="Open Theme & Font Customizer"
-              >
-                <Palette className="w-3.5 h-3.5 text-amber-400" />
-                <span>Theme & Fonts</span>
               </button>
             </div>
           </div>

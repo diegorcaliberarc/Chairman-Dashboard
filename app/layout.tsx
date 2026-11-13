@@ -1,9 +1,7 @@
 import type { Metadata, Viewport } from "next";
 import "./globals.css";
 import { Providers } from "./providers";
-import { NovaCoreWrapper } from "@/components/NovaCoreWrapper";
 import { ChairmanCopilotHUD } from "@/components/chairman/copilot/ChairmanCopilotHUD";
-import { GlassThemeController } from "@/components/GlassThemeController";
 import { DittoGengarPals } from "@/components/chairman/pixel-pals/DittoGengarPals";
 
 export const metadata: Metadata = {
@@ -75,12 +73,10 @@ export default function RootLayout({
         <link rel="apple-touch-startup-image" media="screen and (device-width: 414px) and (device-height: 896px) and (-webkit-device-pixel-ratio: 3)"  href="/icons/splash-1242x2688.png" />
         <link rel="apple-touch-startup-image" media="screen and (device-width: 375px) and (device-height: 667px) and (-webkit-device-pixel-ratio: 2)"  href="/icons/splash-750x1334.png" />
       </head>
-      <body className="min-h-screen bg-theme-gradient text-zinc-900 dark:text-zinc-50 antialiased overscroll-none">
+      <body className="min-h-screen bg-[#090A0F] text-zinc-100 antialiased overscroll-none selection:bg-[#0969DA]/30">
         <Providers>
-          <GlassThemeController />
           {children}
           <DittoGengarPals />
-          <NovaCoreWrapper />
           <ChairmanCopilotHUD />
         </Providers>
       </body>

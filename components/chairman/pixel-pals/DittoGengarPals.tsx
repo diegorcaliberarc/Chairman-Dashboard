@@ -707,7 +707,7 @@ export function DittoGengarPals() {
     setHydrated(true);
   }, []);
 
-  // Persist changes to localStorage
+  // Persist changes to localStorage and clamp to viewport
   useEffect(() => {
     if (!hydrated) return;
     try {
@@ -719,10 +719,29 @@ export function DittoGengarPals() {
         customCoords,
       };
       window.localStorage.setItem(STORAGE_KEY, JSON.stringify(stateToSave));
+      window.localStorage.setItem("chairman_companion_pos", JSON.stringify(customCoords));
     } catch {
       // Ignore storage quota errors
     }
   }, [hydrated, minimized, dockPosition, mode, bondClicks, customCoords]);
+
+  // Viewport clamping on window resize
+  useEffect(() => {
+    const handleResize = () => {
+      setCustomCoords((prev) => {
+        if (!prev) return null;
+        const width = minimized ? 150 : 315;
+        const height = minimized ? 44 : 120;
+        const winW = window.innerWidth;
+        const winH = window.innerHeight;
+        const clampedX = Math.max(8, Math.min(winW - width, prev.x));
+        const clampedY = Math.max(8, Math.min(winH - height, prev.y));
+        return { x: Math.round(clampedX), y: Math.round(clampedY) };
+      });
+    };
+    window.addEventListener("resize", handleResize);
+    return () => window.removeEventListener("resize", handleResize);
+  }, [minimized]);
 
   // Pointer Drag Handlers
   const handleDragPointerDown = useCallback((e: React.PointerEvent) => {
@@ -1144,14 +1163,54 @@ export function DittoGengarPals() {
           />
         )}
 
-        {/* Top Header Bar: HIS • HERS • OURS + Sync Bond + Controls + Drag Handle */}
+        {/* Dedicated 24px Top Drag Handle Bar */}
         <div
+          data-drag-handle="true"
           onPointerDown={handleDragPointerDown}
           onPointerMove={handleDragPointerMove}
           onPointerUp={handleDragPointerUp}
           onPointerCancel={handleDragPointerUp}
-          title="Drag header to move anywhere on screen"
-          className="relative z-20 flex items-center justify-between px-2.5 pt-1.5 cursor-grab active:cursor-grabbing select-none"
+          title="Drag handle to move anywhere on screen"
+          className="relative z-30 h-6 flex items-center justify-between px-2.5 bg-black/40 border-b border-white/5 cursor-grab active:cursor-grabbing select-none"
+        >
+          <div className="flex items-center gap-1.5 pointer-events-none">
+            <GripVertical className="w-3.5 h-3.5 text-purple-400" />
+            <span className="text-[9px] font-mono tracking-widest uppercase text-zinc-400">
+              Drag Companion
+            </span>
+          </div>
+
+          <div className="flex items-center gap-1" onPointerDown={(e) => e.stopPropagation()}>
+            <button
+              type="button"
+              onClick={handleCyclePosition}
+              title={customCoords ? "Snap back to dock" : `Cycle Stage Position (Current: ${positionLabel})`}
+              className={`p-0.5 rounded transition-colors ${
+                customCoords
+                  ? "text-pink-300 bg-purple-500/20 hover:bg-purple-500/30"
+                  : "text-slate-400 hover:text-white"
+              }`}
+            >
+              <Move className="w-3 h-3" />
+            </button>
+
+            <button
+              type="button"
+              onClick={() => {
+                setPickerOpen(false);
+                setMinimized(true);
+              }}
+              title="Minimize to Mini-Heart Pill"
+              className="p-0.5 rounded text-slate-400 hover:text-white transition-colors"
+            >
+              <Minimize2 className="w-3 h-3" />
+            </button>
+          </div>
+        </div>
+
+        {/* Top Header Bar: HIS • HERS • OURS + Sync Bond + Controls */}
+        <div
+          className="relative z-20 flex items-center justify-between px-2.5 pt-1 select-none"
         >
           {/* HIS • HERS • OURS Connection Pill */}
           <button
