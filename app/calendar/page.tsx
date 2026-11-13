@@ -52,6 +52,19 @@ import {
   getDurationMinutes,
   minutesToHHMM,
 } from "@/lib/circadianMath";
+import { HorizonLevel, DayMode } from "@/lib/temporalTypes";
+import {
+  getWeekDays,
+  getMonthNodes,
+  getSeasonCards,
+  EL_PASO_TACTICAL_WAYPOINTS,
+  EL_PASO_ROUTE_LEGS,
+} from "@/lib/temporalData";
+import { HorizonNavigationControl } from "@/components/temporal/HorizonNavigationControl";
+import { WeeklyRadialView } from "@/components/temporal/WeeklyRadialView";
+import { MonthlyRadialView } from "@/components/temporal/MonthlyRadialView";
+import { YearlyRadialView } from "@/components/temporal/YearlyRadialView";
+import { GeospatialTacticalMap } from "@/components/temporal/GeospatialTacticalMap";
 
 interface DbTaskLite {
   id: string;
@@ -152,6 +165,12 @@ export default function CircadianCalendarPage() {
   );
   const [scrubbedMinutes, setScrubbedMinutes] = useState<number | null>(null);
   const [viewMode, setViewMode] = useState<"solar" | "quadrants">("solar");
+
+  // Multi-Horizon Temporal State: DAY (SOLAR / 3D MAP), WEEK, MONTH, YEAR
+  const [activeHorizon, setActiveHorizon] = useState<HorizonLevel>("DAY");
+  const [dayMode, setDayMode] = useState<DayMode>("SOLAR_WHEEL");
+  const [selectedYear, setSelectedYear] = useState<number>(2026);
+  const [activeMonthIndex, setActiveMonthIndex] = useState<number>(10); // Nov (0-indexed)
 
   // Circadian events, Chairman tasks, KPIs & Modal state
   const [events, setEvents] = useState<CircadianEventDTO[]>(() =>
@@ -869,6 +888,28 @@ export default function CircadianCalendarPage() {
 
   const primaryWalkHabit = habits[0];
 
+  // Multi-Horizon Computed Datasets
+  const currentWeekDays = useMemo(() => {
+    const [y, m, d] = selectedDate.split("-").map(Number);
+    return getWeekDays(new Date(y, m - 1, d));
+  }, [selectedDate]);
+
+  const currentMonthNodes = useMemo(() => {
+    return getMonthNodes(selectedYear, activeMonthIndex);
+  }, [selectedYear, activeMonthIndex]);
+
+  const seasonalCards = useMemo(() => {
+    return getSeasonCards();
+  }, []);
+
+  const concentricTelemetry = useMemo(() => {
+    return {
+      healthPct: Math.min(100, Math.round(healthScore)),
+      workPct: Math.min(100, Math.round(paySummary.workedPct)),
+      sleepPct: 92,
+    };
+  }, [healthScore, paySummary.workedPct]);
+
   return (
     <div className="executive-glass-shell min-h-screen text-zinc-900 dark:text-white flex flex-row overflow-x-hidden">
       {/* Shared Executive Sidebar */}
@@ -920,8 +961,16 @@ export default function CircadianCalendarPage() {
             </div>
           </div>
 
-          {/* Date Controls + View Switcher + Add Block */}
+          {/* Date Controls + Multi-Horizon Control + Add Block */}
           <div className="flex flex-wrap items-center gap-2">
+            {/* Horizon Navigation Selector: DAY [SOLAR/3D] | WEEK | MONTH | YEAR */}
+            <HorizonNavigationControl
+              activeHorizon={activeHorizon}
+              onSelectHorizon={(h) => setActiveHorizon(h)}
+              dayMode={dayMode}
+              onSelectDayMode={(m) => setDayMode(m)}
+            />
+
             {/* Date Stepper */}
             <div className="flex items-center bg-[#12151f] border border-white/10 rounded-xl p-0.5">
               <button
@@ -1022,38 +1071,103 @@ export default function CircadianCalendarPage() {
           </div>
         )}
 
-        {/* Main Workspace Split: Center Celestial Dial + Right Executive Rail */}
+        {/* Main Workspace Split: Center Celestial Dial / Multi-Horizon Stage + Right Executive Rail */}
         <div className="flex flex-col xl:flex-row gap-5 px-6 py-4 items-stretch">
-          {/* LEFT / CENTER STAGE: 24-Hour Celestial Dial + Bottom-Left Micro-Statistics */}
+          {/* LEFT / CENTER STAGE: Unified Multi-Horizon Radial Engine & 3D Geospatial Map */}
           <div className="relative flex-1 flex flex-col items-center justify-center min-h-[580px]">
-            <CircadianDialStage
-              events={events}
-              highlightedTelemetry={activeTelemetryFilter}
-              currentMinutes={effectiveMinutes}
-              isLiveTime={scrubbedMinutes === null}
-              onScrubMinutes={(mins) => setScrubbedMinutes(mins)}
-              onResetLive={() => setScrubbedMinutes(null)}
-              viewMode={viewMode}
-              selectedEventId={selectedEventId}
-              onSelectEvent={setSelectedEventId}
-              onToggleChecklist={handleToggleChecklist}
-              onEditEvent={(ev) => {
-                setEditingEvent(ev);
-                setModalOpen(true);
-              }}
-              onDeleteEvent={handleDeleteEvent}
-              onAddChecklist={handleAddChecklist}
-              radarLayers={radarLayers}
-              activeRadarTypes={activeRadarTypes}
-              habits={habits}
-              highlightSpans={highlightSpans}
-              selectedDate={selectedDate}
-              subtaskStylesById={subtaskStylesById}
-              onToggleSubtaskStyle={handleToggleSubtaskStyleForEvent}
-              onQuickIncrementHabit={(habitId, delta) =>
-                handleLogHabit(habitId, { delta })
-              }
-            />
+            {/* Horizon Condition 1: DAY Horizon (Solar Wheel OR 3D Geospatial Map) */}
+            {activeHorizon === "DAY" && dayMode === "SOLAR_WHEEL" && (
+              <CircadianDialStage
+                events={events}
+                highlightedTelemetry={activeTelemetryFilter}
+                currentMinutes={effectiveMinutes}
+                isLiveTime={scrubbedMinutes === null}
+                onScrubMinutes={(mins) => setScrubbedMinutes(mins)}
+                onResetLive={() => setScrubbedMinutes(null)}
+                viewMode={viewMode}
+                selectedEventId={selectedEventId}
+                onSelectEvent={setSelectedEventId}
+                onToggleChecklist={handleToggleChecklist}
+                onEditEvent={(ev) => {
+                  setEditingEvent(ev);
+                  setModalOpen(true);
+                }}
+                onDeleteEvent={handleDeleteEvent}
+                onAddChecklist={handleAddChecklist}
+                radarLayers={radarLayers}
+                activeRadarTypes={activeRadarTypes}
+                habits={habits}
+                highlightSpans={highlightSpans}
+                selectedDate={selectedDate}
+                subtaskStylesById={subtaskStylesById}
+                onToggleSubtaskStyle={handleToggleSubtaskStyleForEvent}
+                onQuickIncrementHabit={(habitId, delta) =>
+                  handleLogHabit(habitId, { delta })
+                }
+              />
+            )}
+
+            {/* Horizon Condition 1b: DAY Horizon (3D Geospatial Tactical Mode) */}
+            {activeHorizon === "DAY" && dayMode === "GEOSPATIAL_3D" && (
+              <GeospatialTacticalMap
+                waypoints={EL_PASO_TACTICAL_WAYPOINTS}
+                routeLegs={EL_PASO_ROUTE_LEGS}
+                scrubbedMinutes={effectiveMinutes}
+                onScrubMinutes={(mins) => setScrubbedMinutes(mins)}
+                isLiveTime={scrubbedMinutes === null}
+                onResetLive={() => setScrubbedMinutes(null)}
+              />
+            )}
+
+            {/* Horizon Condition 2: WEEK Horizon */}
+            {activeHorizon === "WEEK" && (
+              <WeeklyRadialView
+                weekNumber={46}
+                dateSpanLabel="NOV 09 - 15"
+                telemetry={concentricTelemetry}
+                weekDays={currentWeekDays}
+                onSelectDay={(dateStr) => {
+                  setSelectedDate(dateStr);
+                  setActiveHorizon("DAY");
+                }}
+              />
+            )}
+
+            {/* Horizon Condition 3: MONTH Horizon */}
+            {activeHorizon === "MONTH" && (
+              <MonthlyRadialView
+                year={selectedYear}
+                monthName="November"
+                telemetry={concentricTelemetry}
+                monthNodes={currentMonthNodes}
+                activeWeekDays={currentWeekDays}
+                onSelectDate={(dateStr) => {
+                  setSelectedDate(dateStr);
+                  setActiveHorizon("DAY");
+                }}
+                onDrillDownDay={(dateStr) => {
+                  setSelectedDate(dateStr);
+                  setActiveHorizon("DAY");
+                }}
+              />
+            )}
+
+            {/* Horizon Condition 4: YEAR Horizon */}
+            {activeHorizon === "YEAR" && (
+              <YearlyRadialView
+                selectedYear={selectedYear}
+                activeMonth={activeMonthIndex}
+                telemetry={concentricTelemetry}
+                seasons={seasonalCards}
+                onSelectMonth={(mIdx) => {
+                  setActiveMonthIndex(mIdx);
+                  setActiveHorizon("MONTH");
+                }}
+                onSelectSeason={(seasonId) => {
+                  setActiveHorizon("MONTH");
+                }}
+              />
+            )}
 
             {/* Bottom-Left Floating Card: MICRO-STATISTICS + 360° Walk Ring Quick Readout */}
             <div className="xl:absolute xl:left-1 xl:bottom-2 z-20 w-full xl:w-[288px] rounded-2xl bg-[#12151e]/90 backdrop-blur-xl border border-white/[0.08] p-4 shadow-[0_14px_34px_rgba(0,0,0,0.6)] space-y-3">
