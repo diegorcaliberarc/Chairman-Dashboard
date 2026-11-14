@@ -136,8 +136,8 @@ export function CircadianDialStage({
   const R_TIMELAPSE_INNER = 180 * scaleFactor;
   const R_TIMELAPSE_OUTER = 196 * scaleFactor;
   const R_SOLAR_ARC = 126 * scaleFactor;
-  const R_WEDGE_INNER = 208 * scaleFactor;
-  const R_WEDGE_OUTER = 322 * scaleFactor;
+  const R_WEDGE_INNER = 183 * scaleFactor;
+  const R_WEDGE_OUTER = 298 * scaleFactor;
 
   const activeId = hoveredEventId ?? selectedEventId;
 
@@ -621,21 +621,21 @@ export function CircadianDialStage({
             </feMerge>
           </filter>
 
-          {/* Left Hemisphere Gradient: Bottom-Left (00:00-06:00) warm gold -> mid-left dawn white -> Top (12:00) bright sky blue */}
-          <linearGradient id="ringGradLeftHemisphere" x1="0" y1="1" x2="0.5" y2="0">
-            <stop offset="0%" stopColor="#f59e0b" />
-            <stop offset="30%" stopColor="#fef08a" />
-            <stop offset="60%" stopColor="#ffffff" />
-            <stop offset="85%" stopColor="#38bdf8" />
-            <stop offset="100%" stopColor="#0ea5e9" />
+          {/* Left Hemisphere Gradient: Bottom (00:00) Midnight Indigo -> Mid-Left (06:00) Dawn Horizon -> Top (12:00) Brilliant Sky Blue */}
+          <linearGradient id="ringGradLeftHemisphere" x1="0.5" y1="1" x2="0.5" y2="0">
+            <stop offset="0%" stopColor="#1e1b4b" />
+            <stop offset="25%" stopColor="#312e81" />
+            <stop offset="50%" stopColor="#0284c7" />
+            <stop offset="75%" stopColor="#38bdf8" />
+            <stop offset="100%" stopColor="#38bdf8" />
           </linearGradient>
 
-          {/* Right Hemisphere Gradient: Top (12:00) soft yellow-gold -> 18:00 sunset orange -> Bottom-Right emerald green */}
-          <linearGradient id="ringGradRightHemisphere" x1="0.5" y1="0" x2="1" y2="1">
-            <stop offset="0%" stopColor="#fef08a" />
+          {/* Right Hemisphere Gradient: Top (12:00) Soft Golden Yellow -> 18:00 Sunset Orange -> Bottom (24:00) Sunset Ember / Indigo */}
+          <linearGradient id="ringGradRightHemisphere" x1="0.5" y1="0" x2="0.5" y2="1">
+            <stop offset="0%" stopColor="#fde047" />
             <stop offset="35%" stopColor="#f59e0b" />
             <stop offset="70%" stopColor="#ea580c" />
-            <stop offset="100%" stopColor="#10b981" />
+            <stop offset="100%" stopColor="#312e81" />
           </linearGradient>
 
           {/* Atmospheric Ambient Bloom Radiance Filter */}
@@ -742,18 +742,205 @@ export function CircadianDialStage({
           </g>
 
           {/* ========================================================================= */}
-          {/* 3. INTERACTIVE LIVE TIME INDICATOR DOT                                     */}
+          {/* 3. 24-HOUR MILITARY CLOCK CARDINAL MARKERS (00:00 BOTTOM -> 12:00 TOP)    */}
           {/* ========================================================================= */}
-          <g id="live-time-indicator" className="pointer-events-none select-none">
-            {/* Subtle Glowing Indicator along Golden Inner Track */}
+          <g id="dial-clock-cardinal-markers" className="pointer-events-none select-none font-mono">
+            {/* Top: 12:00 (High Noon Solar Apex) */}
+            <text
+              x={CX}
+              y={CY - R_SKY + 22 * scaleFactor}
+              textAnchor="middle"
+              fill="#ffffff"
+              stroke="rgba(8, 11, 20, 0.92)"
+              strokeWidth="3.2"
+              paintOrder="stroke"
+              fontSize={13 * scaleFactor}
+              fontWeight={900}
+              letterSpacing="0.04em"
+            >
+              12:00
+            </text>
+
+            {/* Left: 06:00 (Western Sunrise Dawn) */}
+            <text
+              x={CX - R_SKY + 26 * scaleFactor}
+              y={CY + 4.5 * scaleFactor}
+              textAnchor="middle"
+              fill="#fef3c7"
+              stroke="rgba(8, 11, 20, 0.92)"
+              strokeWidth="3.2"
+              paintOrder="stroke"
+              fontSize={12 * scaleFactor}
+              fontWeight={900}
+              letterSpacing="0.04em"
+            >
+              06:00
+            </text>
+
+            {/* Right: 18:00 (Sunset Dusk) */}
+            <text
+              x={CX + R_SKY - 26 * scaleFactor}
+              y={CY + 4.5 * scaleFactor}
+              textAnchor="middle"
+              fill="#fef3c7"
+              stroke="rgba(8, 11, 20, 0.92)"
+              strokeWidth="3.2"
+              paintOrder="stroke"
+              fontSize={12 * scaleFactor}
+              fontWeight={900}
+              letterSpacing="0.04em"
+            >
+              18:00
+            </text>
+
+            {/* Bottom: 00:00 / 24:00 (Midnight Nadir) */}
+            <text
+              x={CX}
+              y={CY + R_SKY - 12 * scaleFactor}
+              textAnchor="middle"
+              fill="#cbd5e1"
+              stroke="rgba(8, 11, 20, 0.95)"
+              strokeWidth="3.2"
+              paintOrder="stroke"
+              fontSize={11 * scaleFactor}
+              fontWeight={800}
+              letterSpacing="0.04em"
+            >
+              00:00 / 24:00
+            </text>
+
+            {/* 24-Hour Precision Hour Ticks Around Rim */}
+            {Array.from({ length: 24 }, (_, hour) => {
+              const deg = (hour / 24) * 360 + 90;
+              const rad = (deg * Math.PI) / 180;
+              const isCardinal = hour === 0 || hour === 6 || hour === 12 || hour === 18;
+              const isSubCardinal = hour === 3 || hour === 9 || hour === 15 || hour === 21;
+              const tickOuter = R_SKY - 2 * scaleFactor;
+              const tickInner = isCardinal
+                ? R_SKY - 10 * scaleFactor
+                : isSubCardinal
+                ? R_SKY - 7 * scaleFactor
+                : R_SKY - 4.5 * scaleFactor;
+              const p1 = polarToCartesian(CX, CY, tickInner, rad);
+              const p2 = polarToCartesian(CX, CY, tickOuter, rad);
+
+              return (
+                <line
+                  key={`hour-tick-${hour}`}
+                  x1={p1.x}
+                  y1={p1.y}
+                  x2={p2.x}
+                  y2={p2.y}
+                  stroke={isCardinal ? "#ffffff" : isSubCardinal ? "rgba(255, 255, 255, 0.7)" : "rgba(255, 255, 255, 0.35)"}
+                  strokeWidth={isCardinal ? 2.2 : isSubCardinal ? 1.5 : 0.9}
+                  strokeLinecap="round"
+                />
+              );
+            })}
+          </g>
+
+          {/* ========================================================================= */}
+          {/* 4. CLEAN CENTRAL DIGITAL CLOCK READOUT & LIVE TIME INDICATOR              */}
+          {/* ========================================================================= */}
+          <g id="center-digital-clock" className="pointer-events-none select-none">
+            {/* Sleek Frosted Dark Glass Center Aperture */}
             <circle
-              cx={polarToCartesian(CX, CY, R_SKY * 0.58, minutesToAngleRad(currentMinutes)).x}
-              cy={polarToCartesian(CX, CY, R_SKY * 0.58, minutesToAngleRad(currentMinutes)).y}
-              r={4.2 * scaleFactor}
+              cx={CX}
+              cy={CY}
+              r={58 * scaleFactor}
+              fill="rgba(8, 12, 22, 0.88)"
+              stroke="rgba(255, 255, 255, 0.16)"
+              strokeWidth="1.2"
+              filter="url(#dialAtmosphereGlow)"
+            />
+            <circle
+              cx={CX}
+              cy={CY}
+              r={52 * scaleFactor}
+              fill="none"
+              stroke="rgba(255, 255, 255, 0.08)"
+              strokeWidth="1"
+            />
+            {/* Crisp Digital Time Display */}
+            <text
+              x={CX}
+              y={CY + 5 * scaleFactor}
+              textAnchor="middle"
+              fill="#ffffff"
+              fontSize={22 * scaleFactor}
+              fontWeight={800}
+              letterSpacing="-0.02em"
+              style={{ fontVariantNumeric: "tabular-nums" }}
+            >
+              {minutesTo12Hour(currentMinutes, true)}
+            </text>
+            <text
+              x={CX}
+              y={CY + 21 * scaleFactor}
+              textAnchor="middle"
+              fill="rgba(148, 163, 184, 0.88)"
+              fontSize={7.8 * scaleFactor}
+              fontWeight={700}
+              letterSpacing="0.12em"
+            >
+              24H SOLAR ARC
+            </text>
+
+            {/* Subtle Live Time Radial Needle & Glowing Dot */}
+            <line
+              x1={polarToCartesian(CX, CY, 58 * scaleFactor, minutesToAngleRad(currentMinutes)).x}
+              y1={polarToCartesian(CX, CY, 58 * scaleFactor, minutesToAngleRad(currentMinutes)).y}
+              x2={polarToCartesian(CX, CY, R_SKY - 2 * scaleFactor, minutesToAngleRad(currentMinutes)).x}
+              y2={polarToCartesian(CX, CY, R_SKY - 2 * scaleFactor, minutesToAngleRad(currentMinutes)).y}
+              stroke="#f59e0b"
+              strokeWidth={1.8}
+              strokeLinecap="round"
+              filter="url(#arcNeonGlow)"
+              opacity="0.85"
+            />
+            <circle
+              cx={polarToCartesian(CX, CY, R_SKY - 2 * scaleFactor, minutesToAngleRad(currentMinutes)).x}
+              cy={polarToCartesian(CX, CY, R_SKY - 2 * scaleFactor, minutesToAngleRad(currentMinutes)).y}
+              r={3.8 * scaleFactor}
               fill="#fef08a"
               stroke="#f59e0b"
-              strokeWidth="1.8"
+              strokeWidth="1.5"
               filter="url(#arcNeonGlow)"
+            />
+          </g>
+
+          {/* ========================================================================= */}
+          {/* 5. LUMINOUS CIRCADIAN GRADIENT LIGHT STRIP (TOUCHING INNER RING)          */}
+          {/* ========================================================================= */}
+          <g id="circadian-gradient-light-strip" className="pointer-events-none">
+            {/* Right Hemisphere Light Strip (12:00 Solar Noon -> 18:00 Dusk -> 24:00 Midnight): Yellow to Amber */}
+            <path
+              d={`M ${CX} ${CY - R_WEDGE_INNER} A ${R_WEDGE_INNER} ${R_WEDGE_INNER} 0 0 1 ${CX} ${CY + R_WEDGE_INNER}`}
+              fill="none"
+              stroke="url(#ringGradRightHemisphere)"
+              strokeWidth="3.4"
+              strokeLinecap="round"
+              filter="url(#radiantOuterGlow)"
+              opacity="0.95"
+            />
+            {/* Left Hemisphere Light Strip (24:00 Midnight -> 06:00 Dawn -> 12:00 Solar Noon): Indigo to Azure Blue */}
+            <path
+              d={`M ${CX} ${CY + R_WEDGE_INNER} A ${R_WEDGE_INNER} ${R_WEDGE_INNER} 0 0 1 ${CX} ${CY - R_WEDGE_INNER}`}
+              fill="none"
+              stroke="url(#ringGradLeftHemisphere)"
+              strokeWidth="3.4"
+              strokeLinecap="round"
+              filter="url(#radiantOuterGlow)"
+              opacity="0.95"
+            />
+            {/* Crisp Inner Rim Border Base */}
+            <circle
+              cx={CX}
+              cy={CY}
+              r={R_WEDGE_INNER}
+              fill="none"
+              stroke="rgba(255, 255, 255, 0.28)"
+              strokeWidth="1"
             />
           </g>
 
@@ -793,7 +980,7 @@ export function CircadianDialStage({
                   highlightedTelemetry &&
                     event.telemetrySource === highlightedTelemetry
                 );
-              const strokeColor = accentColor || event.accentColor || timelapseColor;
+              const strokeColor = timelapseColor;
               const imageHref = mediaUrl || event.mediaUrl;
 
               return (
@@ -900,7 +1087,7 @@ export function CircadianDialStage({
                   !highlightedTelemetry ||
                   event.telemetrySource === highlightedTelemetry;
                 const isHighlighted = isSelected || isHovered;
-                const strokeColor = accentColor || event.accentColor || timelapseColor;
+                const strokeColor = timelapseColor;
 
                 const elbowX = isRight
                   ? Math.min(labelX - 10, CX + R_WEDGE_OUTER + 22)
