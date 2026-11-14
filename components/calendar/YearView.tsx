@@ -15,19 +15,31 @@ const MONTH_NAMES = [
   "September", "October", "November", "December"
 ];
 
-export function YearView({ currentDate, events, onSelectDate }: YearViewProps) {
-  const year = currentDate.getFullYear();
-  const todayStr = new Date().toISOString().split("T")[0];
+function getLocalDateString(d: Date, tz = "America/Denver"): string {
+  try {
+    return new Intl.DateTimeFormat("en-CA", { timeZone: tz }).format(d);
+  } catch {
+    const y = d.getFullYear();
+    const m = String(d.getMonth() + 1).padStart(2, "0");
+    const day = String(d.getDate()).padStart(2, "0");
+    return `${y}-${m}-${day}`;
+  }
+}
 
-  // Map events count by dateStr "YYYY-MM-DD"
+export function YearView({ currentDate, events, onSelectDate }: YearViewProps) {
+  const tz = typeof Intl !== "undefined" ? Intl.DateTimeFormat().resolvedOptions().timeZone : "America/Denver";
+  const year = currentDate.getFullYear();
+  const todayStr = getLocalDateString(new Date(), tz);
+
+  // Map events count by local dateStr "YYYY-MM-DD"
   const eventsByDate = useMemo(() => {
     const map = new Map<string, number>();
     for (const ev of events) {
-      const dStr = ev.start_time.split("T")[0];
+      const dStr = getLocalDateString(new Date(ev.start_time), tz);
       map.set(dStr, (map.get(dStr) || 0) + 1);
     }
     return map;
-  }, [events]);
+  }, [events, tz]);
 
   return (
     <div className="h-full overflow-y-auto p-4 select-none">

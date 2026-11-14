@@ -22,6 +22,30 @@ interface MonthViewProps {
   onCreateEvent: (dateStr: string) => void;
 }
 
+function getLocalDateString(d: Date, tz = "America/Denver"): string {
+  try {
+    return new Intl.DateTimeFormat("en-CA", { timeZone: tz }).format(d);
+  } catch {
+    const y = d.getFullYear();
+    const m = String(d.getMonth() + 1).padStart(2, "0");
+    const day = String(d.getDate()).padStart(2, "0");
+    return `${y}-${m}-${day}`;
+  }
+}
+
+function formatShortTime(isoStr: string): string {
+  try {
+    const d = new Date(isoStr);
+    const h = d.getHours();
+    const m = d.getMinutes();
+    const period = h >= 12 ? "p" : "a";
+    const h12 = h % 12 === 0 ? 12 : h % 12;
+    return m === 0 ? `${h12}${period}` : `${h12}:${String(m).padStart(2, "0")}${period}`;
+  } catch {
+    return "";
+  }
+}
+
 export function MonthView({
   currentDate,
   events,
@@ -30,6 +54,7 @@ export function MonthView({
   onCreateEvent,
 }: MonthViewProps) {
   const daysOfWeek = ["SUN", "MON", "TUE", "WED", "THU", "FRI", "SAT"];
+  const tz = typeof Intl !== "undefined" ? Intl.DateTimeFormat().resolvedOptions().timeZone : "America/Denver";
 
   const calendarGrid = useMemo(() => {
     const year = currentDate.getFullYear();
@@ -46,7 +71,7 @@ export function MonthView({
       isToday: boolean;
     }[] = [];
 
-    const todayStr = new Date().toISOString().split("T")[0];
+    const todayStr = getLocalDateString(new Date(), tz);
 
     // Previous month filler
     for (let i = firstDayIndex - 1; i >= 0; i--) {
@@ -89,18 +114,22 @@ export function MonthView({
     }
 
     return cells;
-  }, [currentDate]);
+  }, [currentDate, tz]);
 
-  // Index events by dateStr (YYYY-MM-DD)
+  // Index events by local dateStr (YYYY-MM-DD)
   const eventsByDate = useMemo(() => {
     const map: Record<string, CalendarEventItem[]> = {};
     for (const ev of events) {
-      const dt = ev.start_time.split("T")[0];
+      const dt = getLocalDateString(new Date(ev.start_time), tz);
       if (!map[dt]) map[dt] = [];
       map[dt].push(ev);
     }
+    // Sort events within each day by start_time
+    for (const key of Object.keys(map)) {
+      map[key].sort((a, b) => new Date(a.start_time).getTime() - new Date(b.start_time).getTime());
+    }
     return map;
-  }, [events]);
+  }, [events, tz]);
 
   return (
     <div className="w-full rounded-2xl bg-[#090A0F] border border-white/[0.08] overflow-hidden flex flex-col">
@@ -125,7 +154,7 @@ export function MonthView({
             <div
               key={cell.dateStr}
               onClick={() => onSelectDate(cell.dateStr)}
-              className={`min-h-[115px] p-2 flex flex-col justify-between group transition-colors cursor-pointer ${
+              className={`min-h-[125px] p-2 flex flex-col justify-between group transition-colors cursor-pointer ${
                 cell.isCurrentMonth
                   ? "bg-[#090A0F] hover:bg-[#111214]"
                   : "bg-black/40 text-zinc-600 hover:bg-black/60"
@@ -160,32 +189,48 @@ export function MonthView({
 
               {/* Event Pills */}
               <div className="flex-1 space-y-1 overflow-hidden">
-                {dayEvents.slice(0, 3).map((ev) => (
+                {dayEvents.slice(0, 4).map((ev) => {
+                  const timeLabel = formatShortTime(ev.start_time);
+
+                  return (
+                    <div
+                      key={ev.id}
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        onSelectEvent(ev);
+                      }}
+                      className="px-1.5 py-0.5 rounded text-[9.5px] font-semibold truncate flex items-center gap-1 transition-transform hover:scale-[1.02]"
+                      style={{
+                        backgroundColor: `${ev.color_hex || "#3B82F6"}22`,
+                        borderColor: `${ev.color_hex || "#3B82F6"}44`,
+                        borderWidth: "1px",
+                        color: "#E2F1FF",
+                      }}
+                      title={`${ev.title} (${timeLabel})`}
+                    >
+                      <span
+                        className="w-1.5 h-1.5 rounded-full shrink-0"
+                        style={{ backgroundColor: ev.color_hex || "#3B82F6" }}
+                      />
+                      {timeLabel && (
+                        <span className="font-mono text-[8.5px] text-zinc-400 shrink-0">
+                          {timeLabel}
+                        </span>
+                      )}
+                      <span className="truncate">{ev.title}</span>
+                    </div>
+                  );
+                })}
+
+                {dayEvents.length > 4 && (
                   <div
-                    key={ev.id}
                     onClick={(e) => {
                       e.stopPropagation();
-                      onSelectEvent(ev);
+                      onSelectDate(cell.dateStr);
                     }}
-                    className="px-2 py-0.5 rounded text-[10px] font-semibold truncate flex items-center gap-1.5 transition-transform hover:scale-[1.02]"
-                    style={{
-                      backgroundColor: `${ev.color_hex}22`,
-                      borderColor: `${ev.color_hex}44`,
-                      borderWidth: "1px",
-                      color: "#E2F1FF",
-                    }}
+                    className="text-[9px] font-mono font-semibold text-blue-400 hover:underline pl-1 cursor-pointer"
                   >
-                    <span
-                      className="w-1.5 h-1.5 rounded-full shrink-0"
-                      style={{ backgroundColor: ev.color_hex }}
-                    />
-                    <span className="truncate">{ev.title}</span>
-                  </div>
-                ))}
-
-                {dayEvents.length > 3 && (
-                  <div className="text-[9.5px] font-mono text-zinc-500 pl-1">
-                    +{dayEvents.length - 3} more
+                    +{dayEvents.length - 4} more
                   </div>
                 )}
               </div>
@@ -196,4 +241,3 @@ export function MonthView({
     </div>
   );
 }
-

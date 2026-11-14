@@ -35,6 +35,7 @@ export interface CircadianEventDTO {
   endTime: string;   // ISO string
   isRecurring: boolean;
   recurrenceRule?: string | null;
+  allDay?: boolean;
   mediaUrl: string;
   mediaType: MediaTypeEnum;
   mediaAspectRatio: string;

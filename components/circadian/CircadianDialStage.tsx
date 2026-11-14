@@ -190,7 +190,21 @@ export function CircadianDialStage({
 
   // Precompute wedge geometries + non-colliding label anchors
   const wedgeItems = useMemo(() => {
-    const raw = events.map((ev) => {
+    // Filter out all-day events and 0-minute point reminders from circular radial wedges so they never create solid 360° donuts
+    const timedEvents = events.filter((ev) => {
+      if (ev.allDay) return false;
+      const s = new Date(ev.startTime).getTime();
+      const e = new Date(ev.endTime).getTime();
+      if (s === e) return false;
+      const dur = getDurationMinutes(
+        dateToMinutes(new Date(ev.startTime)),
+        dateToMinutes(new Date(ev.endTime))
+      );
+      if (dur < 5) return false;
+      return true;
+    });
+
+    const raw = timedEvents.map((ev) => {
       const startMin = dateToMinutes(new Date(ev.startTime));
       const endMin = dateToMinutes(new Date(ev.endTime));
       const durMin = getDurationMinutes(startMin, endMin);
@@ -202,7 +216,7 @@ export function CircadianDialStage({
         R_WEDGE_OUTER,
         startMin,
         endMin,
-        2.2
+        3.0
       );
 
       const labelRadius = R_WEDGE_OUTER + 16 * scaleFactor;
@@ -247,49 +261,6 @@ export function CircadianDialStage({
     R_WEDGE_OUTER,
     scaleFactor,
   ]);
-
-  // Compute glowing empty slate / free-time arcs between scheduled events
-  const freeArcs = useMemo(() => {
-    if (events.length === 0) return [];
-    // Sort intervals by startMin
-    const intervals = events
-      .map((ev) => {
-        const s = dateToMinutes(new Date(ev.startTime));
-        const e = dateToMinutes(new Date(ev.endTime));
-        return { s, e };
-      })
-      .sort((a, b) => a.s - b.s);
-
-    const gaps: { startMin: number; endMin: number }[] = [];
-    for (let i = 0; i < intervals.length; i++) {
-      const current = intervals[i];
-      const next = intervals[(i + 1) % intervals.length];
-      const gapStart = current.e % 1440;
-      const gapEnd = next.s % 1440;
-      const gapDur = (gapEnd - gapStart + 1440) % 1440;
-      if (gapDur > 20) {
-        gaps.push({ startMin: gapStart, endMin: gapEnd });
-      }
-    }
-
-    return gaps.map((gap, idx) => {
-      const wedge = describeAnnularWedge(
-        CX,
-        CY,
-        R_WEDGE_INNER,
-        R_WEDGE_OUTER,
-        gap.startMin,
-        gap.endMin,
-        2.2
-      );
-      return {
-        id: `gap-${idx}`,
-        path: wedge.path,
-        startMin: gap.startMin,
-        endMin: gap.endMin,
-      };
-    });
-  }, [events, CX, CY, R_WEDGE_INNER, R_WEDGE_OUTER]);
 
   // Assign up to 4 quadrant cards for Quadrant Mode
   const quadrantAssignments = useMemo(() => {
@@ -887,22 +858,6 @@ export function CircadianDialStage({
               {minutesTo12Hour(currentMinutes, false)}
             </text>
           </g>
-        </g>
-
-        {/* 8. Empty Slates / Free Time Arc Outlines (Subtle glowing translucent blue arcs) */}
-        <g className="pointer-events-none">
-          {freeArcs.map((gap) => (
-            <path
-              key={gap.id}
-              d={gap.path}
-              fill="none"
-              stroke="rgba(56, 189, 248, 0.42)"
-              strokeWidth={1.8 * scaleFactor}
-              strokeDasharray="6 6"
-              filter="url(#arcNeonGlow)"
-              opacity="0.8"
-            />
-          ))}
         </g>
 
         {/* 9. Outer Curved Annular Visual Media Wedges */}

@@ -185,6 +185,7 @@ export async function GET(req: NextRequest) {
             endTime: e.toISOString(),
             isRecurring: Boolean(row.recurrence_rule),
             recurrenceRule: row.recurrence_rule,
+            allDay: Boolean(row.all_day),
             mediaUrl: inferred.mediaUrl,
             mediaType: "image" as any,
             mediaAspectRatio: "16:9",

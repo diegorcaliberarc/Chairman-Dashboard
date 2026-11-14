@@ -10,7 +10,20 @@ interface ScheduleViewProps {
   onCreateEvent: (dateStr: string) => void;
 }
 
+function getLocalDateString(d: Date, tz = "America/Denver"): string {
+  try {
+    return new Intl.DateTimeFormat("en-CA", { timeZone: tz }).format(d);
+  } catch {
+    const y = d.getFullYear();
+    const m = String(d.getMonth() + 1).padStart(2, "0");
+    const day = String(d.getDate()).padStart(2, "0");
+    return `${y}-${m}-${day}`;
+  }
+}
+
 export function ScheduleView({ events, onSelectEvent, onCreateEvent }: ScheduleViewProps) {
+  const tz = typeof Intl !== "undefined" ? Intl.DateTimeFormat().resolvedOptions().timeZone : "America/Denver";
+
   // Sort events chronologically
   const sortedEvents = useMemo(() => {
     return [...events].sort(
@@ -18,18 +31,19 @@ export function ScheduleView({ events, onSelectEvent, onCreateEvent }: ScheduleV
     );
   }, [events]);
 
-  // Group events by date string
+  // Group events by local date string
   const groupedEvents = useMemo(() => {
     const map = new Map<string, CalendarEventItem[]>();
     for (const ev of sortedEvents) {
-      const dStr = ev.start_time.split("T")[0];
+      const dStr = getLocalDateString(new Date(ev.start_time), tz);
       const arr = map.get(dStr) || [];
       arr.push(ev);
       map.set(dStr, arr);
     }
     return Array.from(map.entries()).map(([dateStr, items]) => ({
       dateStr,
-      dateLabel: new Date(dateStr).toLocaleDateString("en-US", {
+      dateLabel: new Date(items[0].start_time).toLocaleDateString("en-US", {
+        timeZone: tz,
         weekday: "long",
         month: "long",
         day: "numeric",
@@ -37,7 +51,7 @@ export function ScheduleView({ events, onSelectEvent, onCreateEvent }: ScheduleV
       }),
       items,
     }));
-  }, [sortedEvents]);
+  }, [sortedEvents, tz]);
 
   if (groupedEvents.length === 0) {
     return (

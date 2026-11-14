@@ -12,6 +12,17 @@ interface WeekViewProps {
   onCreateEvent: (dateStr: string, timeStr?: string) => void;
 }
 
+function getLocalDateString(d: Date, tz = "America/Denver"): string {
+  try {
+    return new Intl.DateTimeFormat("en-CA", { timeZone: tz }).format(d);
+  } catch {
+    const y = d.getFullYear();
+    const m = String(d.getMonth() + 1).padStart(2, "0");
+    const day = String(d.getDate()).padStart(2, "0");
+    return `${y}-${m}-${day}`;
+  }
+}
+
 export function WeekView({
   currentDate,
   events,
@@ -21,6 +32,7 @@ export function WeekView({
 }: WeekViewProps) {
   const hours = Array.from({ length: 24 }, (_, i) => i);
   const now = new Date();
+  const tz = typeof Intl !== "undefined" ? Intl.DateTimeFormat().resolvedOptions().timeZone : "America/Denver";
   const currentMinutes = now.getHours() * 60 + now.getMinutes();
 
   // Compute 7 days of the week containing currentDate
@@ -31,15 +43,12 @@ export function WeekView({
     firstDay.setDate(curr.getDate() - dayIndex);
 
     const days = [];
-    const todayStr = new Date().toISOString().split("T")[0];
+    const todayStr = getLocalDateString(new Date(), tz);
 
     for (let i = 0; i < 7; i++) {
       const d = new Date(firstDay);
       d.setDate(firstDay.getDate() + i);
-      const y = d.getFullYear();
-      const m = String(d.getMonth() + 1).padStart(2, "0");
-      const day = String(d.getDate()).padStart(2, "0");
-      const dateStr = `${y}-${m}-${day}`;
+      const dateStr = getLocalDateString(d, tz);
       const dayName = d.toLocaleDateString("en-US", { weekday: "short" }).toUpperCase();
 
       days.push({
@@ -51,18 +60,18 @@ export function WeekView({
       });
     }
     return days;
-  }, [currentDate]);
+  }, [currentDate, tz]);
 
-  // Map events to dates
+  // Map events to dates using local timezone
   const eventsByDate = useMemo(() => {
     const map: Record<string, CalendarEventItem[]> = {};
     for (const ev of events) {
-      const dt = ev.start_time.split("T")[0];
+      const dt = getLocalDateString(new Date(ev.start_time), tz);
       if (!map[dt]) map[dt] = [];
       map[dt].push(ev);
     }
     return map;
-  }, [events]);
+  }, [events, tz]);
 
   const HOUR_HEIGHT = 60; // 60px per hour => 1px per minute
 

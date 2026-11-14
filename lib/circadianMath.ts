@@ -114,6 +114,7 @@ export function timeToCartesian(
 export function getDurationMinutes(startMinutes: number, endMinutes: number): number {
   const s = ((startMinutes % 1440) + 1440) % 1440;
   const e = ((endMinutes % 1440) + 1440) % 1440;
+  if (s === e) return 0;
   if (Math.abs(endMinutes - startMinutes) >= 1439) return 1439;
   return e > s ? e - s : 1440 - s + e;
 }
@@ -123,7 +124,9 @@ export function getDurationMinutes(startMinutes: number, endMinutes: number): nu
  * deltaTheta = (Duration / 1440) * 360°
  */
 export function getSweepAngleDeg(startMinutes: number, endMinutes: number): number {
-  return (getDurationMinutes(startMinutes, endMinutes) / 1440) * 360;
+  const dur = getDurationMinutes(startMinutes, endMinutes);
+  if (dur === 0) return 0;
+  return (dur / 1440) * 360;
 }
 
 /**
@@ -158,7 +161,7 @@ export function describeAnnularWedge(
   rOuter: number,
   startMinutes: number,
   endMinutes: number,
-  gapDeg = 1.4
+  gapDeg = 2.4
 ): {
   path: string;
   bbox: BoundingBox;
@@ -168,7 +171,8 @@ export function describeAnnularWedge(
   midAngleRad: number;
 } {
   const rawSweep = getSweepAngleDeg(startMinutes, endMinutes);
-  const effectiveSweep = Math.max(4, Math.min(356, rawSweep - gapDeg));
+  // Cap at 300° so wedges remain fragmented sectors and never form a solid 360° donut
+  const effectiveSweep = Math.max(6, Math.min(300, rawSweep - gapDeg));
   const startDeg = minutesToAngleDeg(startMinutes) + gapDeg / 2;
   const endDeg = startDeg + effectiveSweep;
 
