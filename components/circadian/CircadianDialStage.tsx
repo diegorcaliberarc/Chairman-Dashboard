@@ -22,6 +22,7 @@ import {
   DOMAIN_CONFIG,
   SubtaskListStyle,
   formatSubtaskMarker,
+  resolveEventVisual,
 } from "@/lib/circadianTypes";
 import {
   assignOrbitalTracks,
@@ -123,19 +124,19 @@ export function CircadianDialStage({
   const [isPanning, setIsPanning] = useState(false);
   const panStartRef = useRef({ x: 0, y: 0 });
 
-  // Master 940 × 940 ViewBox — leaves ample margin around outer wedges for non-clipped labels
-  const VB_W = 940;
-  const VB_H = 940;
-  const CX = 470;
-  const CY = 470;
+  // Master 1000 × 1000 ViewBox — leaves ample margin around outer wedges for non-clipped labels
+  const VB_W = 1000;
+  const VB_H = 1000;
+  const CX = 500;
+  const CY = 500;
 
   const scaleFactor = viewMode === "quadrants" ? 0.74 : 1;
-  const R_SKY = 176 * scaleFactor;
-  const R_TIMELAPSE_INNER = 176 * scaleFactor;
-  const R_TIMELAPSE_OUTER = 192 * scaleFactor;
-  const R_SOLAR_ARC = 126 * scaleFactor;
-  const R_WEDGE_INNER = 208 * scaleFactor;
-  const R_WEDGE_OUTER = 296 * scaleFactor;
+  const R_SKY = 172 * scaleFactor;
+  const R_TIMELAPSE_INNER = 172 * scaleFactor;
+  const R_TIMELAPSE_OUTER = 188 * scaleFactor;
+  const R_SOLAR_ARC = 122 * scaleFactor;
+  const R_WEDGE_INNER = 198 * scaleFactor;
+  const R_WEDGE_OUTER = 314 * scaleFactor;
 
   const activeId = hoveredEventId ?? selectedEventId;
 
@@ -153,7 +154,7 @@ export function CircadianDialStage({
     return () => el.removeEventListener("wheel", onWheel);
   }, []);
 
-  // 144-step 24-Hour Day-to-Night Time-Lapse Wheel Ring
+  // 144-step 12-Hour Day-to-Night Time-Lapse Wheel Ring
   const timelapseWheelSegments = useMemo(
     () =>
       buildTimelapseWheelSegments(
@@ -166,7 +167,7 @@ export function CircadianDialStage({
     [CX, CY, R_TIMELAPSE_INNER, R_TIMELAPSE_OUTER]
   );
 
-  // Multi-stop time-lapse progress arc from 00:00 up to currentMinutes
+  // Multi-stop time-lapse progress arc on 12-hour dial
   const solarProgressArcs = useMemo(
     () => buildTimelapseProgressArcs(CX, CY, R_SOLAR_ARC, currentMinutes, 96),
     [CX, CY, R_SOLAR_ARC, currentMinutes]
@@ -187,8 +188,7 @@ export function CircadianDialStage({
       return dur >= 5;
     });
 
-    // 2. Strict 1-to-1 Event Deduplication: Ensure each scheduled routine only appears ONCE on the 24h dial
-    // (Prevents overnight sleep routines that cross midnight from rendering duplicate wedges/labels)
+    // 2. Strict 1-to-1 Event Deduplication: Ensure each scheduled routine only appears ONCE
     const seenSignatures = new Set<string>();
     const uniqueTimedEvents = timedEvents.filter((ev) => {
       const startMin = dateToMinutes(new Date(ev.startTime));
@@ -200,7 +200,7 @@ export function CircadianDialStage({
       return true;
     });
 
-    // 3. Build geometry items
+    // 3. Build geometry items with 12-hour standard clock math and image category mapping
     const raw = uniqueTimedEvents.map((ev) => {
       const startMin = dateToMinutes(new Date(ev.startTime));
       const endMin = dateToMinutes(new Date(ev.endTime));
@@ -216,38 +216,65 @@ export function CircadianDialStage({
         3.0
       );
 
-      const anchorPt = polarToCartesian(
-        CX,
-        CY,
-        R_WEDGE_OUTER + 20 * scaleFactor,
-        wedge.midAngleRad
-      );
-      const isRight = anchorPt.x >= CX;
+      const visual = resolveEventVisual(ev.title, ev.domain);
+      const mediaUrl = ev.mediaUrl || visual.mediaUrl;
+      const accentColor = ev.accentColor || visual.accentColor;
 
       return {
         event: ev,
+        mediaUrl,
+        accentColor,
         startMin,
         endMin,
         durMin,
         midMin,
         timelapseColor: getTimelapseColorAtMinutes(midMin),
         wedge,
+        midAngleDeg: wedge.midAngleDeg,
+        midAngleRad: wedge.midAngleRad,
+      };
+    });
+
+    // Sort by midAngleDeg for clean angular stagger detection
+    raw.sort((a, b) => a.midAngleDeg - b.midAngleDeg);
+
+    // 4. Stagger connectors for closely spaced events (< 20° angular delta)
+    const itemsWithAnchors = raw.map((item, idx) => {
+      const isRight = Math.cos(item.midAngleRad) >= 0;
+      let staggerLevel = 0;
+      if (idx > 0) {
+        const prev = raw[idx - 1];
+        const angDiff = Math.abs(item.midAngleDeg - prev.midAngleDeg);
+        if (angDiff < 20) {
+          staggerLevel = (idx % 3);
+        }
+      }
+      const radialOffset = staggerLevel * 28 * scaleFactor;
+      const anchorPt = polarToCartesian(
+        CX,
+        CY,
+        R_WEDGE_OUTER + (22 + radialOffset) * scaleFactor,
+        item.midAngleRad
+      );
+
+      return {
+        ...item,
         anchorPt,
         isRight,
-        labelX: isRight ? anchorPt.x + 20 : anchorPt.x - 20,
+        labelX: isRight ? anchorPt.x + 22 : anchorPt.x - 22,
         labelY: anchorPt.y,
         textAnchor: (isRight ? "start" : "end") as "start" | "end",
       };
     });
 
-    // 4. Collision-Avoidance Label Relaxation Pass (Separately on Left and Right)
-    const relaxLabels = (items: typeof raw, isRightSide: boolean) => {
+    // 5. Collision-Avoidance Label Relaxation Pass (Separately on Left and Right)
+    const relaxLabels = (items: typeof itemsWithAnchors, isRightSide: boolean) => {
       if (items.length <= 1) return;
       // Sort vertically by target natural anchor Y
       items.sort((a, b) => a.anchorPt.y - b.anchorPt.y);
-      const minGap = 34; // Minimum vertical gap between adjacent labels
-      const topBound = 85;
-      const bottomBound = VB_H - 85;
+      const minGap = 42; // Minimum vertical gap between adjacent labels
+      const topBound = 70;
+      const bottomBound = VB_H - 70;
 
       // Forward pass
       for (let i = 1; i < items.length; i++) {
@@ -282,18 +309,18 @@ export function CircadianDialStage({
       // Compute refined labelX and leader elbow connector
       for (const item of items) {
         item.labelX = isRightSide
-          ? Math.max(item.anchorPt.x + 18, CX + R_WEDGE_OUTER + 24)
-          : Math.min(item.anchorPt.x - 18, CX - R_WEDGE_OUTER - 24);
+          ? Math.max(item.anchorPt.x + 20, CX + R_WEDGE_OUTER + 28)
+          : Math.min(item.anchorPt.x - 20, CX - R_WEDGE_OUTER - 28);
       }
     };
 
-    const rightItems = raw.filter((i) => i.isRight);
-    const leftItems = raw.filter((i) => !i.isRight);
+    const rightItems = itemsWithAnchors.filter((i) => i.isRight);
+    const leftItems = itemsWithAnchors.filter((i) => !i.isRight);
 
     relaxLabels(rightItems, true);
     relaxLabels(leftItems, false);
 
-    return raw;
+    return itemsWithAnchors;
   }, [
     events,
     CX,
@@ -522,7 +549,7 @@ export function CircadianDialStage({
   return (
     <div
       ref={containerRef}
-      className={`relative w-full flex items-center justify-center select-none ${
+      className={`relative w-full h-full min-h-[640px] flex items-center justify-center select-none overflow-hidden ${
         isPanning ? "cursor-grabbing" : "cursor-default"
       }`}
       onPointerDown={handlePointerDown}
@@ -531,7 +558,7 @@ export function CircadianDialStage({
       onPointerLeave={handlePointerUp}
     >
       {/* Dedicated Floating Canvas Zoom & Pan HUD (Top Right) */}
-      <div className="absolute top-2 right-2 z-40 flex items-center gap-1 p-1 rounded-xl bg-[#090D18]/90 backdrop-blur-xl border border-white/10 shadow-2xl text-zinc-300">
+      <div className="absolute top-3 right-3 z-40 flex items-center gap-1 p-1 rounded-xl bg-[#090D18]/90 backdrop-blur-xl border border-white/10 shadow-2xl text-zinc-300">
         <button
           onClick={() => setZoom((z) => Math.min(2.5, +(z + 0.15).toFixed(2)))}
           className="p-1.5 rounded-lg hover:bg-white/10 hover:text-white transition"
@@ -562,12 +589,12 @@ export function CircadianDialStage({
         </button>
       </div>
 
-      {/* Master 1:1 Isotropic SVG Viewport — 940×940 Circle Geometry */}
+      {/* Master 1:1 Isotropic SVG Viewport — 1000×1000 Circle Geometry */}
       <svg
         ref={svgRef}
-        viewBox="0 0 940 940"
+        viewBox="0 0 1000 1000"
         preserveAspectRatio="xMidYMid meet"
-        className="relative z-10 w-full max-w-[860px] aspect-square h-auto max-h-[calc(100vh-140px)] block mx-auto overflow-hidden"
+        className="relative z-10 w-full h-full max-w-none max-h-none block mx-auto overflow-visible"
       >
         <defs>
           <filter id="solarNodeGlow" x="-120%" y="-120%" width="340%" height="340%">
@@ -751,93 +778,57 @@ export function CircadianDialStage({
             })}
           </g>
 
-          {/* Standard Clock Cardinal Time Labels matching Reference Mockup */}
-          <g className="pointer-events-none select-none font-mono">
-            {/* Top: 12:00 PM (Midday Solar Apex / High Noon) */}
-            <text
-              x={CX}
-              y={CY - R_SKY + 20 * scaleFactor}
-              textAnchor="middle"
-              fill="#ffffff"
-              stroke="rgba(4, 7, 16, 0.85)"
-              strokeWidth="2.5"
-              paintOrder="stroke"
-              fontSize={11.5 * scaleFactor}
-              fontWeight={800}
-              letterSpacing="0.04em"
-            >
-              12:00 PM
-            </text>
+          {/* Standard Clock Cardinal Numbers (12 Top, 3 Right, 6 Bottom, 9 Left) & 12 Hour Ticks */}
+          <g id="dial-clock-cardinal-markers" className="pointer-events-none select-none">
+            {Array.from({ length: 12 }, (_, i) => i + 1).map((hour) => {
+              const deg = (hour / 12) * 360 - 90;
+              const rad = (deg * Math.PI) / 180;
+              const isCardinal = hour === 12 || hour === 3 || hour === 6 || hour === 9;
+              const tickOuter = R_SKY - 4 * scaleFactor;
+              const tickInner = isCardinal ? R_SKY - 18 * scaleFactor : R_SKY - 11 * scaleFactor;
+              const p1 = polarToCartesian(CX, CY, tickInner, rad);
+              const p2 = polarToCartesian(CX, CY, tickOuter, rad);
+              const textPt = polarToCartesian(CX, CY, R_SKY - 28 * scaleFactor, rad);
 
-            {/* Right: 6:00 PM (Sunset / Evening Dusk) */}
-            <text
-              x={CX + R_SKY - 28 * scaleFactor}
-              y={CY + 4 * scaleFactor}
-              textAnchor="middle"
-              fill="#fef3c7"
-              stroke="rgba(4, 7, 16, 0.85)"
-              strokeWidth="2.5"
-              paintOrder="stroke"
-              fontSize={11.5 * scaleFactor}
-              fontWeight={800}
-              letterSpacing="0.04em"
-            >
-              6:00 PM
-            </text>
-
-            {/* Bottom: 12:00 AM (Midnight Nadir) */}
-            <text
-              x={CX}
-              y={CY + R_SKY - 12 * scaleFactor}
-              textAnchor="middle"
-              fill="#cbd5e1"
-              stroke="rgba(4, 7, 16, 0.85)"
-              strokeWidth="2.5"
-              paintOrder="stroke"
-              fontSize={11.5 * scaleFactor}
-              fontWeight={800}
-              letterSpacing="0.04em"
-            >
-              12:00 AM
-            </text>
-
-            {/* Left: 6:00 AM (Sunrise / Morning Dawn) */}
-            <text
-              x={CX - R_SKY + 28 * scaleFactor}
-              y={CY + 4 * scaleFactor}
-              textAnchor="middle"
-              fill="#fef3c7"
-              stroke="rgba(4, 7, 16, 0.85)"
-              strokeWidth="2.5"
-              paintOrder="stroke"
-              fontSize={11.5 * scaleFactor}
-              fontWeight={800}
-              letterSpacing="0.04em"
-            >
-              6:00 AM
-            </text>
-
-            {/* Subtle Standard Clock 3 PM / 9 PM / 3 AM / 9 AM Indicators at Octants */}
-            {[
-              { mins: 900, label: "3 PM", deg: 45 },
-              { mins: 1260, label: "9 PM", deg: 135 },
-              { mins: 180, label: "3 AM", deg: 225 },
-              { mins: 540, label: "9 AM", deg: 315 },
-            ].map((oct) => {
-              const rad = minutesToAngleRad(oct.mins);
-              const pt = polarToCartesian(CX, CY, R_SKY - 18 * scaleFactor, rad);
               return (
-                <text
-                  key={oct.label}
-                  x={pt.x}
-                  y={pt.y + 3.5}
-                  textAnchor="middle"
-                  fill="rgba(255, 255, 255, 0.5)"
-                  fontSize={8.5 * scaleFactor}
-                  fontWeight={600}
-                >
-                  {oct.label}
-                </text>
+                <g key={`hour-marker-${hour}`}>
+                  <line
+                    x1={p1.x}
+                    y1={p1.y}
+                    x2={p2.x}
+                    y2={p2.y}
+                    stroke={isCardinal ? "rgba(255, 255, 255, 0.9)" : "rgba(255, 255, 255, 0.38)"}
+                    strokeWidth={isCardinal ? 2.6 : 1.2}
+                    strokeLinecap="round"
+                  />
+                  {isCardinal ? (
+                    <text
+                      x={textPt.x}
+                      y={textPt.y + 5 * scaleFactor}
+                      textAnchor="middle"
+                      fill="#ffffff"
+                      stroke="rgba(8, 11, 20, 0.92)"
+                      strokeWidth="3.2"
+                      paintOrder="stroke"
+                      fontSize={14 * scaleFactor}
+                      fontWeight={900}
+                      letterSpacing="0.02em"
+                    >
+                      {hour}
+                    </text>
+                  ) : (
+                    <text
+                      x={textPt.x}
+                      y={textPt.y + 3.2 * scaleFactor}
+                      textAnchor="middle"
+                      fill="rgba(255, 255, 255, 0.52)"
+                      fontSize={9.2 * scaleFactor}
+                      fontWeight={600}
+                    >
+                      {hour}
+                    </text>
+                  )}
+                </g>
               );
             })}
           </g>
@@ -939,7 +930,7 @@ export function CircadianDialStage({
           {/* ========================================================================= */}
           <g id="circadian-wedges-layer">
             {wedgeItems.map((item) => {
-              const { event, wedge, timelapseColor } = item;
+              const { event, wedge, timelapseColor, mediaUrl, accentColor } = item;
               const isSelected = selectedEventId === event.id;
               const isHovered = hoveredEventId === event.id;
               const matchesTelemetry =
@@ -952,7 +943,8 @@ export function CircadianDialStage({
                   highlightedTelemetry &&
                     event.telemetrySource === highlightedTelemetry
                 );
-              const strokeColor = event.accentColor || timelapseColor;
+              const strokeColor = accentColor || event.accentColor || timelapseColor;
+              const imageHref = mediaUrl || event.mediaUrl;
 
               return (
                 <g
@@ -982,34 +974,16 @@ export function CircadianDialStage({
                       height={wedge.bbox.height}
                       fill="#111827"
                     />
-                    {event.mediaUrl ? (
+                    {imageHref ? (
                       <>
-                        {event.mediaType === "video_loop" ? (
-                          <foreignObject
-                            x={wedge.bbox.x}
-                            y={wedge.bbox.y}
-                            width={wedge.bbox.width}
-                            height={wedge.bbox.height}
-                          >
-                            <video
-                              src={event.mediaUrl}
-                              autoPlay
-                              loop
-                              muted
-                              playsInline
-                              className="w-full h-full object-cover"
-                            />
-                          </foreignObject>
-                        ) : (
-                          <image
-                            href={event.mediaUrl}
-                            x={wedge.bbox.x}
-                            y={wedge.bbox.y}
-                            width={wedge.bbox.width}
-                            height={wedge.bbox.height}
-                            preserveAspectRatio="xMidYMid slice"
-                          />
-                        )}
+                        <image
+                          href={imageHref}
+                          x={wedge.bbox.x}
+                          y={wedge.bbox.y}
+                          width={wedge.bbox.width}
+                          height={wedge.bbox.height}
+                          preserveAspectRatio="xMidYMid slice"
+                        />
                         <rect
                           x={wedge.bbox.x}
                           y={wedge.bbox.y}
@@ -1068,6 +1042,7 @@ export function CircadianDialStage({
                   labelY,
                   textAnchor,
                   isRight,
+                  accentColor,
                 } = item;
                 const isSelected = selectedEventId === event.id;
                 const isHovered = hoveredEventId === event.id;
@@ -1075,11 +1050,16 @@ export function CircadianDialStage({
                   !highlightedTelemetry ||
                   event.telemetrySource === highlightedTelemetry;
                 const isHighlighted = isSelected || isHovered;
-                const strokeColor = event.accentColor || timelapseColor;
+                const strokeColor = accentColor || event.accentColor || timelapseColor;
 
                 const elbowX = isRight
                   ? Math.min(labelX - 10, CX + R_WEDGE_OUTER + 22)
                   : Math.max(labelX + 10, CX - R_WEDGE_OUTER - 22);
+
+                const pillWidth = Math.min(220, Math.max(126, event.title.length * 6.8 + 26));
+                const pillHeight = 36;
+                const pillX = isRight ? labelX - 6 : labelX - pillWidth + 6;
+                const pillY = labelY - 18;
 
                 return (
                   <g
@@ -1105,36 +1085,43 @@ export function CircadianDialStage({
                       strokeOpacity={isHighlighted ? 0.95 : 0.65}
                     />
 
+                    {/* High-Contrast Dark Glass Backdrop Pill */}
+                    <rect
+                      x={pillX}
+                      y={pillY}
+                      width={pillWidth}
+                      height={pillHeight}
+                      rx={8}
+                      fill="rgba(8, 12, 22, 0.94)"
+                      stroke={isHighlighted ? strokeColor : "rgba(255, 255, 255, 0.12)"}
+                      strokeWidth={isHighlighted ? 1.6 : 1.0}
+                      filter="url(#arcNeonGlow)"
+                    />
+
                     {/* Task Title */}
                     <text
-                      x={labelX}
-                      y={labelY - 4}
+                      x={isRight ? labelX + 4 : labelX - 4}
+                      y={labelY - 3}
                       textAnchor={textAnchor}
                       fill="#f8fafc"
-                      stroke="rgba(8, 11, 20, 0.92)"
-                      strokeWidth="3.2"
-                      paintOrder="stroke"
-                      fontSize={11.5}
+                      fontSize={11}
                       fontWeight={isHighlighted ? 700 : 600}
                       letterSpacing="0.01em"
                     >
-                      {event.title}
+                      {event.title.length > 24 ? event.title.slice(0, 23) + "…" : event.title}
                     </text>
 
                     {/* Time Window */}
                     <text
-                      x={labelX}
+                      x={isRight ? labelX + 4 : labelX - 4}
                       y={labelY + 11}
                       textAnchor={textAnchor}
-                      fill={isHighlighted ? strokeColor : "rgba(148, 163, 184, 0.92)"}
-                      stroke="rgba(8, 11, 20, 0.92)"
-                      strokeWidth="2.8"
-                      paintOrder="stroke"
-                      fontSize={9.5}
+                      fill={isHighlighted ? strokeColor : "rgba(148, 163, 184, 0.95)"}
+                      fontSize={9.2}
                       fontWeight={600}
                       style={{ fontVariantNumeric: "tabular-nums" }}
                     >
-                      {minutesTo12Hour(startMin)} - {minutesTo12Hour(endMin)}
+                      {minutesTo12Hour(startMin, true)} - {minutesTo12Hour(endMin, true)}
                     </text>
                   </g>
                 );

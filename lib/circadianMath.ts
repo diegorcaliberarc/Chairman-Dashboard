@@ -55,15 +55,16 @@ export function minutesToHHMM(minutes: number): string {
 }
 
 /**
- * Section 4.1 Angle Translation Formula:
- * 06:00 -> 180° (9 o'clock / Western dawn emergence)
- * 12:00 -> 270° (12 o'clock / High noon solar apex)
- * 18:00 -> 360° / 0° (3 o'clock / Sunset dusk)
- * 00:00 -> 90° (6 o'clock / Pitch-black midnight nadir)
+ * Section 4.1 Standard 12-Hour Clock Cardinal Orientation:
+ * 12:00 -> -90° (12 o'clock / Apex)
+ * 03:00 -> 0°   (3 o'clock / East)
+ * 06:00 -> 90°  (6 o'clock / Nadir)
+ * 09:00 -> 180° (9 o'clock / West)
+ * Formula: ((minutes % 720) / 720) * 360 - 90
  */
 export function minutesToAngleDeg(minutes: number): number {
-  const f = minutes / 1440;
-  return f * 360 + 90;
+  const norm = (((minutes % 720) + 720) % 720);
+  return (norm / 720) * 360 - 90;
 }
 
 export function minutesToAngleRad(minutes: number): number {
@@ -71,15 +72,15 @@ export function minutesToAngleRad(minutes: number): number {
 }
 
 /**
- * Inverse mapping: pointer angle around (cx, cy) -> minutes [0, 1440)
+ * Inverse mapping: pointer angle around (cx, cy) -> minutes [0, 720) on 12-hour clock face
  */
 export function cartesianToMinutes(cx: number, cy: number, x: number, y: number): number {
   const rad = Math.atan2(y - cy, x - cx);
   let deg = (rad * 180) / Math.PI; // [-180, 180]
-  // Subtract 90° offset from Section 4.1
-  let shifted = (deg - 90) % 360;
+  // Inverse of ((m / 720) * 360 - 90): deg + 90
+  let shifted = (deg + 90) % 360;
   if (shifted < 0) shifted += 360;
-  return (shifted / 360) * 1440;
+  return (shifted / 360) * 720;
 }
 
 /**
@@ -120,17 +121,17 @@ export function getDurationMinutes(startMinutes: number, endMinutes: number): nu
 }
 
 /**
- * Section 2.2 Segment Sweep Angle Formula:
- * deltaTheta = (Duration / 1440) * 360°
+ * Section 2.2 Segment Sweep Angle Formula for 12-Hour Clock Geometry:
+ * deltaTheta = (Duration / 720) * 360° = Duration * 0.5°
  */
 export function getSweepAngleDeg(startMinutes: number, endMinutes: number): number {
   const dur = getDurationMinutes(startMinutes, endMinutes);
   if (dur === 0) return 0;
-  return (dur / 1440) * 360;
+  return (dur / 720) * 360;
 }
 
 /**
- * Clockwise SVG arc path between startMinutes and endMinutes
+ * Clockwise SVG arc path between startMinutes and endMinutes on 12-Hour Clock
  */
 export function describeTimeArc(
   cx: number,
@@ -139,9 +140,9 @@ export function describeTimeArc(
   startMinutes: number,
   endMinutes: number
 ): string {
-  const duration = Math.min(1438, Math.max(4, getDurationMinutes(startMinutes, endMinutes)));
+  const duration = Math.min(718, Math.max(4, getDurationMinutes(startMinutes, endMinutes)));
   const startRad = minutesToAngleRad(startMinutes);
-  const sweepDeg = (duration / 1440) * 360;
+  const sweepDeg = (duration / 720) * 360;
   const endRad = startRad + (sweepDeg * Math.PI) / 180;
 
   const start = polarToCartesian(cx, cy, radius, startRad);
@@ -402,7 +403,7 @@ export function getTimelapseColorAtMinutes(minutes: number): string {
 
 /**
  * Generates seamless pure-SVG annular slices around the 360° wheel
- * to render a true vector 24-hour Day-to-Night Time-Lapse color ring
+ * to render a true vector 12-hour Day-to-Night Time-Lapse color ring
  */
 export function buildTimelapseWheelSegments(
   cx: number,
@@ -411,7 +412,7 @@ export function buildTimelapseWheelSegments(
   rOuter: number,
   steps = 144
 ): Array<{ d: string; color: string; midMin: number }> {
-  const stepMin = 1440 / steps;
+  const stepMin = 720 / steps;
   const overlapDeg = 0.55; // Slight overlap prevents anti-aliasing hairline seams
   const segments: Array<{ d: string; color: string; midMin: number }> = [];
 
@@ -438,7 +439,7 @@ export function buildTimelapseWheelSegments(
 
     segments.push({
       d,
-      color: getTimelapseColorAtMinutes(midMin),
+      color: getTimelapseColorAtMinutes((midMin * 2) % 1440),
       midMin,
     });
   }
@@ -447,8 +448,8 @@ export function buildTimelapseWheelSegments(
 }
 
 /**
- * Generates multi-stop time-lapse stroke segments from 00:00 up to currentMinutes
- * so the inner solar progress trail shifts organically from night -> dawn -> noon -> sunset -> night
+ * Generates multi-stop time-lapse stroke segments from 12 o'clock up to currentMinutes
+ * so the inner solar progress trail shifts organically
  */
 export function buildTimelapseProgressArcs(
   cx: number,
@@ -457,21 +458,22 @@ export function buildTimelapseProgressArcs(
   currentMinutes: number,
   maxSteps = 96
 ): Array<{ d: string; color: string }> {
-  const clamped = Math.max(6, Math.min(1438, currentMinutes));
-  const steps = Math.max(4, Math.round((clamped / 1440) * maxSteps));
+  const norm12 = (((currentMinutes % 720) + 720) % 720);
+  const clamped = Math.max(6, Math.min(718, norm12));
+  const steps = Math.max(4, Math.round((clamped / 720) * maxSteps));
   const stepMin = clamped / steps;
   const arcs: Array<{ d: string; color: string }> = [];
 
   for (let i = 0; i < steps; i++) {
     const m1 = Math.max(0, i * stepMin - 0.8);
-    const m2 = Math.min(1439.5, (i + 1) * stepMin + 0.8);
+    const m2 = Math.min(719.5, (i + 1) * stepMin + 0.8);
     const r1 = minutesToAngleRad(m1);
     const r2 = minutesToAngleRad(m2);
     const p1 = polarToCartesian(cx, cy, radius, r1);
     const p2 = polarToCartesian(cx, cy, radius, r2);
     arcs.push({
       d: `M ${p1.x.toFixed(2)} ${p1.y.toFixed(2)} A ${radius} ${radius} 0 0 1 ${p2.x.toFixed(2)} ${p2.y.toFixed(2)}`,
-      color: getTimelapseColorAtMinutes((m1 + m2) / 2),
+      color: getTimelapseColorAtMinutes(((m1 + m2) * 2) / 2),
     });
   }
 

@@ -237,6 +237,83 @@ export function formatSubtaskMarker(
   return style === "roman" ? `${toRomanNumeral(indexZeroBased + 1)}.` : "•";
 }
 
+/**
+ * Event Category & Keyword Image Mapper:
+ * Reads event title and category and automatically assigns curated high-fidelity
+ * photo slices or graceful dark-mode ambient fallbacks matching reference mockups.
+ */
+export function resolveEventVisual(
+  title: string,
+  domainOrCategory?: string
+): {
+  mediaUrl: string | null;
+  accentColor: string;
+} {
+  const text = `${title} ${domainOrCategory || ""}`.toLowerCase();
+
+  // Dogs / Walk / Pets / Park
+  if (/astro|nova|dog|dogs|puppy|walk|pack walk|yard break|park exercise|potty/.test(text)) {
+    return {
+      mediaUrl: "/circadian/huskies-walk.jpg",
+      accentColor: "#84cc16", // Lime
+    };
+  }
+
+  // Nutrition / Meals / Food / Protein
+  if (/breakfast|lunch|dinner|meal|eat|nutrition|steak|protein|refuel|fast lock|feed dogs|snack/.test(text)) {
+    return {
+      mediaUrl: "/circadian/nutrition-steak.jpg",
+      accentColor: "#10b981", // Emerald
+    };
+  }
+
+  // Code / SaaS / Tech / Work / Trading
+  if (/saas|build|code|coding|dev|software|clickup|board|trading|market|work|ticket|project|outreach|rental|pristine/.test(text)) {
+    return {
+      mediaUrl: "/circadian/saas-build.jpg",
+      accentColor: "#38bdf8", // Sky blue
+    };
+  }
+
+  // Fitness / Gym / Workout / Strength
+  if (/gym|workout|lift|exercise|full body|weights|fitness|training|strength|cardio|sweat/.test(text)) {
+    return {
+      mediaUrl: "/circadian/gym-workout.jpg",
+      accentColor: "#f59e0b", // Amber
+    };
+  }
+
+  // Sleep / Rest / Recovery / Night / Shower
+  if (/sleep|rest|recover|shower|night|bed|bedtime|slumber|wind down|prep|cozy|cozier/.test(text)) {
+    return {
+      mediaUrl: "/circadian/cozier-rest.jpg",
+      accentColor: "#818cf8", // Indigo
+    };
+  }
+
+  // Morning / Wake up / Dawn
+  if (/wake up|wake|morning|dawn|blessed|day/.test(text)) {
+    return {
+      mediaUrl: "/circadian/sky-timelapse.jpg",
+      accentColor: "#eab308", // Yellow
+    };
+  }
+
+  // Transit / School / Family
+  if (/school|drive|transit|pick up|drop off|errand|family/.test(text)) {
+    return {
+      mediaUrl: null,
+      accentColor: "#06b6d4", // Cyan
+    };
+  }
+
+  // Default subtle dark glass ambient
+  return {
+    mediaUrl: null,
+    accentColor: "#38bdf8",
+  };
+}
+
 export const CURATED_BLOCK_PALETTE: Array<{ hex: string; name: string }> = [
   { hex: "#10b981", name: "Emerald Pulse" },
   { hex: "#38bdf8", name: "Solar Cerulean" },
