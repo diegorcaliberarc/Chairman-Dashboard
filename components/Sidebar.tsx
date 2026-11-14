@@ -365,9 +365,10 @@ export function Sidebar({
       .catch(() => {});
   }, []);
 
-  const effectiveUser = user || session?.user || {
-    name: "Diegos Reality",
-    email: "diegoforodriguez@gmail.com",
+  const effectiveUser = {
+    name: user?.name || session?.user?.name || "Diego Rodriguez",
+    email: user?.email || session?.user?.email || "diegoforodriguez@gmail.com",
+    image: user?.image || session?.user?.image || null,
   };
   const effectiveCalConnected = calConnected || dbCalConnected || Boolean((session as any)?.accessToken);
 
@@ -732,7 +733,7 @@ export function Sidebar({
                   </div>
                   <div className="text-[9.5px] text-zinc-500 dark:text-zinc-400 truncate flex items-center gap-1">
                     <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
-                    <span>Online</span>
+                    <span>{effectiveCalConnected ? "Google Connected" : "Online"}</span>
                   </div>
                 </div>
               )}

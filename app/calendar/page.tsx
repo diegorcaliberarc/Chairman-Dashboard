@@ -143,7 +143,20 @@ function ensureGoToWorkInEvents(
 export default function UnifiedMasterCalendarPage() {
   const { data: session } = useSession();
   const user = session?.user;
-  const calConnected = !!(session as any)?.accessToken;
+  const [dbCalConnected, setDbCalConnected] = useState(false);
+
+  useEffect(() => {
+    fetch("/api/calendar/google-sync")
+      .then((r) => (r.ok ? r.json() : null))
+      .then((d) => {
+        if (d?.connected || d?.success) {
+          setDbCalConnected(true);
+        }
+      })
+      .catch(() => {});
+  }, []);
+
+  const calConnected = !!(session as any)?.accessToken || dbCalConnected;
 
   // Master Engine Mode Switcher: "solar" (Circadian Arc) vs "google" (Google Calendar Grid)
   const [engineMode, setEngineMode] = useState<"solar" | "google">("solar");
@@ -827,7 +840,7 @@ export default function UnifiedMasterCalendarPage() {
         calConnected={calConnected}
         onCalToggle={async () => {
           if (!calConnected) {
-            signIn("google");
+            signIn("google", { callbackUrl: typeof window !== "undefined" ? window.location.href : "/calendar" });
           } else {
             setIsSyncingGCal(true);
             try {

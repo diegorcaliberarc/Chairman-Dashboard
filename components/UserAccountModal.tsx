@@ -43,12 +43,23 @@ export function UserAccountModal({
   onClose,
 }: UserAccountModalProps) {
   const { data: session } = useSession();
+  const [dbConnected, setDbConnected] = useState<boolean>(false);
+
+  useEffect(() => {
+    fetch("/api/calendar/google-sync")
+      .then((r) => (r.ok ? r.json() : null))
+      .then((d) => {
+        if (d?.connected || d?.success) setDbConnected(true);
+      })
+      .catch(() => {});
+  }, []);
+
   const effectiveUser = {
-    name: user?.name || session?.user?.name || "Diegos Reality",
+    name: user?.name || session?.user?.name || "Diego Rodriguez",
     email: user?.email || session?.user?.email || "diegoforodriguez@gmail.com",
     image: user?.image || session?.user?.image || null,
   };
-  const isCalConnected = calConnected || Boolean((session as any)?.accessToken);
+  const isCalConnected = calConnected || dbConnected || Boolean((session as any)?.accessToken);
 
   const [activeTab, setActiveTab] = useState<"profile" | "mission" | "integrations" | "pms">("profile");
   const [sessionSeconds, setSessionSeconds] = useState(0);
@@ -229,6 +240,26 @@ export function UserAccountModal({
                   <span className="font-mono text-zinc-200">Supabase AWS Oregon (us-west-2)</span>
                 </div>
               </div>
+
+              {/* Google Account Authentication Card */}
+              <div className="p-4 rounded-2xl bg-[#111214] border border-[#1A1D24] flex items-center justify-between">
+                <div>
+                  <div className="text-xs font-bold text-zinc-200">
+                    {session?.user ? "Google Account Authenticated" : "Google Account Integration"}
+                  </div>
+                  <div className="text-[11px] font-mono text-zinc-400 mt-0.5">
+                    {session?.user?.email ?? effectiveUser.email}
+                  </div>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => signIn("google", { callbackUrl: typeof window !== "undefined" ? window.location.href : "/calendar" })}
+                  className="px-3 py-1.5 rounded-xl bg-[#0969DA]/20 hover:bg-[#0969DA]/30 border border-[#0969DA]/40 text-[#58A6FF] text-xs font-semibold flex items-center gap-1.5 transition-all shadow-sm cursor-pointer"
+                >
+                  <ExternalLink size={12} />
+                  <span>{session?.user ? "Switch / Re-Auth" : "Sign In with Google"}</span>
+                </button>
+              </div>
             </div>
           )}
 
@@ -320,7 +351,7 @@ export function UserAccountModal({
                         type="button"
                         onClick={handleSyncNow}
                         disabled={syncingNow}
-                        className="px-4 py-2 rounded-xl bg-[#0969DA] hover:bg-[#0854ad] text-white text-xs font-bold transition-all flex items-center gap-2 shadow-lg shadow-[#0969DA]/20"
+                        className="px-4 py-2 rounded-xl bg-[#0969DA] hover:bg-[#0854ad] text-white text-xs font-bold transition-all flex items-center gap-2 shadow-lg shadow-[#0969DA]/20 cursor-pointer"
                       >
                         <RefreshCw size={13} className={syncingNow ? "animate-spin" : ""} />
                         <span>{syncingNow ? "Syncing Calendar..." : "Sync Now (2-Way)"}</span>
@@ -328,17 +359,24 @@ export function UserAccountModal({
 
                       <button
                         type="button"
-                        onClick={() => onCalToggle && onCalToggle()}
-                        className="px-4 py-2 rounded-xl bg-rose-500/15 border border-rose-500/30 text-rose-300 hover:bg-rose-500/25 text-xs font-bold transition-all"
+                        onClick={() => signIn("google", { callbackUrl: typeof window !== "undefined" ? window.location.href : "/calendar" })}
+                        className="px-4 py-2 rounded-xl bg-white/10 hover:bg-white/15 border border-white/15 text-zinc-200 text-xs font-semibold transition-all flex items-center gap-1.5 cursor-pointer"
                       >
-                        Disconnect Calendar
+                        <ExternalLink size={12} />
+                        <span>Re-authenticate / Switch Account</span>
                       </button>
                     </>
                   ) : (
                     <button
                       type="button"
-                      onClick={() => onCalToggle && onCalToggle()}
-                      className="px-5 py-2.5 rounded-xl bg-[#0969DA] hover:bg-[#0854ad] text-white text-xs font-bold uppercase tracking-wider shadow-lg shadow-[#0969DA]/30 transition-all flex items-center gap-2"
+                      onClick={() => {
+                        if (onCalToggle) {
+                          onCalToggle();
+                        } else {
+                          signIn("google", { callbackUrl: typeof window !== "undefined" ? window.location.href : "/calendar" });
+                        }
+                      }}
+                      className="px-5 py-2.5 rounded-xl bg-[#0969DA] hover:bg-[#0854ad] text-white text-xs font-bold uppercase tracking-wider shadow-lg shadow-[#0969DA]/30 transition-all flex items-center gap-2 cursor-pointer"
                     >
                       <ExternalLink size={13} />
                       Connect Google Calendar
