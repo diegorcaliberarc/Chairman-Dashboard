@@ -2,7 +2,6 @@
 
 import React, { useCallback, useEffect, useMemo, useState } from "react";
 import {
-  Briefcase,
   Heart,
   Home,
   Loader2,
@@ -20,9 +19,8 @@ import {
   PodMemberInfo,
 } from "./MemberAccountabilityCard";
 import { ChoreItem, SharedChoreKanban } from "./SharedChoreKanban";
-import { TeamVelocityOverview } from "./TeamVelocityOverview";
 
-type PodTierType = "couple" | "family" | "business_team";
+type PodTierType = "couple" | "family";
 
 interface SharedPod {
   id: string;
@@ -56,15 +54,6 @@ const TIER_TABS: Array<{
     icon: <Home size={15} className="text-emerald-400" />,
     activeClass:
       "border-emerald-400/50 bg-emerald-500/15 text-white shadow-lg shadow-emerald-500/10",
-  },
-  {
-    type: "business_team",
-    tierBadge: "Tier 3 • Zero-Biometric",
-    label: "Business & Team Pod (Pristine Tech)",
-    sub: "Strict Boundary-Enforced Sprint Velocity",
-    icon: <Briefcase size={15} className="text-cyan-400" />,
-    activeClass:
-      "border-cyan-400/50 bg-cyan-500/15 text-white shadow-lg shadow-cyan-500/10",
   },
 ];
 
@@ -368,16 +357,6 @@ export function PodContainer() {
             onUpdateChore={updatePodTask}
           />
         </div>
-      )}
-
-      {/* TIER 3: BUSINESS & TEAM POD (PRISTINE TECH TEAM) */}
-      {activeTier === "business_team" && (
-        <TeamVelocityOverview
-          members={activeMembers}
-          sprintTasks={podTasks}
-          onCreateSprintTask={createPodTask}
-          onUpdateSprintTask={updatePodTask}
-        />
       )}
 
       {/* Granular 6-Category Consent Modal */}

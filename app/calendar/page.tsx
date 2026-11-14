@@ -171,9 +171,7 @@ export default function UnifiedMasterCalendarPage() {
   const [activeMonthIndex, setActiveMonthIndex] = useState<number>(10); // Nov (0-indexed)
 
   // Circadian events, Chairman tasks, KPIs & Modal state
-  const [events, setEvents] = useState<CircadianEventDTO[]>(() =>
-    ensureGoToWorkInEvents(buildDefaultCircadianEvents())
-  );
+  const [events, setEvents] = useState<CircadianEventDTO[]>([]);
   const [loadingEvents, setLoadingEvents] = useState<boolean>(true);
   const [selectedEventId, setSelectedEventId] = useState<string | null>(null);
   const [modalOpen, setModalOpen] = useState<boolean>(false);
@@ -823,7 +821,27 @@ export default function UnifiedMasterCalendarPage() {
   return (
     <div className="flex h-screen w-screen overflow-hidden bg-[#090A0F] font-sans text-zinc-100 select-none">
       {/* Chairman Dashboard Sidebar */}
-      <Sidebar />
+      <Sidebar
+        activeTab="CALENDAR_HABITS"
+        setActiveTab={() => {}}
+        calConnected={calConnected}
+        onCalToggle={async () => {
+          if (!calConnected) {
+            signIn("google");
+          } else {
+            setIsSyncingGCal(true);
+            try {
+              await fetch("/api/calendar/google-sync", { method: "POST" });
+              await fetchCircadianEvents(selectedDate);
+            } finally {
+              setIsSyncingGCal(false);
+            }
+          }
+        }}
+        user={user}
+        activeTasksCount={tasks.filter((t) => t.status !== "DONE").length}
+        activeSubtasksCount={0}
+      />
 
       {/* Main Calendar View Area */}
       <div className="flex-1 flex flex-col h-full bg-[#0D0F17] overflow-hidden">

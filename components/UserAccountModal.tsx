@@ -19,14 +19,14 @@ import {
   Check,
   Zap,
 } from "lucide-react";
-import { signOut, signIn } from "next-auth/react";
+import { signOut, signIn, useSession } from "next-auth/react";
 
 interface UserAccountModalProps {
-  user: {
+  user?: {
     name?: string | null;
     email?: string | null;
     image?: string | null;
-  };
+  } | null;
   calConnected?: boolean;
   onCalToggle?: () => void;
   activeTasksCount?: number;
@@ -42,11 +42,43 @@ export function UserAccountModal({
   activeSubtasksCount = 0,
   onClose,
 }: UserAccountModalProps) {
+  const { data: session } = useSession();
+  const effectiveUser = {
+    name: user?.name || session?.user?.name || "Diegos Reality",
+    email: user?.email || session?.user?.email || "diegoforodriguez@gmail.com",
+    image: user?.image || session?.user?.image || null,
+  };
+  const isCalConnected = calConnected || Boolean((session as any)?.accessToken);
+
   const [activeTab, setActiveTab] = useState<"profile" | "mission" | "integrations" | "pms">("profile");
   const [sessionSeconds, setSessionSeconds] = useState(0);
   const [autoRollForward, setAutoRollForward] = useState(true);
   const [defaultSpace, setDefaultSpace] = useState("Equipsyncs");
   const [defaultView, setDefaultView] = useState("Board");
+  const [syncingNow, setSyncingNow] = useState(false);
+  const [syncMessage, setSyncMessage] = useState<string | null>(null);
+
+  const handleSyncNow = async () => {
+    setSyncingNow(true);
+    setSyncMessage(null);
+    try {
+      const res = await fetch("/api/calendar/google-sync", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ daysForward: 14 }),
+      });
+      const data = await res.json();
+      if (res.ok && data.synced) {
+        setSyncMessage(`✓ Synced ${data.eventsUpserted ?? 0} events from Google Calendar.`);
+      } else {
+        setSyncMessage(data.error || "Sync completed.");
+      }
+    } catch (err: any) {
+      setSyncMessage(err.message || "Failed to trigger sync");
+    } finally {
+      setSyncingNow(false);
+    }
+  };
 
   // Session timer ticker
   useEffect(() => {
@@ -150,28 +182,28 @@ export function UserAccountModal({
           {activeTab === "profile" && (
             <div className="space-y-5">
               <div className="flex items-center gap-4 p-4 rounded-2xl bg-[#111214] border border-[#1A1D24]">
-                {user.image ? (
+                {effectiveUser.image ? (
                   <img
-                    src={user.image}
+                    src={effectiveUser.image}
                     alt="Chairman"
                     className="w-16 h-16 rounded-2xl object-cover ring-2 ring-[#0969DA]/40 shadow-xl"
                   />
                 ) : (
                   <div className="w-16 h-16 rounded-2xl bg-gradient-to-tr from-[#0969DA] to-[#58A6FF] flex items-center justify-center text-white text-2xl font-extrabold shadow-xl">
-                    {(user.name ?? "C")[0].toUpperCase()}
+                    {(effectiveUser.name ?? "D")[0].toUpperCase()}
                   </div>
                 )}
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center gap-2">
                     <h3 className="text-base font-bold text-zinc-100 truncate">
-                      {user.name ?? "Chairman Diego"}
+                      {effectiveUser.name}
                     </h3>
                     <span className="px-2 py-0.5 rounded-full bg-[#0969DA]/20 border border-[#0969DA]/40 text-[#58A6FF] text-[9.5px] font-mono font-bold tracking-wider uppercase">
                       SOVEREIGN_ADMIN
                     </span>
                   </div>
                   <p className="text-xs text-zinc-400 font-mono mt-0.5 truncate">
-                    {user.email ?? "chairman@pristinedesigns.com"}
+                    {effectiveUser.email}
                   </p>
                   <div className="flex items-center gap-2 mt-2 text-[11px] text-emerald-400 font-mono">
                     <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
@@ -262,12 +294,12 @@ export function UserAccountModal({
 
                   <span
                     className={`px-2.5 py-1 rounded-full text-xs font-mono font-bold uppercase border ${
-                      calConnected
+                      isCalConnected
                         ? "bg-emerald-500/20 border-emerald-500/40 text-emerald-300"
                         : "bg-amber-500/20 border-amber-500/40 text-amber-300"
                     }`}
                   >
-                    {calConnected ? "CONNECTED" : "NOT CONNECTED"}
+                    {isCalConnected ? "CONNECTED" : "NOT CONNECTED"}
                   </span>
                 </div>
 
@@ -275,15 +307,33 @@ export function UserAccountModal({
                   Connect your Google Calendar to synchronize scheduled meetings, appointments, and shifts directly into the 24-hour Circadian Solar Dial and 5-mode Traditional Calendar.
                 </p>
 
-                <div className="pt-2 flex items-center gap-3">
-                  {calConnected ? (
-                    <button
-                      type="button"
-                      onClick={() => onCalToggle && onCalToggle()}
-                      className="px-4 py-2 rounded-xl bg-rose-500/15 border border-rose-500/30 text-rose-300 hover:bg-rose-500/25 text-xs font-bold transition-all"
-                    >
-                      Disconnect Calendar
-                    </button>
+                {syncMessage && (
+                  <div className="p-3 rounded-xl bg-blue-500/10 border border-blue-500/20 text-blue-300 text-xs font-mono">
+                    {syncMessage}
+                  </div>
+                )}
+
+                <div className="pt-2 flex flex-wrap items-center gap-3">
+                  {isCalConnected ? (
+                    <>
+                      <button
+                        type="button"
+                        onClick={handleSyncNow}
+                        disabled={syncingNow}
+                        className="px-4 py-2 rounded-xl bg-[#0969DA] hover:bg-[#0854ad] text-white text-xs font-bold transition-all flex items-center gap-2 shadow-lg shadow-[#0969DA]/20"
+                      >
+                        <RefreshCw size={13} className={syncingNow ? "animate-spin" : ""} />
+                        <span>{syncingNow ? "Syncing Calendar..." : "Sync Now (2-Way)"}</span>
+                      </button>
+
+                      <button
+                        type="button"
+                        onClick={() => onCalToggle && onCalToggle()}
+                        className="px-4 py-2 rounded-xl bg-rose-500/15 border border-rose-500/30 text-rose-300 hover:bg-rose-500/25 text-xs font-bold transition-all"
+                      >
+                        Disconnect Calendar
+                      </button>
+                    </>
                   ) : (
                     <button
                       type="button"

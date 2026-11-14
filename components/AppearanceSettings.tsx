@@ -108,6 +108,42 @@ export function AppearanceSettings({ onClose }: { onClose: () => void }) {
     loadFontKitFromStorage()
   );
 
+  // Ambient Living Room Background Blur State
+  const [ambientBgActive, setAmbientBgActive] = useState<boolean>(() => {
+    if (typeof window !== "undefined") {
+      const stored = localStorage.getItem("chairman-ambient-bg-enabled");
+      return stored !== null ? stored === "true" : true;
+    }
+    return true;
+  });
+  const [ambientBlurPx, setAmbientBlurPx] = useState<number>(() => {
+    if (typeof window !== "undefined") {
+      const stored = localStorage.getItem("chairman-ambient-blur-radius");
+      return stored ? Number(stored) || 24 : 24;
+    }
+    return 24;
+  });
+
+  const handleToggleAmbientBg = (enabled: boolean) => {
+    setAmbientBgActive(enabled);
+    localStorage.setItem("chairman-ambient-bg-enabled", String(enabled));
+    window.dispatchEvent(
+      new CustomEvent("chairmanAmbientBgChanged", {
+        detail: { enabled, blur: ambientBlurPx },
+      })
+    );
+  };
+
+  const handleAmbientBlurChange = (blur: number) => {
+    setAmbientBlurPx(blur);
+    localStorage.setItem("chairman-ambient-blur-radius", String(blur));
+    window.dispatchEvent(
+      new CustomEvent("chairmanAmbientBgChanged", {
+        detail: { enabled: ambientBgActive, blur },
+      })
+    );
+  };
+
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
   const wheelWrapRef = useRef<HTMLDivElement | null>(null);
 
@@ -748,6 +784,48 @@ export function AppearanceSettings({ onClose }: { onClose: () => void }) {
                 </div>
               </div>
             )}
+            {/* Ambient Living Room Background Blur Option (Image 2 Inspired) */}
+            <div className="mt-4 p-4 rounded-2xl bg-zinc-100/80 dark:bg-white/5 border border-zinc-200 dark:border-white/10 space-y-3">
+              <div className="flex items-center justify-between">
+                <div>
+                  <div className="text-xs font-bold text-zinc-900 dark:text-white flex items-center gap-1.5">
+                    <Sparkles size={14} className="text-amber-400" />
+                    <span>Ambient Living Room Background Blur</span>
+                  </div>
+                  <p className="text-[11px] text-zinc-500 dark:text-zinc-400 mt-0.5">
+                    Renders the serene, out-of-focus modern eco interior backdrop behind your glassmorphic cards
+                  </p>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => handleToggleAmbientBg(!ambientBgActive)}
+                  className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all border ${
+                    ambientBgActive
+                      ? "bg-emerald-500/20 text-emerald-400 border-emerald-500/40"
+                      : "bg-zinc-200 dark:bg-white/10 text-zinc-600 dark:text-zinc-300 border-transparent"
+                  }`}
+                >
+                  {ambientBgActive ? "ENABLED" : "DISABLED"}
+                </button>
+              </div>
+
+              {ambientBgActive && (
+                <div className="space-y-2 pt-2 border-t border-zinc-200/60 dark:border-white/10">
+                  <div className="flex items-center justify-between text-xs">
+                    <span className="text-zinc-500 dark:text-zinc-400">Background Blur Radius</span>
+                    <span className="font-mono text-zinc-800 dark:text-zinc-200 font-semibold">{ambientBlurPx}px</span>
+                  </div>
+                  <input
+                    type="range"
+                    min={8}
+                    max={48}
+                    value={ambientBlurPx}
+                    onChange={(e) => handleAmbientBlurChange(Number(e.target.value))}
+                    className="w-full accent-amber-500 cursor-pointer"
+                  />
+                </div>
+              )}
+            </div>
           </section>
 
           {/* 3. Interactive 360° Custom Gradient Color Wheel */}

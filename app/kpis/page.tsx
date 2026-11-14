@@ -62,14 +62,6 @@ const CATEGORIES = [
   { id: "health", title: "HEALTH", icon: Activity, color: "#E05A3A" },
   { id: "relate", title: "RELATIONSHIPS", icon: Users, color: "#5B8FB9" },
   { id: "joy", title: "JOY", icon: Sparkles, color: "#B388EB" },
-  { id: "ceo", title: "CEO", icon: Target, color: "#C9A961" },
-  { id: "coo", title: "COO", icon: Settings, color: "#7B9EA8" },
-  { id: "cmo", title: "CMO", icon: TrendingUp, color: "#A87B9E" },
-  { id: "cfo", title: "CFO", icon: Landmark, color: "#8BA87B" },
-  { id: "cto", title: "CTO", icon: Terminal, color: "#4A90E2" },
-  { id: "cpo", title: "CPO", icon: Layers, color: "#F39C12" },
-  { id: "cro", title: "CRO", icon: BadgeDollarSign, color: "#10B981" },
-  { id: "cho", title: "CHO", icon: ShieldCheck, color: "#D81B60" },
 ];
 
 const RAW_METRIC_DEFS: Record<string, { name: string; defaultVal: number; target: number }[]> = {
@@ -1682,7 +1674,8 @@ export default function KPIsPage() {
       statusObj: { color: string; label: string },
       rawMetricName: string
     ) => {
-      const cat = CATEGORIES.find((c) => c.id === sectorId)!;
+      const cat = CATEGORIES.find((c) => c.id === sectorId);
+      if (!cat) return;
       const { rag, points } = classifyRag(statusObj);
       const rawInfo = sectorRawValues[sectorId]?.[rawMetricName] ?? { val: 0, target: 0 };
       rows.push({
@@ -1746,94 +1739,6 @@ export default function KPIsPage() {
       pushRow("joy", "WHITE SPACE INTEGRITY", "Creative Buffer", "≥ 14h", `${p.whitespace}h`, computeVariancePct(p.whitespace, 14, "higher"), getJoyStatus(p.whitespace, "whitespace"), "joy_whitespace_hours");
       pushRow("joy", "THE DOOMSCROLL TRIPWIRE", "System Exhaustion", "≤ 1h", `${p.doomscroll}h`, computeVariancePct(p.doomscroll, 1, "lower"), getJoyStatus(p.doomscroll, "doomscroll"), "joy_doomscroll_hours");
       pushRow("joy", "$10/HR DELEGATION RATIO", "Opportunity Cost Limit", "≤ 2h", `${p.lowValue}h`, computeVariancePct(p.lowValue, 2, "lower"), getJoyStatus(p.lowValue, "lowvalue"), "joy_low_value_hours");
-    }
-
-    // 5. CEO (5)
-    {
-      const v = valsOf("ceo");
-      const p = calculateCeoPhysics(v);
-      pushRow("ceo", "NET VELOCITY (FCF)", "Capital Physics", "> $0", `$${p.fcf.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`, computeVariancePct(p.fcf, 0, "higher"), getCeoStatus(p.fcf, "fcf"), "ceo_fcf");
-      pushRow("ceo", "THE RUIN RATIO", "Capital Buffer", "≥ 10.0x", `${p.ruin.toFixed(1)}x`, computeVariancePct(p.ruin, 10, "higher"), getCeoStatus(p.ruin, "ruin"), "ceo_ruin_buffer");
-      pushRow("ceo", "THE BUY-BACK RATE", "Operational Leverage", "≥ 80%", `${p.buyback.toFixed(1)}%`, computeVariancePct(p.buyback, 80, "higher"), getCeoStatus(p.buyback, "buyback"), "ceo_buyback_rate");
-      pushRow("ceo", "LOGIC ALIGNMENT", "5 Guidelines", "100%", `${p.logic.toFixed(1)}%`, computeVariancePct(p.logic, 100, "higher"), getCeoStatus(p.logic, "logic"), "ceo_logic_alignment");
-      pushRow("ceo", "ARCHITECTURAL AUTONOMY", "System Autonomy", "≥ 80%", `${p.autonomy.toFixed(1)}%`, computeVariancePct(p.autonomy, 80, "higher"), getCeoStatus(p.autonomy, "autonomy"), "ceo_autonomy_score");
-    }
-
-    // 6. COO (5)
-    {
-      const v = valsOf("coo");
-      const p = calculateCooPhysics(v);
-      pushRow("coo", "ACTIVE MISSION VELOCITY", "Forward Momentum", "≥ 90%", `${p.velocity.toFixed(1)}%`, computeVariancePct(p.velocity, 90, "higher"), getCooStatus(p.velocity, "velocity"), "coo_mission_velocity");
-      pushRow("coo", "CRITICAL EXCEPTION RATE", "System Fragility", "0 Failures", `${p.exception} Failures`, computeVariancePct(p.exception, 0, "lower"), getCooStatus(p.exception, "exception"), "coo_exception_rate");
-      pushRow("coo", "QA FIDELITY SCORE", "Design Integrity", "100%", `${p.qa.toFixed(1)}%`, computeVariancePct(p.qa, 100, "higher"), getCooStatus(p.qa, "qa"), "coo_qa_fidelity");
-      pushRow("coo", "MTTR (BUG RESOLUTION)", "Pipeline Friction", "≤ 4.0 Hrs", `${p.mttr.toFixed(1)} Hrs`, computeVariancePct(p.mttr, 4, "lower"), getCooStatus(p.mttr, "mttr"), "coo_mttr_hours");
-      pushRow("coo", "SOP AUTONOMY", "Hand-Off Readiness", "≥ 90%", `${p.sop.toFixed(1)}%`, computeVariancePct(p.sop, 90, "higher"), getCooStatus(p.sop, "sop"), "coo_sop_autonomy");
-    }
-
-    // 7. CMO (5)
-    {
-      const v = valsOf("cmo");
-      const p = calculateCmoPhysics(v);
-      pushRow("cmo", "THE LTV:CAC RATIO", "Capital Leverage", "≥ 3.0:1", `${p.ltv_cac.toFixed(1)}:1`, computeVariancePct(p.ltv_cac, 3, "higher"), getCmoStatus(p.ltv_cac, "ltv_cac"), "cmo_ltv_cac_ratio");
-      pushRow("cmo", "LEAD VELOCITY RATE", "Pipeline Momentum", "≥ 10%", `${p.lead_vel.toFixed(1)}%`, computeVariancePct(p.lead_vel, 10, "higher"), getCmoStatus(p.lead_vel, "lead_vel"), "cmo_lead_velocity");
-      pushRow("cmo", "GRAND SLAM CONVERSION", "Conversion Gravity", "≥ 5.0%", `${p.conv_rate.toFixed(1)}%`, computeVariancePct(p.conv_rate, 5, "higher"), getCmoStatus(p.conv_rate, "conv_rate"), "cmo_conversion_rate");
-      pushRow("cmo", "TIME-TO-VALUE (TTV)", "Activation Speed", "≤ 24 Hrs", `${p.ttv.toFixed(1)} Hrs`, computeVariancePct(p.ttv, 24, "lower"), getCmoStatus(p.ttv, "ttv"), "cmo_ttv_hours");
-      pushRow("cmo", "SIGNAL-TO-NOISE (CLARITY)", "Messaging Clarity", "≥ 9/10", `${p.storybrand}/10`, computeVariancePct(p.storybrand, 9, "higher"), getCmoStatus(p.storybrand, "storybrand"), "cmo_storybrand_score");
-    }
-
-    // 8. CFO (5)
-    {
-      const v = valsOf("cfo");
-      const p = calculateCfoPhysics(v);
-      pushRow("cfo", "NET RETURN ON INTELLIGENCE", "Profitability / NROI", "> $0", `$${p.nroi.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`, computeVariancePct(p.nroi, 0, "higher"), getCfoStatus(p.nroi, "nroi"), "cfo_nroi");
-      pushRow("cfo", "ABSOLUTE RUIN BUFFER", "Structural Preservation", "≥ $500", `$${p.buffer.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`, computeVariancePct(p.buffer, 500, "higher"), getCfoStatus(p.buffer, "buffer"), "cfo_buffer_distance");
-      pushRow("cfo", "COST PER SETUP (CPAS)", "Intelligence Cost", "≤ $1.00", `$${p.cpas.toFixed(2)}`, computeVariancePct(p.cpas, 1, "lower"), getCfoStatus(p.cpas, "cpas"), "cfo_cpas");
-      pushRow("cfo", "BLACK SWAN RESILIENCE", "Market Anti-Fragility", "100%", `${p.swan.toFixed(1)}%`, computeVariancePct(p.swan, 100, "higher"), getCfoStatus(p.swan, "swan"), "cfo_black_swan_score");
-      pushRow("cfo", "TELEMETRY-TO-LEDGER SYNC", "Data Friction", "100%", `${p.sync.toFixed(1)}%`, computeVariancePct(p.sync, 100, "higher"), getCfoStatus(p.sync, "sync"), "cfo_ledger_sync");
-    }
-
-    // 9. CTO (5)
-    {
-      const v = valsOf("cto");
-      const p = calculateCtoPhysics(v);
-      pushRow("cto", "TELEMETRY LATENCY", "Execution Velocity", "< 50 ms", `${p.latency} ms`, computeVariancePct(p.latency, 50, "lower"), getCtoStatus(p.latency, "latency"), "cto_telemetry_latency");
-      pushRow("cto", "INFRASTRUCTURE UPTIME", "System Stability", "≥ 99.99%", `${p.uptime.toFixed(2)}%`, computeVariancePct(p.uptime, 99.99, "higher"), getCtoStatus(p.uptime, "uptime"), "cto_uptime_percentage");
-      pushRow("cto", "ACTIVE MISSION VELOCITY", "Clean Sprint Velocity", "≥ 90%", `${p.velocity.toFixed(1)}%`, computeVariancePct(p.velocity, 90, "higher"), getCtoStatus(p.velocity, "velocity"), "cto_mission_velocity");
-      pushRow("cto", "CRITICAL MTTR", "Live-Market Bugs", "< 15 Mins", `${p.mttr} Mins`, computeVariancePct(p.mttr, 15, "lower"), getCtoStatus(p.mttr, "mttr"), "cto_mttr_minutes");
-      pushRow("cto", "THE BUS FACTOR", "Engineering Autonomy", "≥ 90/100", `${p.bus}/100`, computeVariancePct(p.bus, 90, "higher"), getCtoStatus(p.bus, "bus"), "cto_bus_factor");
-    }
-
-    // 10. CPO (5)
-    {
-      const v = valsOf("cpo");
-      const p = calculateCpoPhysics(v);
-      pushRow("cpo", "CHURN VELOCITY", "Retention Entropy", "≤ 3.0%", `${p.churn.toFixed(1)}%`, computeVariancePct(p.churn, 3, "lower"), getCpoStatus(p.churn, "churn"), "cpo_churn_velocity");
-      pushRow("cpo", "ALPHA DELIVERY RATE", "Live-Market Edge", "≥ 65%", `${p.alpha.toFixed(1)}%`, computeVariancePct(p.alpha, 65, "higher"), getCpoStatus(p.alpha, "alpha"), "cpo_alpha_winrate");
-      pushRow("cpo", "UI TIME-TO-VALUE", "Cognitive Friction", "≤ 3.0 Secs", `${p.ttv.toFixed(1)} Secs`, computeVariancePct(p.ttv, 3, "lower"), getCpoStatus(p.ttv, "ttv"), "cpo_ui_ttv");
-      pushRow("cpo", 'THE "MUST-HAVE" SCORE', "Product/Market Fit", "≥ 40%", `${p.pmf.toFixed(1)}%`, computeVariancePct(p.pmf, 40, "higher"), getCpoStatus(p.pmf, "pmf"), "cpo_pmf_score");
-      pushRow("cpo", "FRONTEND ESSENTIALISM", "Signal-to-Noise", "≥ 95/100", `${p.ess}/100`, computeVariancePct(p.ess, 95, "higher"), getCpoStatus(p.ess, "ess"), "cpo_essentialism");
-    }
-
-    // 11. CRO (5)
-    {
-      const v = valsOf("cro");
-      const p = calculateCroPhysics(v);
-      pushRow("cro", "LEAD-TO-CLOSE RATE", "Kinetic Conversion", "≥ 20%", `${p.lead_to_close.toFixed(1)}%`, computeVariancePct(p.lead_to_close, 20, "higher"), getCroStatus(p.lead_to_close, "lead_to_close"), "cro_lead_to_close");
-      pushRow("cro", "NET CASH CAPTURED", "Capital Capture", "> $0", `$${p.net_cash.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`, computeVariancePct(p.net_cash, 0, "higher"), getCroStatus(p.net_cash, "net_cash"), "cro_net_cash");
-      pushRow("cro", "SALES CYCLE VELOCITY", "Pipeline Friction", "≤ 14 Days", `${p.cycle} Days`, computeVariancePct(p.cycle, 14, "lower"), getCroStatus(p.cycle, "cycle"), "cro_sales_cycle_days");
-      pushRow("cro", "THE RECLAIM RATE", "Salvage Velocity", "≥ 15%", `${p.reclaim.toFixed(1)}%`, computeVariancePct(p.reclaim, 15, "higher"), getCroStatus(p.reclaim, "reclaim"), "cro_reclaim_rate");
-      pushRow("cro", "PIPELINE HYGIENE", "CRM Accuracy", "≥ 95/100", `${p.hygiene}/100`, computeVariancePct(p.hygiene, 95, "higher"), getCroStatus(p.hygiene, "hygiene"), "cro_pipeline_hygiene");
-    }
-
-    // 12. CHO (5)
-    {
-      const v = valsOf("cho");
-      const p = calculateChoPhysics(v);
-      pushRow("cho", "THE TOP-GRADING INDEX", "Human Capital Gravity", "≥ 90%", `${p.density.toFixed(1)}%`, computeVariancePct(p.density, 90, "higher"), getChoStatus(p.density, "density"), "cho_talent_density");
-      pushRow("cho", "REGRETTABLE CHURN", "Talent Entropy", "≤ 5.0%", `${p.churn.toFixed(1)}%`, computeVariancePct(p.churn, 5, "lower"), getChoStatus(p.churn, "churn"), "cho_regrettable_churn");
-      pushRow("cho", "RAMP-UP VELOCITY", "Time-to-Value", "≤ 14 Days", `${p.ramp} Days`, computeVariancePct(p.ramp, 14, "lower"), getChoStatus(p.ramp, "ramp"), "cho_ramp_days");
-      pushRow("cho", "SOP EXECUTION RATE", "Operational Accuracy", "100%", `${p.sop.toFixed(1)}%`, computeVariancePct(p.sop, 100, "higher"), getChoStatus(p.sop, "sop"), "cho_sop_execution");
-      pushRow("cho", "COGNITIVE DRAG INDEX", "Administrative Noise", "≤ 10/100", `${p.drag}/100`, computeVariancePct(p.drag, 10, "lower"), getChoStatus(p.drag, "drag"), "cho_cognitive_drag");
     }
 
     return rows;
@@ -2008,7 +1913,7 @@ export default function KPIsPage() {
                   <div className="flex items-center gap-2">
                     <span className="w-2 h-2 rounded-full bg-amber-400 animate-pulse" />
                     <span className="text-[10px] font-bold tracking-[0.18em] uppercase text-amber-500 dark:text-amber-400">
-                      C-Suite & Personal Telemetry Command
+                      Executive Life Pillars & Personal Telemetry Command
                     </span>
                   </div>
                   <h1 className="text-lg md:text-xl font-serif tracking-widest uppercase text-zinc-900 dark:text-white mt-0.5">
@@ -2487,13 +2392,13 @@ export default function KPIsPage() {
               </section>
             )}
 
-            {/* ─── VIEW 2: All 12 3D-Flip C-Suite & Personal Physics Cards ───── */}
+            {/* ─── VIEW 2: 4 Core Personal Pillars Physics Cards ───── */}
             {(viewMode === "cards" || viewMode === "both") && (
               <section className="space-y-3">
                 {viewMode === "both" && (
                   <div className="flex items-center justify-between pt-2">
                     <h2 className="text-xs font-bold uppercase tracking-[0.18em] text-zinc-400">
-                      3D Interactive Sector Physics Deck (12 Sectors · Flip Any Card to Edit Raw Drivers)
+                      3D Interactive Sector Physics Deck (4 Core Pillars · Flip Any Card to Edit Raw Drivers)
                     </h2>
                   </div>
                 )}

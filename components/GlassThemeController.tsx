@@ -25,11 +25,29 @@ export function GlassThemeController() {
   const [activePreset, setActivePreset] = useState<string>(
     DEFAULT_GLASS_THEME.presetId
   );
+  const [ambientBgEnabled, setAmbientBgEnabled] = useState<boolean>(true);
+  const [ambientBlurRadius, setAmbientBlurRadius] = useState<number>(24);
   const userChangedSinceMountRef = useRef(false);
   const setThemeRef = useRef(setTheme);
   setThemeRef.current = setTheme;
 
   useEffect(() => {
+    try {
+      const storedBg = localStorage.getItem("chairman-ambient-bg-enabled");
+      if (storedBg !== null) setAmbientBgEnabled(storedBg === "true");
+      const storedBlur = localStorage.getItem("chairman-ambient-blur-radius");
+      if (storedBlur !== null) setAmbientBlurRadius(Number(storedBlur) || 24);
+    } catch {}
+
+    const onAmbientBgEvent = (e: Event) => {
+      const custom = e as CustomEvent<{ enabled?: boolean; blur?: number }>;
+      if (custom.detail) {
+        if (custom.detail.enabled !== undefined) setAmbientBgEnabled(custom.detail.enabled);
+        if (custom.detail.blur !== undefined) setAmbientBlurRadius(custom.detail.blur);
+      }
+    };
+    window.addEventListener("chairmanAmbientBgChanged", onAmbientBgEvent);
+
     const hasLocalSaved =
       typeof window !== "undefined" &&
       Boolean(localStorage.getItem(GLASS_THEME_STORAGE_KEY));
@@ -88,10 +106,12 @@ export function GlassThemeController() {
       cancelled = true;
       window.removeEventListener(GLASS_THEME_EVENT, onThemeEvent);
       window.removeEventListener(FONT_KIT_EVENT, onFontEvent);
+      window.removeEventListener("chairmanAmbientBgChanged", onAmbientBgEvent);
     };
   }, []);
 
   const isSpatial = activePreset === "aura-spatial";
+  const showAmbientBackground = (activePreset === "eco-glass" || ambientBgEnabled);
 
   return (
     <div
@@ -102,6 +122,28 @@ export function GlassThemeController() {
         transition: "background-color 0.45s cubic-bezier(0.22, 1, 0.36, 1)",
       }}
     >
+      {/* Real Ambient Eco Home Background with Blur & Dimmer (Image 2 style) */}
+      {showAmbientBackground && (
+        <div className="absolute inset-0 overflow-hidden pointer-events-none transition-opacity duration-700">
+          <div
+            className="absolute inset-0 bg-cover bg-center transition-all duration-700"
+            style={{
+              backgroundImage: "url('/backgrounds/eco-home-ambient.jpg')",
+              filter: `blur(${ambientBlurRadius}px) brightness(0.48) saturate(1.15)`,
+              transform: "scale(1.08)", // eliminate blur fringe at edges
+            }}
+          />
+          {/* Subtle dark vignette veil to preserve deep contrast for text & cards */}
+          <div
+            className="absolute inset-0"
+            style={{
+              background:
+                "radial-gradient(ellipse 90% 80% at 50% 40%, rgba(9, 11, 16, 0.45) 0%, rgba(9, 11, 16, 0.88) 100%)",
+            }}
+          />
+        </div>
+      )}
+
       {/* Spatial Architectural Studio Depth cues for VisionOS Aura Warm Preset */}
       {isSpatial && (
         <div className="absolute inset-0 opacity-90">

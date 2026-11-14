@@ -212,15 +212,17 @@ export default function ChairmanCockpitPage() {
             <div>
               <div className="flex items-center gap-2 mb-1.5">
                 <span className="w-2 h-2 rounded-full bg-emerald-400 shadow-[0_0_8px_#34d399]" />
-                <span className="text-[11px] font-mono font-bold tracking-widest text-emerald-400 uppercase">
+                <span className="text-[11px] font-bold tracking-widest text-emerald-400 uppercase">
                   Pristine Executive Cockpit
                 </span>
               </div>
               <h1 className="text-3xl sm:text-4xl lg:text-5xl font-extrabold tracking-tight text-zinc-900 dark:text-zinc-100">
-                {greeting}, {user?.name?.split(" ")[0] || "Chairman"}!
+                {greeting}, {user?.name?.split(" ")[0] || "Diego"}!
               </h1>
-              <p className="text-sm text-zinc-600 dark:text-zinc-400 mt-1 font-medium">
-                {currentDate} • <span className="font-mono text-zinc-300 dark:text-zinc-300">{currentTime}</span>
+              <p className="text-sm text-zinc-600 dark:text-zinc-400 mt-1.5 font-medium flex items-center gap-2">
+                <span>{currentDate}</span>
+                <span className="text-zinc-500">•</span>
+                <span className="tabular-nums text-zinc-300 font-semibold">{currentTime}</span>
               </p>
             </div>
 
@@ -262,7 +264,7 @@ export default function ChairmanCockpitPage() {
               </span>
             </div>
 
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
               {/* VITAL 1: STEPS */}
               <div className="eco-glass-card p-6 rounded-3xl flex flex-col justify-between relative overflow-hidden group">
                 <div className="flex items-center justify-between text-zinc-400 text-xs">
@@ -272,12 +274,12 @@ export default function ChairmanCockpitPage() {
                   <Footprints className="w-4 h-4 text-emerald-400" />
                 </div>
 
-                <div className="my-4 flex items-center justify-between">
+                <div className="my-5 flex items-center justify-between">
                   <div>
-                    <div className="text-3xl sm:text-4xl font-extrabold font-mono text-zinc-100 tracking-tight">
+                    <div className="text-3xl sm:text-4xl font-bold tabular-nums text-white tracking-tight">
                       {stepsCurrent.toLocaleString()}
                     </div>
-                    <div className="text-xs text-zinc-400 mt-0.5">
+                    <div className="text-xs text-zinc-400 mt-1">
                       Goal: {stepsGoal.toLocaleString()} steps ({Math.round((stepsCurrent / stepsGoal) * 100)}%)
                     </div>
                   </div>
@@ -302,13 +304,13 @@ export default function ChairmanCockpitPage() {
                         d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831"
                       />
                     </svg>
-                    <span className="absolute text-[11px] font-mono font-bold text-emerald-300">
+                    <span className="absolute text-[11px] font-semibold tabular-nums text-emerald-300">
                       {Math.round((stepsCurrent / stepsGoal) * 100)}%
                     </span>
                   </div>
                 </div>
 
-                <div className="pt-3 border-t border-white/5 flex items-center justify-between text-xs text-zinc-400 font-mono">
+                <div className="pt-3 border-t border-white/5 flex items-center justify-between text-xs text-zinc-400 tabular-nums">
                   <span>{stepsMiles} Miles Walked</span>
                   <span>{stepsKcal} kcal Burned</span>
                 </div>
@@ -323,22 +325,22 @@ export default function ChairmanCockpitPage() {
                   <Moon className="w-4 h-4 text-indigo-400" />
                 </div>
 
-                <div className="my-4 flex items-center justify-between">
+                <div className="my-5 flex items-center justify-between">
                   <div>
-                    <div className="text-3xl sm:text-4xl font-extrabold font-mono text-zinc-100 tracking-tight">
+                    <div className="text-3xl sm:text-4xl font-bold tabular-nums text-white tracking-tight">
                       {sleepHours}
                     </div>
-                    <div className="text-xs text-zinc-400 mt-0.5">
+                    <div className="text-xs text-zinc-400 mt-1">
                       Sleep Score: {sleepQuality}% • High Recovery
                     </div>
                   </div>
 
-                  <div className="px-3 py-1.5 rounded-2xl bg-indigo-500/10 border border-indigo-500/25 text-indigo-300 text-xs font-mono font-bold">
+                  <div className="px-3 py-1.5 rounded-2xl bg-indigo-500/10 border border-indigo-500/25 text-indigo-300 text-xs font-semibold">
                     Optimal
                   </div>
                 </div>
 
-                <div className="pt-3 border-t border-white/5 flex items-center justify-between text-xs text-zinc-400 font-mono">
+                <div className="pt-3 border-t border-white/5 flex items-center justify-between text-xs text-zinc-400 tabular-nums">
                   <span>Awake at {sleepWakeTime}</span>
                   <span>1h 45m Deep Sleep</span>
                 </div>
@@ -353,24 +355,24 @@ export default function ChairmanCockpitPage() {
                   <Dumbbell className="w-4 h-4 text-amber-400" />
                 </div>
 
-                <div className="my-4 flex items-center justify-between">
+                <div className="my-5 flex items-center justify-between">
                   <div>
-                    <div className="text-3xl sm:text-4xl font-extrabold font-mono text-zinc-100 tracking-tight">
+                    <div className="text-3xl sm:text-4xl font-bold tabular-nums text-white tracking-tight">
                       {exerciseMinutes} <span className="text-base text-zinc-400 font-normal">min</span>
                     </div>
-                    <div className="text-xs text-zinc-400 mt-0.5">
+                    <div className="text-xs text-zinc-400 mt-1">
                       {exerciseRoutine}
                     </div>
                   </div>
 
-                  <div className="flex items-center gap-1 px-3 py-1.5 rounded-2xl bg-amber-500/10 border border-amber-500/25 text-amber-300 text-xs font-mono font-bold">
+                  <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-2xl bg-amber-500/10 border border-amber-500/25 text-amber-300 text-xs font-semibold tabular-nums">
                     <Flame className="w-3.5 h-3.5 text-amber-400 fill-amber-400" />
                     <span>{exerciseStreakDays}d Streak</span>
                   </div>
                 </div>
 
                 <div className="pt-3 border-t border-white/5 flex items-center justify-between text-xs">
-                  <span className="text-zinc-400 font-mono">14 Sets Completed</span>
+                  <span className="text-zinc-400 tabular-nums">14 Sets Completed</span>
                   <Link
                     href="/workouts"
                     className="text-amber-400 hover:text-amber-300 font-semibold flex items-center gap-0.5"

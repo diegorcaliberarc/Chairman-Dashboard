@@ -43,6 +43,7 @@ import {
   Settings,
 } from "lucide-react";
 import { useRouter, usePathname } from "next/navigation";
+import { useSession } from "next-auth/react";
 import { UserAccountModal } from "./UserAccountModal";
 import { useState, useEffect, useMemo } from "react";
 import { AppearanceSettings } from "./AppearanceSettings";
@@ -351,6 +352,24 @@ export function Sidebar({
   const [novaOpen, setNovaOpen] = useState(false);
   const router = useRouter();
   const pathname = usePathname();
+  const { data: session } = useSession();
+
+  const [dbCalConnected, setDbCalConnected] = useState(false);
+
+  useEffect(() => {
+    fetch("/api/calendar/google-sync")
+      .then((r) => (r.ok ? r.json() : null))
+      .then((d) => {
+        if (d?.connected) setDbCalConnected(true);
+      })
+      .catch(() => {});
+  }, []);
+
+  const effectiveUser = user || session?.user || {
+    name: "Diegos Reality",
+    email: "diegoforodriguez@gmail.com",
+  };
+  const effectiveCalConnected = calConnected || dbCalConnected || Boolean((session as any)?.accessToken);
 
   // Two Collapsible Columns State (persisted in localStorage)
   const [col1Collapsed, setCol1Collapsed] = useState(false);
@@ -699,17 +718,17 @@ export function Sidebar({
               className="flex items-center gap-2 flex-1 min-w-0 p-1 rounded-xl hover:bg-zinc-200/50 dark:hover:bg-white/10 transition-colors text-left"
               title="Execution & Account Settings"
             >
-              {user?.image ? (
-                <img src={user.image} alt="User" className="w-8 h-8 rounded-xl object-cover ring-1 ring-[#0969DA]/40 shrink-0" />
+              {effectiveUser?.image ? (
+                <img src={effectiveUser.image} alt="User" className="w-8 h-8 rounded-xl object-cover ring-1 ring-[#0969DA]/40 shrink-0" />
               ) : (
                 <div className="w-8 h-8 rounded-xl bg-[#0969DA]/20 border border-[#0969DA]/40 flex items-center justify-center text-[#58A6FF] text-xs font-bold shrink-0">
-                  {(user?.name ?? "C")[0].toUpperCase()}
+                  {(effectiveUser?.name ?? "D")[0].toUpperCase()}
                 </div>
               )}
               {!col2Collapsed && (
                 <div className="flex-1 min-w-0">
                   <div className="text-xs font-bold text-zinc-900 dark:text-white truncate">
-                    {user?.name?.split(" ")[0] ?? "Chairman"}
+                    {effectiveUser?.name?.split(" ")[0] ?? "Diego"}
                   </div>
                   <div className="text-[9.5px] text-zinc-500 dark:text-zinc-400 truncate flex items-center gap-1">
                     <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
@@ -733,11 +752,11 @@ export function Sidebar({
               <button
                 onClick={onCalToggle}
                 className={`w-8 h-8 rounded-xl flex items-center justify-center transition-colors ${
-                  calConnected
+                  effectiveCalConnected
                     ? "text-[#58A6FF] bg-[#0969DA]/15 border border-[#0969DA]/30"
                     : "text-zinc-500 hover:text-zinc-900 dark:hover:text-white hover:bg-zinc-200/50 dark:hover:bg-white/10"
                 }`}
-                title={calConnected ? "Google Calendar Live" : "Connect Google Calendar"}
+                title={effectiveCalConnected ? "Google Calendar Live" : "Connect Google Calendar"}
               >
                 <CalendarDays size={15} />
               </button>
@@ -756,8 +775,8 @@ export function Sidebar({
 
       {accountModalOpen && (
         <UserAccountModal
-          user={user || {}}
-          calConnected={calConnected}
+          user={effectiveUser}
+          calConnected={effectiveCalConnected}
           onCalToggle={onCalToggle}
           activeTasksCount={activeTasksCount}
           activeSubtasksCount={activeSubtasksCount}

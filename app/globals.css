@@ -23,8 +23,8 @@
   --color-glow:          rgba(91, 124, 250, 0.45);
 
   /* Typography Font Kit & Sizing Engine */
-  --font-letters:        'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
-  --font-numbers:        'JetBrains Mono', 'Fira Code', monospace;
+  --font-letters:        'Plus Jakarta Sans', 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  --font-numbers:        'Plus Jakarta Sans', 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
   --app-font-size:       16px;
   --app-scale-factor:    1;
 
@@ -155,12 +155,19 @@ body.bg-theme-gradient {
   transition: color 0.25s ease, font-size 0.2s ease;
 }
 
-/* Number & Telemetry Font Utilities */
-.font-mono,
+/* Number & Telemetry Font Utilities: Clean, non-jittery numbers matching Image 2 */
 .font-number,
-[style*="fontVariantNumeric"],
-.tabular-nums {
-  font-family: var(--font-numbers, 'JetBrains Mono', 'Fira Code', monospace) !important;
+.tabular-nums,
+[style*="fontVariantNumeric"] {
+  font-family: var(--font-numbers, 'Plus Jakarta Sans', 'Inter', sans-serif);
+  font-variant-numeric: tabular-nums;
+  font-feature-settings: "tnum" 1;
+}
+
+.font-mono {
+  font-family: 'JetBrains Mono', 'Fira Code', monospace;
+  font-variant-numeric: tabular-nums;
+  font-feature-settings: "tnum" 1;
 }
 
 /* Dynamic Gradient Angle support for non-body theme-gradient elements */

@@ -643,6 +643,7 @@ export function DittoGengarPals() {
   const [isDragging, setIsDragging] = useState(false);
 
   const containerRef = useRef<HTMLDivElement | null>(null);
+  const hasDraggedRef = useRef<boolean>(false);
   const dragStartRef = useRef<{
     startX: number;
     startY: number;
@@ -748,9 +749,11 @@ export function DittoGengarPals() {
 
   // Pointer Drag Handlers
   const handleDragPointerDown = useCallback((e: React.PointerEvent) => {
+    // If clicking an interactive button that isn't a drag handle or input, ignore
     if ((e.target as HTMLElement).closest("button:not([data-drag-handle])") || (e.target as HTMLElement).closest("input")) {
       return;
     }
+    hasDraggedRef.current = false;
     const rect = containerRef.current?.getBoundingClientRect();
     const curX = rect ? rect.left : (customCoords?.x ?? 280);
     const curY = rect ? rect.top : (customCoords?.y ?? (typeof window !== "undefined" ? window.innerHeight - 130 : 500));
@@ -770,7 +773,10 @@ export function DittoGengarPals() {
     if (!isDragging) return;
     const dx = e.clientX - dragStartRef.current.startX;
     const dy = e.clientY - dragStartRef.current.startY;
-    const width = minimized ? 150 : 315;
+    if (Math.abs(dx) > 3 || Math.abs(dy) > 3) {
+      hasDraggedRef.current = true;
+    }
+    const width = minimized ? 160 : 315;
     const height = minimized ? 44 : 120;
     const winW = typeof window !== "undefined" ? window.innerWidth : 1200;
     const winH = typeof window !== "undefined" ? window.innerHeight : 800;
@@ -984,9 +990,10 @@ export function DittoGengarPals() {
         left: 0,
         transform: `translate3d(${customCoords.x}px, ${customCoords.y}px, 0)`,
         zIndex: 75,
+        touchAction: "none" as const,
       };
     }
-    return undefined;
+    return { touchAction: "none" as const };
   }, [customCoords]);
 
   const activePositionClasses = customCoords
@@ -1013,9 +1020,14 @@ export function DittoGengarPals() {
       >
         <button
           type="button"
-          onClick={() => setMinimized(false)}
+          data-drag-handle="true"
+          onClick={() => {
+            if (!hasDraggedRef.current) {
+              setMinimized(false);
+            }
+          }}
           title={`Expand His, Hers & Ours Pixel Pals (${currentMeta.label}) • Drag anywhere to move`}
-          className="pointer-events-auto cursor-grab active:cursor-grabbing group flex items-center gap-2 w-[156px] h-[38px] px-3 rounded-full bg-[#090a10]/92 backdrop-blur-xl border border-purple-500/35 shadow-[0_8px_28px_rgba(0,0,0,0.65),0_0_16px_rgba(168,85,247,0.22)] hover:border-pink-400/60 transition-all"
+          className="pointer-events-auto cursor-grab active:cursor-grabbing group flex items-center gap-2 w-[160px] h-[38px] px-3 rounded-full bg-[#090a10]/92 backdrop-blur-xl border border-purple-500/35 shadow-[0_8px_28px_rgba(0,0,0,0.65),0_0_16px_rgba(168,85,247,0.22)] hover:border-pink-400/60 transition-all"
         >
           <GripVertical className="w-3 h-3 text-purple-400/50 -ml-1" />
           <span
