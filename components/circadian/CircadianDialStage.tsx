@@ -176,7 +176,8 @@ export function CircadianDialStage({
 
   // Precompute wedge geometries + strictly deduplicate 1-to-1 + non-colliding labels
   const wedgeItems = useMemo(() => {
-    // 1. Filter out all-day events and < 5 min zero-width dots
+    // 1. Filter out all-day events, < 5 min zero-width dots, and >= 18h / 24h day-spanning blocks
+    // so a single multi-day task never forms a giant 360° ring wrapping the entire wheel
     const timedEvents = events.filter((ev) => {
       if (ev.allDay) return false;
       const s = new Date(ev.startTime).getTime();
@@ -186,7 +187,7 @@ export function CircadianDialStage({
         dateToMinutes(new Date(ev.startTime)),
         dateToMinutes(new Date(ev.endTime))
       );
-      return dur >= 5;
+      return dur >= 5 && dur < 1080;
     });
 
     // 2. Strict 1-to-1 Event Deduplication: Ensure each scheduled routine only appears ONCE
@@ -202,12 +203,27 @@ export function CircadianDialStage({
     });
 
     // 3. Build geometry items with 24-hour military clock math and concentric sub-lane splitting
-    // Detect concurrent overlap clusters to cleanly split overlapping blocks (e.g. Astro & Nova vs ClickUp)
+    // Detect concurrent overlaps OR close adjacent routines (< 45 min delta, e.g. Astro & Nova vs ClickUp)
     const sorted = [...uniqueTimedEvents].sort((a, b) => {
       const sA = dateToMinutes(new Date(a.startTime));
       const sB = dateToMinutes(new Date(b.startTime));
       return sA - sB;
     });
+
+    // Mark items that collide or sit back-to-back within 45 mins
+    const collisionIds = new Set<string>();
+    for (let i = 0; i < sorted.length; i++) {
+      for (let j = i + 1; j < sorted.length; j++) {
+        const sA = dateToMinutes(new Date(sorted[i].startTime));
+        const eA = dateToMinutes(new Date(sorted[i].endTime));
+        const sB = dateToMinutes(new Date(sorted[j].startTime));
+        const eB = dateToMinutes(new Date(sorted[j].endTime));
+        if (Math.max(sA, sB) < Math.min(eA, eB) || Math.abs(sB - sA) < 45) {
+          collisionIds.add(sorted[i].id);
+          collisionIds.add(sorted[j].id);
+        }
+      }
+    }
 
     const trackAssignment = new Map<string, number>();
     const activeIntervals: Array<{ endMin: number; track: number }> = [];
@@ -215,7 +231,7 @@ export function CircadianDialStage({
     for (const ev of sorted) {
       const s = dateToMinutes(new Date(ev.startTime));
       const e = dateToMinutes(new Date(ev.endTime));
-      const stillActive = activeIntervals.filter((it) => it.endMin > s);
+      const stillActive = activeIntervals.filter((it) => it.endMin > s || Math.abs(s - (it.endMin - 45)) < 30);
       const usedTracks = new Set(stillActive.map((it) => it.track));
       let track = 0;
       while (usedTracks.has(track)) track++;
@@ -232,25 +248,20 @@ export function CircadianDialStage({
       const midMin = (startMin + durMin / 2) % 1440;
 
       const track = trackAssignment.get(ev.id) ?? 0;
-      const hasConcurrentOverlap = uniqueTimedEvents.some((other) => {
-        if (other.id === ev.id) return false;
-        const oS = dateToMinutes(new Date(other.startTime));
-        const oE = dateToMinutes(new Date(other.endTime));
-        return Math.max(startMin, oS) < Math.min(endMin, oE);
-      });
+      const hasConcurrentOverlap = collisionIds.has(ev.id);
 
       let rInner = R_WEDGE_INNER;
       let rOuter = R_WEDGE_OUTER;
       if (hasConcurrentOverlap) {
         const midR = (R_WEDGE_INNER + R_WEDGE_OUTER) / 2;
-        if (track === 0) {
+        if (track % 2 === 0) {
           // Outer concentric lane
-          rInner = midR + 2 * scaleFactor;
+          rInner = midR + 3 * scaleFactor;
           rOuter = R_WEDGE_OUTER;
         } else {
           // Inner concentric lane
           rInner = R_WEDGE_INNER;
-          rOuter = midR - 2 * scaleFactor;
+          rOuter = midR - 3 * scaleFactor;
         }
       }
 
@@ -321,10 +332,17 @@ export function CircadianDialStage({
 
     // 5. Collision-Avoidance Label Relaxation Pass (Separately on Left and Right)
     const relaxLabels = (items: typeof itemsWithAnchors, isRightSide: boolean) => {
-      if (items.length <= 1) return;
+      if (items.length <= 1) {
+        if (items.length === 1) {
+          items[0].labelX = isRightSide
+            ? CX + R_WEDGE_OUTER + 46 * scaleFactor
+            : CX - R_WEDGE_OUTER - 46 * scaleFactor;
+        }
+        return;
+      }
       // Sort vertically by target natural anchor Y
       items.sort((a, b) => a.anchorPt.y - b.anchorPt.y);
-      const minGap = 44; // Minimum vertical gap between adjacent labels
+      const minGap = 48; // Minimum vertical gap between adjacent labels
       const topBound = 60;
       const bottomBound = VB_H - 60;
 
@@ -358,11 +376,11 @@ export function CircadianDialStage({
         }
       }
 
-      // Compute refined labelX and leader elbow connector
+      // Enforce clean column rail alignment matching reference mockup
       for (const item of items) {
         item.labelX = isRightSide
-          ? Math.max(item.anchorPt.x + 20, CX + R_WEDGE_OUTER + 28)
-          : Math.min(item.anchorPt.x - 20, CX - R_WEDGE_OUTER - 28);
+          ? CX + R_WEDGE_OUTER + 46 * scaleFactor
+          : CX - R_WEDGE_OUTER - 46 * scaleFactor;
       }
     };
 
@@ -667,6 +685,34 @@ export function CircadianDialStage({
             </feMerge>
           </filter>
 
+          {/* Radiant Outer Bloom Glow Filter for Arcs & Tracks */}
+          <filter id="radiantOuterGlow" x="-60%" y="-60%" width="220%" height="220%">
+            <feGaussianBlur stdDeviation="4" result="blur1" />
+            <feGaussianBlur stdDeviation="12" result="blur2" />
+            <feMerge>
+              <feMergeNode in="blur2" />
+              <feMergeNode in="blur1" />
+              <feMergeNode in="SourceGraphic" />
+            </feMerge>
+          </filter>
+
+          {/* Left Hemisphere Gradient: Bottom-Left (00:00-06:00) warm gold -> mid-left dawn white -> Top (12:00) bright sky blue */}
+          <linearGradient id="ringGradLeftHemisphere" x1="0" y1="1" x2="0.5" y2="0">
+            <stop offset="0%" stopColor="#f59e0b" />
+            <stop offset="30%" stopColor="#fef08a" />
+            <stop offset="60%" stopColor="#ffffff" />
+            <stop offset="85%" stopColor="#38bdf8" />
+            <stop offset="100%" stopColor="#0ea5e9" />
+          </linearGradient>
+
+          {/* Right Hemisphere Gradient: Top (12:00) soft yellow-gold -> 18:00 sunset orange -> Bottom-Right emerald green */}
+          <linearGradient id="ringGradRightHemisphere" x1="0.5" y1="0" x2="1" y2="1">
+            <stop offset="0%" stopColor="#fef08a" />
+            <stop offset="35%" stopColor="#f59e0b" />
+            <stop offset="70%" stopColor="#ea580c" />
+            <stop offset="100%" stopColor="#10b981" />
+          </linearGradient>
+
           {/* Atmospheric Ambient Bloom Radiance Filter */}
           <filter id="dialAtmosphereGlow" x="-60%" y="-60%" width="220%" height="220%">
             <feGaussianBlur stdDeviation="36" result="blur" />
@@ -793,56 +839,90 @@ export function CircadianDialStage({
             </radialGradient>
             <circle cx={CX} cy={CY} r={R_SKY} fill="url(#rightSunsetGlow)" />
 
-            {/* Bottom Starry Night Sky & Illuminated City Skyline Silhouette (00:00 / 24:00) */}
-            <g id="bottom-cityscape" opacity="0.94">
-              {/* Star Constellation Points */}
-              <circle cx={CX - 80 * scaleFactor} cy={CY + 92 * scaleFactor} r={1.2} fill="#ffffff" opacity="0.8" />
-              <circle cx={CX - 40 * scaleFactor} cy={CY + 112 * scaleFactor} r={1.0} fill="#ffffff" opacity="0.65" />
-              <circle cx={CX + 30 * scaleFactor} cy={CY + 102 * scaleFactor} r={1.3} fill="#ffffff" opacity="0.85" />
-              <circle cx={CX + 80 * scaleFactor} cy={CY + 88 * scaleFactor} r={1.1} fill="#ffffff" opacity="0.75" />
-              <circle cx={CX - 110 * scaleFactor} cy={CY + 68 * scaleFactor} r={1.0} fill="#ffffff" opacity="0.5" />
-              <circle cx={CX + 110 * scaleFactor} cy={CY + 62 * scaleFactor} r={1.2} fill="#ffffff" opacity="0.6" />
+            {/* Bottom Starry Night Sky & Natural Mountain Ridge Silhouette with Valley City Lights (00:00 / 24:00) */}
+            <g id="bottom-cityscape" opacity="0.96">
+              {/* Star Constellation Points in Night Sky */}
+              <circle cx={CX - 85 * scaleFactor} cy={CY + 84 * scaleFactor} r={1.2} fill="#ffffff" opacity="0.85" />
+              <circle cx={CX - 45 * scaleFactor} cy={CY + 100 * scaleFactor} r={1.0} fill="#ffffff" opacity="0.7" />
+              <circle cx={CX + 25 * scaleFactor} cy={CY + 92 * scaleFactor} r={1.4} fill="#ffffff" opacity="0.9" />
+              <circle cx={CX + 75 * scaleFactor} cy={CY + 82 * scaleFactor} r={1.1} fill="#ffffff" opacity="0.8" />
+              <circle cx={CX - 120 * scaleFactor} cy={CY + 64 * scaleFactor} r={0.9} fill="#ffffff" opacity="0.6" />
+              <circle cx={CX + 115 * scaleFactor} cy={CY + 58 * scaleFactor} r={1.2} fill="#ffffff" opacity="0.7" />
 
-              {/* City Lights Horizon Gradient */}
-              <linearGradient id="cityGlowGrad" x1="0" y1="0" x2="0" y2="1">
+              {/* Valley Horizon Atmospheric Glow Gradient */}
+              <linearGradient id="valleyGlowGrad" x1="0" y1="0" x2="0" y2="1">
                 <stop offset="0%" stopColor="#f59e0b" stopOpacity="0" />
-                <stop offset="65%" stopColor="#f59e0b" stopOpacity="0.25" />
-                <stop offset="100%" stopColor="#eab308" stopOpacity="0.4" />
+                <stop offset="50%" stopColor="#f59e0b" stopOpacity="0.18" />
+                <stop offset="85%" stopColor="#eab308" stopOpacity="0.32" />
+                <stop offset="100%" stopColor="#fbbf24" stopOpacity="0.45" />
               </linearGradient>
               <rect
                 x={CX - R_SKY}
-                y={CY + 70 * scaleFactor}
+                y={CY + 68 * scaleFactor}
                 width={R_SKY * 2}
-                height={R_SKY - 70 * scaleFactor}
-                fill="url(#cityGlowGrad)"
+                height={R_SKY - 68 * scaleFactor}
+                fill="url(#valleyGlowGrad)"
               />
 
-              {/* Skyline Silhouette */}
+              {/* Natural Distant Mountain Ridge Silhouette */}
               <path
-                d={`M ${CX - 130 * scaleFactor} ${CY + R_SKY} 
-                    L ${CX - 130 * scaleFactor} ${CY + 128 * scaleFactor} 
-                    L ${CX - 105 * scaleFactor} ${CY + 128 * scaleFactor} 
-                    L ${CX - 105 * scaleFactor} ${CY + 116 * scaleFactor} 
-                    L ${CX - 75 * scaleFactor} ${CY + 116 * scaleFactor} 
-                    L ${CX - 75 * scaleFactor} ${CY + 132 * scaleFactor} 
-                    L ${CX - 50 * scaleFactor} ${CY + 132 * scaleFactor} 
-                    L ${CX - 50 * scaleFactor} ${CY + 110 * scaleFactor} 
-                    L ${CX - 28 * scaleFactor} ${CY + 110 * scaleFactor} 
-                    L ${CX - 28 * scaleFactor} ${CY + 124 * scaleFactor} 
-                    L ${CX} ${CY + 104 * scaleFactor} 
-                    L ${CX + 28 * scaleFactor} ${CY + 124 * scaleFactor} 
-                    L ${CX + 28 * scaleFactor} ${CY + 114 * scaleFactor} 
-                    L ${CX + 54 * scaleFactor} ${CY + 114 * scaleFactor} 
-                    L ${CX + 54 * scaleFactor} ${CY + 130 * scaleFactor} 
-                    L ${CX + 80 * scaleFactor} ${CY + 130 * scaleFactor} 
-                    L ${CX + 80 * scaleFactor} ${CY + 118 * scaleFactor} 
-                    L ${CX + 110 * scaleFactor} ${CY + 118 * scaleFactor} 
-                    L ${CX + 110 * scaleFactor} ${CY + 134 * scaleFactor} 
-                    L ${CX + 130 * scaleFactor} ${CY + 134 * scaleFactor} 
-                    L ${CX + 130 * scaleFactor} ${CY + R_SKY} Z`}
-                fill="#030712"
-                opacity="0.85"
+                d={`M ${CX - R_SKY} ${CY + R_SKY} 
+                    L ${CX - R_SKY} ${CY + 88 * scaleFactor} 
+                    Q ${CX - 110 * scaleFactor} ${CY + 70 * scaleFactor}, ${CX - 75 * scaleFactor} ${CY + 80 * scaleFactor} 
+                    T ${CX - 25 * scaleFactor} ${CY + 74 * scaleFactor} 
+                    T ${CX + 20 * scaleFactor} ${CY + 68 * scaleFactor} 
+                    T ${CX + 75 * scaleFactor} ${CY + 78 * scaleFactor} 
+                    T ${CX + 120 * scaleFactor} ${CY + 72 * scaleFactor} 
+                    L ${CX + R_SKY} ${CY + 86 * scaleFactor} 
+                    L ${CX + R_SKY} ${CY + R_SKY} Z`}
+                fill="#0a0f1d"
+                opacity="0.9"
               />
+
+              {/* Foreground Mountain Foothills Silhouette */}
+              <path
+                d={`M ${CX - R_SKY} ${CY + R_SKY} 
+                    L ${CX - R_SKY} ${CY + 104 * scaleFactor} 
+                    Q ${CX - 85 * scaleFactor} ${CY + 92 * scaleFactor}, ${CX - 50 * scaleFactor} ${CY + 98 * scaleFactor} 
+                    T ${CX} ${CY + 90 * scaleFactor} 
+                    T ${CX + 55 * scaleFactor} ${CY + 96 * scaleFactor} 
+                    T ${CX + 110 * scaleFactor} ${CY + 92 * scaleFactor} 
+                    L ${CX + R_SKY} ${CY + 106 * scaleFactor} 
+                    L ${CX + R_SKY} ${CY + R_SKY} Z`}
+                fill="#02040a"
+                opacity="0.98"
+              />
+
+              {/* Sparkling Warm City Lights Array Across the Valley Horizon */}
+              <g id="valley-city-lights" filter="url(#arcNeonGlow)">
+                {/* Cluster Left */}
+                <circle cx={CX - 105 * scaleFactor} cy={CY + 108 * scaleFactor} r={1.1} fill="#fbbf24" opacity="0.95" />
+                <circle cx={CX - 96 * scaleFactor} cy={CY + 112 * scaleFactor} r={0.9} fill="#ffffff" opacity="0.85" />
+                <circle cx={CX - 88 * scaleFactor} cy={CY + 106 * scaleFactor} r={1.3} fill="#f59e0b" opacity="0.9" />
+                <circle cx={CX - 78 * scaleFactor} cy={CY + 114 * scaleFactor} r={1.0} fill="#fef08a" opacity="0.95" />
+                <circle cx={CX - 70 * scaleFactor} cy={CY + 109 * scaleFactor} r={1.2} fill="#ea580c" opacity="0.8" />
+                <circle cx={CX - 62 * scaleFactor} cy={CY + 115 * scaleFactor} r={0.8} fill="#ffffff" opacity="0.85" />
+
+                {/* Cluster Center Valley */}
+                <circle cx={CX - 48 * scaleFactor} cy={CY + 111 * scaleFactor} r={1.2} fill="#f59e0b" opacity="0.9" />
+                <circle cx={CX - 38 * scaleFactor} cy={CY + 116 * scaleFactor} r={1.0} fill="#fde047" opacity="0.95" />
+                <circle cx={CX - 28 * scaleFactor} cy={CY + 110 * scaleFactor} r={1.4} fill="#ffffff" opacity="0.95" />
+                <circle cx={CX - 18 * scaleFactor} cy={CY + 118 * scaleFactor} r={0.9} fill="#fbbf24" opacity="0.85" />
+                <circle cx={CX - 8 * scaleFactor} cy={CY + 112 * scaleFactor} r={1.3} fill="#f59e0b" opacity="0.9" />
+                <circle cx={CX} cy={CY + 120 * scaleFactor} r={1.1} fill="#fef08a" opacity="0.95" />
+                <circle cx={CX + 10 * scaleFactor} cy={CY + 113 * scaleFactor} r={1.2} fill="#ffffff" opacity="0.9" />
+                <circle cx={CX + 22 * scaleFactor} cy={CY + 118 * scaleFactor} r={0.9} fill="#f59e0b" opacity="0.85" />
+                <circle cx={CX + 32 * scaleFactor} cy={CY + 111 * scaleFactor} r={1.3} fill="#fde047" opacity="0.95" />
+                <circle cx={CX + 44 * scaleFactor} cy={CY + 117 * scaleFactor} r={1.0} fill="#ffffff" opacity="0.9" />
+
+                {/* Cluster Right */}
+                <circle cx={CX + 58 * scaleFactor} cy={CY + 112 * scaleFactor} r={1.2} fill="#fbbf24" opacity="0.9" />
+                <circle cx={CX + 68 * scaleFactor} cy={CY + 118 * scaleFactor} r={0.9} fill="#ea580c" opacity="0.85" />
+                <circle cx={CX + 78 * scaleFactor} cy={CY + 110 * scaleFactor} r={1.4} fill="#fef08a" opacity="0.95" />
+                <circle cx={CX + 88 * scaleFactor} cy={CY + 115 * scaleFactor} r={1.1} fill="#ffffff" opacity="0.9" />
+                <circle cx={CX + 98 * scaleFactor} cy={CY + 109 * scaleFactor} r={1.3} fill="#f59e0b" opacity="0.9" />
+                <circle cx={CX + 108 * scaleFactor} cy={CY + 114 * scaleFactor} r={0.9} fill="#fde047" opacity="0.85" />
+              </g>
             </g>
 
             {/* Seamless Atmospheric Depth Overlay */}
@@ -932,20 +1012,20 @@ export function CircadianDialStage({
               18:00
             </text>
 
-            {/* Bottom: 00:00 (Midnight Nadir) */}
+            {/* Bottom: 00:00 / 24:00 (Midnight Nadir) */}
             <text
               x={CX}
               y={CY + R_SKY - 12 * scaleFactor}
               textAnchor="middle"
               fill="#cbd5e1"
-              stroke="rgba(8, 11, 20, 0.92)"
+              stroke="rgba(8, 11, 20, 0.95)"
               strokeWidth="3.2"
               paintOrder="stroke"
-              fontSize={13 * scaleFactor}
-              fontWeight={900}
+              fontSize={11.5 * scaleFactor}
+              fontWeight={800}
               letterSpacing="0.04em"
             >
-              00:00
+              00:00 / 24:00
             </text>
 
             {/* 24-Hour Precision Hour Ticks (0 through 23) around Rim */}
@@ -1046,6 +1126,24 @@ export function CircadianDialStage({
             />
           </g>
 
+          {/* Underlying Circadian Radial Guide Track with Hemisphere Glow (Reference Styling) */}
+          <g id="circadian-track-rings" className="pointer-events-none" opacity="0.35">
+            <path
+              d={`M ${CX} ${CY + R_WEDGE_OUTER} A ${R_WEDGE_OUTER} ${R_WEDGE_OUTER} 0 0 1 ${CX} ${CY - R_WEDGE_OUTER}`}
+              fill="none"
+              stroke="url(#ringGradLeftHemisphere)"
+              strokeWidth="1.2"
+              strokeDasharray="5 7"
+            />
+            <path
+              d={`M ${CX} ${CY - R_WEDGE_OUTER} A ${R_WEDGE_OUTER} ${R_WEDGE_OUTER} 0 0 1 ${CX} ${CY + R_WEDGE_OUTER}`}
+              fill="none"
+              stroke="url(#ringGradRightHemisphere)"
+              strokeWidth="1.2"
+              strokeDasharray="5 7"
+            />
+          </g>
+
           {/* ========================================================================= */}
           {/* 6. OUTER CURVED ANNULAR WEDGES (RENDERED FIRST IN DOM Z-ORDER)            */}
           {/* ========================================================================= */}
@@ -1126,14 +1224,14 @@ export function CircadianDialStage({
                     )}
                   </g>
 
-                  {/* Wedge Perimeter Stroke */}
+                  {/* Wedge Perimeter Stroke with Radiant Outer Glow */}
                   <path
                     d={wedge.path}
                     fill="none"
                     stroke={strokeColor}
                     strokeWidth={isHighlighted ? 3.4 : 2.2}
                     strokeLinejoin="round"
-                    filter={isHighlighted ? "url(#arcNeonGlow)" : undefined}
+                    filter={isHighlighted ? "url(#radiantOuterGlow)" : "url(#arcNeonGlow)"}
                     opacity={
                       !matchesTelemetry
                         ? 0.3

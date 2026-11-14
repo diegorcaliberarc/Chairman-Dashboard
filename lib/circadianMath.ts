@@ -186,8 +186,8 @@ export function describeAnnularWedge(
   midAngleRad: number;
 } {
   const rawSweep = getSweepAngleDeg(startMinutes, endMinutes);
-  // Cap at 300° so wedges remain fragmented sectors and never form a solid 360° donut
-  const effectiveSweep = Math.max(6, Math.min(300, rawSweep - gapDeg));
+  // Cap at 300° so wedges remain fragmented sectors; clamp to true minimal sweep so short events never balloon into adjacent slots
+  const effectiveSweep = Math.max(2.0, Math.min(300, rawSweep - gapDeg));
   const startDeg = minutesToAngleDeg(startMinutes) + gapDeg / 2;
   const endDeg = startDeg + effectiveSweep;
 
