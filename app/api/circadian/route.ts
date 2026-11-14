@@ -128,6 +128,56 @@ export async function GET(req: NextRequest) {
         .map((ev) => projectRecurringToDate(ev, dateStr));
     }
 
+    // Also fetch custom events from public.calendar_events so Google Grid & Solar Arc stay 100% unified
+    try {
+      const calRows: any = await prisma.$queryRawUnsafe(`
+        SELECT id, user_id, google_event_id, title, description,
+               start_time, end_time, all_day, category, color_hex, recurrence_rule
+        FROM public.calendar_events
+        ORDER BY start_time ASC
+      `);
+
+      if (Array.isArray(calRows) && calRows.length > 0) {
+        for (const row of calRows) {
+          if (filtered.some((f) => f.id === row.id || (row.google_event_id && f.telemetrySource === row.google_event_id))) {
+            continue;
+          }
+          const s = new Date(row.start_time);
+          const e = new Date(row.end_time);
+          if (dateStr) {
+            const dayStart = new Date(`${dateStr}T00:00:00`);
+            const dayEnd = new Date(`${dateStr}T23:59:59.999`);
+            if (!row.recurrence_rule && (s > dayEnd || e < dayStart)) {
+              continue;
+            }
+          }
+          (filtered as any[]).push({
+            id: row.id,
+            userId: row.user_id,
+            title: row.title,
+            description: row.description || "",
+            domain: (row.category === "work" ? "engineering" : row.category === "workout" ? "physical_training" : "family_pets") as any,
+            startTime: s.toISOString(),
+            endTime: e.toISOString(),
+            isRecurring: Boolean(row.recurrence_rule),
+            recurrenceRule: row.recurrence_rule,
+            mediaUrl: "/circadian/saas-build.jpg",
+            mediaType: "image" as any,
+            mediaAspectRatio: "16:9",
+            accentColor: row.color_hex || "#3B82F6",
+            quadrantSlot: null,
+            telemetrySource: row.google_event_id ? "google_calendar" : null,
+            checklists: [],
+            linkedTaskId: null,
+            createdAt: new Date(),
+            updatedAt: new Date(),
+          });
+        }
+      }
+    } catch (e) {
+      console.warn("Could not query public.calendar_events in circadian GET:", e);
+    }
+
     return NextResponse.json({ events: filtered });
   } catch (err: any) {
     console.error("Circadian GET fallback:", err?.message ?? err);

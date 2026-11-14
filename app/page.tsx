@@ -203,7 +203,7 @@ export default function ChairmanCockpitPage() {
       />
 
       {/* Main Spacious Eco Cockpit Content */}
-      <main className="flex-1 ml-0 lg:ml-[26rem] min-w-0 min-h-screen bg-transparent relative pt-14 lg:pt-0 transition-all duration-300">
+      <main className="flex-1 min-w-0 min-h-screen bg-transparent relative pt-14 lg:pt-0 transition-all duration-300">
         <div className="p-4 sm:p-6 lg:p-10 max-w-7xl mx-auto space-y-8">
           {/* ==================================================================
            * 1. TOP HEADER & GREETING (Inspired by Laid-back Eco Home Vibes)

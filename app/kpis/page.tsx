@@ -1997,7 +1997,7 @@ export default function KPIsPage() {
         setDeepWork={setDeepWork}
       />
 
-      <div className="flex-1 flex flex-col ml-0 lg:ml-[26rem] pt-14 lg:pt-0 min-w-0 transition-all duration-300">
+      <div className="flex-1 flex flex-col pt-14 lg:pt-0 min-w-0 transition-all duration-300">
         <main className="flex-1 overflow-y-auto overflow-x-hidden p-6 pt-6">
           <div className="max-w-[1480px] mx-auto space-y-6 pb-24">
             {/* ─── KPI Executive Scorecard Banner & View Switcher ────────────── */}

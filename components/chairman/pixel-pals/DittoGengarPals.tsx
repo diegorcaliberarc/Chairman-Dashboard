@@ -666,9 +666,9 @@ export function DittoGengarPals() {
   useEffect(() => {
     const initialTimeScenario = pickTimeOfDayScenario();
     try {
-      const raw = window.localStorage.getItem(STORAGE_KEY);
+      const raw = window.localStorage.getItem("gengar_ditto_pos") || window.localStorage.getItem(STORAGE_KEY);
       if (raw) {
-        const parsed = JSON.parse(raw) as Partial<PersistedPalsState>;
+        const parsed = JSON.parse(raw) as any;
         if (typeof parsed.minimized === "boolean") {
           setMinimized(parsed.minimized);
         }
@@ -679,7 +679,9 @@ export function DittoGengarPals() {
         ) {
           setDockPosition(parsed.dockPosition);
         }
-        if (parsed.customCoords && typeof parsed.customCoords.x === "number" && typeof parsed.customCoords.y === "number") {
+        if (parsed.x !== undefined && parsed.y !== undefined) {
+          setCustomCoords({ x: parsed.x, y: parsed.y });
+        } else if (parsed.customCoords && typeof parsed.customCoords.x === "number" && typeof parsed.customCoords.y === "number") {
           setCustomCoords(parsed.customCoords);
         }
         if (typeof parsed.bondClicks === "number" && parsed.bondClicks >= 0) {
@@ -719,6 +721,7 @@ export function DittoGengarPals() {
         customCoords,
       };
       window.localStorage.setItem(STORAGE_KEY, JSON.stringify(stateToSave));
+      window.localStorage.setItem("gengar_ditto_pos", JSON.stringify(customCoords));
       window.localStorage.setItem("chairman_companion_pos", JSON.stringify(customCoords));
     } catch {
       // Ignore storage quota errors
@@ -977,8 +980,9 @@ export function DittoGengarPals() {
     if (customCoords) {
       return {
         position: "fixed" as const,
-        left: `${customCoords.x}px`,
-        top: `${customCoords.y}px`,
+        top: 0,
+        left: 0,
+        transform: `translate3d(${customCoords.x}px, ${customCoords.y}px, 0)`,
         zIndex: 75,
       };
     }
@@ -986,7 +990,7 @@ export function DittoGengarPals() {
   }, [customCoords]);
 
   const activePositionClasses = customCoords
-    ? "fixed z-[75]"
+    ? "fixed top-0 left-0 z-[75]"
     : positionClasses;
 
   if (typeof window !== "undefined" && window.location.search.includes("embed=")) {
@@ -1005,7 +1009,7 @@ export function DittoGengarPals() {
         onPointerMove={handleDragPointerMove}
         onPointerUp={handleDragPointerUp}
         onPointerCancel={handleDragPointerUp}
-        className={`${activePositionClasses} pointer-events-none select-none transition-all duration-300`}
+        className={`${activePositionClasses} pointer-events-none select-none`}
       >
         <button
           type="button"
@@ -1040,7 +1044,7 @@ export function DittoGengarPals() {
   }
 
   /* ==========================================================================
-   * EXPANDED PIXEL-PALS TERRARIUM STAGE (~310px x 116px)
+   * EXPANDED PIXEL-PALS TERRARIUM STAGE (~315px x 126px)
    * ======================================================================== */
   const popoverOpensDown = dockPosition === "top-center" || (customCoords && customCoords.y < 200);
 
@@ -1048,7 +1052,7 @@ export function DittoGengarPals() {
     <div
       ref={containerRef}
       style={containerStyle}
-      className={`${activePositionClasses} pointer-events-none select-none transition-all duration-300`}
+      className={`${activePositionClasses} pointer-events-none select-none`}
       aria-label="His, Hers & Ours Pixel Pals Stage"
     >
       {/* Atmospheric Outer Sparkles / Floating Particles — pointer-events-none so clicks pass right through! */}
@@ -1163,79 +1167,49 @@ export function DittoGengarPals() {
           />
         )}
 
-        {/* Dedicated 24px Top Drag Handle Bar */}
+        {/* Unified 32px Top Header Bar: HIS & HERS • GENGAR & DITTO */}
         <div
           data-drag-handle="true"
           onPointerDown={handleDragPointerDown}
           onPointerMove={handleDragPointerMove}
           onPointerUp={handleDragPointerUp}
           onPointerCancel={handleDragPointerUp}
-          title="Drag handle to move anywhere on screen"
-          className="relative z-30 h-6 flex items-center justify-between px-2.5 bg-black/40 border-b border-white/5 cursor-grab active:cursor-grabbing select-none"
+          title="Click and drag to move companion anywhere on screen"
+          className="relative z-30 h-8 flex items-center justify-between px-2.5 bg-black/60 border-b border-white/10 cursor-grab active:cursor-grabbing select-none"
         >
-          <div className="flex items-center gap-1.5 pointer-events-none">
-            <GripVertical className="w-3.5 h-3.5 text-purple-400" />
-            <span className="text-[9px] font-mono tracking-widest uppercase text-zinc-400">
-              Drag Companion
+          {/* Left Title + Drag Handle */}
+          <div className="flex items-center gap-1.5 pointer-events-none min-w-0">
+            <GripVertical className="w-3.5 h-3.5 text-purple-400 shrink-0" />
+            <span className="text-[9.5px] font-mono font-bold tracking-wider bg-gradient-to-r from-purple-300 via-pink-200 to-pink-300 bg-clip-text text-transparent truncate">
+              HIS & HERS • GENGAR & DITTO
             </span>
           </div>
 
-          <div className="flex items-center gap-1" onPointerDown={(e) => e.stopPropagation()}>
+          {/* Right Action Controls */}
+          <div className="flex items-center gap-1 shrink-0" onPointerDown={(e) => e.stopPropagation()}>
+            {/* Scenario Picker Pill */}
             <button
               type="button"
-              onClick={handleCyclePosition}
-              title={customCoords ? "Snap back to dock" : `Cycle Stage Position (Current: ${positionLabel})`}
-              className={`p-0.5 rounded transition-colors ${
-                customCoords
-                  ? "text-pink-300 bg-purple-500/20 hover:bg-purple-500/30"
-                  : "text-slate-400 hover:text-white"
-              }`}
-            >
-              <Move className="w-3 h-3" />
-            </button>
-
-            <button
-              type="button"
-              onClick={() => {
-                setPickerOpen(false);
-                setMinimized(true);
+              onClick={(e) => {
+                e.stopPropagation();
+                setPickerOpen((o) => !o);
               }}
-              title="Minimize to Mini-Heart Pill"
-              className="p-0.5 rounded text-slate-400 hover:text-white transition-colors"
+              title="Choose Scenario or Toggle Auto Surprise"
+              className="flex items-center gap-1 px-1.5 py-0.5 rounded-full bg-white/[0.06] hover:bg-white/[0.12] border border-white/10 text-[9px] font-mono text-zinc-300 transition-colors"
             >
-              <Minimize2 className="w-3 h-3" />
+              <span className="w-1.5 h-1.5 rounded-full bg-pink-400 shadow-[0_0_6px_#f472b6]" />
+              <span className="truncate max-w-[50px]">{currentMeta.shortTag}</span>
+              {pickerOpen ? (
+                <ChevronDown className="w-2.5 h-2.5 text-slate-300" />
+              ) : (
+                <ChevronUp className="w-2.5 h-2.5 text-slate-300" />
+              )}
             </button>
-          </div>
-        </div>
 
-        {/* Top Header Bar: HIS • HERS • OURS + Sync Bond + Controls */}
-        <div
-          className="relative z-20 flex items-center justify-between px-2.5 pt-1 select-none"
-        >
-          {/* HIS • HERS • OURS Connection Pill */}
-          <button
-            type="button"
-            onClick={() => setPickerOpen((o) => !o)}
-            title="Choose Scenario or Toggle Auto Surprise"
-            className="flex items-center gap-1.5 px-2 py-0.5 rounded-full bg-white/[0.06] hover:bg-white/[0.12] border border-white/10 transition-colors cursor-pointer"
-          >
-            <span className="w-1.5 h-1.5 rounded-full bg-purple-500 shadow-[0_0_6px_#a855f7]" />
-            <span className="text-[9px] font-mono font-bold tracking-wider bg-gradient-to-r from-purple-300 via-pink-200 to-pink-300 bg-clip-text text-transparent">
-              HIS•HERS•OURS
-            </span>
-            <span className="w-1.5 h-1.5 rounded-full bg-pink-400 shadow-[0_0_6px_#f472b6]" />
-            {pickerOpen ? (
-              <ChevronDown className="w-2.5 h-2.5 text-slate-300" />
-            ) : (
-              <ChevronUp className="w-2.5 h-2.5 text-slate-300" />
-            )}
-          </button>
-
-          {/* Live Sync Bond Meter + Action Buttons */}
-          <div className="flex items-center gap-1" onPointerDown={(e) => e.stopPropagation()}>
+            {/* Live Sync Bond Meter */}
             <span
               title={`His & Hers Bond Sync (${bondClicks} pets)`}
-              className="flex items-center gap-1 px-1.5 py-0.5 rounded-full bg-pink-500/12 border border-pink-400/25 text-[9.5px] font-mono font-semibold text-pink-200"
+              className="flex items-center gap-0.5 px-1.5 py-0.5 rounded-full bg-pink-500/12 border border-pink-400/25 text-[9px] font-mono font-semibold text-pink-200"
             >
               <span>{bondPercent}%</span>
               <span className="text-pink-400">♥</span>
@@ -1244,31 +1218,27 @@ export function DittoGengarPals() {
             {/* Surprise Me! Trigger */}
             <button
               type="button"
-              onClick={handleSurpriseMe}
+              onClick={(e) => {
+                e.stopPropagation();
+                handleSurpriseMe();
+              }}
               title={
                 mode === "auto"
                   ? `Surprise Me! (Auto next in ${countdown}s)`
                   : "Trigger a Surprise Scenario!"
               }
-              className="flex items-center gap-0.5 px-1.5 py-0.5 rounded-md bg-amber-400/10 hover:bg-amber-400/20 border border-amber-300/20 text-[9px] font-mono text-amber-200 transition-colors"
+              className="p-1 rounded-md bg-amber-400/10 hover:bg-amber-400/20 border border-amber-300/20 text-amber-200 transition-colors"
             >
-              <Sparkles className="w-2.5 h-2.5 text-amber-300" />
-              <span>{mode === "auto" ? `${countdown}s` : "Play"}</span>
+              <Sparkles className="w-3 h-3 text-amber-300" />
             </button>
-
-            {/* Draggable Grip Handle */}
-            <div
-              onPointerDown={handleDragPointerDown}
-              title="Click and drag to move His & Hers Pals anywhere"
-              className="cursor-grab active:cursor-grabbing p-1 rounded-md text-purple-300 hover:text-white hover:bg-white/10 transition-colors flex items-center"
-            >
-              <GripVertical className="w-3.5 h-3.5" />
-            </div>
 
             {/* 1-Click Position Cycling Button / Dock Snap */}
             <button
               type="button"
-              onClick={handleCyclePosition}
+              onClick={(e) => {
+                e.stopPropagation();
+                handleCyclePosition();
+              }}
               title={customCoords ? "Snap back to dock" : `Cycle Stage Position (Current: ${positionLabel})`}
               className={`p-1 rounded-md transition-colors ${
                 customCoords
@@ -1282,7 +1252,8 @@ export function DittoGengarPals() {
             {/* Quick Minimize to Mini-Heart Pill */}
             <button
               type="button"
-              onClick={() => {
+              onClick={(e) => {
+                e.stopPropagation();
                 setPickerOpen(false);
                 setMinimized(true);
               }}

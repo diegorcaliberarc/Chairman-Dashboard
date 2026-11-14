@@ -554,8 +554,13 @@ export default function UnifiedMasterCalendarPage() {
     await fetch(`/api/calendar-events/${eventId}`, {
       method: "PATCH",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(patch),
+      body: JSON.stringify({
+        id: eventId,
+        title: patch.title,
+        colorHex: patch.color_hex,
+      }),
     });
+    await fetchCircadianEvents(selectedDate);
   };
 
   const handleFullSave = async (eventData: Partial<CalendarEventItem>) => {
@@ -577,16 +582,39 @@ export default function UnifiedMasterCalendarPage() {
       await fetch(`/api/calendar-events/${fullEditorEvent.id}`, {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(eventData),
+        body: JSON.stringify({
+          id: fullEditorEvent.id,
+          title: eventData.title,
+          description: eventData.description,
+          startTime: eventData.start_time,
+          endTime: eventData.end_time,
+          colorHex: eventData.color_hex,
+          category: eventData.category,
+        }),
       });
+      await fetchCircadianEvents(selectedDate);
     } else {
       const res = await fetch("/api/calendar-events", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(eventData),
+        body: JSON.stringify({
+          title: eventData.title,
+          description: eventData.description,
+          startTime: eventData.start_time,
+          endTime: eventData.end_time,
+          colorHex: eventData.color_hex,
+          category: eventData.category,
+        }),
       });
       const data = await res.json();
       if (data.event) {
+        if (calConnected) {
+          fetch("/api/calendar/google-sync", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ action: "push_event", event: eventData }),
+          }).catch(() => {});
+        }
         await fetchCircadianEvents(selectedDate);
       }
     }
@@ -594,14 +622,25 @@ export default function UnifiedMasterCalendarPage() {
   };
 
   const handleDeleteTraditionalEvent = async (id: string) => {
-    await handleDeleteEvent(id);
+    setEvents((prev) => prev.filter((e) => e.id !== id));
+    await fetch(`/api/calendar-events/${id}`, {
+      method: "DELETE",
+    });
+    await fetch(`/api/circadian?id=${encodeURIComponent(id)}`, {
+      method: "DELETE",
+    });
     await fetchCircadianEvents(selectedDate);
   };
 
   const handleTriggerSync = async () => {
     setIsSyncingGCal(true);
     try {
-      await fetch("/api/integrations/google-calendar/sync", { method: "POST" });
+      const res = await fetch("/api/calendar/google-sync", { method: "POST" });
+      const data = await res.json();
+      if (data.connected === false && !calConnected) {
+        signIn("google");
+        return;
+      }
       await fetchCircadianEvents(selectedDate);
     } catch (err) {
       console.error("GCal sync error:", err);
@@ -702,6 +741,84 @@ export default function UnifiedMasterCalendarPage() {
       year: "numeric",
     });
   }, [currentDateObj, googleViewMode]);
+
+  const renderOpsDeck = () => (
+    <CalendarOpsCommandDeck
+      selectedDate={selectedDate}
+      onSelectDate={(d) => setSelectedDate(d)}
+      events={events}
+      selectedEventId={selectedEventId}
+      onSelectEvent={setSelectedEventId}
+      pendingTasksCount={activeTasksCount + activeSubtasksCount}
+      habits={habits}
+      highlightSpans={highlightSpans}
+      shiftConfig={shiftConfig}
+      paySummary={paySummary}
+      appointments={appointments}
+      busyAction={busyOpsAction}
+      onAutoBatchTasks={async () => {
+        await postCalendarOps({ action: "auto_batch_tasks" });
+        await fetchCircadianEvents(selectedDate);
+      }}
+      onRandomizeColors={async () => {
+        const shuffled = [...CURATED_BLOCK_PALETTE].sort(() => Math.random() - 0.5);
+        setEvents((prev) =>
+          prev.map((ev, idx) => ({
+            ...ev,
+            accentColor: shuffled[idx % shuffled.length].hex,
+          }))
+        );
+        await postCalendarOps({ action: "randomize_colors" });
+      }}
+      onRecolorEvent={async (evId, hex) => {
+        setEvents((prev) =>
+          prev.map((ev) => (ev.id === evId ? { ...ev, accentColor: hex } : ev))
+        );
+        await postCalendarOps({ action: "recolor_event", eventId: evId, accentColor: hex });
+      }}
+      onLogHabit={handleLogHabit}
+      onCreateHabit={async (payload) => {
+        await postCalendarOps({ action: "create_habit", ...payload });
+      }}
+      onDeleteHabit={async (habitId) => {
+        setHabits((prev) => prev.filter((h) => h.id !== habitId));
+        await postCalendarOps({ action: "delete_habit", habitId });
+      }}
+      onCreateHighlightSpan={async (payload) => {
+        await postCalendarOps({ action: "create_highlight_span", ...payload });
+      }}
+      onToggleHighlightSpan={async (spanId, isActive) => {
+        setHighlightSpans((prev) =>
+          prev.map((s) => (s.id === spanId ? { ...s, isActive } : s))
+        );
+        await postCalendarOps({ action: "toggle_highlight_span", spanId, isActive });
+      }}
+      onDeleteHighlightSpan={async (spanId) => {
+        setHighlightSpans((prev) => prev.filter((s) => s.id !== spanId));
+        await postCalendarOps({ action: "delete_highlight_span", spanId });
+      }}
+      onUpdateShiftConfig={async (cfg) => {
+        await postCalendarOps({ action: "update_shift_config", ...cfg });
+      }}
+      onToggleTodayShift={async () => {
+        setBusyOpsAction("toggle_shift");
+        try {
+          await postCalendarOps({ action: "toggle_today_shift" });
+        } finally {
+          setBusyOpsAction(null);
+        }
+      }}
+      onCreateAppointment={async (payload) => {
+        await postCalendarOps({ action: "create_appointment", appointment: payload });
+      }}
+      onUpdateAppointment={async (id, patch) => {
+        await postCalendarOps({ action: "update_appointment", appointmentId: id, patch });
+      }}
+      onDeleteAppointment={async (id) => {
+        await postCalendarOps({ action: "delete_appointment", appointmentId: id });
+      }}
+    />
+  );
 
   return (
     <div className="flex h-screen w-screen overflow-hidden bg-[#090A0F] font-sans text-zinc-100 select-none">
@@ -936,14 +1053,15 @@ export default function UnifiedMasterCalendarPage() {
         </header>
 
         {/* WORKSPACE ENGINE BODY */}
-        <div className="flex-1 flex overflow-hidden">
+        <div className="flex-1 min-w-0 overflow-y-auto overflow-x-hidden">
           {engineMode === "solar" ? (
             /* ========================================================================= */
             /* 1. CIRCADIAN SOLAR ARC & TEMPORAL HORIZON ENGINE                          */
             /* ========================================================================= */
-            <div className="flex-1 flex flex-col xl:flex-row gap-5 p-5 overflow-y-auto">
-              {/* Center Celestial Stage */}
-              <div className="relative flex-1 flex flex-col items-center justify-center min-h-[580px] bg-[#0E111A] rounded-2xl border border-white/[0.06] p-4 shadow-2xl">
+            <div className="p-5 space-y-6">
+              <div className="flex flex-col xl:flex-row gap-5">
+                {/* Center Celestial Stage */}
+                <div className="relative flex-1 flex flex-col items-center justify-center min-h-[580px] bg-[#0E111A] rounded-2xl border border-white/[0.06] p-4 shadow-2xl">
                 {/* DAY Horizon (Solar Wheel OR 3D Geospatial Map) */}
                 {activeHorizon === "DAY" && dayMode === "SOLAR_WHEEL" && (
                   <CircadianDialStage
@@ -1217,92 +1335,28 @@ export default function UnifiedMasterCalendarPage() {
                     </div>
                   </div>
                 </div>
-
-                {/* Calendar Ops Command Deck */}
-                <CalendarOpsCommandDeck
-                  selectedDate={selectedDate}
-                  onSelectDate={(d) => setSelectedDate(d)}
-                  events={events}
-                  selectedEventId={selectedEventId}
-                  onSelectEvent={setSelectedEventId}
-                  pendingTasksCount={activeTasksCount + activeSubtasksCount}
-                  habits={habits}
-                  highlightSpans={highlightSpans}
-                  shiftConfig={shiftConfig}
-                  paySummary={paySummary}
-                  appointments={appointments}
-                  busyAction={busyOpsAction}
-                  onAutoBatchTasks={async () => {
-                    await postCalendarOps({ action: "auto_batch_tasks" });
-                    await fetchCircadianEvents(selectedDate);
-                  }}
-                  onRandomizeColors={async () => {
-                    const shuffled = [...CURATED_BLOCK_PALETTE].sort(() => Math.random() - 0.5);
-                    setEvents((prev) =>
-                      prev.map((ev, idx) => ({
-                        ...ev,
-                        accentColor: shuffled[idx % shuffled.length].hex,
-                      }))
-                    );
-                    await postCalendarOps({ action: "randomize_colors" });
-                  }}
-                  onRecolorEvent={async (evId, hex) => {
-                    setEvents((prev) =>
-                      prev.map((ev) => (ev.id === evId ? { ...ev, accentColor: hex } : ev))
-                    );
-                    await postCalendarOps({ action: "recolor_event", eventId: evId, accentColor: hex });
-                  }}
-                  onLogHabit={handleLogHabit}
-                  onCreateHabit={async (payload) => {
-                    await postCalendarOps({ action: "create_habit", ...payload });
-                  }}
-                  onDeleteHabit={async (habitId) => {
-                    setHabits((prev) => prev.filter((h) => h.id !== habitId));
-                    await postCalendarOps({ action: "delete_habit", habitId });
-                  }}
-                  onCreateHighlightSpan={async (payload) => {
-                    await postCalendarOps({ action: "create_highlight_span", ...payload });
-                  }}
-                  onToggleHighlightSpan={async (spanId, isActive) => {
-                    setHighlightSpans((prev) =>
-                      prev.map((s) => (s.id === spanId ? { ...s, isActive } : s))
-                    );
-                    await postCalendarOps({ action: "toggle_highlight_span", spanId, isActive });
-                  }}
-                  onDeleteHighlightSpan={async (spanId) => {
-                    setHighlightSpans((prev) => prev.filter((s) => s.id !== spanId));
-                    await postCalendarOps({ action: "delete_highlight_span", spanId });
-                  }}
-                  onUpdateShiftConfig={async (cfg) => {
-                    await postCalendarOps({ action: "update_shift_config", ...cfg });
-                  }}
-                  onToggleTodayShift={async () => {
-                    setBusyOpsAction("toggle_shift");
-                    try {
-                      await postCalendarOps({ action: "toggle_today_shift" });
-                    } finally {
-                      setBusyOpsAction(null);
-                    }
-                  }}
-                  onCreateAppointment={async (payload) => {
-                    await postCalendarOps({ action: "create_appointment", appointment: payload });
-                  }}
-                  onUpdateAppointment={async (id, patch) => {
-                    await postCalendarOps({ action: "update_appointment", appointmentId: id, patch });
-                  }}
-                  onDeleteAppointment={async (id) => {
-                    await postCalendarOps({ action: "delete_appointment", appointmentId: id });
-                  }}
-                />
               </aside>
             </div>
-          ) : (
-            /* ========================================================================= */
-            /* 2. GOOGLE CALENDAR 5-MODE ENGINE                                          */
-            /* ========================================================================= */
-            <div className="flex-1 flex overflow-hidden">
+
+            {/* Bottom Utility/Analytics Cards Deck (Full-width responsive CSS grid across ALL views) */}
+            <div className="w-full max-w-[1600px] mx-auto pb-8">
+              {renderOpsDeck()}
+            </div>
+          </div>
+        ) : (
+          /* ========================================================================= */
+          /* 2. GOOGLE CALENDAR 5-MODE ENGINE                                          */
+          /* ========================================================================= */
+          <div className="flex flex-col min-h-full">
+            <div className="flex-1 flex overflow-hidden min-h-[640px]">
               {/* Collapsible Mini-Month Drawer (256px) */}
-              {isMiniDrawerOpen && (
+              <div
+                className={`transition-all duration-300 ease-in-out shrink-0 ${
+                  isMiniDrawerOpen
+                    ? "w-[256px] min-w-[256px] opacity-100"
+                    : "w-0 min-w-0 overflow-hidden p-0 border-0 opacity-0 pointer-events-none"
+                }`}
+              >
                 <MiniMonthCalendar
                   currentDate={currentDateObj}
                   onSelectDate={(d) => setCurrentDateObj(d)}
@@ -1314,7 +1368,7 @@ export default function UnifiedMasterCalendarPage() {
                     }))
                   }
                 />
-              )}
+              </div>
 
               {/* 5-Mode Google Calendar Canvas */}
               <main className="flex-1 overflow-hidden p-4">
@@ -1389,7 +1443,13 @@ export default function UnifiedMasterCalendarPage() {
                 )}
               </main>
             </div>
-          )}
+
+            {/* Bottom Utility/Analytics Cards Deck */}
+            <div className="w-full max-w-[1600px] mx-auto px-6 pb-8">
+              {renderOpsDeck()}
+            </div>
+          </div>
+        )}
         </div>
       </div>
 

@@ -462,9 +462,9 @@ export function Sidebar({
         />
       )}
 
-      {/* Main Dual-Column Sidebar: Slide-over Drawer on Mobile, Fixed Rail on Desktop */}
+      {/* Main Dual-Column Sidebar: Slide-over Drawer on Mobile, Relative Flex Rail on Desktop */}
       <aside
-        className={`fixed left-0 top-0 h-screen flex flex-row liquid-glass-panel bg-white/95 dark:bg-[#07090e]/95 backdrop-blur-2xl border-r border-zinc-200/60 dark:border-white/[0.12] z-50 transition-transform duration-300 shadow-2xl ${
+        className={`fixed lg:relative left-0 top-0 h-screen shrink-0 flex flex-row liquid-glass-panel bg-white/95 dark:bg-[#07090e]/95 backdrop-blur-2xl border-r border-zinc-200/60 dark:border-white/[0.12] z-50 lg:z-30 transition-all duration-300 shadow-2xl ${
           mobileMenuOpen ? "translate-x-0" : "-translate-x-full lg:translate-x-0"
         }`}
       >

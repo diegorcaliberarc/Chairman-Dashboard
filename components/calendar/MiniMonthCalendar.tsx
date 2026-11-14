@@ -88,7 +88,7 @@ export function MiniMonthCalendar({
   const selectedDateStr = currentDate.toISOString().split("T")[0];
 
   return (
-    <div className="w-[256px] min-w-[256px] h-full bg-[#11131C] border-r border-[#1E222D] flex flex-col p-4 select-none overflow-y-auto space-y-6">
+    <div className="w-full h-full bg-[#11131C] border-r border-[#1E222D] flex flex-col p-4 select-none overflow-y-auto space-y-6">
       {/* Mini Month Navigator */}
       <div className="space-y-3">
         <div className="flex items-center justify-between">

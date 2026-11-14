@@ -273,7 +273,7 @@ export function CalendarOpsCommandDeck({
       {/* ── ROW 1: TASK BATCHING, COLOR RANDOMIZER/SWATCH STUDIO & LONG-PERIOD HIGHLIGHTS ── */}
       <div className="grid grid-cols-1 xl:grid-cols-12 gap-5">
         {/* Batching & Curated Color Studio (7 cols) */}
-        <div className="xl:col-span-7 rounded-2xl bg-[#12151e]/95 backdrop-blur-xl border border-white/[0.08] p-5 shadow-[0_18px_45px_rgba(0,0,0,0.55)] space-y-4">
+        <div className="xl:col-span-7 min-w-0 rounded-2xl bg-[#12151e]/95 backdrop-blur-xl border border-white/[0.08] p-5 shadow-[0_18px_45px_rgba(0,0,0,0.55)] space-y-4">
           <div className="flex flex-wrap items-center justify-between gap-3">
             <div>
               <div className="flex items-center gap-2">
@@ -408,7 +408,7 @@ export function CalendarOpsCommandDeck({
         </div>
 
         {/* Long-Period Highlight Spans Manager (5 cols) */}
-        <div className="xl:col-span-5 rounded-2xl bg-[#12151e]/95 backdrop-blur-xl border border-white/[0.08] p-5 shadow-[0_18px_45px_rgba(0,0,0,0.55)] flex flex-col justify-between gap-3">
+        <div className="xl:col-span-5 min-w-0 rounded-2xl bg-[#12151e]/95 backdrop-blur-xl border border-white/[0.08] p-5 shadow-[0_18px_45px_rgba(0,0,0,0.55)] flex flex-col justify-between gap-3">
           <div>
             <div className="flex items-center justify-between gap-2">
               <div className="flex items-center gap-2">
@@ -609,7 +609,7 @@ export function CalendarOpsCommandDeck({
       {/* ── ROW 2: FULL-CIRCLE 360° HABIT TRACKER RINGS + WORK SHIFT × PAY CALCULATOR ── */}
       <div className="grid grid-cols-1 xl:grid-cols-12 gap-5">
         {/* Full-Circle 360° Habit Tracker Rings (6 cols) */}
-        <div className="xl:col-span-6 rounded-2xl bg-[#12151e]/95 backdrop-blur-xl border border-white/[0.08] p-5 shadow-[0_18px_45px_rgba(0,0,0,0.55)] space-y-4">
+        <div className="xl:col-span-6 min-w-0 rounded-2xl bg-[#12151e]/95 backdrop-blur-xl border border-white/[0.08] p-5 shadow-[0_18px_45px_rgba(0,0,0,0.55)] space-y-4">
           <div className="flex flex-wrap items-center justify-between gap-2">
             <div>
               <div className="flex items-center gap-2">
@@ -859,7 +859,7 @@ export function CalendarOpsCommandDeck({
         </div>
 
         {/* Work Days & Shift × Pay Calculator (6 cols) */}
-        <div className="xl:col-span-6 rounded-2xl bg-[#12151e]/95 backdrop-blur-xl border border-white/[0.08] p-5 shadow-[0_18px_45px_rgba(0,0,0,0.55)] space-y-4">
+        <div className="xl:col-span-6 min-w-0 rounded-2xl bg-[#12151e]/95 backdrop-blur-xl border border-white/[0.08] p-5 shadow-[0_18px_45px_rgba(0,0,0,0.55)] space-y-4">
           <div className="flex flex-wrap items-center justify-between gap-2">
             <div>
               <div className="flex items-center gap-2">
@@ -1096,7 +1096,7 @@ export function CalendarOpsCommandDeck({
       </div>
 
       {/* ── ROW 3: FULL-YEAR APPOINTMENTS ENGINE (12-MONTH MATRIX + FINANCIAL TELEMETRY + ROMAN/BULLET SUBTASKS) ── */}
-      <div className="rounded-2xl bg-[#12151e]/95 backdrop-blur-xl border border-white/[0.08] p-5 shadow-[0_18px_45px_rgba(0,0,0,0.6)] space-y-5">
+      <div className="min-w-0 rounded-2xl bg-[#12151e]/95 backdrop-blur-xl border border-white/[0.08] p-5 shadow-[0_18px_45px_rgba(0,0,0,0.6)] space-y-5">
         <div className="flex flex-wrap items-center justify-between gap-4">
           <div>
             <div className="flex items-center gap-2">
