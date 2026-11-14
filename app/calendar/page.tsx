@@ -1097,10 +1097,10 @@ export default function UnifiedMasterCalendarPage() {
             /* ========================================================================= */
             /* 1. CIRCADIAN SOLAR ARC & TEMPORAL HORIZON ENGINE                          */
             /* ========================================================================= */
-            <div className="p-5 space-y-6">
-              <div className="flex flex-col xl:flex-row gap-5">
+            <div className="p-4 pt-2 space-y-4">
+              <div className="flex flex-col xl:flex-row gap-4 items-stretch">
                 {/* Center Celestial Stage */}
-                <div className="relative flex-1 flex flex-col items-center justify-center min-h-[580px] bg-[#0E111A] rounded-2xl border border-white/[0.06] p-4 shadow-2xl">
+                <div className="relative flex-1 min-w-0 flex flex-col items-center justify-center bg-[#0E111A] rounded-2xl border border-white/[0.06] p-2 xl:p-3 shadow-2xl overflow-hidden">
                 {/* DAY Horizon (Solar Wheel OR 3D Geospatial Map) */}
                 {activeHorizon === "DAY" && dayMode === "SOLAR_WHEEL" && (
                   <CircadianDialStage
