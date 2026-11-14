@@ -132,12 +132,12 @@ export function CircadianDialStage({
   const CY = 500;
 
   const scaleFactor = viewMode === "quadrants" ? 0.74 : 1;
-  const R_SKY = 172 * scaleFactor;
-  const R_TIMELAPSE_INNER = 172 * scaleFactor;
-  const R_TIMELAPSE_OUTER = 188 * scaleFactor;
-  const R_SOLAR_ARC = 122 * scaleFactor;
-  const R_WEDGE_INNER = 198 * scaleFactor;
-  const R_WEDGE_OUTER = 314 * scaleFactor;
+  const R_SKY = 180 * scaleFactor;
+  const R_TIMELAPSE_INNER = 180 * scaleFactor;
+  const R_TIMELAPSE_OUTER = 196 * scaleFactor;
+  const R_SOLAR_ARC = 126 * scaleFactor;
+  const R_WEDGE_INNER = 208 * scaleFactor;
+  const R_WEDGE_OUTER = 322 * scaleFactor;
 
   const activeId = hoveredEventId ?? selectedEventId;
 
@@ -154,25 +154,6 @@ export function CircadianDialStage({
     el.addEventListener("wheel", onWheel, { passive: false });
     return () => el.removeEventListener("wheel", onWheel);
   }, []);
-
-  // 144-step 12-Hour Day-to-Night Time-Lapse Wheel Ring
-  const timelapseWheelSegments = useMemo(
-    () =>
-      buildTimelapseWheelSegments(
-        CX,
-        CY,
-        R_TIMELAPSE_INNER,
-        R_TIMELAPSE_OUTER,
-        144
-      ),
-    [CX, CY, R_TIMELAPSE_INNER, R_TIMELAPSE_OUTER]
-  );
-
-  // Multi-stop time-lapse progress arc on 12-hour dial
-  const solarProgressArcs = useMemo(
-    () => buildTimelapseProgressArcs(CX, CY, R_SOLAR_ARC, currentMinutes, 96),
-    [CX, CY, R_SOLAR_ARC, currentMinutes]
-  );
 
   // Precompute wedge geometries + strictly deduplicate 1-to-1 + non-colliding labels
   const wedgeItems = useMemo(() => {
@@ -202,68 +183,16 @@ export function CircadianDialStage({
       return true;
     });
 
-    // 3. Build geometry items with 24-hour military clock math and concentric sub-lane splitting
-    // Detect concurrent overlaps OR close adjacent routines (< 45 min delta, e.g. Astro & Nova vs ClickUp)
-    const sorted = [...uniqueTimedEvents].sort((a, b) => {
-      const sA = dateToMinutes(new Date(a.startTime));
-      const sB = dateToMinutes(new Date(b.startTime));
-      return sA - sB;
-    });
-
-    // Mark items that collide or sit back-to-back within 45 mins
-    const collisionIds = new Set<string>();
-    for (let i = 0; i < sorted.length; i++) {
-      for (let j = i + 1; j < sorted.length; j++) {
-        const sA = dateToMinutes(new Date(sorted[i].startTime));
-        const eA = dateToMinutes(new Date(sorted[i].endTime));
-        const sB = dateToMinutes(new Date(sorted[j].startTime));
-        const eB = dateToMinutes(new Date(sorted[j].endTime));
-        if (Math.max(sA, sB) < Math.min(eA, eB) || Math.abs(sB - sA) < 45) {
-          collisionIds.add(sorted[i].id);
-          collisionIds.add(sorted[j].id);
-        }
-      }
-    }
-
-    const trackAssignment = new Map<string, number>();
-    const activeIntervals: Array<{ endMin: number; track: number }> = [];
-
-    for (const ev of sorted) {
-      const s = dateToMinutes(new Date(ev.startTime));
-      const e = dateToMinutes(new Date(ev.endTime));
-      const stillActive = activeIntervals.filter((it) => it.endMin > s || Math.abs(s - (it.endMin - 45)) < 30);
-      const usedTracks = new Set(stillActive.map((it) => it.track));
-      let track = 0;
-      while (usedTracks.has(track)) track++;
-      trackAssignment.set(ev.id, track);
-      stillActive.push({ endMin: e, track });
-      activeIntervals.length = 0;
-      activeIntervals.push(...stillActive);
-    }
-
+    // 3. Build geometry items with 24-hour military clock math (Full-Thickness Annular Cards)
     const raw = uniqueTimedEvents.map((ev) => {
       const startMin = dateToMinutes(new Date(ev.startTime));
       const endMin = dateToMinutes(new Date(ev.endTime));
       const durMin = getDurationMinutes(startMin, endMin);
       const midMin = (startMin + durMin / 2) % 1440;
 
-      const track = trackAssignment.get(ev.id) ?? 0;
-      const hasConcurrentOverlap = collisionIds.has(ev.id);
-
-      let rInner = R_WEDGE_INNER;
-      let rOuter = R_WEDGE_OUTER;
-      if (hasConcurrentOverlap) {
-        const midR = (R_WEDGE_INNER + R_WEDGE_OUTER) / 2;
-        if (track % 2 === 0) {
-          // Outer concentric lane
-          rInner = midR + 3 * scaleFactor;
-          rOuter = R_WEDGE_OUTER;
-        } else {
-          // Inner concentric lane
-          rInner = R_WEDGE_INNER;
-          rOuter = midR - 3 * scaleFactor;
-        }
-      }
+      // FULL THICKNESS WEDGES: Match reference mockup exactly (no splitting in half!)
+      const rInner = R_WEDGE_INNER;
+      const rOuter = R_WEDGE_OUTER;
 
       const wedge = describeAnnularWedge(
         CX,
@@ -272,7 +201,7 @@ export function CircadianDialStage({
         rOuter,
         startMin,
         endMin,
-        2.5
+        1.5
       );
 
       const visual = resolveEventVisual(ev.title, ev.domain);
@@ -287,7 +216,6 @@ export function CircadianDialStage({
         endMin,
         durMin,
         midMin,
-        track,
         timelapseColor: getTimelapseColorAtMinutes(midMin),
         wedge,
         midAngleDeg: wedge.midAngleDeg,
@@ -308,9 +236,6 @@ export function CircadianDialStage({
         if (angDiff < 18) {
           staggerLevel = (idx % 3);
         }
-      }
-      if (item.track > 0) {
-        staggerLevel = 1;
       }
       const radialOffset = staggerLevel * 32 * scaleFactor;
       const anchorPt = polarToCartesian(
@@ -781,17 +706,8 @@ export function CircadianDialStage({
             <circle cx={CX} cy={CY + 56 * scaleFactor} r={R_SKY * 0.85} fill="#312e81" />
           </g>
 
-          {/* Soft Ambient 24-Hour Time-Lapse Ring Halo */}
-          <g opacity="0.24" filter="url(#timelapseHaloBlur)" className="pointer-events-none">
-            {timelapseWheelSegments
-              .filter((_, i) => i % 2 === 0)
-              .map((seg, idx) => (
-                <path key={`halo-${idx}`} d={seg.d} fill={seg.color} />
-              ))}
-          </g>
-
           {/* ========================================================================= */}
-          {/* 2. LUMINOUS 24-HOUR DAY-TO-NIGHT SKY & ILLUMINATED CITYSCAPE SPHERE       */}
+          {/* 2. AUTHENTIC REFERENCE DAY-TO-NIGHT DIAL SPHERE                           */}
           {/* ========================================================================= */}
           <g
             clipPath="url(#skySphereCircleClip)"
@@ -801,328 +717,43 @@ export function CircadianDialStage({
               updateScrubFromPointer(e.clientX, e.clientY);
             }}
           >
-            {/* Base Midnight Sky */}
+            {/* Base Dark Midnight Rim */}
             <circle cx={CX} cy={CY} r={R_SKY} fill="#050814" />
 
-            {/* Natural Day-to-Night Sky Timelapse Image */}
+            {/* Authentic Reference Dial from Mockup (Sky, Sunset, Dawn, Night City Lights) */}
             <image
-              href="/circadian/sky-timelapse.jpg"
-              x={CX - skyImgSize / 2}
-              y={CY - skyImgSize / 2}
-              width={skyImgSize}
-              height={skyImgSize}
-              preserveAspectRatio="xMidYMid slice"
-              opacity="0.88"
+              href="/circadian/reference_dial_hi_res.png"
+              x={CX - R_SKY}
+              y={CY - R_SKY}
+              width={R_SKY * 2}
+              height={R_SKY * 2}
+              preserveAspectRatio="xMidYMid meet"
             />
 
-            {/* Top Luminous Daylight Azure Glow (12:00) */}
-            <radialGradient id="topDaylightGlow" cx="50%" cy="16%" r="50%">
-              <stop offset="0%" stopColor="#38bdf8" stopOpacity="0.55" />
-              <stop offset="60%" stopColor="#0284c7" stopOpacity="0.18" />
-              <stop offset="100%" stopColor="#050814" stopOpacity="0" />
-            </radialGradient>
-            <circle cx={CX} cy={CY} r={R_SKY} fill="url(#topDaylightGlow)" />
-
-            {/* Left Dawn Sunrise Warm Amber Glow (06:00) */}
-            <radialGradient id="leftSunriseGlow" cx="16%" cy="50%" r="42%">
-              <stop offset="0%" stopColor="#f59e0b" stopOpacity="0.55" />
-              <stop offset="50%" stopColor="#ea580c" stopOpacity="0.22" />
-              <stop offset="100%" stopColor="#050814" stopOpacity="0" />
-            </radialGradient>
-            <circle cx={CX} cy={CY} r={R_SKY} fill="url(#leftSunriseGlow)" />
-
-            {/* Right Sunset Fiery Dusk Glow (18:00) */}
-            <radialGradient id="rightSunsetGlow" cx="84%" cy="50%" r="42%">
-              <stop offset="0%" stopColor="#ea580c" stopOpacity="0.55" />
-              <stop offset="50%" stopColor="#9333ea" stopOpacity="0.22" />
-              <stop offset="100%" stopColor="#050814" stopOpacity="0" />
-            </radialGradient>
-            <circle cx={CX} cy={CY} r={R_SKY} fill="url(#rightSunsetGlow)" />
-
-            {/* Bottom Starry Night Sky & Natural Mountain Ridge Silhouette with Valley City Lights (00:00 / 24:00) */}
-            <g id="bottom-cityscape" opacity="0.96">
-              {/* Star Constellation Points in Night Sky */}
-              <circle cx={CX - 85 * scaleFactor} cy={CY + 84 * scaleFactor} r={1.2} fill="#ffffff" opacity="0.85" />
-              <circle cx={CX - 45 * scaleFactor} cy={CY + 100 * scaleFactor} r={1.0} fill="#ffffff" opacity="0.7" />
-              <circle cx={CX + 25 * scaleFactor} cy={CY + 92 * scaleFactor} r={1.4} fill="#ffffff" opacity="0.9" />
-              <circle cx={CX + 75 * scaleFactor} cy={CY + 82 * scaleFactor} r={1.1} fill="#ffffff" opacity="0.8" />
-              <circle cx={CX - 120 * scaleFactor} cy={CY + 64 * scaleFactor} r={0.9} fill="#ffffff" opacity="0.6" />
-              <circle cx={CX + 115 * scaleFactor} cy={CY + 58 * scaleFactor} r={1.2} fill="#ffffff" opacity="0.7" />
-
-              {/* Valley Horizon Atmospheric Glow Gradient */}
-              <linearGradient id="valleyGlowGrad" x1="0" y1="0" x2="0" y2="1">
-                <stop offset="0%" stopColor="#f59e0b" stopOpacity="0" />
-                <stop offset="50%" stopColor="#f59e0b" stopOpacity="0.18" />
-                <stop offset="85%" stopColor="#eab308" stopOpacity="0.32" />
-                <stop offset="100%" stopColor="#fbbf24" stopOpacity="0.45" />
-              </linearGradient>
-              <rect
-                x={CX - R_SKY}
-                y={CY + 68 * scaleFactor}
-                width={R_SKY * 2}
-                height={R_SKY - 68 * scaleFactor}
-                fill="url(#valleyGlowGrad)"
-              />
-
-              {/* Natural Distant Mountain Ridge Silhouette */}
-              <path
-                d={`M ${CX - R_SKY} ${CY + R_SKY} 
-                    L ${CX - R_SKY} ${CY + 88 * scaleFactor} 
-                    Q ${CX - 110 * scaleFactor} ${CY + 70 * scaleFactor}, ${CX - 75 * scaleFactor} ${CY + 80 * scaleFactor} 
-                    T ${CX - 25 * scaleFactor} ${CY + 74 * scaleFactor} 
-                    T ${CX + 20 * scaleFactor} ${CY + 68 * scaleFactor} 
-                    T ${CX + 75 * scaleFactor} ${CY + 78 * scaleFactor} 
-                    T ${CX + 120 * scaleFactor} ${CY + 72 * scaleFactor} 
-                    L ${CX + R_SKY} ${CY + 86 * scaleFactor} 
-                    L ${CX + R_SKY} ${CY + R_SKY} Z`}
-                fill="#0a0f1d"
-                opacity="0.9"
-              />
-
-              {/* Foreground Mountain Foothills Silhouette */}
-              <path
-                d={`M ${CX - R_SKY} ${CY + R_SKY} 
-                    L ${CX - R_SKY} ${CY + 104 * scaleFactor} 
-                    Q ${CX - 85 * scaleFactor} ${CY + 92 * scaleFactor}, ${CX - 50 * scaleFactor} ${CY + 98 * scaleFactor} 
-                    T ${CX} ${CY + 90 * scaleFactor} 
-                    T ${CX + 55 * scaleFactor} ${CY + 96 * scaleFactor} 
-                    T ${CX + 110 * scaleFactor} ${CY + 92 * scaleFactor} 
-                    L ${CX + R_SKY} ${CY + 106 * scaleFactor} 
-                    L ${CX + R_SKY} ${CY + R_SKY} Z`}
-                fill="#02040a"
-                opacity="0.98"
-              />
-
-              {/* Sparkling Warm City Lights Array Across the Valley Horizon */}
-              <g id="valley-city-lights" filter="url(#arcNeonGlow)">
-                {/* Cluster Left */}
-                <circle cx={CX - 105 * scaleFactor} cy={CY + 108 * scaleFactor} r={1.1} fill="#fbbf24" opacity="0.95" />
-                <circle cx={CX - 96 * scaleFactor} cy={CY + 112 * scaleFactor} r={0.9} fill="#ffffff" opacity="0.85" />
-                <circle cx={CX - 88 * scaleFactor} cy={CY + 106 * scaleFactor} r={1.3} fill="#f59e0b" opacity="0.9" />
-                <circle cx={CX - 78 * scaleFactor} cy={CY + 114 * scaleFactor} r={1.0} fill="#fef08a" opacity="0.95" />
-                <circle cx={CX - 70 * scaleFactor} cy={CY + 109 * scaleFactor} r={1.2} fill="#ea580c" opacity="0.8" />
-                <circle cx={CX - 62 * scaleFactor} cy={CY + 115 * scaleFactor} r={0.8} fill="#ffffff" opacity="0.85" />
-
-                {/* Cluster Center Valley */}
-                <circle cx={CX - 48 * scaleFactor} cy={CY + 111 * scaleFactor} r={1.2} fill="#f59e0b" opacity="0.9" />
-                <circle cx={CX - 38 * scaleFactor} cy={CY + 116 * scaleFactor} r={1.0} fill="#fde047" opacity="0.95" />
-                <circle cx={CX - 28 * scaleFactor} cy={CY + 110 * scaleFactor} r={1.4} fill="#ffffff" opacity="0.95" />
-                <circle cx={CX - 18 * scaleFactor} cy={CY + 118 * scaleFactor} r={0.9} fill="#fbbf24" opacity="0.85" />
-                <circle cx={CX - 8 * scaleFactor} cy={CY + 112 * scaleFactor} r={1.3} fill="#f59e0b" opacity="0.9" />
-                <circle cx={CX} cy={CY + 120 * scaleFactor} r={1.1} fill="#fef08a" opacity="0.95" />
-                <circle cx={CX + 10 * scaleFactor} cy={CY + 113 * scaleFactor} r={1.2} fill="#ffffff" opacity="0.9" />
-                <circle cx={CX + 22 * scaleFactor} cy={CY + 118 * scaleFactor} r={0.9} fill="#f59e0b" opacity="0.85" />
-                <circle cx={CX + 32 * scaleFactor} cy={CY + 111 * scaleFactor} r={1.3} fill="#fde047" opacity="0.95" />
-                <circle cx={CX + 44 * scaleFactor} cy={CY + 117 * scaleFactor} r={1.0} fill="#ffffff" opacity="0.9" />
-
-                {/* Cluster Right */}
-                <circle cx={CX + 58 * scaleFactor} cy={CY + 112 * scaleFactor} r={1.2} fill="#fbbf24" opacity="0.9" />
-                <circle cx={CX + 68 * scaleFactor} cy={CY + 118 * scaleFactor} r={0.9} fill="#ea580c" opacity="0.85" />
-                <circle cx={CX + 78 * scaleFactor} cy={CY + 110 * scaleFactor} r={1.4} fill="#fef08a" opacity="0.95" />
-                <circle cx={CX + 88 * scaleFactor} cy={CY + 115 * scaleFactor} r={1.1} fill="#ffffff" opacity="0.9" />
-                <circle cx={CX + 98 * scaleFactor} cy={CY + 109 * scaleFactor} r={1.3} fill="#f59e0b" opacity="0.9" />
-                <circle cx={CX + 108 * scaleFactor} cy={CY + 114 * scaleFactor} r={0.9} fill="#fde047" opacity="0.85" />
-              </g>
-            </g>
-
-            {/* Seamless Atmospheric Depth Overlay */}
-            <circle cx={CX} cy={CY} r={R_SKY} fill="url(#skyAtmosphereDepth)" />
-          </g>
-
-          {/* ========================================================================= */}
-          {/* 3. 360° DAY-TO-NIGHT TIME-LAPSE SPECTRUM WHEEL BAND                       */}
-          {/* ========================================================================= */}
-          <g
-            className="cursor-crosshair"
-            onPointerDown={(e) => {
-              setIsDraggingTime(true);
-              updateScrubFromPointer(e.clientX, e.clientY);
-            }}
-          >
-            {timelapseWheelSegments.map((seg, idx) => (
-              <path key={`tl-${idx}`} d={seg.d} fill={seg.color} opacity="0.88" />
-            ))}
+            {/* Crisp Outer Rim Border */}
             <circle
               cx={CX}
               cy={CY}
-              r={R_TIMELAPSE_INNER}
+              r={R_SKY}
               fill="none"
-              stroke="rgba(255,255,255,0.22)"
-              strokeWidth="1"
-            />
-            <circle
-              cx={CX}
-              cy={CY}
-              r={R_TIMELAPSE_OUTER}
-              fill="none"
-              stroke="rgba(255,255,255,0.28)"
+              stroke="rgba(255, 255, 255, 0.22)"
               strokeWidth="1.2"
             />
           </g>
 
           {/* ========================================================================= */}
-          {/* 4. 24-HOUR MILITARY CLOCK CARDINAL MARKERS (00:00 BOTTOM -> 12:00 TOP)    */}
+          {/* 3. INTERACTIVE LIVE TIME INDICATOR DOT                                     */}
           {/* ========================================================================= */}
-          <g id="dial-clock-cardinal-markers" className="pointer-events-none select-none font-mono">
-            {/* Top: 12:00 (High Noon Solar Apex) */}
-            <text
-              x={CX}
-              y={CY - R_SKY + 22 * scaleFactor}
-              textAnchor="middle"
-              fill="#ffffff"
-              stroke="rgba(8, 11, 20, 0.92)"
-              strokeWidth="3.2"
-              paintOrder="stroke"
-              fontSize={13 * scaleFactor}
-              fontWeight={900}
-              letterSpacing="0.04em"
-            >
-              12:00
-            </text>
-
-            {/* Left: 06:00 (Western Sunrise Dawn) */}
-            <text
-              x={CX - R_SKY + 28 * scaleFactor}
-              y={CY + 4.5 * scaleFactor}
-              textAnchor="middle"
-              fill="#fef3c7"
-              stroke="rgba(8, 11, 20, 0.92)"
-              strokeWidth="3.2"
-              paintOrder="stroke"
-              fontSize={13 * scaleFactor}
-              fontWeight={900}
-              letterSpacing="0.04em"
-            >
-              06:00
-            </text>
-
-            {/* Right: 18:00 (Sunset Dusk) */}
-            <text
-              x={CX + R_SKY - 28 * scaleFactor}
-              y={CY + 4.5 * scaleFactor}
-              textAnchor="middle"
-              fill="#fef3c7"
-              stroke="rgba(8, 11, 20, 0.92)"
-              strokeWidth="3.2"
-              paintOrder="stroke"
-              fontSize={13 * scaleFactor}
-              fontWeight={900}
-              letterSpacing="0.04em"
-            >
-              18:00
-            </text>
-
-            {/* Bottom: 00:00 / 24:00 (Midnight Nadir) */}
-            <text
-              x={CX}
-              y={CY + R_SKY - 12 * scaleFactor}
-              textAnchor="middle"
-              fill="#cbd5e1"
-              stroke="rgba(8, 11, 20, 0.95)"
-              strokeWidth="3.2"
-              paintOrder="stroke"
-              fontSize={11.5 * scaleFactor}
-              fontWeight={800}
-              letterSpacing="0.04em"
-            >
-              00:00 / 24:00
-            </text>
-
-            {/* 24-Hour Precision Hour Ticks (0 through 23) around Rim */}
-            {Array.from({ length: 24 }, (_, hour) => {
-              const deg = (hour / 24) * 360 + 90;
-              const rad = (deg * Math.PI) / 180;
-              const isCardinal = hour === 0 || hour === 6 || hour === 12 || hour === 18;
-              const isSubCardinal = hour === 3 || hour === 9 || hour === 15 || hour === 21;
-              const tickOuter = R_TIMELAPSE_OUTER + 2 * scaleFactor;
-              const tickInner = isCardinal
-                ? R_TIMELAPSE_INNER - 8 * scaleFactor
-                : isSubCardinal
-                ? R_TIMELAPSE_INNER - 4 * scaleFactor
-                : R_TIMELAPSE_INNER;
-              const p1 = polarToCartesian(CX, CY, tickInner, rad);
-              const p2 = polarToCartesian(CX, CY, tickOuter, rad);
-
-              return (
-                <line
-                  key={`hour-tick-${hour}`}
-                  x1={p1.x}
-                  y1={p1.y}
-                  x2={p2.x}
-                  y2={p2.y}
-                  stroke={isCardinal ? "#ffffff" : isSubCardinal ? "rgba(255, 255, 255, 0.65)" : "rgba(255, 255, 255, 0.3)"}
-                  strokeWidth={isCardinal ? 2.4 : isSubCardinal ? 1.6 : 1.0}
-                  strokeLinecap="round"
-                />
-              );
-            })}
-          </g>
-
-          {/* ========================================================================= */}
-          {/* 5. CLEAN CENTRAL DIGITAL CLOCK READOUT & LIVE TIME INDICATOR              */}
-          {/* ========================================================================= */}
-          <g id="center-digital-clock" className="pointer-events-none select-none">
-            {/* Sleek Frosted Dark Glass Center Aperture */}
+          <g id="live-time-indicator" className="pointer-events-none select-none">
+            {/* Subtle Glowing Indicator along Golden Inner Track */}
             <circle
-              cx={CX}
-              cy={CY}
-              r={72 * scaleFactor}
-              fill="rgba(8, 12, 22, 0.85)"
-              stroke="rgba(255, 255, 255, 0.14)"
-              strokeWidth="1.2"
-              filter="url(#dialAtmosphereGlow)"
-            />
-            <circle
-              cx={CX}
-              cy={CY}
-              r={64 * scaleFactor}
-              fill="none"
-              stroke="rgba(255, 255, 255, 0.06)"
-              strokeWidth="1"
-            />
-            {/* Crisp 24-Hour Digital Clock Display (e.g. "23:18") */}
-            <text
-              x={CX}
-              y={CY + 8 * scaleFactor}
-              textAnchor="middle"
-              fill="#ffffff"
-              fontSize={28 * scaleFactor}
-              fontWeight={800}
-              letterSpacing="-0.02em"
-              style={{ fontVariantNumeric: "tabular-nums" }}
-            >
-              {minutesToMilitary(currentMinutes)}
-            </text>
-            <text
-              x={CX}
-              y={CY + 26 * scaleFactor}
-              textAnchor="middle"
-              fill="rgba(148, 163, 184, 0.85)"
-              fontSize={8.5 * scaleFactor}
-              fontWeight={700}
-              letterSpacing="0.14em"
-            >
-              24H SOLAR ARC
-            </text>
-
-            {/* Subtle Live Time Radial Needle at currentMinutes */}
-            <line
-              x1={polarToCartesian(CX, CY, R_TIMELAPSE_INNER - 2 * scaleFactor, minutesToAngleRad(currentMinutes)).x}
-              y1={polarToCartesian(CX, CY, R_TIMELAPSE_INNER - 2 * scaleFactor, minutesToAngleRad(currentMinutes)).y}
-              x2={polarToCartesian(CX, CY, R_TIMELAPSE_OUTER + 4 * scaleFactor, minutesToAngleRad(currentMinutes)).x}
-              y2={polarToCartesian(CX, CY, R_TIMELAPSE_OUTER + 4 * scaleFactor, minutesToAngleRad(currentMinutes)).y}
-              stroke="#f59e0b"
-              strokeWidth={2.4}
-              strokeLinecap="round"
-              filter="url(#arcNeonGlow)"
-            />
-            <circle
-              cx={polarToCartesian(CX, CY, R_TIMELAPSE_OUTER + 6 * scaleFactor, minutesToAngleRad(currentMinutes)).x}
-              cy={polarToCartesian(CX, CY, R_TIMELAPSE_OUTER + 6 * scaleFactor, minutesToAngleRad(currentMinutes)).y}
-              r={3.5 * scaleFactor}
+              cx={polarToCartesian(CX, CY, R_SKY * 0.58, minutesToAngleRad(currentMinutes)).x}
+              cy={polarToCartesian(CX, CY, R_SKY * 0.58, minutesToAngleRad(currentMinutes)).y}
+              r={4.2 * scaleFactor}
               fill="#fef08a"
               stroke="#f59e0b"
-              strokeWidth="1.5"
+              strokeWidth="1.8"
+              filter="url(#arcNeonGlow)"
             />
           </g>
 
