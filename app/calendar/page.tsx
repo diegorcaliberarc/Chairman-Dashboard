@@ -2,2006 +2,526 @@
 
 import React, { useCallback, useEffect, useMemo, useState } from "react";
 import Link from "next/link";
-import { useSession, signIn, signOut } from "next-auth/react";
 import {
-  Activity,
-  Calendar as CalendarIcon,
-  Check,
-  ChevronDown,
+  Menu,
   ChevronLeft,
   ChevronRight,
-  Flame,
-  HeartPulse,
-  Highlighter,
-  Layers,
-  ListOrdered,
-  MoreHorizontal,
-  Orbit,
   Plus,
-  Radar,
+  Calendar as CalendarIcon,
   RefreshCw,
-  Shuffle,
-  UserCheck,
-  Wallet,
-  Zap,
-  Grid,
   Clock,
+  Layers,
+  CheckCircle2,
+  AlertCircle,
+  ExternalLink,
+  ChevronDown,
+  Columns3,
+  CalendarDays,
+  ListOrdered,
+  Grid,
 } from "lucide-react";
 import { Sidebar } from "@/components/Sidebar";
 import { MonthView, CalendarEventItem } from "@/components/calendar/MonthView";
-import { WeekView } from "@/components/calendar/WeekView";
 import { DayView } from "@/components/calendar/DayView";
-import { CalendarEventModal as TraditionalEventModal } from "@/components/calendar/CalendarEventModal";
-import {
-  CircadianDialStage,
-  CircadianRadarLayerDTO,
-  RadarLayerKey,
-} from "@/components/circadian/CircadianDialStage";
-import { CalendarOpsCommandDeck } from "@/components/circadian/CalendarOpsCommandDeck";
-import { CircadianEventModal } from "@/components/circadian/CircadianEventModal";
-import { buildDefaultCircadianEvents } from "@/lib/circadianDefaults";
-import {
-  CURATED_BLOCK_PALETTE,
-  CalendarHabitDTO,
-  CalendarHighlightSpanDTO,
-  CircadianEventDTO,
-  DOMAIN_CONFIG,
-  SubtaskListStyle,
-  WorkPaySummaryDTO,
-  WorkShiftConfigDTO,
-  YearlyAppointmentDTO,
-  formatSubtaskMarker,
-} from "@/lib/circadianTypes";
-import {
-  dateToMinutes,
-  getCircadianPhase,
-  getDurationMinutes,
-  minutesToHHMM,
-} from "@/lib/circadianMath";
-import { HorizonLevel, DayMode } from "@/lib/temporalTypes";
-import {
-  getWeekDays,
-  getMonthNodes,
-  getSeasonCards,
-  EL_PASO_TACTICAL_WAYPOINTS,
-  EL_PASO_ROUTE_LEGS,
-} from "@/lib/temporalData";
-import { HorizonNavigationControl } from "@/components/temporal/HorizonNavigationControl";
-import { WeeklyRadialView } from "@/components/temporal/WeeklyRadialView";
-import { MonthlyRadialView } from "@/components/temporal/MonthlyRadialView";
-import { YearlyRadialView } from "@/components/temporal/YearlyRadialView";
-import { GeospatialTacticalMap } from "@/components/temporal/GeospatialTacticalMap";
+import { FourDayView } from "@/components/calendar/FourDayView";
+import { YearView } from "@/components/calendar/YearView";
+import { ScheduleView } from "@/components/calendar/ScheduleView";
+import { MiniMonthCalendar } from "@/components/calendar/MiniMonthCalendar";
+import { CalendarQuickPopover } from "@/components/calendar/CalendarQuickPopover";
+import { CalendarEventModal } from "@/components/calendar/CalendarEventModal";
 
-interface DbTaskLite {
-  id: string;
-  title: string;
-  pillar: string;
-  category?: string;
-  status: string;
-  parentId?: string | null;
-}
+type CalendarViewMode = "day" | "four_day" | "month" | "year" | "schedule";
 
-function toLocalDateInputValue(d: Date): string {
-  const y = d.getFullYear();
-  const m = String(d.getMonth() + 1).padStart(2, "0");
-  const day = String(d.getDate()).padStart(2, "0");
-  return `${y}-${m}-${day}`;
-}
+export default function SovereignCalendarPage() {
+  // Navigation Date & View States
+  const [currentDate, setCurrentDate] = useState<Date>(new Date());
+  const [viewMode, setViewMode] = useState<CalendarViewMode>("month");
+  const [isMiniDrawerOpen, setIsMiniDrawerOpen] = useState(true);
+  const [showViewDropdown, setShowViewDropdown] = useState(false);
 
-function buildGoToWorkShowcaseEvent(baseDateStr?: string): CircadianEventDTO {
-  const base = baseDateStr ? new Date(`${baseDateStr}T00:00:00`) : new Date();
-  const y = base.getFullYear();
-  const m = base.getMonth();
-  const d = base.getDate();
-  return {
-    id: "default-go-to-work",
-    title: "Go to Work",
-    description:
-      "07:00–08:00 opening shift block with Roman-numeral execution subtasks.",
-    domain: "engineering",
-    startTime: new Date(y, m, d, 7, 0, 0, 0).toISOString(),
-    endTime: new Date(y, m, d, 8, 20, 0, 0).toISOString(),
-    isRecurring: true,
-    recurrenceRule: "FREQ=DAILY",
-    mediaUrl: "/circadian/saas-build.jpg",
-    mediaType: "image",
-    mediaAspectRatio: "16:9",
-    accentColor: "#38bdf8",
-    telemetrySource: "clickup",
-    subtaskStyle: "roman",
-    dailyMoneyUsed: 24.5,
-    anticipatedPay: 320,
-    actualPay: 340,
-    checklists: [
-      {
-        id: "chk-gtw-1",
-        label: "Morning shift briefing & system check (07:00–07:15)",
-        isCompleted: true,
-        sortOrder: 0,
-      },
-      {
-        id: "chk-gtw-2",
-        label: "Equipment & dispatch queue sync (07:15–07:35)",
-        isCompleted: true,
-        sortOrder: 1,
-      },
-      {
-        id: "chk-gtw-3",
-        label: "Priority ticket triage (07:35–07:50)",
-        isCompleted: false,
-        sortOrder: 2,
-      },
-      {
-        id: "chk-gtw-4",
-        label: "Lock 08:00 deep execution block (07:50–08:00)",
-        isCompleted: false,
-        sortOrder: 3,
-      },
-    ],
-  };
-}
+  // Events & Loading
+  const [events, setEvents] = useState<CalendarEventItem[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [isSyncing, setIsSyncing] = useState(false);
+  const [syncStatus, setSyncStatus] = useState<"connected" | "disconnected">("connected");
 
-function ensureGoToWorkInEvents(
-  list: CircadianEventDTO[],
-  dateStr?: string
-): CircadianEventDTO[] {
-  const hasWork = list.some((e) =>
-    e.title.toLowerCase().includes("go to work")
-  );
-  if (hasWork) return list;
-  return [buildGoToWorkShowcaseEvent(dateStr), ...list];
-}
-
-export default function CircadianCalendarPage() {
-  const { data: session } = useSession();
-  const user = session?.user;
-  const calConnected = !!(session as any)?.accessToken;
-
-  // Sidebar & global UI states
-  const [activeTab, setActiveTab] = useState("CALENDAR");
-  const [isAppearanceOpen, setIsAppearanceOpen] = useState(false);
-  const [deepWork, setDeepWork] = useState(false);
-
-  // Date & Real-Time Solar Orbit states
-  const [selectedDate, setSelectedDate] = useState<string>(() =>
-    toLocalDateInputValue(new Date())
-  );
-  const [liveMinutes, setLiveMinutes] = useState<number>(() =>
-    dateToMinutes(new Date(), true)
-  );
-  const [scrubbedMinutes, setScrubbedMinutes] = useState<number | null>(null);
-  const [viewMode, setViewMode] = useState<"solar" | "quadrants">("solar");
-
-  // Multi-Horizon Temporal State: DAY (SOLAR / 3D MAP), WEEK, MONTH, YEAR
-  const [activeHorizon, setActiveHorizon] = useState<HorizonLevel>("DAY");
-  const [dayMode, setDayMode] = useState<DayMode>("SOLAR_WHEEL");
-  const [selectedYear, setSelectedYear] = useState<number>(2026);
-  const [activeMonthIndex, setActiveMonthIndex] = useState<number>(10); // Nov (0-indexed)
-
-  // Circadian events, Chairman tasks, KPIs & Modal state
-  const [events, setEvents] = useState<CircadianEventDTO[]>(() =>
-    ensureGoToWorkInEvents(buildDefaultCircadianEvents())
-  );
-  const [loadingEvents, setLoadingEvents] = useState<boolean>(true);
-  const [selectedEventId, setSelectedEventId] = useState<string | null>(null);
-  const [modalOpen, setModalOpen] = useState<boolean>(false);
-  const [editingEvent, setEditingEvent] = useState<CircadianEventDTO | null>(
-    null
-  );
-
-  // Nested Subtasks Style & Agenda Expansion state
-  const [globalSubtaskStyle, setGlobalSubtaskStyle] =
-    useState<SubtaskListStyle>("roman");
-  const [subtaskStylesById, setSubtaskStylesById] = useState<
-    Record<string, SubtaskListStyle>
-  >({});
-  const [expandedAgendaIds, setExpandedAgendaIds] = useState<
-    Record<string, boolean>
-  >({ "default-go-to-work": true });
-  const [agendaSubtaskDrafts, setAgendaSubtaskDrafts] = useState<
-    Record<string, string>
-  >({});
-
-  // Multi-View Calendar State (Solar Arc, Traditional Month Grid, Week Timeline, Day Timeline)
-  const [calendarView, setCalendarView] = useState<"solar" | "month" | "week" | "day">("solar");
-  const [tradModalOpen, setTradModalOpen] = useState(false);
-  const [tradSelectedEvent, setTradSelectedEvent] = useState<CalendarEventItem | null>(null);
-  const [tradInitialTime, setTradInitialTime] = useState<string | undefined>(undefined);
-
-  // Calendar Operations State (Habits, Highlight Spans, Work Shifts, Year Appointments)
-  const [habits, setHabits] = useState<CalendarHabitDTO[]>([]);
-  const [highlightSpans, setHighlightSpans] = useState<
-    CalendarHighlightSpanDTO[]
-  >([
-    {
-      id: "seed-span-shift",
-      label: "07:00 – 15:00 Deep Shift Window",
-      spanType: "hours",
-      startMinute: 420,
-      endMinute: 900,
-      color: "#38bdf8",
-      opacity: 0.2,
-      isActive: true,
-    },
-  ]);
-  const [shiftConfig, setShiftConfig] = useState<WorkShiftConfigDTO>({
-    roleLabel: "Primary Operations & Engineering Shift",
-    payPerShift: 320,
-    hourlyRate: 40,
-    hoursPerShift: 8,
-    totalScheduledDays: 22,
-    shiftsPerWeek: 5,
+  // Filter Visibility
+  const [visibleCalendars, setVisibleCalendars] = useState<Record<string, boolean>>({
+    work: true,
+    workout: true,
+    personal: true,
+    pms_task: true,
+    google_sync: true,
   });
-  const [paySummary, setPaySummary] = useState<WorkPaySummaryDTO>({
-    payRate: 320,
-    daysWorked: 16,
-    totalScheduledDays: 22,
-    workedPct: 72.7,
-    todayLogged: true,
-    dailyShifts: 1,
-    dailyPay: 320,
-    dailyExpense: 24.5,
-    weeklyShifts: 5,
-    weeklyPay: 1600,
-    weeklyTargetPay: 1600,
-    biWeeklyShifts: 10,
-    biWeeklyPay: 3200,
-    biWeeklyTargetPay: 3200,
-    monthlyShifts: 16,
-    monthlyPay: 5120,
-    monthlyActualPaid: 5180,
-    scheduledMonthlyTotal: 7040,
-    monthlyExpenseTotal: 302,
-  });
-  const [appointments, setAppointments] = useState<YearlyAppointmentDTO[]>([]);
-  const [busyOpsAction, setBusyOpsAction] = useState<string | null>(null);
-  const [opsBannerMsg, setOpsBannerMsg] = useState<string | null>(null);
 
-  const [tasks, setTasks] = useState<DbTaskLite[]>([]);
-  const [tasksLoading, setTasksLoading] = useState<boolean>(false);
-  const [healthScore, setHealthScore] = useState<number>(92);
-  const [activeTelemetryFilter, setActiveTelemetryFilter] = useState<
-    string | null
-  >(null);
-  const [syncingGCal, setSyncingGCal] = useState<boolean>(false);
+  // Modals & Popovers
+  const [quickPopoverEvent, setQuickPopoverEvent] = useState<CalendarEventItem | null>(null);
+  const [fullEditorEvent, setFullEditorEvent] = useState<CalendarEventItem | null>(null);
+  const [isFullEditorOpen, setIsFullEditorOpen] = useState(false);
+  const [editorInitialDate, setEditorInitialDate] = useState<string>("");
+  const [editorInitialTime, setEditorInitialTime] = useState<string>("09:00");
 
-  // Section 18: Circadian Weather-Radar Layer states
-  const [radarLayers, setRadarLayers] = useState<CircadianRadarLayerDTO[]>([]);
-  const [activeRadarTypes, setActiveRadarTypes] = useState<RadarLayerKey[]>([]);
-  const [recalibratingRadar, setRecalibratingRadar] = useState<boolean>(false);
-
-  // Real-Time Solar Beacon ticker
-  useEffect(() => {
-    const tick = () => setLiveMinutes(dateToMinutes(new Date(), true));
-    tick();
-    const timer = setInterval(tick, 5000);
-    return () => clearInterval(timer);
-  }, []);
-
-  // Load Circadian Events for selected date
-  const fetchCircadianEvents = useCallback(async (dateStr: string) => {
-    setLoadingEvents(true);
+  // Load Events from /api/calendar-events
+  const loadEvents = useCallback(async () => {
     try {
-      const res = await fetch(`/api/circadian?date=${dateStr}`);
-      if (res.ok) {
-        const data = await res.json();
-        if (Array.isArray(data.events) && data.events.length > 0) {
-          const list = ensureGoToWorkInEvents(data.events, dateStr);
-          setEvents(list);
-          // Auto-expand Go to Work block so 07:00–08:00 Roman subtasks are visible right away
-          const gtw = list.find((e) =>
-            e.title.toLowerCase().includes("go to work")
-          );
-          if (gtw) {
-            setExpandedAgendaIds((prev) => ({ ...prev, [gtw.id]: true }));
-          }
-        } else {
-          setEvents(
-            ensureGoToWorkInEvents(buildDefaultCircadianEvents(dateStr), dateStr)
-          );
-        }
-      }
-    } catch (err) {
-      console.error("Failed to fetch circadian events:", err);
-    } finally {
-      setLoadingEvents(false);
-    }
-  }, []);
-
-  // Load Calendar Ops (Habits, Highlight Spans, Work Shifts, Year Appointments)
-  const applyCalendarOpsData = useCallback((data: any) => {
-    if (Array.isArray(data.habits)) setHabits(data.habits);
-    if (Array.isArray(data.highlightSpans))
-      setHighlightSpans(data.highlightSpans);
-    if (data.shiftConfig) setShiftConfig(data.shiftConfig);
-    if (data.paySummary) setPaySummary(data.paySummary);
-    if (Array.isArray(data.appointments)) setAppointments(data.appointments);
-  }, []);
-
-  const fetchCalendarOps = useCallback(
-    async (dateStr: string) => {
-      try {
-        const year = dateStr.slice(0, 4);
-        const res = await fetch(
-          `/api/calendar-ops?date=${dateStr}&year=${year}`
-        );
-        if (res.ok) {
-          const data = await res.json();
-          applyCalendarOpsData(data);
-        }
-      } catch (err) {
-        console.error("Failed to fetch calendar-ops:", err);
-      }
-    },
-    [applyCalendarOpsData]
-  );
-
-  useEffect(() => {
-    // Fetch calendar-ops first (which also seeds Go to Work if needed), then circadian events
-    fetchCalendarOps(selectedDate).finally(() => {
-      fetchCircadianEvents(selectedDate);
-    });
-  }, [selectedDate, fetchCalendarOps, fetchCircadianEvents]);
-
-  // Section 18: Fetch 96-point Circadian Radar Curves
-  const fetchRadarLayers = useCallback(async (dateStr: string) => {
-    try {
-      const res = await fetch(`/api/circadian/radar?date=${dateStr}`);
-      if (res.ok) {
-        const data = await res.json();
-        if (Array.isArray(data.layers)) {
-          setRadarLayers(data.layers);
-        }
-      }
-    } catch (err) {
-      console.error("Failed to fetch circadian radar layers:", err);
-    }
-  }, []);
-
-  useEffect(() => {
-    fetchRadarLayers(selectedDate);
-  }, [selectedDate, fetchRadarLayers]);
-
-  const toggleRadarLayer = (layerType: RadarLayerKey) => {
-    setActiveRadarTypes((prev) =>
-      prev.includes(layerType)
-        ? prev.filter((t) => t !== layerType)
-        : [...prev, layerType]
-    );
-  };
-
-  const handleRecalibrateRadar = async () => {
-    setRecalibratingRadar(true);
-    try {
-      const res = await fetch("/api/circadian/radar", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          action: "recalibrate",
-          date: selectedDate,
-          events,
-        }),
-      });
-      if (res.ok) {
-        const data = await res.json();
-        if (Array.isArray(data.layers)) {
-          setRadarLayers(data.layers);
-        }
-      }
-    } catch (err) {
-      console.error("Failed to recalibrate radar:", err);
-    } finally {
-      setRecalibratingRadar(false);
-    }
-  };
-
-  // Load Chairman Dashboard Tasks & Health KPIs
-  useEffect(() => {
-    setTasksLoading(true);
-    fetch("/api/tasks")
-      .then((r) => (r.ok ? r.json() : { tasks: [] }))
-      .then((d) => {
-        if (Array.isArray(d.tasks)) setTasks(d.tasks);
-      })
-      .catch(() => {})
-      .finally(() => setTasksLoading(false));
-
-    fetch("/api/metrics")
-      .then((r) => (r.ok ? r.json() : { metrics: [] }))
-      .then((d) => {
-        if (Array.isArray(d.metrics) && d.metrics.length > 0) {
-          const healthItems = d.metrics.filter(
-            (m: any) => m.category === "health"
-          );
-          if (healthItems.length > 0) {
-            const ratios = healthItems.map((m: any) =>
-              m.target > 0 ? Math.min(1.1, m.value / m.target) : 0.9
-            );
-            const avg =
-              ratios.reduce((acc: number, v: number) => acc + v, 0) /
-              ratios.length;
-            setHealthScore(Math.max(68, Math.min(99, Math.round(avg * 94))));
-          }
-        }
-      })
-      .catch(() => {});
-  }, []);
-
-  // Calendar Ops Mutation Helpers
-  const postCalendarOps = async (payload: Record<string, any>) => {
-    const res = await fetch("/api/calendar-ops", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        date: selectedDate,
-        year: selectedDate.slice(0, 4),
-        ...payload,
-      }),
-    });
-    if (res.ok) {
+      setLoading(true);
+      const res = await fetch("/api/calendar-events", { cache: "no-store" });
       const data = await res.json();
-      applyCalendarOpsData(data);
-      return data;
-    }
-    return null;
-  };
-
-  const handleAutoBatchTasks = async () => {
-    setBusyOpsAction("auto_batch");
-    try {
-      const data = await postCalendarOps({ action: "auto_batch_tasks" });
-      await fetchCircadianEvents(selectedDate);
-      const count = data?.batchedBlocksCreated ?? 3;
-      setOpsBannerMsg(
-        `Auto-batched pending tasks into ${count} focused calendar blocks on ${selectedDate}.`
-      );
-      setTimeout(() => setOpsBannerMsg(null), 5000);
-    } finally {
-      setBusyOpsAction(null);
-    }
-  };
-
-  const handleRandomizeColors = async () => {
-    setBusyOpsAction("randomize_colors");
-    // Immediate optimistic curated shuffle on UI so dial & agenda update instantaneously
-    const shuffled = [...CURATED_BLOCK_PALETTE].sort(() => Math.random() - 0.5);
-    setEvents((prev) =>
-      prev.map((ev, idx) => ({
-        ...ev,
-        accentColor: shuffled[idx % shuffled.length].hex,
-      }))
-    );
-    try {
-      const data = await postCalendarOps({ action: "randomize_colors" });
-      if (data?.colorMap) {
-        setEvents((prev) =>
-          prev.map((ev) =>
-            data.colorMap[ev.id]
-              ? { ...ev, accentColor: data.colorMap[ev.id] }
-              : ev
-          )
-        );
+      if (data.events && Array.isArray(data.events)) {
+        const mapped: CalendarEventItem[] = data.events.map((ev: any) => ({
+          id: ev.id,
+          title: ev.title,
+          description: ev.description,
+          start_time: ev.start_time,
+          end_time: ev.end_time,
+          all_day: ev.all_day,
+          category: ev.category || "work",
+          color_hex: ev.color_hex || "#3B82F6",
+        }));
+        setEvents(mapped);
       }
-      setOpsBannerMsg("Randomized harmonious block colors across Solar Dial & Agenda.");
-      setTimeout(() => setOpsBannerMsg(null), 4000);
+    } catch (err) {
+      console.error("Failed to load calendar events:", err);
     } finally {
-      setBusyOpsAction(null);
+      setLoading(false);
     }
+  }, []);
+
+  useEffect(() => {
+    loadEvents();
+  }, [loadEvents]);
+
+  // Keyboard Shortcuts (D, X, M, Y, A)
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      // Don't trigger if user is typing in an input or textarea
+      if (
+        e.target instanceof HTMLInputElement ||
+        e.target instanceof HTMLTextAreaElement ||
+        e.target instanceof HTMLSelectElement
+      ) {
+        return;
+      }
+
+      const key = e.key.toLowerCase();
+      if (key === "d") setViewMode("day");
+      if (key === "x") setViewMode("four_day");
+      if (key === "m") setViewMode("month");
+      if (key === "y") setViewMode("year");
+      if (key === "a") setViewMode("schedule");
+    };
+
+    window.addEventListener("keydown", handleKeyDown);
+    return () => window.removeEventListener("keydown", handleKeyDown);
+  }, []);
+
+  // Filtered Events based on My Calendars toggles
+  const filteredEvents = useMemo(() => {
+    return events.filter((ev) => visibleCalendars[ev.category] !== false);
+  }, [events, visibleCalendars]);
+
+  // Steppers Navigation
+  const handlePrev = () => {
+    const next = new Date(currentDate);
+    if (viewMode === "day") next.setDate(next.getDate() - 1);
+    else if (viewMode === "four_day") next.setDate(next.getDate() - 4);
+    else if (viewMode === "month") next.setMonth(next.getMonth() - 1);
+    else if (viewMode === "year") next.setFullYear(next.getFullYear() - 1);
+    else next.setDate(next.getDate() - 7);
+    setCurrentDate(next);
   };
 
-  const handleRecolorEvent = async (eventId: string, hex: string) => {
-    setEvents((prev) =>
-      prev.map((ev) => (ev.id === eventId ? { ...ev, accentColor: hex } : ev))
-    );
-    await postCalendarOps({
-      action: "recolor_event",
-      eventId,
-      accentColor: hex,
-    });
+  const handleNext = () => {
+    const next = new Date(currentDate);
+    if (viewMode === "day") next.setDate(next.getDate() + 1);
+    else if (viewMode === "four_day") next.setDate(next.getDate() + 4);
+    else if (viewMode === "month") next.setMonth(next.getMonth() + 1);
+    else if (viewMode === "year") next.setFullYear(next.getFullYear() + 1);
+    else next.setDate(next.getDate() + 7);
+    setCurrentDate(next);
   };
 
-  const handleLogHabit = async (
-    habitId: string,
-    opts: { delta?: number; value?: number }
-  ) => {
-    // Optimistic 360° ring update
-    setHabits((prev) =>
-      prev.map((h) => {
-        if (h.id !== habitId) return h;
-        const nextVal =
-          typeof opts.value === "number"
-            ? Math.max(0, opts.value)
-            : Math.max(0, h.currentValue + (opts.delta ?? 0));
-        const pct = Math.min(
-          100,
-          Math.round((nextVal / Math.max(0.01, h.targetValue)) * 1000) / 10
-        );
-        return { ...h, currentValue: nextVal, pct };
-      })
-    );
-    await postCalendarOps({
-      action: "log_habit",
-      habitId,
-      ...opts,
-    });
+  const handleToday = () => {
+    setCurrentDate(new Date());
   };
 
-  const handleToggleSubtaskStyleForEvent = (eventId: string) => {
-    setSubtaskStylesById((prev) => {
-      const current = prev[eventId] ?? globalSubtaskStyle;
-      return {
-        ...prev,
-        [eventId]: current === "roman" ? "bullets" : "roman",
-      };
-    });
-  };
-
-  const handleToggleGlobalSubtaskStyle = () => {
-    const next: SubtaskListStyle =
-      globalSubtaskStyle === "roman" ? "bullets" : "roman";
-    setGlobalSubtaskStyle(next);
-    setSubtaskStylesById({});
-  };
-
-  // Optional Google Calendar import merge
-  const handleImportGoogleCalendar = async () => {
-    if (!calConnected) {
-      signIn("google");
-      return;
-    }
-    setSyncingGCal(true);
-    try {
-      const res = await fetch("/api/calendar");
-      if (!res.ok) return;
-      const data = await res.json();
-      const gEvents = (data.events ?? []) as any[];
-      const dayPrefix = selectedDate;
-
-      const todaysGCal = gEvents.filter((g) => {
-        const dt = g?.start?.dateTime;
-        return typeof dt === "string" && dt.startsWith(dayPrefix);
+  // Label for Top Toolbar
+  const toolbarDateLabel = useMemo(() => {
+    if (viewMode === "day") {
+      return currentDate.toLocaleDateString("en-US", {
+        weekday: "short",
+        month: "long",
+        day: "numeric",
+        year: "numeric",
       });
-
-      for (const g of todaysGCal) {
-        const alreadyExists = events.some(
-          (ev) => ev.title.toLowerCase() === (g.summary || "").toLowerCase()
-        );
-        if (!alreadyExists && g.summary && g.start?.dateTime && g.end?.dateTime) {
-          await fetch("/api/circadian", {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({
-              title: g.summary,
-              description: "Synced from Google Calendar",
-              domain: "engineering",
-              startTime: g.start.dateTime,
-              endTime: g.end.dateTime,
-              isRecurring: false,
-              mediaUrl: "/circadian/saas-build.jpg",
-              accentColor: "#38bdf8",
-              telemetrySource: "clickup",
-              checklists: [
-                { label: "Execute scheduled calendar session", isCompleted: false },
-              ],
-            }),
-          });
-        }
-      }
-      await fetchCircadianEvents(selectedDate);
-    } finally {
-      setSyncingGCal(false);
     }
-  };
-
-  // Toggle checklist item (optimistic + DB persistence)
-  const handleToggleChecklist = async (
-    eventId: string,
-    checklistId: string,
-    nextVal: boolean
-  ) => {
-    setEvents((prev) =>
-      prev.map((ev) =>
-        ev.id === eventId
-          ? {
-              ...ev,
-              checklists: ev.checklists.map((c) =>
-                c.id === checklistId ? { ...c, isCompleted: nextVal } : c
-              ),
-            }
-          : ev
-      )
-    );
-
-    if (!checklistId.startsWith("chk-")) {
-      try {
-        await fetch("/api/circadian", {
-          method: "PATCH",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            action: "toggle_checklist",
-            checklistId,
-            isCompleted: nextVal,
-          }),
-        });
-      } catch (e) {
-        console.error(e);
-      }
+    if (viewMode === "four_day") {
+      const end = new Date(currentDate);
+      end.setDate(end.getDate() + 3);
+      return `${currentDate.toLocaleDateString("en-US", {
+        month: "short",
+        day: "numeric",
+      })} – ${end.toLocaleDateString("en-US", {
+        month: "short",
+        day: "numeric",
+        year: "numeric",
+      })}`;
     }
-  };
-
-  // Quick-add checklist item inside dial inspector or Agenda nested subtasks
-  const handleAddChecklist = async (eventId: string, label: string) => {
-    const tempId = `chk-${Date.now()}`;
-    setEvents((prev) =>
-      prev.map((ev) =>
-        ev.id === eventId
-          ? {
-              ...ev,
-              checklists: [
-                ...ev.checklists,
-                {
-                  id: tempId,
-                  eventId,
-                  label,
-                  isCompleted: false,
-                  sortOrder: ev.checklists.length,
-                },
-              ],
-            }
-          : ev
-      )
-    );
-
-    if (!eventId.startsWith("default-") && !eventId.startsWith("local-")) {
-      try {
-        const res = await fetch("/api/circadian", {
-          method: "PATCH",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            action: "add_checklist",
-            eventId,
-            label,
-          }),
-        });
-        if (res.ok) {
-          const data = await res.json();
-          if (data.checklist) {
-            setEvents((prev) =>
-              prev.map((ev) =>
-                ev.id === eventId
-                  ? {
-                      ...ev,
-                      checklists: ev.checklists.map((c) =>
-                        c.id === tempId ? data.checklist : c
-                      ),
-                    }
-                  : ev
-              )
-            );
-          }
-        }
-      } catch (e) {
-        console.error(e);
-      }
+    if (viewMode === "year") {
+      return String(currentDate.getFullYear());
     }
-  };
-
-  // Save (Create or Update) Circadian Event
-  const handleSaveEvent = async (payload: any, syncGoogleCal: boolean) => {
-    const isEdit = Boolean(
-      payload.id && !String(payload.id).startsWith("default-")
-    );
-    const method = isEdit ? "PATCH" : "POST";
-
-    const res = await fetch("/api/circadian", {
-      method,
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(payload),
+    return currentDate.toLocaleDateString("en-US", {
+      month: "long",
+      year: "numeric",
     });
+  }, [currentDate, viewMode]);
 
-    if (res.ok) {
-      await fetchCircadianEvents(selectedDate);
-    } else {
-      const localEv: CircadianEventDTO = {
-        id: payload.id || `local-${Date.now()}`,
-        title: payload.title,
-        description: payload.description,
-        domain: payload.domain,
-        startTime: payload.startTime,
-        endTime: payload.endTime,
-        isRecurring: payload.isRecurring,
-        mediaUrl: payload.mediaUrl,
-        mediaType: payload.mediaType,
-        mediaAspectRatio: "16:9",
-        accentColor: payload.accentColor,
-        quadrantSlot: payload.quadrantSlot,
-        telemetrySource: payload.telemetrySource,
-        checklists: (payload.checklists || []).map((c: any, idx: number) => ({
-          id: c.id || `chk-${Date.now()}-${idx}`,
-          label: c.label,
-          isCompleted: Boolean(c.isCompleted),
-          sortOrder: idx,
-        })),
-      };
-      setEvents((prev) =>
-        payload.id
-          ? prev.map((e) => (e.id === payload.id ? localEv : e))
-          : [...prev, localEv]
-      );
-    }
-
-    if (syncGoogleCal && calConnected) {
-      fetch("/api/calendar", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          title: payload.title,
-          start: payload.startTime,
-          end: payload.endTime,
-        }),
-      }).catch(console.error);
-    }
+  // Quick Popover & Full Editor Triggers
+  const handleSelectEvent = (event: CalendarEventItem) => {
+    setQuickPopoverEvent(event);
   };
 
-  // Delete Circadian Event
-  const handleDeleteEvent = async (eventId: string) => {
-    setEvents((prev) => prev.filter((e) => e.id !== eventId));
-    if (selectedEventId === eventId) setSelectedEventId(null);
-    if (!eventId.startsWith("default-") && !eventId.startsWith("local-")) {
-      await fetch(`/api/circadian?id=${eventId}`, { method: "DELETE" }).catch(
-        console.error
-      );
-    }
+  const handleOpenCreateAtDate = (dateStr: string, timeStr = "09:00") => {
+    setEditorInitialDate(dateStr);
+    setEditorInitialTime(timeStr);
+    setFullEditorEvent(null);
+    setIsFullEditorOpen(true);
   };
 
-  // Toggle Chairman Task from Daily Focus panel
-  const handleToggleChairmanTask = async (task: DbTaskLite) => {
-    const nextStatus = task.status === "DONE" ? "PENDING" : "DONE";
-    setTasks((prev) =>
-      prev.map((t) => (t.id === task.id ? { ...t, status: nextStatus } : t))
+  const handleEditFull = (event: CalendarEventItem) => {
+    setQuickPopoverEvent(null);
+    setFullEditorEvent(event);
+    setIsFullEditorOpen(true);
+  };
+
+  // Quick Save Event
+  const handleQuickSave = async (eventId: string, patch: Partial<CalendarEventItem>) => {
+    setEvents((prev) =>
+      prev.map((ev) => (ev.id === eventId ? { ...ev, ...patch } : ev))
     );
-    await fetch("/api/tasks", {
+    await fetch(`/api/calendar-events/${eventId}`, {
       method: "PATCH",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ id: task.id, status: nextStatus }),
-    }).catch(() => {});
+      body: JSON.stringify(patch),
+    });
   };
 
-  const shiftDate = (deltaDays: number) => {
-    const [y, m, d] = selectedDate.split("-").map(Number);
-    const next = new Date(y, m - 1, d + deltaDays);
-    setSelectedDate(toLocalDateInputValue(next));
-  };
-
-  const effectiveMinutes = scrubbedMinutes ?? liveMinutes;
-  const currentPhase = getCircadianPhase(effectiveMinutes);
-
-  // Active Multi-Day Highlight Spans covering selectedDate
-  const activeMultiDaySpans = useMemo(() => {
-    return highlightSpans.filter((sp) => {
-      if (!sp.isActive || sp.spanType !== "multi_day") return false;
-      if (sp.startDate && selectedDate < sp.startDate) return false;
-      if (sp.endDate && selectedDate > sp.endDate) return false;
-      return true;
-    });
-  }, [highlightSpans, selectedDate]);
-
-  // Sorted Agenda items enriched with matching day appointment financial telemetry
-  const sortedAgenda = useMemo(() => {
-    const dayAppts = appointments.filter(
-      (a) => a.appointmentDate === selectedDate
-    );
-    return [...events]
-      .map((ev) => {
-        const sMin = dateToMinutes(new Date(ev.startTime));
-        const eMin = dateToMinutes(new Date(ev.endTime));
-        const totalChecks = ev.checklists.length;
-        const doneChecks = ev.checklists.filter((c) => c.isCompleted).length;
-        const isPast = eMin > sMin && effectiveMinutes >= eMin;
-        const isComplete =
-          (totalChecks > 0 && doneChecks === totalChecks) || isPast;
-
-        const matchedAppt = dayAppts.find((a) =>
-          a.title
-            .toLowerCase()
-            .includes(ev.title.toLowerCase().slice(0, 10))
-        );
-
-        return {
-          event: ev,
-          sMin,
-          eMin,
-          doneChecks,
-          totalChecks,
-          isComplete,
-          anticipatedPay:
-            matchedAppt?.anticipatedPay ?? ev.anticipatedPay ?? 0,
-          actualPay: matchedAppt?.actualPay ?? ev.actualPay ?? 0,
-          dailyMoneyUsed:
-            matchedAppt?.dailyMoneyUsed ?? ev.dailyMoneyUsed ?? 0,
-        };
-      })
-      .sort((a, b) => a.sMin - b.sMin);
-  }, [events, effectiveMinutes, appointments, selectedDate]);
-
-  // Real-time micro-statistics calculation
-  const telemetryVelocity = useMemo(() => {
-    const scheduledMins = events.reduce((acc, ev) => {
-      const s = dateToMinutes(new Date(ev.startTime));
-      const e = dateToMinutes(new Date(ev.endTime));
-      return acc + getDurationMinutes(s, e);
-    }, 0);
-    const completedChecks = events.reduce(
-      (acc, ev) => acc + ev.checklists.filter((c) => c.isCompleted).length,
-      0
-    );
-    return scheduledMins + completedChecks * 42;
-  }, [events]);
-
-  const activeTopTasks = useMemo(
-    () =>
-      tasks.filter((t) => !t.parentId && t.status !== "ARCHIVED").slice(0, 3),
-    [tasks]
-  );
-
-  const activeTasksCount = tasks.filter(
-    (t) => !t.parentId && t.status !== "DONE" && t.status !== "ARCHIVED"
-  ).length;
-  const activeSubtasksCount = tasks.filter(
-    (t) => t.parentId && t.status !== "DONE" && t.status !== "ARCHIVED"
-  ).length;
-
-  const formattedSelectedDate = useMemo(() => {
-    const [y, m, d] = selectedDate.split("-").map(Number);
-    const dt = new Date(y, m - 1, d);
-    return dt.toLocaleDateString("en-US", {
-      weekday: "short",
-      month: "short",
-      day: "numeric",
-    });
-  }, [selectedDate]);
-
-  const primaryWalkHabit = habits[0];
-
-  // Multi-Horizon Computed Datasets
-  const currentWeekDays = useMemo(() => {
-    const [y, m, d] = selectedDate.split("-").map(Number);
-    return getWeekDays(new Date(y, m - 1, d));
-  }, [selectedDate]);
-
-  const currentMonthNodes = useMemo(() => {
-    return getMonthNodes(selectedYear, activeMonthIndex);
-  }, [selectedYear, activeMonthIndex]);
-
-  const seasonalCards = useMemo(() => {
-    return getSeasonCards();
-  }, []);
-
-  const concentricTelemetry = useMemo(() => {
-    return {
-      healthPct: Math.min(100, Math.round(healthScore)),
-      workPct: Math.min(100, Math.round(paySummary.workedPct)),
-      sleepPct: 92,
-    };
-  }, [healthScore, paySummary.workedPct]);
-
-  const calendarEventItems = useMemo<CalendarEventItem[]>(() => {
-    return events.map((e) => ({
-      id: e.id,
-      title: e.title,
-      description: e.description || undefined,
-      start_time: e.startTime,
-      end_time: e.endTime,
-      category: ((e.domain as string) === "engineering" ? "work" : (e.domain as string) === "physical_training" ? "workout" : "personal") as any,
-      color_hex: e.accentColor || "#0969DA",
-    }));
-  }, [events]);
-
-  const handleSaveTradEvent = async (eventData: Partial<CalendarEventItem>) => {
-    if (eventData.id && !eventData.id.startsWith("default-") && !eventData.id.startsWith("local-")) {
-      await fetch("/api/calendar-events", {
+  // Full Save Event
+  const handleFullSave = async (eventData: Partial<CalendarEventItem>) => {
+    if (fullEditorEvent) {
+      // Update
+      setEvents((prev) =>
+        prev.map((ev) =>
+          ev.id === fullEditorEvent.id ? { ...ev, ...eventData } : ev
+        )
+      );
+      await fetch(`/api/calendar-events/${fullEditorEvent.id}`, {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          id: eventData.id,
-          title: eventData.title,
-          description: eventData.description,
-          startTime: eventData.start_time,
-          endTime: eventData.end_time,
-          colorHex: eventData.color_hex,
-          category: eventData.category,
-        }),
+        body: JSON.stringify(eventData),
       });
     } else {
-      await fetch("/api/calendar-events", {
+      // Create
+      const res = await fetch("/api/calendar-events", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          title: eventData.title,
-          description: eventData.description,
-          startTime: eventData.start_time,
-          endTime: eventData.end_time,
-          colorHex: eventData.color_hex || "#0969DA",
-          category: eventData.category || "work",
-        }),
+        body: JSON.stringify(eventData),
       });
+      const data = await res.json();
+      if (data.event) {
+        setEvents((prev) => [...prev, data.event]);
+      }
     }
-    await fetchCircadianEvents(selectedDate);
+    setIsFullEditorOpen(false);
   };
 
-  const handleDeleteTradEvent = async (id: string) => {
-    await handleDeleteEvent(id);
-    await fetchCircadianEvents(selectedDate);
+  // Delete Event
+  const handleDeleteEvent = async (eventId: string) => {
+    setEvents((prev) => prev.filter((ev) => ev.id !== eventId));
+    await fetch(`/api/calendar-events/${eventId}`, {
+      method: "DELETE",
+    });
+  };
+
+  // Manual Trigger for Google Calendar Sync
+  const handleTriggerSync = async () => {
+    setIsSyncing(true);
+    try {
+      await fetch("/api/integrations/google-calendar/sync", { method: "POST" });
+      await loadEvents();
+    } catch (err) {
+      console.error("Sync error:", err);
+    } finally {
+      setIsSyncing(false);
+    }
   };
 
   return (
-    <div className="executive-glass-shell min-h-screen text-zinc-900 dark:text-white flex flex-row overflow-x-hidden">
-      {/* Shared Executive Sidebar */}
-      <Sidebar
-        activeTab={activeTab}
-        setActiveTab={setActiveTab}
-        calConnected={calConnected}
-        onCalToggle={() =>
-          calConnected ? signOut({ redirect: false }) : signIn("google")
-        }
-        isAppearanceOpen={isAppearanceOpen}
-        setIsAppearanceOpen={setIsAppearanceOpen}
-        user={user}
-        deepWork={deepWork}
-        setDeepWork={setDeepWork}
-        activeTasksCount={activeTasksCount}
-        activeSubtasksCount={activeSubtasksCount}
-        tasksLoading={tasksLoading}
-      />
+    <div className="flex h-screen w-screen overflow-hidden bg-[#090A0F] font-sans text-zinc-100 select-none">
+      {/* Chairman Dashboard Sidebar */}
+      <Sidebar />
 
-      {/* Main Circadian Solar Command Deck */}
-      <div className="flex-1 ml-0 lg:ml-[26rem] min-w-0 flex flex-col min-h-screen pt-14 lg:pt-0 transition-all duration-300">
-        {/* Top Control Header */}
-        <header className="px-4 sm:px-6 pt-4 pb-2.5 flex flex-wrap items-center justify-between gap-3 border-b border-zinc-200/50 dark:border-white/[0.08] liquid-glass-panel sticky top-14 lg:top-0 z-30">
-          <div className="flex items-center gap-3">
-            <div>
-              <div className="flex items-center gap-2">
-                <span
-                  className="w-2 h-2 rounded-full animate-pulse"
-                  style={{ backgroundColor: currentPhase.pillColor }}
-                />
-                <h1 className="text-xs sm:text-sm font-bold tracking-[0.18em] uppercase text-zinc-100">
-                  Circadian Solar Arc
-                </h1>
-                <span
-                  className="px-2 py-0.5 rounded-full text-[9.5px] font-bold tracking-widest uppercase border"
-                  style={{
-                    color: currentPhase.pillColor,
-                    borderColor: `${currentPhase.pillColor}44`,
-                    backgroundColor: `${currentPhase.pillColor}14`,
-                  }}
-                >
-                  {currentPhase.name}
-                </span>
-              </div>
-              <p className="text-[10.5px] text-zinc-400 mt-0.5 hidden sm:block">
-                {currentPhase.subtitle}
-              </p>
+      {/* Main Calendar View Area */}
+      <div className="flex-1 flex flex-col h-full bg-[#0D0F17] overflow-hidden">
+        {/* TOP TOOLBAR: 56px Height */}
+        <header className="h-14 px-4 border-b border-[#1E222D] flex items-center justify-between bg-[#11131C] z-20">
+          {/* Left: Drawer Toggle & Date Stepper */}
+          <div className="flex items-center gap-4">
+            <button
+              onClick={() => setIsMiniDrawerOpen((prev) => !prev)}
+              title="Toggle Mini-Month Sidebar"
+              className="p-2 rounded-lg text-zinc-400 hover:text-white hover:bg-[#1E2230] transition"
+            >
+              <Menu className="w-5 h-5" />
+            </button>
+
+            {/* Today Button */}
+            <button
+              onClick={handleToday}
+              className="px-3.5 py-1.5 rounded-lg border border-[#262B3D] text-xs font-semibold text-zinc-200 hover:text-white hover:bg-[#1C2030] transition shadow-sm"
+            >
+              Today
+            </button>
+
+            {/* Stepper Chevrons */}
+            <div className="flex items-center gap-1">
+              <button
+                onClick={handlePrev}
+                className="p-1.5 rounded-lg text-zinc-400 hover:text-white hover:bg-[#1E2230] transition"
+              >
+                <ChevronLeft className="w-4 h-4" />
+              </button>
+              <button
+                onClick={handleNext}
+                className="p-1.5 rounded-lg text-zinc-400 hover:text-white hover:bg-[#1E2230] transition"
+              >
+                <ChevronRight className="w-4 h-4" />
+              </button>
             </div>
+
+            {/* Month / Year Label */}
+            <h1 className="text-base font-bold text-white tracking-tight">
+              {toolbarDateLabel}
+            </h1>
           </div>
 
-          {/* Date Controls + Multi-Horizon Control + Add Block */}
-          <div className="flex flex-wrap items-center gap-2">
-            {/* Horizon Navigation Selector: DAY [SOLAR/3D] | WEEK | MONTH | YEAR */}
-            <HorizonNavigationControl
-              activeHorizon={activeHorizon}
-              onSelectHorizon={(h) => setActiveHorizon(h)}
-              dayMode={dayMode}
-              onSelectDayMode={(m) => setDayMode(m)}
-            />
-
-            {/* Date Stepper */}
-            <div className="flex items-center bg-[#12151f] border border-white/10 rounded-xl p-0.5">
-              <button
-                onClick={() => shiftDate(-1)}
-                className="p-1 rounded-lg text-zinc-400 hover:text-white hover:bg-white/5 transition-colors"
-                title="Previous Day"
-              >
-                <ChevronLeft size={13} />
-              </button>
-              <button
-                onClick={() =>
-                  setSelectedDate(toLocalDateInputValue(new Date()))
-                }
-                className="px-2.5 py-0.5 text-xs font-semibold text-zinc-200 hover:text-amber-300 transition-colors flex items-center gap-1.5"
-              >
-                <CalendarIcon size={12} className="text-amber-400" />
-                {formattedSelectedDate}
-              </button>
-              <button
-                onClick={() => shiftDate(1)}
-                className="p-1 rounded-lg text-zinc-400 hover:text-white hover:bg-white/5 transition-colors"
-                title="Next Day"
-              >
-                <ChevronRight size={13} />
-              </button>
-            </div>
-
-            {/* Calendar Engine View Switcher: Solar Arc | Month Grid | Week Timeline | Day Timeline */}
-            <div className="flex items-center bg-[#12151f] border border-white/10 rounded-xl p-0.5">
-              <button
-                onClick={() => setCalendarView("solar")}
-                className={`flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-[11px] font-semibold transition-all ${
-                  calendarView === "solar"
-                    ? "bg-[#0969DA] text-white shadow"
-                    : "text-zinc-400 hover:text-zinc-200"
-                }`}
-              >
-                <Orbit size={13} className="text-amber-400" />
-                Solar Wheel
-              </button>
-              <button
-                onClick={() => setCalendarView("month")}
-                className={`flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-[11px] font-semibold transition-all ${
-                  calendarView === "month"
-                    ? "bg-[#0969DA] text-white shadow"
-                    : "text-zinc-400 hover:text-zinc-200"
-                }`}
-              >
-                <Grid size={13} className="text-sky-400" />
-                Month
-              </button>
-              <button
-                onClick={() => setCalendarView("week")}
-                className={`flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-[11px] font-semibold transition-all ${
-                  calendarView === "week"
-                    ? "bg-[#0969DA] text-white shadow"
-                    : "text-zinc-400 hover:text-zinc-200"
-                }`}
-              >
-                <CalendarIcon size={13} className="text-emerald-400" />
-                Week
-              </button>
-              <button
-                onClick={() => setCalendarView("day")}
-                className={`flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-[11px] font-semibold transition-all ${
-                  calendarView === "day"
-                    ? "bg-[#0969DA] text-white shadow"
-                    : "text-zinc-400 hover:text-zinc-200"
-                }`}
-              >
-                <Clock size={13} className="text-orange-400" />
-                Day
-              </button>
-            </div>
-
-            {/* Solar Wedges vs Quadrants Mode (only when in Solar Wheel) */}
-            {calendarView === "solar" && (
-              <div className="flex items-center bg-[#12151f] border border-white/10 rounded-xl p-0.5">
-                <button
-                  onClick={() => setViewMode("solar")}
-                  className={`flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-[11px] font-semibold transition-all ${
-                    viewMode === "solar"
-                      ? "bg-white/10 text-white shadow"
-                      : "text-zinc-400 hover:text-zinc-200"
-                  }`}
-                >
-                  <Orbit size={13} className="text-amber-400" />
-                  Solar Arc
-                </button>
-                <button
-                  onClick={() => setViewMode("quadrants")}
-                  className={`flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-[11px] font-semibold transition-all ${
-                    viewMode === "quadrants"
-                      ? "bg-white/10 text-white shadow"
-                      : "text-zinc-400 hover:text-zinc-200"
-                  }`}
-                >
-                  <Layers size={13} className="text-sky-400" />
-                  Quadrants
-                </button>
-              </div>
-            )}
-
-            {/* New Block Button */}
+          {/* Right: Sync Status & View Switcher & Create Button */}
+          <div className="flex items-center gap-3">
+            {/* Google Sync Status Pill */}
             <button
-              onClick={() => {
-                if (calendarView === "solar") {
-                  setEditingEvent(null);
-                  setModalOpen(true);
-                } else {
-                  setTradSelectedEvent(null);
-                  setTradModalOpen(true);
-                }
-              }}
-              className="flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl bg-gradient-to-r from-amber-400 to-orange-500 text-black text-xs font-bold tracking-wider uppercase shadow-[0_0_20px_rgba(251,191,36,0.28)] hover:brightness-110 transition-all"
+              onClick={handleTriggerSync}
+              disabled={isSyncing}
+              className="flex items-center gap-2 px-3 py-1.5 rounded-xl bg-[#141724] border border-[#222738] hover:border-blue-500/50 text-xs transition"
+              title="Click to trigger instant Google Calendar sync"
             >
-              <Plus size={14} strokeWidth={2.5} />
-              Add Block
+              <RefreshCw
+                className={`w-3.5 h-3.5 text-blue-400 ${
+                  isSyncing ? "animate-spin" : ""
+                }`}
+              />
+              <span className="text-[11px] font-medium text-zinc-300">
+                {isSyncing ? "Syncing..." : "Synced with Google Calendar"}
+              </span>
+            </button>
+
+            {/* View Switcher Dropdown (Day D, 4-Days X, Month M, Year Y, Schedule A) */}
+            <div className="relative">
+              <button
+                onClick={() => setShowViewDropdown((prev) => !prev)}
+                className="flex items-center gap-2 px-3 py-1.5 rounded-xl bg-[#141724] border border-[#222738] text-xs font-semibold text-zinc-200 hover:text-white transition shadow-sm"
+              >
+                <span className="capitalize">
+                  {viewMode === "four_day"
+                    ? "4 Days (X)"
+                    : `${viewMode} (${viewMode.charAt(0).toUpperCase()})`}
+                </span>
+                <ChevronDown className="w-3.5 h-3.5 text-zinc-400" />
+              </button>
+
+              {showViewDropdown && (
+                <div className="absolute right-0 top-10 w-44 bg-[#141724] border border-[#282E42] rounded-xl shadow-2xl py-1.5 z-50 text-xs text-zinc-200">
+                  <button
+                    onClick={() => {
+                      setViewMode("day");
+                      setShowViewDropdown(false);
+                    }}
+                    className={`w-full px-3 py-2 text-left hover:bg-[#202538] flex items-center justify-between ${
+                      viewMode === "day" ? "text-blue-400 font-semibold" : ""
+                    }`}
+                  >
+                    <span>Day</span>
+                    <kbd className="px-1.5 py-0.5 rounded bg-[#0D0F17] text-[10px] text-zinc-400">
+                      D
+                    </kbd>
+                  </button>
+
+                  <button
+                    onClick={() => {
+                      setViewMode("four_day");
+                      setShowViewDropdown(false);
+                    }}
+                    className={`w-full px-3 py-2 text-left hover:bg-[#202538] flex items-center justify-between ${
+                      viewMode === "four_day" ? "text-blue-400 font-semibold" : ""
+                    }`}
+                  >
+                    <span>4 Days</span>
+                    <kbd className="px-1.5 py-0.5 rounded bg-[#0D0F17] text-[10px] text-zinc-400">
+                      X
+                    </kbd>
+                  </button>
+
+                  <button
+                    onClick={() => {
+                      setViewMode("month");
+                      setShowViewDropdown(false);
+                    }}
+                    className={`w-full px-3 py-2 text-left hover:bg-[#202538] flex items-center justify-between ${
+                      viewMode === "month" ? "text-blue-400 font-semibold" : ""
+                    }`}
+                  >
+                    <span>Month</span>
+                    <kbd className="px-1.5 py-0.5 rounded bg-[#0D0F17] text-[10px] text-zinc-400">
+                      M
+                    </kbd>
+                  </button>
+
+                  <button
+                    onClick={() => {
+                      setViewMode("year");
+                      setShowViewDropdown(false);
+                    }}
+                    className={`w-full px-3 py-2 text-left hover:bg-[#202538] flex items-center justify-between ${
+                      viewMode === "year" ? "text-blue-400 font-semibold" : ""
+                    }`}
+                  >
+                    <span>Year</span>
+                    <kbd className="px-1.5 py-0.5 rounded bg-[#0D0F17] text-[10px] text-zinc-400">
+                      Y
+                    </kbd>
+                  </button>
+
+                  <button
+                    onClick={() => {
+                      setViewMode("schedule");
+                      setShowViewDropdown(false);
+                    }}
+                    className={`w-full px-3 py-2 text-left hover:bg-[#202538] flex items-center justify-between ${
+                      viewMode === "schedule" ? "text-blue-400 font-semibold" : ""
+                    }`}
+                  >
+                    <span>Schedule</span>
+                    <kbd className="px-1.5 py-0.5 rounded bg-[#0D0F17] text-[10px] text-zinc-400">
+                      A
+                    </kbd>
+                  </button>
+                </div>
+              )}
+            </div>
+
+            {/* + Create Button */}
+            <button
+              onClick={() => handleOpenCreateAtDate(new Date().toISOString().split("T")[0])}
+              className="flex items-center gap-1.5 px-3.5 py-1.5 bg-blue-600 hover:bg-blue-500 text-white rounded-xl text-xs font-semibold shadow-lg shadow-blue-500/20 transition"
+            >
+              <Plus className="w-4 h-4" />
+              <span>Create</span>
             </button>
           </div>
         </header>
 
-        {/* Multi-Day Active Highlight Banner + Ops Notification Toast */}
-        {(activeMultiDaySpans.length > 0 || opsBannerMsg) && (
-          <div className="px-6 pt-3 flex flex-wrap items-center gap-2">
-            {activeMultiDaySpans.map((sp) => (
-              <div
-                key={`md-banner-${sp.id}`}
-                className="flex items-center gap-2 px-3.5 py-1.5 rounded-xl border text-xs font-medium"
-                style={{
-                  backgroundColor: `${sp.color}16`,
-                  borderColor: `${sp.color}55`,
-                  color: "#f8fafc",
+        {/* Body Container: Collapsible Mini-Drawer (256px) + Calendar Canvas */}
+        <div className="flex-1 flex overflow-hidden">
+          {/* Collapsible Mini-Month Drawer */}
+          {isMiniDrawerOpen && (
+            <MiniMonthCalendar
+              currentDate={currentDate}
+              onSelectDate={(d) => setCurrentDate(d)}
+              visibleCalendars={visibleCalendars}
+              onToggleCalendar={(key) =>
+                setVisibleCalendars((prev) => ({
+                  ...prev,
+                  [key]: prev[key] === false ? true : false,
+                }))
+              }
+            />
+          )}
+
+          {/* Main 5-Mode Calendar Canvas */}
+          <main className="flex-1 overflow-hidden p-4">
+            {viewMode === "month" && (
+              <MonthView
+                currentDate={currentDate}
+                events={filteredEvents}
+                onSelectDate={(dStr) => {
+                  setCurrentDate(new Date(dStr));
+                  setViewMode("day");
                 }}
-              >
-                <Highlighter size={13} style={{ color: sp.color }} />
-                <span className="font-bold uppercase tracking-wider text-[10.5px]">
-                  Active Multi-Day Highlight:
-                </span>
-                <span>{sp.label}</span>
-                <span className="font-mono text-[10.5px] text-zinc-300">
-                  ({sp.startDate} → {sp.endDate} ·{" "}
-                  {minutesToHHMM(sp.startMinute)}–{minutesToHHMM(sp.endMinute)})
-                </span>
-              </div>
-            ))}
-
-            {opsBannerMsg && (
-              <div className="px-3.5 py-1.5 rounded-xl bg-emerald-500/20 border border-emerald-400/50 text-emerald-200 text-xs font-medium">
-                {opsBannerMsg}
-              </div>
-            )}
-          </div>
-        )}
-
-        {/* Main Workspace Split: Center Celestial Dial / Multi-Horizon Stage + Right Executive Rail */}
-        <div className="flex flex-col xl:flex-row gap-5 px-6 py-4 items-stretch">
-          {/* LEFT / CENTER STAGE: Unified Multi-Horizon Radial Engine & Traditional Calendar */}
-          <div className="relative flex-1 flex flex-col items-center justify-center min-h-[580px]">
-            {calendarView === "month" && (
-              <div className="w-full">
-                <MonthView
-                  currentDate={new Date(selectedDate + "T12:00:00Z")}
-                  events={calendarEventItems}
-                  onSelectDate={(d) => {
-                    setSelectedDate(d);
-                    setCalendarView("day");
-                  }}
-                  onSelectEvent={(ev) => {
-                    setTradSelectedEvent(ev);
-                    setTradModalOpen(true);
-                  }}
-                  onCreateEvent={(d) => {
-                    setSelectedDate(d);
-                    setTradSelectedEvent(null);
-                    setTradModalOpen(true);
-                  }}
-                />
-              </div>
+                onSelectEvent={handleSelectEvent}
+                onCreateEvent={(dStr) => handleOpenCreateAtDate(dStr)}
+              />
             )}
 
-            {calendarView === "week" && (
-              <div className="w-full">
-                <WeekView
-                  currentDate={new Date(selectedDate + "T12:00:00Z")}
-                  events={calendarEventItems}
-                  onSelectDate={(d) => {
-                    setSelectedDate(d);
-                    setCalendarView("day");
-                  }}
-                  onSelectEvent={(ev) => {
-                    setTradSelectedEvent(ev);
-                    setTradModalOpen(true);
-                  }}
-                  onCreateEvent={(d, t) => {
-                    setSelectedDate(d);
-                    setTradInitialTime(t);
-                    setTradSelectedEvent(null);
-                    setTradModalOpen(true);
-                  }}
-                />
-              </div>
+            {viewMode === "day" && (
+              <DayView
+                currentDate={currentDate}
+                events={filteredEvents}
+                onSelectEvent={handleSelectEvent}
+                onCreateEvent={(tStr) =>
+                  handleOpenCreateAtDate(currentDate.toISOString().split("T")[0], tStr)
+                }
+              />
             )}
 
-            {calendarView === "day" && (
-              <div className="w-full">
-                <DayView
-                  currentDate={new Date(selectedDate + "T12:00:00Z")}
-                  events={calendarEventItems}
-                  onSelectEvent={(ev) => {
-                    setTradSelectedEvent(ev);
-                    setTradModalOpen(true);
-                  }}
-                  onCreateEvent={(t) => {
-                    setTradInitialTime(t);
-                    setTradSelectedEvent(null);
-                    setTradModalOpen(true);
-                  }}
-                />
-              </div>
+            {viewMode === "four_day" && (
+              <FourDayView
+                currentDate={currentDate}
+                events={filteredEvents}
+                onSelectEvent={handleSelectEvent}
+                onCreateEvent={(dStr, tStr) => handleOpenCreateAtDate(dStr, tStr)}
+              />
             )}
 
-            {calendarView === "solar" && (
-              <>
-                {/* Horizon Condition 1: DAY Horizon (Solar Wheel OR 3D Geospatial Map) */}
-                {activeHorizon === "DAY" && dayMode === "SOLAR_WHEEL" && (
-                  <CircadianDialStage
-                    events={events}
-                    currentMinutes={effectiveMinutes}
-                    isLiveTime={scrubbedMinutes === null}
-                    onScrubMinutes={(mins) => setScrubbedMinutes(mins)}
-                    onResetLive={() => setScrubbedMinutes(null)}
-                    viewMode={viewMode}
-                    selectedEventId={selectedEventId}
-                    onSelectEvent={setSelectedEventId}
-                    onToggleChecklist={handleToggleChecklist}
-                    onEditEvent={(ev) => {
-                      setEditingEvent(ev);
-                      setModalOpen(true);
-                    }}
-                    onDeleteEvent={handleDeleteEvent}
-                    onAddChecklist={handleAddChecklist}
-                    radarLayers={radarLayers}
-                    activeRadarTypes={activeRadarTypes}
-                    habits={habits}
-                    highlightSpans={highlightSpans}
-                    selectedDate={selectedDate}
-                    subtaskStylesById={subtaskStylesById}
-                    onToggleSubtaskStyle={handleToggleSubtaskStyleForEvent}
-                    onQuickIncrementHabit={(habitId, delta) =>
-                      handleLogHabit(habitId, { delta })
-                    }
-                  />
-                )}
-
-                {/* Horizon Condition 1b: DAY Horizon (3D Geospatial Tactical Mode) */}
-                {activeHorizon === "DAY" && dayMode === "GEOSPATIAL_3D" && (
-                  <GeospatialTacticalMap
-                    waypoints={EL_PASO_TACTICAL_WAYPOINTS}
-                    routeLegs={EL_PASO_ROUTE_LEGS}
-                    scrubbedMinutes={effectiveMinutes}
-                    onScrubMinutes={(mins) => setScrubbedMinutes(mins)}
-                    isLiveTime={scrubbedMinutes === null}
-                    onResetLive={() => setScrubbedMinutes(null)}
-                  />
-                )}
-
-                {/* Horizon Condition 2: WEEK Horizon */}
-                {activeHorizon === "WEEK" && (
-                  <WeeklyRadialView
-                    weekNumber={46}
-                    dateSpanLabel="NOV 09 - 15"
-                    telemetry={concentricTelemetry}
-                    weekDays={currentWeekDays}
-                    onSelectDay={(dateStr) => {
-                      setSelectedDate(dateStr);
-                      setActiveHorizon("DAY");
-                    }}
-                  />
-                )}
-
-                {/* Horizon Condition 3: MONTH Horizon */}
-                {activeHorizon === "MONTH" && (
-                  <MonthlyRadialView
-                    year={selectedYear}
-                    monthName="November"
-                    telemetry={concentricTelemetry}
-                    monthNodes={currentMonthNodes}
-                    activeWeekDays={currentWeekDays}
-                    onSelectDate={(dateStr) => {
-                      setSelectedDate(dateStr);
-                      setActiveHorizon("DAY");
-                    }}
-                    onDrillDownDay={(dateStr) => {
-                      setSelectedDate(dateStr);
-                      setActiveHorizon("DAY");
-                    }}
-                  />
-                )}
-
-                {/* Horizon Condition 4: YEAR Horizon */}
-                {activeHorizon === "YEAR" && (
-                  <YearlyRadialView
-                    selectedYear={selectedYear}
-                    activeMonth={activeMonthIndex}
-                    telemetry={concentricTelemetry}
-                    seasons={seasonalCards}
-                    onSelectMonth={(mIdx) => {
-                      setActiveMonthIndex(mIdx);
-                      setActiveHorizon("MONTH");
-                    }}
-                    onSelectSeason={(seasonId) => {
-                      setActiveHorizon("MONTH");
-                    }}
-                  />
-                )}
-              </>
+            {viewMode === "year" && (
+              <YearView
+                currentDate={currentDate}
+                events={filteredEvents}
+                onSelectDate={(d) => {
+                  setCurrentDate(d);
+                  setViewMode("day");
+                }}
+              />
             )}
 
-            {/* Bottom-Left Floating Card: MICRO-STATISTICS + 360° Walk Ring Quick Readout */}
-            <div className="xl:absolute xl:left-1 xl:bottom-2 z-20 w-full xl:w-[288px] rounded-2xl bg-[#12151e]/90 backdrop-blur-xl border border-white/[0.08] p-4 shadow-[0_14px_34px_rgba(0,0,0,0.6)] space-y-3">
-              <div className="flex items-center justify-between">
-                <span className="text-[10px] font-bold tracking-[0.14em] uppercase text-zinc-400">
-                  MICRO-STATISTICS
-                </span>
-                {loadingEvents && (
-                  <RefreshCw size={11} className="animate-spin text-zinc-500" />
-                )}
-              </div>
-
-              <div className="flex items-center justify-between gap-4">
-                <div className="pr-4 border-r border-white/10">
-                  <div
-                    className="text-2xl font-bold text-white tracking-tight leading-none"
-                    style={{ fontVariantNumeric: "tabular-nums" }}
-                  >
-                    {telemetryVelocity.toLocaleString()}
-                  </div>
-                  <div className="text-[11px] text-zinc-400 mt-1">
-                    Real-Time
-                  </div>
-                </div>
-
-                <div className="flex items-center gap-3 flex-1">
-                  <div className="relative w-12 h-12 shrink-0">
-                    <svg viewBox="0 0 48 48" className="w-full h-full -rotate-90">
-                      <circle
-                        cx="24"
-                        cy="24"
-                        r="19"
-                        fill="none"
-                        stroke="rgba(255,255,255,0.08)"
-                        strokeWidth="4"
-                      />
-                      <circle
-                        cx="24"
-                        cy="24"
-                        r="19"
-                        fill="none"
-                        stroke="#f59e0b"
-                        strokeWidth="4"
-                        strokeLinecap="round"
-                        strokeDasharray={`${(healthScore / 100) * 119.4} 119.4`}
-                      />
-                    </svg>
-                    <div className="absolute inset-0 flex items-center justify-center text-amber-400">
-                      <HeartPulse size={16} />
-                    </div>
-                  </div>
-                  <div>
-                    <div className="text-xs font-semibold text-zinc-100 leading-tight">
-                      Health
-                    </div>
-                    <div className="text-xs font-semibold text-zinc-300 leading-tight">
-                      Score{" "}
-                      <span className="text-amber-400 font-mono text-[11px]">
-                        {healthScore}%
-                      </span>
-                    </div>
-                  </div>
-                </div>
-              </div>
-            </div>
-
-            {/* Domain Color Legend Pill Bar */}
-            <div className="mt-3 xl:mt-0 xl:absolute xl:bottom-2 xl:right-4 hidden 2xl:flex items-center gap-3 px-3.5 py-2 rounded-xl bg-[#12151e]/80 border border-white/[0.07] text-[10px] text-zinc-400">
-              {(
-                [
-                  ["physical_training", "Training"],
-                  ["engineering", "Engineering"],
-                  ["nutrition", "Nutrition"],
-                  ["family_pets", "Pack & Family"],
-                ] as const
-              ).map(([dom, lbl]) => (
-                <span key={dom} className="flex items-center gap-1.5">
-                  <span
-                    className="w-2 h-2 rounded-full"
-                    style={{ backgroundColor: DOMAIN_CONFIG[dom].color }}
-                  />
-                  {lbl}
-                </span>
-              ))}
-            </div>
-          </div>
-
-          {/* RIGHT EXECUTIVE RAIL: DAILY FOCUS + NESTED ROMAN/BULLET AGENDA + INTEGRATION BADGES */}
-          <aside className="w-full xl:w-[376px] shrink-0 flex flex-col gap-4">
-            <div className="flex-1 rounded-2xl bg-[#12151e]/95 backdrop-blur-xl border border-white/[0.08] p-5 flex flex-col gap-5 shadow-[0_18px_45px_rgba(0,0,0,0.65)]">
-              {/* DAILY FOCUS SECTION */}
-              <div>
-                <div className="flex items-center justify-between">
-                  <h2 className="text-xs font-bold tracking-[0.12em] uppercase text-zinc-100">
-                    DAILY FOCUS
-                  </h2>
-                  <button
-                    onClick={() => {
-                      setEditingEvent(null);
-                      setModalOpen(true);
-                    }}
-                    className="text-zinc-400 hover:text-white transition-colors"
-                    title="Add Focus Block"
-                  >
-                    <MoreHorizontal size={16} />
-                  </button>
-                </div>
-                <p className="text-[11px] text-zinc-400 mt-0.5 mb-3">
-                  Quick task cards & shift status ({paySummary.daysWorked}/
-                  {paySummary.totalScheduledDays} days worked)
-                </p>
-
-                <div className="space-y-2.5">
-                  {events
-                    .filter((ev) => ev.domain !== "logistics")
-                    .slice(0, 2)
-                    .map((ev) => {
-                      const primaryChk = ev.checklists[0];
-                      const secondaryChk = ev.checklists[1];
-                      return (
-                        <div
-                          key={`focus-${ev.id}`}
-                          onClick={() =>
-                            setSelectedEventId(
-                              selectedEventId === ev.id ? null : ev.id
-                            )
-                          }
-                          className={`rounded-xl bg-[#191d29] hover:bg-[#1e2332] border p-3 transition-all cursor-pointer ${
-                            selectedEventId === ev.id
-                              ? "border-amber-400/50"
-                              : "border-white/[0.06]"
-                          }`}
-                        >
-                          <div className="flex items-center gap-2.5">
-                            <button
-                              type="button"
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                if (primaryChk) {
-                                  handleToggleChecklist(
-                                    ev.id,
-                                    primaryChk.id,
-                                    !primaryChk.isCompleted
-                                  );
-                                }
-                              }}
-                              className={`w-4 h-4 rounded flex items-center justify-center border shrink-0 transition-colors ${
-                                primaryChk?.isCompleted
-                                  ? "bg-amber-400 border-amber-400 text-black"
-                                  : "border-zinc-500 bg-transparent"
-                              }`}
-                            >
-                              {primaryChk?.isCompleted && (
-                                <Check size={11} strokeWidth={3} />
-                              )}
-                            </button>
-                            <span
-                              className="w-2 h-2 rounded-full shrink-0"
-                              style={{ backgroundColor: ev.accentColor }}
-                            />
-                            <span className="text-xs font-semibold text-zinc-100 truncate">
-                              {ev.title}
-                            </span>
-                          </div>
-
-                          {secondaryChk ? (
-                            <div
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                handleToggleChecklist(
-                                  ev.id,
-                                  secondaryChk.id,
-                                  !secondaryChk.isCompleted
-                                );
-                              }}
-                              className="flex items-center gap-2 mt-2 pl-0.5"
-                            >
-                              <span
-                                className={`w-3.5 h-3.5 rounded flex items-center justify-center border shrink-0 transition-colors ${
-                                  secondaryChk.isCompleted
-                                    ? "bg-amber-400/80 border-amber-400 text-black"
-                                    : "border-zinc-600 bg-transparent"
-                                }`}
-                              >
-                                {secondaryChk.isCompleted && (
-                                  <Check size={9} strokeWidth={3} />
-                                )}
-                              </span>
-                              <span
-                                className={`text-[11px] truncate ${
-                                  secondaryChk.isCompleted
-                                    ? "line-through text-zinc-500"
-                                    : "text-zinc-400"
-                                }`}
-                              >
-                                {secondaryChk.label}
-                              </span>
-                            </div>
-                          ) : (
-                            <p className="text-[11px] text-zinc-400 mt-1.5 pl-6 line-clamp-2">
-                              {primaryChk?.label ||
-                                DOMAIN_CONFIG[ev.domain].label}
-                            </p>
-                          )}
-                        </div>
-                      );
-                    })}
-
-                  {activeTopTasks.slice(0, 1).map((t) => (
-                    <div
-                      key={t.id}
-                      onClick={() => handleToggleChairmanTask(t)}
-                      className="rounded-xl bg-[#191d29] hover:bg-[#1e2332] border border-white/[0.06] p-3 transition-all cursor-pointer"
-                    >
-                      <div className="flex items-center gap-2.5">
-                        <span
-                          className={`w-4 h-4 rounded flex items-center justify-center border shrink-0 ${
-                            t.status === "DONE"
-                              ? "bg-amber-400 border-amber-400 text-black"
-                              : "border-zinc-500"
-                          }`}
-                        >
-                          {t.status === "DONE" && (
-                            <Check size={11} strokeWidth={3} />
-                          )}
-                        </span>
-                        <span
-                          className={`text-xs font-semibold truncate ${
-                            t.status === "DONE"
-                              ? "line-through text-zinc-500"
-                              : "text-zinc-100"
-                          }`}
-                        >
-                          {t.title}
-                        </span>
-                      </div>
-                      <div className="text-[10.5px] text-zinc-400 mt-1 pl-6">
-                        Chairman Queue · {t.category || t.pillar}
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              </div>
-
-              <div className="h-px bg-white/[0.07]" />
-
-              {/* AGENDA SECTION WITH NESTED ROMAN NUMERAL (I, II, III, IV) / BULLET (•) SUBTASKS */}
-              <div className="flex-1 flex flex-col min-h-0">
-                <div className="flex items-center justify-between mb-3">
-                  <div className="flex items-center gap-2">
-                    <h2 className="text-xs font-bold tracking-[0.12em] uppercase text-zinc-100">
-                      AGENDA & SUBTASKS
-                    </h2>
-                    <button
-                      type="button"
-                      onClick={handleToggleGlobalSubtaskStyle}
-                      className="flex items-center gap-1 px-2 py-0.5 rounded-md bg-amber-400/15 hover:bg-amber-400/25 border border-amber-400/35 text-[9.5px] font-mono font-bold text-amber-300 transition-colors"
-                      title="Toggle all nested subtasks between Roman Numerals (I, II, III, IV) and Bullets (•)"
-                    >
-                      <ListOrdered size={10} />
-                      {globalSubtaskStyle === "roman" ? "I, II, III" : "Bullets •"}
-                    </button>
-                  </div>
-
-                  <button
-                    onClick={handleImportGoogleCalendar}
-                    disabled={syncingGCal}
-                    className="flex items-center gap-1 text-[10px] font-semibold text-zinc-400 hover:text-amber-300 transition-colors"
-                    title="Sync Google Calendar Events"
-                  >
-                    <RefreshCw
-                      size={12}
-                      className={syncingGCal ? "animate-spin text-amber-400" : ""}
-                    />
-                    {calConnected ? "Sync GCal" : "Connect GCal"}
-                  </button>
-                </div>
-
-                <div className="relative space-y-2.5 overflow-y-auto max-h-[430px] pr-1">
-                  <div className="pointer-events-none absolute left-[9px] top-3 bottom-3 w-px bg-white/10" />
-
-                  {sortedAgenda.map(
-                    ({
-                      event,
-                      sMin,
-                      eMin,
-                      doneChecks,
-                      totalChecks,
-                      isComplete,
-                      anticipatedPay,
-                      actualPay,
-                      dailyMoneyUsed,
-                    }) => {
-                      const isSelected = selectedEventId === event.id;
-                      const isExpanded =
-                        Boolean(expandedAgendaIds[event.id]) || isSelected;
-                      const styleMode =
-                        subtaskStylesById[event.id] ??
-                        event.subtaskStyle ??
-                        globalSubtaskStyle;
-                      const hh = String(Math.floor(sMin / 60)).padStart(2, "0");
-                      const mm = String(Math.floor(sMin % 60)).padStart(2, "0");
-                      const ehh = String(Math.floor(eMin / 60)).padStart(2, "0");
-                      const emm = String(Math.floor(eMin % 60)).padStart(2, "0");
-                      const isWorkBlock = event.title
-                        .toLowerCase()
-                        .includes("go to work");
-
-                      return (
-                        <div
-                          key={`agenda-${event.id}`}
-                          className={`relative rounded-xl border transition-all p-2 ${
-                            isSelected
-                              ? "bg-white/[0.07] border-white/20"
-                              : "bg-[#161a26]/75 hover:bg-[#191e2c] border-white/[0.05]"
-                          }`}
-                        >
-                          {/* Parent Time Block Header */}
-                          <div
-                            onClick={() => {
-                              setSelectedEventId(isSelected ? null : event.id);
-                              setExpandedAgendaIds((p) => ({
-                                ...p,
-                                [event.id]: !isExpanded,
-                              }));
-                            }}
-                            className="flex items-start gap-2.5 cursor-pointer"
-                          >
-                            <span
-                              className={`relative z-10 mt-0.5 w-[19px] h-[19px] rounded-full flex items-center justify-center border shrink-0 transition-all ${
-                                isComplete
-                                  ? "border-transparent text-black shadow-sm"
-                                  : "bg-[#12151e] text-zinc-300"
-                              }`}
-                              style={{
-                                backgroundColor: isComplete
-                                  ? event.accentColor || "#fbbf24"
-                                  : undefined,
-                                borderColor: !isComplete
-                                  ? event.accentColor || "#52525b"
-                                  : undefined,
-                              }}
-                            >
-                              <Check size={10} strokeWidth={3} />
-                            </span>
-
-                            <div className="min-w-0 flex-1">
-                              <div className="flex items-center justify-between gap-1.5">
-                                <div className="text-xs font-semibold text-zinc-100 truncate">
-                                  <span
-                                    className="font-mono mr-1.5"
-                                    style={{
-                                      color: event.accentColor || "#e4e4e7",
-                                      fontVariantNumeric: "tabular-nums",
-                                    }}
-                                  >
-                                    {hh}:{mm}
-                                  </span>
-                                  {event.title}
-                                </div>
-
-                                <div className="flex items-center gap-1 shrink-0">
-                                  <button
-                                    type="button"
-                                    onClick={(e) => {
-                                      e.stopPropagation();
-                                      handleToggleSubtaskStyleForEvent(
-                                        event.id
-                                      );
-                                    }}
-                                    className="px-1.5 py-0.5 rounded bg-white/[0.06] hover:bg-white/12 text-[9px] font-mono text-amber-300"
-                                    title="Switch Roman Numerals / Bullets for this block"
-                                  >
-                                    {styleMode === "roman" ? "I·II" : "•"}
-                                  </button>
-                                  <ChevronDown
-                                    size={12}
-                                    className={`text-zinc-400 transition-transform ${
-                                      isExpanded ? "rotate-180" : ""
-                                    }`}
-                                  />
-                                </div>
-                              </div>
-
-                              <div className="flex flex-wrap items-center gap-1.5 text-[10.5px] text-zinc-400 mt-0.5">
-                                <span className="font-mono">
-                                  {hh}:{mm}–{ehh}:{emm}
-                                </span>
-                                <span>·</span>
-                                <span>
-                                  {doneChecks}/{totalChecks} subtasks
-                                </span>
-                                {(actualPay > 0 || anticipatedPay > 0) && (
-                                  <span className="px-1.5 py-0.2 rounded bg-emerald-500/15 text-emerald-300 font-mono text-[9.5px]">
-                                    ${actualPay || anticipatedPay}
-                                  </span>
-                                )}
-                                {dailyMoneyUsed > 0 && (
-                                  <span className="px-1.5 py-0.2 rounded bg-orange-500/15 text-orange-300 font-mono text-[9.5px]">
-                                    -${dailyMoneyUsed}
-                                  </span>
-                                )}
-                              </div>
-                            </div>
-                          </div>
-
-                          {/* Nested Subtasks Underneath Calendar Block (Roman I, II, III, IV or Bullets •) */}
-                          {isExpanded && (
-                            <div className="mt-2 ml-6 pl-2.5 border-l border-white/10 space-y-1">
-                              {isWorkBlock && (
-                                <div className="text-[9.5px] font-mono font-bold uppercase tracking-wider text-sky-300 pb-0.5">
-                                  07:00 – 08:00 Nested Opening Protocol:
-                                </div>
-                              )}
-                              {event.checklists.map((chk, idx) => (
-                                <button
-                                  key={chk.id}
-                                  type="button"
-                                  onClick={() =>
-                                    handleToggleChecklist(
-                                      event.id,
-                                      chk.id,
-                                      !chk.isCompleted
-                                    )
-                                  }
-                                  className="w-full flex items-start gap-1.5 text-left py-0.5 px-1 rounded hover:bg-white/[0.05] transition-colors"
-                                >
-                                  <span
-                                    className={`mt-0.5 w-3.5 h-3.5 rounded flex items-center justify-center border shrink-0 ${
-                                      chk.isCompleted
-                                        ? "bg-amber-400 border-amber-400 text-black"
-                                        : "border-zinc-600"
-                                    }`}
-                                  >
-                                    {chk.isCompleted && (
-                                      <Check size={9} strokeWidth={3} />
-                                    )}
-                                  </span>
-                                  <span className="text-[10.5px] font-mono font-bold text-amber-300 shrink-0 min-w-[20px]">
-                                    {formatSubtaskMarker(idx, styleMode)}
-                                  </span>
-                                  <span
-                                    className={`text-[11px] leading-snug ${
-                                      chk.isCompleted
-                                        ? "line-through text-zinc-500"
-                                        : "text-zinc-200"
-                                    }`}
-                                  >
-                                    {chk.label}
-                                  </span>
-                                </button>
-                              ))}
-
-                              <form
-                                onSubmit={(e) => {
-                                  e.preventDefault();
-                                  const txt = (
-                                    agendaSubtaskDrafts[event.id] || ""
-                                  ).trim();
-                                  if (!txt) return;
-                                  handleAddChecklist(event.id, txt);
-                                  setAgendaSubtaskDrafts((p) => ({
-                                    ...p,
-                                    [event.id]: "",
-                                  }));
-                                }}
-                                className="flex items-center gap-1 pt-1"
-                              >
-                                <input
-                                  type="text"
-                                  value={agendaSubtaskDrafts[event.id] || ""}
-                                  onChange={(e) =>
-                                    setAgendaSubtaskDrafts((p) => ({
-                                      ...p,
-                                      [event.id]: e.target.value,
-                                    }))
-                                  }
-                                  placeholder={`+ Add ${
-                                    styleMode === "roman"
-                                      ? "Roman (I, II...)"
-                                      : "bullet"
-                                  } subtask`}
-                                  className="flex-1 bg-black/35 border border-white/10 rounded px-2 py-0.5 text-[10.5px] text-white placeholder:text-zinc-500"
-                                />
-                                <button
-                                  type="submit"
-                                  className="px-2 py-0.5 rounded bg-white/10 hover:bg-white/15 text-[10px] font-semibold text-zinc-200"
-                                >
-                                  +
-                                </button>
-                              </form>
-                            </div>
-                          )}
-                        </div>
-                      );
-                    }
-                  )}
-                </div>
-              </div>
-            </div>
-
-            {/* INTEGRATION BADGES Glass Card */}
-            <div className="rounded-2xl bg-[#12151e]/95 backdrop-blur-xl border border-white/[0.08] p-4 shadow-[0_14px_34px_rgba(0,0,0,0.6)]">
-              <div className="flex items-center justify-between mb-3">
-                <h3 className="text-[10px] font-bold tracking-[0.14em] uppercase text-zinc-300">
-                  INTEGRATION BADGES
-                </h3>
-              </div>
-
-              <div className="grid grid-cols-4 gap-2">
-                {[
-                  {
-                    id: "clickup",
-                    label: "ClickUp",
-                    icon: (
-                      <svg viewBox="0 0 24 24" className="w-5 h-5">
-                        <path
-                          d="M5 14.5L12 8.5L19 14.5"
-                          fill="none"
-                          stroke="#ec4899"
-                          strokeWidth="2.8"
-                          strokeLinecap="round"
-                          strokeLinejoin="round"
-                        />
-                        <path
-                          d="M6.5 17.5C8.2 19 10 19.7 12 19.7C14 19.7 15.8 19 17.5 17.5"
-                          fill="none"
-                          stroke="#8b5cf6"
-                          strokeWidth="2.8"
-                          strokeLinecap="round"
-                        />
-                      </svg>
-                    ),
-                  },
-                  {
-                    id: "plaid",
-                    label: "Plaid",
-                    icon: (
-                      <svg viewBox="0 0 24 24" className="w-5 h-5 text-zinc-100">
-                        <path
-                          d="M8 4L20 16M4 8L16 20M16 4L4 16M20 8L8 20"
-                          stroke="currentColor"
-                          strokeWidth="1.9"
-                          strokeLinecap="round"
-                        />
-                      </svg>
-                    ),
-                  },
-                  {
-                    id: "garmin",
-                    label: "Garmin",
-                    icon: (
-                      <svg viewBox="0 0 24 24" className="w-5 h-5">
-                        <polygon points="12,5 20,19 4,19" fill="#38bdf8" />
-                      </svg>
-                    ),
-                  },
-                  {
-                    id: "supabase",
-                    label: "Supabase",
-                    icon: (
-                      <svg viewBox="0 0 24 24" className="w-5 h-5">
-                        <path
-                          d="M13 3L5 14H12L11 21L19 10H12L13 3Z"
-                          fill="#10b981"
-                        />
-                      </svg>
-                    ),
-                  },
-                ].map((badge) => (
-                  <div
-                    key={badge.id}
-                    className="flex flex-col items-center justify-center gap-1.5 py-2.5 px-1 rounded-xl border border-white/[0.05] bg-[#191d29]"
-                  >
-                    <div className="w-8 h-8 rounded-lg bg-black/40 flex items-center justify-center">
-                      {badge.icon}
-                    </div>
-                    <span className="text-[10px] font-medium text-zinc-300">
-                      {badge.label}
-                    </span>
-                  </div>
-                ))}
-              </div>
-            </div>
-          </aside>
+            {viewMode === "schedule" && (
+              <ScheduleView
+                events={filteredEvents}
+                onSelectEvent={handleSelectEvent}
+                onCreateEvent={(dStr) => handleOpenCreateAtDate(dStr)}
+              />
+            )}
+          </main>
         </div>
-
-        {/* Lower Integrated Command Deck: Batching, Color Studio, Highlights, 360° Habit Rings, Shift×Pay Calculator & Full-Year Appointments */}
-        <CalendarOpsCommandDeck
-          selectedDate={selectedDate}
-          onSelectDate={(d) => setSelectedDate(d)}
-          events={events}
-          selectedEventId={selectedEventId}
-          onSelectEvent={setSelectedEventId}
-          pendingTasksCount={activeTasksCount + activeSubtasksCount}
-          habits={habits}
-          highlightSpans={highlightSpans}
-          shiftConfig={shiftConfig}
-          paySummary={paySummary}
-          appointments={appointments}
-          busyAction={busyOpsAction}
-          onAutoBatchTasks={handleAutoBatchTasks}
-          onRandomizeColors={handleRandomizeColors}
-          onRecolorEvent={handleRecolorEvent}
-          onLogHabit={handleLogHabit}
-          onCreateHabit={async (payload) => {
-            await postCalendarOps({ action: "create_habit", ...payload });
-          }}
-          onDeleteHabit={async (habitId) => {
-            setHabits((prev) => prev.filter((h) => h.id !== habitId));
-            await postCalendarOps({ action: "delete_habit", habitId });
-          }}
-          onCreateHighlightSpan={async (payload) => {
-            await postCalendarOps({
-              action: "create_highlight_span",
-              ...payload,
-            });
-          }}
-          onToggleHighlightSpan={async (spanId, isActive) => {
-            setHighlightSpans((prev) =>
-              prev.map((s) => (s.id === spanId ? { ...s, isActive } : s))
-            );
-            await postCalendarOps({
-              action: "toggle_highlight_span",
-              spanId,
-              isActive,
-            });
-          }}
-          onDeleteHighlightSpan={async (spanId) => {
-            setHighlightSpans((prev) => prev.filter((s) => s.id !== spanId));
-            await postCalendarOps({ action: "delete_highlight_span", spanId });
-          }}
-          onUpdateShiftConfig={async (cfg) => {
-            await postCalendarOps({ action: "update_shift_config", ...cfg });
-          }}
-          onToggleTodayShift={async () => {
-            setBusyOpsAction("toggle_shift");
-            try {
-              await postCalendarOps({ action: "toggle_today_shift" });
-            } finally {
-              setBusyOpsAction(null);
-            }
-          }}
-          onCreateAppointment={async (payload) => {
-            await postCalendarOps({ action: "create_appointment", ...payload });
-          }}
-          onUpdateAppointment={async (id, patch) => {
-            setAppointments((prev) =>
-              prev.map((a) => (a.id === id ? { ...a, ...patch } : a))
-            );
-            await postCalendarOps({
-              action: "update_appointment",
-              id,
-              ...patch,
-            });
-          }}
-          onDeleteAppointment={async (id) => {
-            setAppointments((prev) => prev.filter((a) => a.id !== id));
-            await postCalendarOps({ action: "delete_appointment", id });
-          }}
-        />
       </div>
 
-      {/* Add / Edit Circadian Event Modal */}
-      <CircadianEventModal
-        isOpen={modalOpen}
-        initialEvent={editingEvent}
-        selectedDate={selectedDate}
-        calConnected={calConnected}
-        onClose={() => {
-          setModalOpen(false);
-          setEditingEvent(null);
-        }}
-        onSave={handleSaveEvent}
+      {/* Quick Popover Card (420px Width) */}
+      <CalendarQuickPopover
+        event={quickPopoverEvent}
+        isOpen={!!quickPopoverEvent}
+        onClose={() => setQuickPopoverEvent(null)}
+        onEditFull={handleEditFull}
+        onSaveQuick={handleQuickSave}
+        onDeleteEvent={handleDeleteEvent}
       />
 
-      {/* Traditional Calendar Event Modal */}
-      <TraditionalEventModal
-        isOpen={tradModalOpen}
-        event={tradSelectedEvent}
-        initialDate={selectedDate}
-        initialTime={tradInitialTime}
-        onClose={() => {
-          setTradModalOpen(false);
-          setTradSelectedEvent(null);
-          setTradInitialTime(undefined);
-        }}
-        onSave={handleSaveTradEvent}
-        onDelete={handleDeleteTradEvent}
+      {/* Full Event Editor Modal */}
+      <CalendarEventModal
+        isOpen={isFullEditorOpen}
+        onClose={() => setIsFullEditorOpen(false)}
+        event={fullEditorEvent}
+        initialDate={editorInitialDate}
+        initialTime={editorInitialTime}
+        onSave={handleFullSave}
+        onDelete={handleDeleteEvent}
       />
     </div>
   );

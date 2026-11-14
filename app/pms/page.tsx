@@ -2,195 +2,89 @@
 
 import React, { useCallback, useEffect, useMemo, useState } from "react";
 import {
-  AlertOctagon,
-  ArrowLeft,
-  ArrowRight,
-  CheckCircle2,
-  CheckSquare,
-  ChevronDown,
-  ChevronRight,
-  Clock,
-  CloudDownload,
-  Columns3,
-  Database,
-  FileJson,
-  Filter,
-  FolderKanban,
-  GitBranch,
-  Layers,
-  ListTree,
-  Loader2,
   Plus,
-  RefreshCw,
   Search,
-  Share2,
-  ShieldCheck,
+  Filter,
+  Columns3,
+  List as ListIcon,
+  LayoutDashboard,
+  Calendar,
+  Layers,
+  ChevronRight,
+  ChevronLeft,
+  Clock,
+  Flag,
+  CheckCircle2,
+  AlertCircle,
+  Folder,
+  CheckSquare,
   Sparkles,
-  Square,
-  Tag,
+  Loader2,
   Trash2,
-  Upload,
-  X,
+  ArrowRight,
+  TrendingUp,
+  BarChart3,
+  CalendarDays,
+  Network,
 } from "lucide-react";
-import { ExecutiveModuleShell } from "@/components/chairman/ExecutiveModuleShell";
+import {
+  PmsSpaceDTO,
+  PmsFolderDTO,
+  PmsListDTO,
+  PmsStatusDTO,
+  PmsTaskDTO,
+} from "@/app/api/pms/route";
+import { PmsSidebarRail } from "@/components/pms/PmsSidebarRail";
+import { PmsHierarchySidebar } from "@/components/pms/PmsHierarchySidebar";
+import { TaskDetailModal } from "@/components/pms/TaskDetailModal";
+import { NewSpaceModal } from "@/components/pms/NewSpaceModal";
 
-type PmsStatusCategory =
-  | "open"
-  | "unstarted"
-  | "active"
-  | "blocked"
-  | "review"
-  | "closed";
-
-interface ChecklistItem {
-  id: string;
-  task_id: string;
-  name: string;
-  is_completed: boolean;
-  sort_order: number;
-}
-
-interface PmsList {
-  id: string;
-  name: string;
-  space_name: string;
-  original_clickup_list_id: string | null;
-}
-
-interface PmsTask {
-  id: string;
-  list_id: string;
-  parent_task_id: string | null;
-  original_clickup_id: string | null;
-  name: string;
-  markdown_description: string | null;
-  status: string;
-  status_category: PmsStatusCategory;
-  priority: string;
-  due_date: string | null;
-  time_estimate_minutes: number;
-  tags: string[];
-  is_shared: boolean;
-  is_closed: boolean;
-  list_name?: string;
-  space_name?: string;
-  checklists: ChecklistItem[];
-}
-
-const COLUMNS: Array<{
-  key: PmsStatusCategory;
-  title: string;
-  subtitle: string;
-  accent: string;
-  badgeBg: string;
-}> = [
-  {
-    key: "open",
-    title: "Ice Box / Ideas",
-    subtitle: "Backlog & Exploratory R&D",
-    accent: "#64748b",
-    badgeBg: "bg-slate-500/15 text-slate-300 border-slate-500/30",
-  },
-  {
-    key: "unstarted",
-    title: "Active Sprint Queue",
-    subtitle: "Scoped & Ready for Dispatch",
-    accent: "#3b82f6",
-    badgeBg: "bg-blue-500/15 text-blue-300 border-blue-500/30",
-  },
-  {
-    key: "active",
-    title: "Active Execution",
-    subtitle: "In-Flight Deep Work",
-    accent: "#f59e0b",
-    badgeBg: "bg-amber-500/15 text-amber-300 border-amber-500/30",
-  },
-  {
-    key: "blocked",
-    title: "Dependency Hold",
-    subtitle: "External Wait / Blocker",
-    accent: "#f43f5e",
-    badgeBg: "bg-rose-500/15 text-rose-300 border-rose-500/30",
-  },
-  {
-    key: "review",
-    title: "Verification Gate",
-    subtitle: "QA Audit & Sign-Off",
-    accent: "#a855f7",
-    badgeBg: "bg-purple-500/15 text-purple-300 border-purple-500/30",
-  },
-  {
-    key: "closed",
-    title: "Closed / Verified",
-    subtitle: "Sovereign Ledger Sealed",
-    accent: "#10b981",
-    badgeBg: "bg-emerald-500/15 text-emerald-300 border-emerald-500/30",
-  },
-];
-
-const PRIORITY_STYLES: Record<string, string> = {
-  urgent: "bg-rose-500/20 text-rose-300 border-rose-500/40",
-  high: "bg-amber-500/20 text-amber-300 border-amber-500/40",
-  normal: "bg-sky-500/15 text-sky-300 border-sky-500/30",
-  low: "bg-zinc-500/15 text-zinc-400 border-zinc-600/30",
-};
-
-function formatEstimate(mins: number): string {
-  if (!mins || mins <= 0) return "—";
-  if (mins < 60) return `${mins}m`;
-  const h = Math.floor(mins / 60);
-  const m = mins % 60;
-  return m > 0 ? `${h}h ${m}m` : `${h}h`;
-}
+type ViewMode = "board" | "list" | "overview";
 
 export default function SovereignPmsPage() {
-  const [lists, setLists] = useState<PmsList[]>([]);
-  const [tasks, setTasks] = useState<PmsTask[]>([]);
+  // Navigation & Data States
+  const [spaces, setSpaces] = useState<PmsSpaceDTO[]>([]);
+  const [statuses, setStatuses] = useState<PmsStatusDTO[]>([]);
+  const [tasks, setTasks] = useState<PmsTaskDTO[]>([]);
   const [loading, setLoading] = useState(true);
-  const [viewMode, setViewMode] = useState<"kanban" | "list">("kanban");
-  const [selectedListId, setSelectedListId] = useState<string>("ALL");
-  const [priorityFilter, setPriorityFilter] = useState<string>("ALL");
+
+  // Hierarchy Selection
+  const [selectedSpaceId, setSelectedSpaceId] = useState<string | null>(null);
+  const [selectedFolderId, setSelectedFolderId] = useState<string | null>(null);
+  const [selectedListId, setSelectedListId] = useState<string | null>(null);
+
+  // Rail & View States
+  const [activeRailSection, setActiveRailSection] = useState("dashboards");
+  const [viewMode, setViewMode] = useState<ViewMode>("board");
+  const [showAddViewMenu, setShowAddViewMenu] = useState(false);
+
+  // Filter & Search
   const [searchQuery, setSearchQuery] = useState("");
+  const [priorityFilter, setPriorityFilter] = useState("ALL");
 
-  const [expandedTaskIds, setExpandedTaskIds] = useState<Record<string, boolean>>({});
-  const [subtaskDrafts, setSubtaskDrafts] = useState<Record<string, string>>({});
-  const [checklistDrafts, setChecklistDrafts] = useState<Record<string, string>>({});
+  // Modals
+  const [isNewSpaceModalOpen, setIsNewSpaceModalOpen] = useState(false);
+  const [selectedTaskForDetail, setSelectedTaskForDetail] = useState<PmsTaskDTO | null>(null);
 
-  // Composer Modal
-  const [composerOpen, setComposerOpen] = useState(false);
-  const [newTaskName, setNewTaskName] = useState("");
-  const [newTaskDesc, setNewTaskDesc] = useState("");
-  const [newTaskListId, setNewTaskListId] = useState("");
-  const [newTaskCategory, setNewTaskCategory] = useState<PmsStatusCategory>("unstarted");
-  const [newTaskPriority, setNewTaskPriority] = useState("high");
-  const [newTaskEstimate, setNewTaskEstimate] = useState("60");
-  const [newTaskTags, setNewTaskTags] = useState("sovereign, sprint");
-  const [newTaskChecklists, setNewTaskChecklists] = useState("");
-  const [newTaskShared, setNewTaskShared] = useState(false);
-  const [submittingTask, setSubmittingTask] = useState(false);
+  // Quick Inline Add Task in Board
+  const [inlineTaskNameByStatus, setInlineTaskNameByStatus] = useState<Record<string, string>>({});
+  const [addingTaskForStatusId, setAddingTaskForStatusId] = useState<string | null>(null);
 
-  // ClickUp Ingestion Modal
-  const [ingestOpen, setIngestOpen] = useState(false);
-  const [ingestTab, setIngestTab] = useState<"token" | "export">("token");
-  const [clickupToken, setClickupToken] = useState("");
-  const [exportFormat, setExportFormat] = useState<"json" | "csv">("json");
-  const [rawExportText, setRawExportText] = useState("");
-  const [ingesting, setIngesting] = useState(false);
-  const [ingestFeedback, setIngestFeedback] = useState<{
-    type: "success" | "error";
-    message: string;
-  } | null>(null);
-
-  const loadPms = useCallback(async () => {
-    setLoading(true);
+  // Fetch Full PMS Hierarchy
+  const loadPmsData = useCallback(async () => {
     try {
+      setLoading(true);
       const res = await fetch("/api/pms", { cache: "no-store" });
       const data = await res.json();
-      if (data.lists) {
-        setLists(data.lists);
-        if (!newTaskListId && data.lists[0]?.id) {
-          setNewTaskListId(data.lists[0].id);
+      if (data.spaces) {
+        setSpaces(data.spaces);
+        // Default to first space if none selected
+        if (!selectedSpaceId && data.spaces.length > 0) {
+          setSelectedSpaceId(data.spaces[0].id);
         }
+      }
+      if (data.statuses) {
+        setStatuses(data.statuses);
       }
       if (data.tasks) {
         setTasks(data.tasks);
@@ -200,106 +94,241 @@ export default function SovereignPmsPage() {
     } finally {
       setLoading(false);
     }
-  }, [newTaskListId]);
+  }, [selectedSpaceId]);
 
   useEffect(() => {
-    loadPms();
-  }, [loadPms]);
+    loadPmsData();
+  }, [loadPmsData]);
 
-  const subtasksByParent = useMemo(() => {
-    const map = new Map<string, PmsTask[]>();
-    for (const t of tasks) {
-      if (t.parent_task_id) {
-        const arr = map.get(t.parent_task_id) || [];
-        arr.push(t);
-        map.set(t.parent_task_id, arr);
-      }
+  // Selected Scope Details
+  const currentSpace = useMemo(
+    () => spaces.find((s) => s.id === selectedSpaceId) || spaces[0] || null,
+    [spaces, selectedSpaceId]
+  );
+
+  const currentFolder = useMemo(() => {
+    if (!currentSpace || !selectedFolderId) return null;
+    return currentSpace.folders.find((f) => f.id === selectedFolderId) || null;
+  }, [currentSpace, selectedFolderId]);
+
+  const currentList = useMemo(() => {
+    if (!currentSpace || !selectedListId) return null;
+    const direct = currentSpace.lists.find((l) => l.id === selectedListId);
+    if (direct) return direct;
+    for (const f of currentSpace.folders) {
+      const match = f.lists.find((l) => l.id === selectedListId);
+      if (match) return match;
     }
-    return map;
-  }, [tasks]);
+    return null;
+  }, [currentSpace, selectedListId]);
 
-  const filteredRootTasks = useMemo(() => {
-    const q = searchQuery.trim().toLowerCase();
+  // Filter Statuses for Current Space
+  const currentSpaceStatuses = useMemo(() => {
+    if (!currentSpace) return [];
+    const spaceStatuses = statuses.filter((st) => st.space_id === currentSpace.id);
+    if (spaceStatuses.length > 0) return spaceStatuses;
+    // Fallback default set if empty
+    return [
+      { id: "s1", space_id: currentSpace.id, name: "NOT STARTED", category: "not_started" as const, color_hex: "#64748B", sort_order: 0 },
+      { id: "s2", space_id: currentSpace.id, name: "TO DO", category: "not_started" as const, color_hex: "#3B82F6", sort_order: 1 },
+      { id: "s3", space_id: currentSpace.id, name: "IN PROGRESS", category: "active" as const, color_hex: "#F59E0B", sort_order: 2 },
+      { id: "s4", space_id: currentSpace.id, name: "REVIEW", category: "active" as const, color_hex: "#A855F7", sort_order: 3 },
+      { id: "s5", space_id: currentSpace.id, name: "COMPLETE", category: "closed" as const, color_hex: "#10B981", sort_order: 4 },
+    ];
+  }, [currentSpace, statuses]);
+
+  // Filter Tasks by Active Scope & Filters
+  const filteredTasks = useMemo(() => {
     return tasks.filter((t) => {
-      if (t.parent_task_id) return false;
-      if (selectedListId !== "ALL" && t.list_id !== selectedListId) return false;
-      if (priorityFilter !== "ALL" && t.priority !== priorityFilter) return false;
-      if (q) {
-        const children = subtasksByParent.get(t.id) || [];
-        const matchSelf =
-          t.name.toLowerCase().includes(q) ||
-          (t.markdown_description || "").toLowerCase().includes(q) ||
-          (t.original_clickup_id || "").toLowerCase().includes(q) ||
-          t.tags.some((tg) => tg.toLowerCase().includes(q));
-        const matchChild = children.some((c) => c.name.toLowerCase().includes(q));
-        if (!matchSelf && !matchChild) return false;
+      // Scope filter
+      if (selectedListId && t.list_id !== selectedListId) return false;
+      if (selectedFolderId && !selectedListId && t.folder_id !== selectedFolderId) return false;
+      if (selectedSpaceId && !selectedFolderId && !selectedListId && t.space_id !== selectedSpaceId) {
+        return false;
       }
+
+      // Priority filter
+      if (priorityFilter !== "ALL" && t.priority !== priorityFilter) return false;
+
+      // Search query
+      if (searchQuery.trim()) {
+        const q = searchQuery.toLowerCase();
+        const matchTitle = t.name.toLowerCase().includes(q);
+        const matchDesc = (t.description || "").toLowerCase().includes(q);
+        const matchTags = t.tags.some((tg) => tg.toLowerCase().includes(q));
+        if (!matchTitle && !matchDesc && !matchTags) return false;
+      }
+
       return true;
     });
-  }, [tasks, selectedListId, priorityFilter, searchQuery, subtasksByParent]);
+  }, [tasks, selectedSpaceId, selectedFolderId, selectedListId, priorityFilter, searchQuery]);
 
-  const stats = useMemo(() => {
-    const total = tasks.length;
-    const active = tasks.filter((t) => t.status_category === "active").length;
-    const blocked = tasks.filter((t) => t.status_category === "blocked").length;
-    const review = tasks.filter((t) => t.status_category === "review").length;
-    const closed = tasks.filter((t) => t.status_category === "closed").length;
-    const clickupSynced = tasks.filter((t) => !!t.original_clickup_id).length;
-    const totalMins = tasks
-      .filter((t) => t.status_category !== "closed")
-      .reduce((acc, t) => acc + (t.time_estimate_minutes || 0), 0);
-    return { total, active, blocked, review, closed, clickupSynced, totalMins };
-  }, [tasks]);
+  // Actions
+  const handleSelectSpace = (spaceId: string) => {
+    setSelectedSpaceId(spaceId);
+    setSelectedFolderId(null);
+    setSelectedListId(null);
+  };
 
-  const moveTaskStatus = async (taskId: string, nextCategory: PmsStatusCategory) => {
+  const handleSelectFolder = (spaceId: string, folderId: string) => {
+    setSelectedSpaceId(spaceId);
+    setSelectedFolderId(folderId);
+    setSelectedListId(null);
+  };
+
+  const handleSelectList = (spaceId: string, folderId: string | null, listId: string) => {
+    setSelectedSpaceId(spaceId);
+    setSelectedFolderId(folderId);
+    setSelectedListId(listId);
+  };
+
+  const handleCreateSpace = async (name: string, colorHex: string, icon: string) => {
+    const res = await fetch("/api/pms", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ action: "create_space", name, color_hex: colorHex, icon }),
+    });
+    if (res.ok) {
+      await loadPmsData();
+    }
+  };
+
+  const handleCreateFolder = async (spaceId: string, name: string) => {
+    const res = await fetch("/api/pms", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ action: "create_folder", space_id: spaceId, name }),
+    });
+    if (res.ok) {
+      await loadPmsData();
+    }
+  };
+
+  const handleCreateList = async (spaceId: string, folderId: string | null, name: string) => {
+    const res = await fetch("/api/pms", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ action: "create_list", space_id: spaceId, folder_id: folderId, name }),
+    });
+    if (res.ok) {
+      await loadPmsData();
+    }
+  };
+
+  const handleCreateTaskInline = async (statusId: string) => {
+    const title = (inlineTaskNameByStatus[statusId] || "").trim();
+    if (!title || !currentSpace) return;
+
+    // Pick target list
+    let targetListId = selectedListId;
+    if (!targetListId) {
+      if (currentFolder && currentFolder.lists.length > 0) {
+        targetListId = currentFolder.lists[0].id;
+      } else if (currentSpace.lists.length > 0) {
+        targetListId = currentSpace.lists[0].id;
+      } else if (currentSpace.folders.length > 0 && currentSpace.folders[0].lists.length > 0) {
+        targetListId = currentSpace.folders[0].lists[0].id;
+      }
+    }
+
+    if (!targetListId) return;
+
+    const res = await fetch("/api/pms", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        action: "create_task",
+        name: title,
+        list_id: targetListId,
+        status_id: statusId,
+        priority: "normal",
+      }),
+    });
+
+    if (res.ok) {
+      setInlineTaskNameByStatus((prev) => ({ ...prev, [statusId]: "" }));
+      setAddingTaskForStatusId(null);
+      await loadPmsData();
+    }
+  };
+
+  const handleMoveStatus = async (taskId: string, targetStatusId: string) => {
     setTasks((prev) =>
-      prev.map((t) =>
-        t.id === taskId
-          ? {
-              ...t,
-              status_category: nextCategory,
-              is_closed: nextCategory === "closed",
-            }
-          : t
-      )
+      prev.map((t) => {
+        if (t.id === taskId) {
+          const st = statuses.find((s) => s.id === targetStatusId);
+          return {
+            ...t,
+            status_id: targetStatusId,
+            status_name: st?.name || t.status_name,
+            status_color: st?.color_hex || t.status_color,
+            status_category: st?.category || t.status_category,
+          };
+        }
+        return t;
+      })
     );
+
     await fetch("/api/pms", {
       method: "PATCH",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        action: "move_status",
-        task_id: taskId,
-        status_category: nextCategory,
-      }),
+      body: JSON.stringify({ action: "move_status", task_id: taskId, status_id: targetStatusId }),
     });
   };
 
-  const stepTaskColumn = (task: PmsTask, delta: -1 | 1) => {
-    const idx = COLUMNS.findIndex((c) => c.key === task.status_category);
-    const nextIdx = idx + delta;
-    if (nextIdx >= 0 && nextIdx < COLUMNS.length) {
-      moveTaskStatus(task.id, COLUMNS[nextIdx].key);
+  const handleStepStatus = (task: PmsTaskDTO, direction: -1 | 1) => {
+    const curIdx = currentSpaceStatuses.findIndex((s) => s.id === task.status_id);
+    if (curIdx === -1) return;
+    const nextIdx = curIdx + direction;
+    if (nextIdx >= 0 && nextIdx < currentSpaceStatuses.length) {
+      handleMoveStatus(task.id, currentSpaceStatuses[nextIdx].id);
     }
   };
 
-  const toggleChecklist = async (
-    taskId: string,
-    checklistId: string,
-    current: boolean
-  ) => {
+  const handleUpdateTask = async (taskId: string, patch: Partial<PmsTaskDTO>) => {
+    setTasks((prev) =>
+      prev.map((t) => (t.id === taskId ? { ...t, ...patch } : t))
+    );
+    if (selectedTaskForDetail?.id === taskId) {
+      setSelectedTaskForDetail((prev) => (prev ? { ...prev, ...patch } : null));
+    }
+
+    await fetch("/api/pms", {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ action: "update_task", task_id: taskId, ...patch }),
+    });
+  };
+
+  const handleToggleChecklist = async (taskId: string, checklistId: string, current: boolean) => {
     const nextVal = !current;
     setTasks((prev) =>
-      prev.map((t) =>
-        t.id === taskId
+      prev.map((t) => {
+        if (t.id === taskId) {
+          return {
+            ...t,
+            checklists: t.checklists.map((c) =>
+              c.id === checklistId ? { ...c, is_completed: nextVal } : c
+            ),
+          };
+        }
+        return t;
+      })
+    );
+
+    if (selectedTaskForDetail?.id === taskId) {
+      setSelectedTaskForDetail((prev) =>
+        prev
           ? {
-              ...t,
-              checklists: t.checklists.map((cl) =>
-                cl.id === checklistId ? { ...cl, is_completed: nextVal } : cl
+              ...prev,
+              checklists: prev.checklists.map((c) =>
+                c.id === checklistId ? { ...c, is_completed: nextVal } : c
               ),
             }
-          : t
-      )
-    );
+          : null
+      );
+    }
+
     await fetch("/api/pms", {
       method: "PATCH",
       headers: { "Content-Type": "application/json" },
@@ -311,1208 +340,641 @@ export default function SovereignPmsPage() {
     });
   };
 
-  const addInlineChecklist = async (taskId: string) => {
-    const label = (checklistDrafts[taskId] || "").trim();
-    if (!label) return;
-    setChecklistDrafts((p) => ({ ...p, [taskId]: "" }));
+  const handleAddChecklist = async (taskId: string, name: string) => {
     const res = await fetch("/api/pms", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        action: "add_checklist",
-        task_id: taskId,
-        name: label,
-      }),
+      body: JSON.stringify({ action: "add_checklist", task_id: taskId, name }),
     });
     const data = await res.json();
     if (data.checklist) {
       setTasks((prev) =>
         prev.map((t) =>
-          t.id === taskId
-            ? { ...t, checklists: [...t.checklists, data.checklist] }
-            : t
+          t.id === taskId ? { ...t, checklists: [...t.checklists, data.checklist] } : t
         )
       );
+      if (selectedTaskForDetail?.id === taskId) {
+        setSelectedTaskForDetail((prev) =>
+          prev ? { ...prev, checklists: [...prev.checklists, data.checklist] } : null
+        );
+      }
     }
   };
 
-  const addInlineSubtask = async (parentTask: PmsTask) => {
-    const name = (subtaskDrafts[parentTask.id] || "").trim();
-    if (!name) return;
-    setSubtaskDrafts((p) => ({ ...p, [parentTask.id]: "" }));
+  const handleAddComment = async (taskId: string, content: string) => {
+    const res = await fetch("/api/pms", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ action: "add_comment", task_id: taskId, content }),
+    });
+    const data = await res.json();
+    if (data.comment) {
+      setTasks((prev) =>
+        prev.map((t) =>
+          t.id === taskId ? { ...t, comments: [...t.comments, data.comment] } : t
+        )
+      );
+      if (selectedTaskForDetail?.id === taskId) {
+        setSelectedTaskForDetail((prev) =>
+          prev ? { ...prev, comments: [...prev.comments, data.comment] } : null
+        );
+      }
+    }
+  };
+
+  const handleAddDependency = async (dependentTaskId: string, prereqTaskId: string, type: string) => {
+    const res = await fetch("/api/pms", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        action: "add_dependency",
+        dependent_task_id: dependentTaskId,
+        prerequisite_task_id: prereqTaskId,
+        type,
+      }),
+    });
+    const data = await res.json();
+    if (data.dependency) {
+      await loadPmsData();
+    }
+  };
+
+  const handleAddSubtask = async (parentTaskId: string, listId: string, name: string) => {
     await fetch("/api/pms", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
         action: "create_task",
+        parent_task_id: parentTaskId,
+        list_id: listId,
         name,
-        list_id: parentTask.list_id,
-        parent_task_id: parentTask.id,
-        status_category: "unstarted",
-        priority: parentTask.priority,
-        time_estimate_minutes: 30,
-        tags: ["subtask"],
       }),
     });
-    await loadPms();
+    await loadPmsData();
   };
 
-  const handleCreateTask = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!newTaskName.trim()) return;
-    setSubmittingTask(true);
-    try {
-      await fetch("/api/pms", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          action: "create_task",
-          name: newTaskName.trim(),
-          markdown_description: newTaskDesc.trim(),
-          list_id: newTaskListId || lists[0]?.id,
-          status_category: newTaskCategory,
-          priority: newTaskPriority,
-          time_estimate_minutes: Number(newTaskEstimate) || 0,
-          tags: newTaskTags
-            .split(",")
-            .map((s) => s.trim())
-            .filter(Boolean),
-          is_shared: newTaskShared,
-          checklists: newTaskChecklists
-            .split("\n")
-            .map((s) => s.trim())
-            .filter(Boolean),
-        }),
-      });
-      setNewTaskName("");
-      setNewTaskDesc("");
-      setNewTaskChecklists("");
-      setComposerOpen(false);
-      await loadPms();
-    } finally {
-      setSubmittingTask(false);
+  const handleDeleteTask = async (taskId: string) => {
+    setTasks((prev) => prev.filter((t) => t.id !== taskId));
+    if (selectedTaskForDetail?.id === taskId) {
+      setSelectedTaskForDetail(null);
     }
+    await fetch(`/api/pms?taskId=${encodeURIComponent(taskId)}`, { method: "DELETE" });
   };
 
-  const deleteTask = async (taskId: string) => {
-    setTasks((prev) =>
-      prev.filter((t) => t.id !== taskId && t.parent_task_id !== taskId)
+  // Breadcrumb Label
+  const breadcrumb = useMemo(() => {
+    const parts = [currentSpace?.name || "Workspace"];
+    if (currentFolder) parts.push(currentFolder.name);
+    if (currentList) parts.push(currentList.name);
+    return parts;
+  }, [currentSpace, currentFolder, currentList]);
+
+  // Overview Stats
+  const overviewStats = useMemo(() => {
+    const total = filteredTasks.length;
+    const completed = filteredTasks.filter((t) => t.status_category === "closed").length;
+    const active = filteredTasks.filter((t) => t.status_category === "active").length;
+    const totalEstHours = Math.round(
+      filteredTasks.reduce((acc, t) => acc + (t.time_estimate_minutes || 0), 0) / 60
     );
-    await fetch(`/api/pms?taskId=${encodeURIComponent(taskId)}`, {
-      method: "DELETE",
-    });
-  };
-
-  const runSampleClickUpImport = async () => {
-    setIngesting(true);
-    setIngestFeedback(null);
-    try {
-      const res = await fetch("/api/pms", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          action: "ingest_clickup_payload",
-          format: "sample",
-        }),
-      });
-      const data = await res.json();
-      if (!res.ok) throw new Error(data.error || "Import failed");
-      setIngestFeedback({
-        type: "success",
-        message: `Idempotent ClickUp Sync Complete: ${data.importedLists} Lists mapped, ${data.upsertedTasks} Tasks upserted (ON CONFLICT DO UPDATE), ${data.linkedSubtasks} Subtask hierarchies linked.`,
-      });
-      await loadPms();
-    } catch (err: any) {
-      setIngestFeedback({
-        type: "error",
-        message: err?.message || "Failed to simulate ClickUp import",
-      });
-    } finally {
-      setIngesting(false);
-    }
-  };
-
-  const runLiveTokenImport = async () => {
-    if (!clickupToken.trim()) return;
-    setIngesting(true);
-    setIngestFeedback(null);
-    try {
-      const res = await fetch("/api/pms", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          action: "ingest_clickup_token",
-          apiToken: clickupToken.trim(),
-        }),
-      });
-      const data = await res.json();
-      if (!res.ok) throw new Error(data.error || "ClickUp token sync failed");
-      setIngestFeedback({
-        type: "success",
-        message: `Live ClickUp Workspace Synced: ${data.importedLists} Lists, ${data.upsertedTasks} Tasks & ${data.linkedSubtasks} Subtasks ingested cleanly.`,
-      });
-      await loadPms();
-    } catch (err: any) {
-      setIngestFeedback({
-        type: "error",
-        message: err?.message || "ClickUp token ingestion failed",
-      });
-    } finally {
-      setIngesting(false);
-    }
-  };
-
-  const runPayloadImport = async () => {
-    if (!rawExportText.trim()) return;
-    setIngesting(true);
-    setIngestFeedback(null);
-    try {
-      const res = await fetch("/api/pms", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          action: "ingest_clickup_payload",
-          format: exportFormat,
-          rawPayload: rawExportText,
-        }),
-      });
-      const data = await res.json();
-      if (!res.ok) throw new Error(data.error || "Payload ingestion failed");
-      setIngestFeedback({
-        type: "success",
-        message: `Export Ingested (${exportFormat.toUpperCase()}): ${data.importedLists} Lists, ${data.upsertedTasks} Tasks upserted, ${data.linkedSubtasks} Subtasks linked.`,
-      });
-      await loadPms();
-    } catch (err: any) {
-      setIngestFeedback({
-        type: "error",
-        message: err?.message || "Failed to parse ClickUp export",
-      });
-    } finally {
-      setIngesting(false);
-    }
-  };
-
-  const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
-    if (file.name.toLowerCase().endsWith(".csv")) {
-      setExportFormat("csv");
-    } else {
-      setExportFormat("json");
-    }
-    const reader = new FileReader();
-    reader.onload = () => {
-      setRawExportText(String(reader.result || ""));
-    };
-    reader.readAsText(file);
-  };
-
-  const renderTaskCard = (task: PmsTask) => {
-    const subtasks = subtasksByParent.get(task.id) || [];
-    const doneSubtasks = subtasks.filter((s) => s.status_category === "closed").length;
-    const doneChecks = task.checklists.filter((c) => c.is_completed).length;
-    const isExpanded = Boolean(expandedTaskIds[task.id]);
-    const colIndex = COLUMNS.findIndex((c) => c.key === task.status_category);
-
-    return (
-      <div
-        key={task.id}
-        className="rounded-xl border border-white/[0.08] bg-[#0e121b]/95 p-3.5 shadow-lg hover:border-white/20 transition-all space-y-2.5"
-      >
-        {/* Top Metadata Row */}
-        <div className="flex items-center justify-between gap-1.5 flex-wrap">
-          <div className="flex items-center gap-1.5 flex-wrap">
-            <span
-              className={`px-2 py-0.5 rounded text-[9.5px] font-bold uppercase tracking-wider border ${
-                PRIORITY_STYLES[task.priority] || PRIORITY_STYLES.normal
-              }`}
-            >
-              {task.priority}
-            </span>
-            {task.original_clickup_id && (
-              <span
-                title={`Idempotent ClickUp Key: ${task.original_clickup_id}`}
-                className="px-1.5 py-0.5 rounded text-[9px] font-mono bg-indigo-500/15 text-indigo-300 border border-indigo-500/30"
-              >
-                CU:{task.original_clickup_id.slice(0, 11)}
-              </span>
-            )}
-            {task.is_shared && (
-              <span className="px-1.5 py-0.5 rounded text-[9px] font-semibold bg-emerald-500/15 text-emerald-300 border border-emerald-500/30 flex items-center gap-1">
-                <Share2 size={9} /> POD
-              </span>
-            )}
-          </div>
-
-          <button
-            onClick={() => deleteTask(task.id)}
-            title="Delete Sovereign Task"
-            className="text-zinc-600 hover:text-rose-400 transition-colors p-0.5"
-          >
-            <Trash2 size={12} />
-          </button>
-        </div>
-
-        {/* Title & List Breadcrumb */}
-        <div>
-          <div className="text-[10px] text-zinc-500 font-medium truncate">
-            {task.space_name} • {task.list_name}
-          </div>
-          <h4 className="text-xs font-semibold text-zinc-100 leading-snug mt-0.5">
-            {task.name}
-          </h4>
-          {task.markdown_description && (
-            <p className="text-[11px] text-zinc-400 line-clamp-2 mt-1 leading-relaxed">
-              {task.markdown_description}
-            </p>
-          )}
-        </div>
-
-        {/* Tags & Time Estimate */}
-        <div className="flex items-center justify-between gap-2 flex-wrap text-[10px]">
-          <div className="flex items-center gap-1 flex-wrap">
-            {task.tags.slice(0, 3).map((tg) => (
-              <span
-                key={tg}
-                className="px-1.5 py-0.5 rounded bg-white/[0.04] border border-white/[0.07] text-zinc-300 flex items-center gap-1"
-              >
-                <Tag size={8} className="text-zinc-500" />
-                {tg}
-              </span>
-            ))}
-          </div>
-          <span className="text-zinc-400 font-mono flex items-center gap-1">
-            <Clock size={10} className="text-blue-400" />
-            {formatEstimate(task.time_estimate_minutes)}
-          </span>
-        </div>
-
-        {/* Subtask & Checklist Summary Toggle */}
-        <div className="pt-1 border-t border-white/[0.06] flex items-center justify-between gap-2">
-          <button
-            onClick={() =>
-              setExpandedTaskIds((p) => ({ ...p, [task.id]: !p[task.id] }))
-            }
-            className="flex items-center gap-2 text-[10.5px] text-zinc-300 hover:text-white transition-colors"
-          >
-            {isExpanded ? <ChevronDown size={13} /> : <ChevronRight size={13} />}
-            <span className="flex items-center gap-1">
-              <GitBranch size={11} className="text-blue-400" />
-              {doneSubtasks}/{subtasks.length} Subtasks
-            </span>
-            <span className="text-zinc-600">•</span>
-            <span className="flex items-center gap-1">
-              <CheckSquare size={11} className="text-emerald-400" />
-              {doneChecks}/{task.checklists.length} Checks
-            </span>
-          </button>
-
-          {/* Status Quick-Mover */}
-          <div className="flex items-center gap-1">
-            <button
-              disabled={colIndex <= 0}
-              onClick={() => stepTaskColumn(task, -1)}
-              title="Move Left"
-              className="p-1 rounded bg-white/[0.05] hover:bg-white/[0.12] disabled:opacity-25 text-zinc-300"
-            >
-              <ArrowLeft size={11} />
-            </button>
-            <button
-              disabled={colIndex >= COLUMNS.length - 1}
-              onClick={() => stepTaskColumn(task, 1)}
-              title="Advance Gate"
-              className="p-1 rounded bg-white/[0.05] hover:bg-white/[0.12] disabled:opacity-25 text-zinc-300"
-            >
-              <ArrowRight size={11} />
-            </button>
-          </div>
-        </div>
-
-        {/* Expanded Subtask Tree & Checklists */}
-        {isExpanded && (
-          <div className="pt-2 border-t border-white/[0.07] space-y-3 bg-black/30 -mx-3.5 -mb-3.5 p-3 rounded-b-xl">
-            {/* Checklists */}
-            <div className="space-y-1.5">
-              <div className="text-[9.5px] font-bold uppercase tracking-wider text-zinc-400">
-                Verification Checklists
-              </div>
-              {task.checklists.map((cl) => (
-                <button
-                  key={cl.id}
-                  onClick={() => toggleChecklist(task.id, cl.id, cl.is_completed)}
-                  className="w-full flex items-center gap-2 text-left text-[11px] py-0.5 hover:text-white transition-colors"
-                >
-                  {cl.is_completed ? (
-                    <CheckSquare size={13} className="text-emerald-400 shrink-0" />
-                  ) : (
-                    <Square size={13} className="text-zinc-500 shrink-0" />
-                  )}
-                  <span
-                    className={
-                      cl.is_completed ? "line-through text-zinc-500" : "text-zinc-200"
-                    }
-                  >
-                    {cl.name}
-                  </span>
-                </button>
-              ))}
-              <div className="flex items-center gap-1.5 pt-1">
-                <input
-                  value={checklistDrafts[task.id] || ""}
-                  onChange={(e) =>
-                    setChecklistDrafts((p) => ({ ...p, [task.id]: e.target.value }))
-                  }
-                  onKeyDown={(e) => e.key === "Enter" && addInlineChecklist(task.id)}
-                  placeholder="+ Add checklist step..."
-                  className="flex-1 bg-white/[0.04] border border-white/10 rounded px-2 py-1 text-[10.5px] text-white placeholder:text-zinc-500 focus:outline-none focus:border-blue-500/50"
-                />
-                <button
-                  onClick={() => addInlineChecklist(task.id)}
-                  className="px-2 py-1 rounded bg-emerald-500/15 text-emerald-300 border border-emerald-500/30 text-[10px] font-semibold"
-                >
-                  Add
-                </button>
-              </div>
-            </div>
-
-            {/* Subtask Hierarchy */}
-            <div className="space-y-1.5 pt-1 border-t border-white/[0.06]">
-              <div className="text-[9.5px] font-bold uppercase tracking-wider text-zinc-400">
-                Subtask Tree ({subtasks.length})
-              </div>
-              {subtasks.map((sub) => (
-                <div
-                  key={sub.id}
-                  className="flex items-center justify-between gap-2 bg-white/[0.03] border border-white/[0.06] rounded-lg px-2 py-1.5"
-                >
-                  <div className="min-w-0 flex-1">
-                    <div className="flex items-center gap-1.5">
-                      <span
-                        className={`w-1.5 h-1.5 rounded-full shrink-0 ${
-                          sub.status_category === "closed"
-                            ? "bg-emerald-400"
-                            : sub.status_category === "active"
-                            ? "bg-amber-400"
-                            : "bg-blue-400"
-                        }`}
-                      />
-                      <span
-                        className={`text-[11px] truncate ${
-                          sub.status_category === "closed"
-                            ? "line-through text-zinc-500"
-                            : "text-zinc-200"
-                        }`}
-                      >
-                        {sub.name}
-                      </span>
-                    </div>
-                  </div>
-                  <select
-                    value={sub.status_category}
-                    onChange={(e) =>
-                      moveTaskStatus(sub.id, e.target.value as PmsStatusCategory)
-                    }
-                    className="bg-[#090b11] border border-white/10 rounded px-1.5 py-0.5 text-[9.5px] text-zinc-300"
-                  >
-                    {COLUMNS.map((c) => (
-                      <option key={c.key} value={c.key}>
-                        {c.key}
-                      </option>
-                    ))}
-                  </select>
-                </div>
-              ))}
-              <div className="flex items-center gap-1.5 pt-1">
-                <input
-                  value={subtaskDrafts[task.id] || ""}
-                  onChange={(e) =>
-                    setSubtaskDrafts((p) => ({ ...p, [task.id]: e.target.value }))
-                  }
-                  onKeyDown={(e) => e.key === "Enter" && addInlineSubtask(task)}
-                  placeholder="+ Spawn child subtask..."
-                  className="flex-1 bg-white/[0.04] border border-white/10 rounded px-2 py-1 text-[10.5px] text-white placeholder:text-zinc-500 focus:outline-none focus:border-blue-500/50"
-                />
-                <button
-                  onClick={() => addInlineSubtask(task)}
-                  className="px-2 py-1 rounded bg-blue-500/15 text-blue-300 border border-blue-500/30 text-[10px] font-semibold"
-                >
-                  Spawn
-                </button>
-              </div>
-            </div>
-          </div>
-        )}
-      </div>
+    const totalChecklists = filteredTasks.reduce((acc, t) => acc + t.checklists.length, 0);
+    const completedChecklists = filteredTasks.reduce(
+      (acc, t) => acc + t.checklists.filter((c) => c.is_completed).length,
+      0
     );
-  };
+    return { total, completed, active, totalEstHours, totalChecklists, completedChecklists };
+  }, [filteredTasks]);
 
   return (
-    <ExecutiveModuleShell
-      moduleId="PMS"
-      eyebrow="Section 12 • Sovereign Execution"
-      title="Sovereign PMS & ClickUp Ingestion Engine"
-      subtitle="Zero-SaaS Dependency PostgreSQL Task Ledger, Subtask Trees & Idempotent ClickUp Migrator"
-      accentColor="#3b82f6"
-      headerActions={
-        <>
-          <button
-            onClick={() => {
-              setIngestFeedback(null);
-              setIngestOpen(true);
-            }}
-            className="px-3.5 py-2 rounded-xl bg-indigo-500/15 hover:bg-indigo-500/25 border border-indigo-400/30 text-indigo-200 text-xs font-semibold flex items-center gap-2 transition-all"
-          >
-            <CloudDownload size={14} />
-            ClickUp Ingestion Engine
-          </button>
-          <button
-            onClick={() => setComposerOpen(true)}
-            className="px-3.5 py-2 rounded-xl bg-blue-600 hover:bg-blue-500 text-white text-xs font-semibold flex items-center gap-2 shadow-lg shadow-blue-600/20 transition-all"
-          >
-            <Plus size={14} />
-            New Sovereign Task
-          </button>
-        </>
-      }
-    >
-      {/* Executive Telemetry Strip */}
-      <div className="grid grid-cols-2 md:grid-cols-6 gap-3">
-        {[
-          {
-            label: "Total Sovereign Tasks",
-            value: stats.total,
-            sub: `${lists.length} Active Lists`,
-            color: "text-blue-400",
-          },
-          {
-            label: "Active Execution",
-            value: stats.active,
-            sub: "In-Flight Deep Work",
-            color: "text-amber-400",
-          },
-          {
-            label: "Dependency Hold",
-            value: stats.blocked,
-            sub: "Blocked / External",
-            color: "text-rose-400",
-          },
-          {
-            label: "Verification Gate",
-            value: stats.review,
-            sub: "Pending QA Sign-off",
-            color: "text-purple-400",
-          },
-          {
-            label: "Remaining Effort",
-            value: formatEstimate(stats.totalMins),
-            sub: "Open Queue Budget",
-            color: "text-cyan-400",
-          },
-          {
-            label: "ClickUp Migrated",
-            value: stats.clickupSynced,
-            sub: "Idempotent Key Locked",
-            color: "text-emerald-400",
-          },
-        ].map((kpi) => (
-          <div
-            key={kpi.label}
-            className="rounded-2xl border border-white/[0.07] bg-white/[0.025] p-4 backdrop-blur-md"
-          >
-            <div className="text-[10px] uppercase tracking-wider text-zinc-400 font-semibold">
-              {kpi.label}
-            </div>
-            <div className={`text-2xl font-bold mt-1 font-mono ${kpi.color}`}>
-              {kpi.value}
-            </div>
-            <div className="text-[10.5px] text-zinc-500 mt-0.5">{kpi.sub}</div>
-          </div>
-        ))}
-      </div>
+    <div className="flex h-screen w-screen overflow-hidden bg-[#090A0F] font-sans text-zinc-100 select-none">
+      {/* 1. Left Icon Rail (56px) */}
+      <PmsSidebarRail
+        activeSection={activeRailSection}
+        onSelectSection={setActiveRailSection}
+      />
 
-      {/* Filter & View Switcher Toolbar */}
-      <div className="rounded-2xl border border-white/[0.08] bg-white/[0.02] p-3.5 flex flex-wrap items-center justify-between gap-3">
-        <div className="flex flex-wrap items-center gap-2">
-          <div className="inline-flex rounded-xl bg-black/40 p-1 border border-white/10">
-            <button
-              onClick={() => setViewMode("kanban")}
-              className={`px-3 py-1.5 rounded-lg text-xs font-semibold flex items-center gap-1.5 transition-all ${
-                viewMode === "kanban"
-                  ? "bg-blue-600 text-white shadow"
-                  : "text-zinc-400 hover:text-white"
-              }`}
-            >
-              <Columns3 size={13} /> 6-Column Kanban
-            </button>
-            <button
-              onClick={() => setViewMode("list")}
-              className={`px-3 py-1.5 rounded-lg text-xs font-semibold flex items-center gap-1.5 transition-all ${
-                viewMode === "list"
-                  ? "bg-blue-600 text-white shadow"
-                  : "text-zinc-400 hover:text-white"
-              }`}
-            >
-              <ListTree size={13} /> Hierarchical List
-            </button>
-          </div>
+      {/* 2. Space Hierarchy Sidebar (240px) */}
+      <PmsHierarchySidebar
+        spaces={spaces}
+        selectedSpaceId={selectedSpaceId}
+        selectedFolderId={selectedFolderId}
+        selectedListId={selectedListId}
+        onSelectSpace={handleSelectSpace}
+        onSelectFolder={handleSelectFolder}
+        onSelectList={handleSelectList}
+        onOpenNewSpaceModal={() => setIsNewSpaceModalOpen(true)}
+        onCreateFolder={handleCreateFolder}
+        onCreateList={handleCreateList}
+      />
 
-          <div className="flex items-center gap-1.5 flex-wrap">
-            <button
-              onClick={() => setSelectedListId("ALL")}
-              className={`px-3 py-1.5 rounded-lg text-[11px] font-semibold border transition-all ${
-                selectedListId === "ALL"
-                  ? "bg-white/10 border-white/25 text-white"
-                  : "bg-white/[0.02] border-white/[0.07] text-zinc-400 hover:text-white"
-              }`}
-            >
-              All Spaces ({lists.length})
-            </button>
-            {lists.map((lst) => (
+      {/* 3. Fluid Main Canvas (calc(100vw - 296px)) */}
+      <main className="flex-1 flex flex-col h-full bg-[#0D0F17] overflow-hidden">
+        {/* Persistent View Tabs Bar (40px Height) */}
+        <div className="h-10 px-4 border-b border-[#1E222D] flex items-center justify-between bg-[#11131C]">
+          {/* Breadcrumb Path & Tabs */}
+          <div className="flex items-center gap-4">
+            <div className="flex items-center gap-1.5 text-xs text-zinc-400 font-medium">
+              {breadcrumb.map((b, i) => (
+                <React.Fragment key={b + i}>
+                  {i > 0 && <span className="text-zinc-600">/</span>}
+                  <span
+                    className={
+                      i === breadcrumb.length - 1
+                        ? "text-zinc-100 font-semibold"
+                        : "text-zinc-400"
+                    }
+                  >
+                    {b}
+                  </span>
+                </React.Fragment>
+              ))}
+            </div>
+
+            <div className="h-4 w-px bg-[#222634]" />
+
+            {/* View Tabs */}
+            <div className="flex items-center gap-1 text-xs">
               <button
-                key={lst.id}
-                onClick={() => setSelectedListId(lst.id)}
-                className={`px-3 py-1.5 rounded-lg text-[11px] font-medium border transition-all ${
-                  selectedListId === lst.id
-                    ? "bg-blue-500/20 border-blue-400/40 text-blue-200"
-                    : "bg-white/[0.02] border-white/[0.07] text-zinc-400 hover:text-white"
+                onClick={() => setViewMode("overview")}
+                className={`flex items-center gap-1.5 px-2.5 py-1 rounded-md transition ${
+                  viewMode === "overview"
+                    ? "bg-blue-600/20 text-blue-400 font-medium"
+                    : "text-zinc-400 hover:text-zinc-200"
                 }`}
               >
-                {lst.name}
+                <LayoutDashboard className="w-3.5 h-3.5" />
+                <span>Overview</span>
               </button>
-            ))}
-          </div>
-        </div>
 
-        <div className="flex items-center gap-2 flex-wrap">
-          <div className="relative">
-            <Search
-              size={13}
-              className="absolute left-3 top-1/2 -translate-y-1/2 text-zinc-500"
-            />
-            <input
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              placeholder="Search tasks, tags, cu_id..."
-              className="pl-8 pr-3 py-1.5 rounded-xl bg-black/40 border border-white/10 text-xs text-white placeholder:text-zinc-500 focus:outline-none focus:border-blue-500/50 w-52"
-            />
-          </div>
-
-          <div className="flex items-center gap-1.5 bg-black/40 border border-white/10 rounded-xl px-2.5 py-1.5">
-            <Filter size={12} className="text-zinc-400" />
-            <select
-              value={priorityFilter}
-              onChange={(e) => setPriorityFilter(e.target.value)}
-              className="bg-transparent text-xs text-zinc-200 focus:outline-none"
-            >
-              <option value="ALL" className="bg-[#090b11]">
-                All Priorities
-              </option>
-              <option value="urgent" className="bg-[#090b11]">
-                Urgent Only
-              </option>
-              <option value="high" className="bg-[#090b11]">
-                High Priority
-              </option>
-              <option value="normal" className="bg-[#090b11]">
-                Normal
-              </option>
-              <option value="low" className="bg-[#090b11]">
-                Low
-              </option>
-            </select>
-          </div>
-
-          <button
-            onClick={loadPms}
-            title="Refresh PostgreSQL Ledger"
-            className="p-2 rounded-xl bg-white/[0.04] hover:bg-white/[0.1] border border-white/10 text-zinc-300"
-          >
-            <RefreshCw size={13} className={loading ? "animate-spin" : ""} />
-          </button>
-        </div>
-      </div>
-
-      {/* Main Content Area */}
-      {loading && tasks.length === 0 ? (
-        <div className="py-20 flex flex-col items-center justify-center gap-3 text-zinc-400">
-          <Loader2 size={28} className="animate-spin text-blue-400" />
-          <span className="text-xs tracking-widest uppercase">
-            Hydrating Sovereign PMS from Supabase PostgreSQL...
-          </span>
-        </div>
-      ) : viewMode === "kanban" ? (
-        <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-6 gap-3.5 items-start">
-          {COLUMNS.map((col) => {
-            const colTasks = filteredRootTasks.filter(
-              (t) => t.status_category === col.key
-            );
-            return (
-              <div
-                key={col.key}
-                className="rounded-2xl border border-white/[0.07] bg-white/[0.02] p-3 flex flex-col gap-3 min-h-[540px]"
+              <button
+                onClick={() => setViewMode("list")}
+                className={`flex items-center gap-1.5 px-2.5 py-1 rounded-md transition ${
+                  viewMode === "list"
+                    ? "bg-blue-600/20 text-blue-400 font-medium"
+                    : "text-zinc-400 hover:text-zinc-200"
+                }`}
               >
-                <div className="pb-2.5 border-b border-white/[0.07] flex items-start justify-between gap-2">
-                  <div>
-                    <div className="flex items-center gap-2">
-                      <span
-                        className="w-2.5 h-2.5 rounded-full"
-                        style={{ backgroundColor: col.accent }}
-                      />
-                      <h3 className="text-xs font-bold uppercase tracking-wider text-zinc-100">
-                        {col.title}
-                      </h3>
-                    </div>
-                    <p className="text-[10px] text-zinc-500 mt-0.5">
-                      {col.subtitle}
-                    </p>
-                  </div>
-                  <span
-                    className={`px-2 py-0.5 rounded-full text-[10px] font-mono font-bold border ${col.badgeBg}`}
-                  >
-                    {colTasks.length}
-                  </span>
-                </div>
+                <ListIcon className="w-3.5 h-3.5" />
+                <span>List</span>
+              </button>
 
-                <div className="flex flex-col gap-2.5">
-                  {colTasks.length === 0 ? (
-                    <div className="py-10 text-center text-[11px] text-zinc-600 border border-dashed border-white/[0.06] rounded-xl">
-                      Zero tasks in gate
-                    </div>
-                  ) : (
-                    colTasks.map((t) => renderTaskCard(t))
-                  )}
-                </div>
+              <button
+                onClick={() => setViewMode("board")}
+                className={`flex items-center gap-1.5 px-2.5 py-1 rounded-md transition ${
+                  viewMode === "board"
+                    ? "bg-blue-600/20 text-blue-400 font-medium"
+                    : "text-zinc-400 hover:text-zinc-200"
+                }`}
+              >
+                <Columns3 className="w-3.5 h-3.5" />
+                <span>Board</span>
+              </button>
+
+              {/* + View Modal Button */}
+              <div className="relative">
+                <button
+                  onClick={() => setShowAddViewMenu((prev) => !prev)}
+                  className="flex items-center gap-1 px-2 py-1 rounded-md text-zinc-400 hover:text-white transition text-xs"
+                >
+                  <Plus className="w-3 h-3" />
+                  <span>View</span>
+                </button>
+
+                {showAddViewMenu && (
+                  <div className="absolute left-0 top-8 w-44 bg-[#141724] border border-[#282E42] rounded-xl shadow-2xl py-1.5 z-50 text-xs text-zinc-300">
+                    <button
+                      onClick={() => setShowAddViewMenu(false)}
+                      className="w-full px-3 py-1.5 text-left hover:bg-[#202538] flex items-center gap-2"
+                    >
+                      <BarChart3 className="w-3.5 h-3.5 text-blue-400" /> Gantt
+                    </button>
+                    <button
+                      onClick={() => setShowAddViewMenu(false)}
+                      className="w-full px-3 py-1.5 text-left hover:bg-[#202538] flex items-center gap-2"
+                    >
+                      <CalendarDays className="w-3.5 h-3.5 text-amber-400" /> Calendar
+                    </button>
+                    <button
+                      onClick={() => setShowAddViewMenu(false)}
+                      className="w-full px-3 py-1.5 text-left hover:bg-[#202538] flex items-center gap-2"
+                    >
+                      <Columns3 className="w-3.5 h-3.5 text-emerald-400" /> Table
+                    </button>
+                    <button
+                      onClick={() => setShowAddViewMenu(false)}
+                      className="w-full px-3 py-1.5 text-left hover:bg-[#202538] flex items-center gap-2"
+                    >
+                      <Network className="w-3.5 h-3.5 text-purple-400" /> Mind Map
+                    </button>
+                  </div>
+                )}
               </div>
-            );
-          })}
-        </div>
-      ) : (
-        /* Hierarchical List View */
-        <div className="space-y-4">
-          {COLUMNS.map((col) => {
-            const colTasks = filteredRootTasks.filter(
-              (t) => t.status_category === col.key
-            );
-            if (colTasks.length === 0) return null;
-            return (
-              <div
-                key={col.key}
-                className="rounded-2xl border border-white/[0.08] bg-white/[0.02] overflow-hidden"
-              >
-                <div className="px-4 py-3 bg-white/[0.03] border-b border-white/[0.07] flex items-center justify-between">
-                  <div className="flex items-center gap-2.5">
-                    <span
-                      className="w-2.5 h-2.5 rounded-full"
-                      style={{ backgroundColor: col.accent }}
-                    />
-                    <span className="text-xs font-bold uppercase tracking-wider text-white">
-                      {col.title}
-                    </span>
-                    <span className="text-[11px] text-zinc-500">
-                      — {col.subtitle}
-                    </span>
-                  </div>
-                  <span
-                    className={`px-2.5 py-0.5 rounded-full text-[10px] font-mono font-bold border ${col.badgeBg}`}
-                  >
-                    {colTasks.length} Root Tasks
-                  </span>
-                </div>
+            </div>
+          </div>
 
-                <div className="divide-y divide-white/[0.06]">
-                  {colTasks.map((task) => {
-                    const subs = subtasksByParent.get(task.id) || [];
-                    const expanded = Boolean(expandedTaskIds[task.id]);
-                    return (
-                      <div key={task.id} className="p-4 hover:bg-white/[0.015]">
-                        <div className="flex flex-wrap items-center justify-between gap-3">
-                          <div className="flex items-center gap-3 min-w-0 flex-1">
-                            <button
-                              onClick={() =>
-                                setExpandedTaskIds((p) => ({
-                                  ...p,
-                                  [task.id]: !p[task.id],
-                                }))
-                              }
-                              className="p-1 rounded hover:bg-white/10 text-zinc-400"
-                            >
-                              {expanded ? (
-                                <ChevronDown size={15} />
-                              ) : (
-                                <ChevronRight size={15} />
-                              )}
-                            </button>
-                            <span
-                              className={`px-2 py-0.5 rounded text-[9.5px] font-bold uppercase border ${
-                                PRIORITY_STYLES[task.priority] ||
-                                PRIORITY_STYLES.normal
-                              }`}
-                            >
-                              {task.priority}
-                            </span>
-                            <div className="min-w-0">
-                              <div className="text-sm font-semibold text-zinc-100 truncate">
-                                {task.name}
-                              </div>
-                              <div className="text-[11px] text-zinc-500 flex items-center gap-2 flex-wrap">
-                                <span>
-                                  {task.space_name} / {task.list_name}
-                                </span>
-                                {task.original_clickup_id && (
-                                  <span className="font-mono text-indigo-300">
-                                    • {task.original_clickup_id}
-                                  </span>
-                                )}
-                                <span>• {subs.length} subtasks</span>
-                                <span>
-                                  • {task.checklists.filter((c) => c.is_completed).length}/
-                                  {task.checklists.length} checks
-                                </span>
-                              </div>
+          {/* Right Toolbar Controls */}
+          <div className="flex items-center gap-3">
+            {/* Search Input */}
+            <div className="relative">
+              <Search className="w-3.5 h-3.5 text-zinc-500 absolute left-2.5 top-1/2 -translate-y-1/2" />
+              <input
+                type="text"
+                placeholder="Search tasks..."
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                className="pl-8 pr-3 py-1 bg-[#090A0F] border border-[#222634] rounded-lg text-xs text-zinc-200 placeholder-zinc-500 focus:outline-none focus:border-blue-500 w-44 transition"
+              />
+            </div>
+
+            {/* Priority Filter */}
+            <div className="flex items-center gap-1.5">
+              <Filter className="w-3.5 h-3.5 text-zinc-500" />
+              <select
+                value={priorityFilter}
+                onChange={(e) => setPriorityFilter(e.target.value)}
+                className="px-2 py-1 bg-[#090A0F] border border-[#222634] rounded-lg text-xs text-zinc-300 focus:outline-none"
+              >
+                <option value="ALL">All Priorities</option>
+                <option value="urgent">Urgent</option>
+                <option value="high">High</option>
+                <option value="normal">Normal</option>
+                <option value="low">Low</option>
+              </select>
+            </div>
+
+            {/* Add Task Primary CTA */}
+            <button
+              onClick={() => {
+                if (currentSpaceStatuses.length > 0) {
+                  setAddingTaskForStatusId(currentSpaceStatuses[0].id);
+                }
+              }}
+              className="flex items-center gap-1.5 px-3 py-1 bg-blue-600 hover:bg-blue-500 text-white rounded-lg text-xs font-semibold shadow-md shadow-blue-500/20 transition"
+            >
+              <Plus className="w-3.5 h-3.5" />
+              <span>Add Task</span>
+            </button>
+          </div>
+        </div>
+
+        {/* View Content Canvas */}
+        <div className="flex-1 overflow-x-auto overflow-y-hidden p-4">
+          {loading ? (
+            <div className="h-full flex items-center justify-center">
+              <Loader2 className="w-6 h-6 animate-spin text-blue-500" />
+            </div>
+          ) : viewMode === "board" ? (
+            /* CLEAN KANBAN BOARD: 272px Columns, 12px Gap, Crisp 1px #222630 Borders */
+            <div className="flex gap-3 h-full items-start pb-4">
+              {currentSpaceStatuses.map((status) => {
+                const columnTasks = filteredTasks.filter((t) => t.status_id === status.id);
+                const isAdding = addingTaskForStatusId === status.id;
+
+                return (
+                  <div
+                    key={status.id}
+                    className="w-[272px] min-w-[272px] max-h-full bg-[#11131C] border border-[#222630] rounded-xl flex flex-col overflow-hidden"
+                  >
+                    {/* Column Header */}
+                    <div className="h-10 px-3 border-b border-[#1E222D] flex items-center justify-between bg-[#141624]">
+                      <div className="flex items-center gap-2">
+                        <span
+                          className="w-2.5 h-2.5 rounded-full"
+                          style={{ backgroundColor: status.color_hex }}
+                        />
+                        <span className="text-xs font-bold tracking-wider text-zinc-200 uppercase">
+                          {status.name}
+                        </span>
+                        <span className="px-1.5 py-0.5 rounded-full bg-[#1E2230] text-[10px] font-mono text-zinc-400">
+                          {columnTasks.length}
+                        </span>
+                      </div>
+
+                      <button
+                        onClick={() => setAddingTaskForStatusId(status.id)}
+                        className="p-1 rounded text-zinc-400 hover:text-white hover:bg-[#202538] transition"
+                        title="Add Task to Status"
+                      >
+                        <Plus className="w-3.5 h-3.5" />
+                      </button>
+                    </div>
+
+                    {/* Column Cards Container */}
+                    <div className="flex-1 overflow-y-auto p-2 space-y-2">
+                      {columnTasks.map((task) => (
+                        <div
+                          key={task.id}
+                          onClick={() => setSelectedTaskForDetail(task)}
+                          className="group w-[256px] p-3 bg-[#161924] border border-[#222630] hover:border-blue-500/50 hover:bg-[#1A1E2B] rounded-lg cursor-pointer transition shadow-sm space-y-2.5"
+                        >
+                          {/* Task Name */}
+                          <div className="flex items-start justify-between gap-1">
+                            <h4 className="text-xs font-semibold text-zinc-100 group-hover:text-blue-300 transition line-clamp-2">
+                              {task.name}
+                            </h4>
+                          </div>
+
+                          {/* Badges Row */}
+                          <div className="flex flex-wrap items-center gap-1.5 text-[10px]">
+                            {/* Priority Badge */}
+                            {task.priority !== "none" && (
+                              <span
+                                className={`px-1.5 py-0.5 rounded font-medium flex items-center gap-1 ${
+                                  task.priority === "urgent"
+                                    ? "bg-rose-500/20 text-rose-300"
+                                    : task.priority === "high"
+                                    ? "bg-amber-500/20 text-amber-300"
+                                    : task.priority === "normal"
+                                    ? "bg-blue-500/20 text-blue-300"
+                                    : "bg-zinc-500/20 text-zinc-400"
+                                }`}
+                              >
+                                <Flag className="w-2.5 h-2.5" />
+                                {task.priority}
+                              </span>
+                            )}
+
+                            {/* Checklist Counter */}
+                            {task.checklists.length > 0 && (
+                              <span className="px-1.5 py-0.5 rounded bg-[#202434] text-zinc-300 flex items-center gap-1">
+                                <CheckSquare className="w-2.5 h-2.5 text-emerald-400" />
+                                {task.checklists.filter((c) => c.is_completed).length}/
+                                {task.checklists.length}
+                              </span>
+                            )}
+
+                            {/* Estimate */}
+                            {task.time_estimate_minutes > 0 && (
+                              <span className="px-1.5 py-0.5 rounded bg-[#202434] text-zinc-400 flex items-center gap-1">
+                                <Clock className="w-2.5 h-2.5" />
+                                {task.time_estimate_minutes}m
+                              </span>
+                            )}
+
+                            {/* Due Date */}
+                            {task.due_date && (
+                              <span className="px-1.5 py-0.5 rounded bg-[#202434] text-zinc-400 flex items-center gap-1">
+                                <Calendar className="w-2.5 h-2.5 text-zinc-400" />
+                                {new Date(task.due_date).toLocaleDateString([], {
+                                  month: "short",
+                                  day: "numeric",
+                                })}
+                              </span>
+                            )}
+                          </div>
+
+                          {/* Quick Step Controls on Hover */}
+                          <div className="opacity-0 group-hover:opacity-100 flex items-center justify-between pt-1 border-t border-[#202534] transition">
+                            <span className="text-[10px] text-zinc-500">Move status:</span>
+                            <div className="flex items-center gap-1">
+                              <button
+                                title="Move Left"
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  handleStepStatus(task, -1);
+                                }}
+                                className="p-0.5 rounded hover:bg-[#282F44] text-zinc-400 hover:text-white"
+                              >
+                                <ChevronLeft className="w-3.5 h-3.5" />
+                              </button>
+                              <button
+                                title="Move Right"
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  handleStepStatus(task, 1);
+                                }}
+                                className="p-0.5 rounded hover:bg-[#282F44] text-zinc-400 hover:text-white"
+                              >
+                                <ChevronRight className="w-3.5 h-3.5" />
+                              </button>
                             </div>
                           </div>
+                        </div>
+                      ))}
 
-                          <div className="flex items-center gap-2.5">
-                            <span className="text-xs font-mono text-zinc-400">
-                              {formatEstimate(task.time_estimate_minutes)}
-                            </span>
-                            <select
-                              value={task.status_category}
-                              onChange={(e) =>
-                                moveTaskStatus(
-                                  task.id,
-                                  e.target.value as PmsStatusCategory
-                                )
-                              }
-                              className="bg-[#0d111a] border border-white/15 rounded-lg px-2.5 py-1 text-xs text-zinc-200"
+                      {/* Inline Task Creator Form */}
+                      {isAdding && (
+                        <div className="w-[256px] p-2 bg-[#161924] border border-blue-500 rounded-lg space-y-2">
+                          <input
+                            type="text"
+                            placeholder="What needs to be done?"
+                            value={inlineTaskNameByStatus[status.id] || ""}
+                            onChange={(e) =>
+                              setInlineTaskNameByStatus((prev) => ({
+                                ...prev,
+                                [status.id]: e.target.value,
+                              }))
+                            }
+                            onKeyDown={(e) => {
+                              if (e.key === "Enter") handleCreateTaskInline(status.id);
+                              if (e.key === "Escape") setAddingTaskForStatusId(null);
+                            }}
+                            autoFocus
+                            className="w-full px-2 py-1 bg-[#090A0F] border border-[#222634] rounded text-xs text-white placeholder-zinc-500 focus:outline-none"
+                          />
+                          <div className="flex justify-end gap-1.5">
+                            <button
+                              onClick={() => setAddingTaskForStatusId(null)}
+                              className="px-2 py-0.5 text-[11px] text-zinc-400 hover:text-zinc-200"
                             >
-                              {COLUMNS.map((c) => (
-                                <option key={c.key} value={c.key}>
-                                  {c.title}
-                                </option>
-                              ))}
-                            </select>
+                              Cancel
+                            </button>
+                            <button
+                              onClick={() => handleCreateTaskInline(status.id)}
+                              className="px-2 py-0.5 bg-blue-600 hover:bg-blue-500 text-white rounded text-[11px] font-medium"
+                            >
+                              Add
+                            </button>
                           </div>
                         </div>
+                      )}
+                    </div>
 
-                        {expanded && (
-                          <div className="mt-3 pl-9 space-y-2">
-                            {subs.map((s) => (
-                              <div
-                                key={s.id}
-                                className="flex items-center justify-between bg-black/30 border border-white/[0.06] rounded-xl px-3 py-2 text-xs"
-                              >
-                                <div className="flex items-center gap-2">
-                                  <GitBranch size={12} className="text-blue-400" />
-                                  <span className="text-zinc-200">{s.name}</span>
-                                  {s.original_clickup_id && (
-                                    <span className="text-[10px] font-mono text-indigo-400">
-                                      ({s.original_clickup_id})
-                                    </span>
-                                  )}
-                                </div>
-                                <select
-                                  value={s.status_category}
-                                  onChange={(e) =>
-                                    moveTaskStatus(
-                                      s.id,
-                                      e.target.value as PmsStatusCategory
-                                    )
-                                  }
-                                  className="bg-[#090b11] border border-white/10 rounded px-2 py-0.5 text-[11px] text-zinc-300"
-                                >
-                                  {COLUMNS.map((c) => (
-                                    <option key={c.key} value={c.key}>
-                                      {c.title}
-                                    </option>
-                                  ))}
-                                </select>
-                              </div>
-                            ))}
-                          </div>
+                    {/* Inline + Add Task Button at Bottom */}
+                    {!isAdding && (
+                      <button
+                        onClick={() => setAddingTaskForStatusId(status.id)}
+                        className="h-9 px-3 border-t border-[#1E222D] flex items-center gap-1.5 text-xs text-zinc-400 hover:text-zinc-200 hover:bg-[#161924] transition"
+                      >
+                        <Plus className="w-3 h-3" />
+                        <span>Add Task</span>
+                      </button>
+                    )}
+                  </div>
+                );
+              })}
+            </div>
+          ) : viewMode === "list" ? (
+            /* TABULAR LIST VIEW */
+            <div className="h-full bg-[#11131C] border border-[#222630] rounded-xl overflow-hidden flex flex-col">
+              <div className="h-9 px-4 border-b border-[#1E222D] grid grid-cols-12 gap-2 text-[11px] font-bold text-zinc-400 uppercase tracking-wider items-center bg-[#141624]">
+                <div className="col-span-5">Task Name</div>
+                <div className="col-span-2">Status</div>
+                <div className="col-span-2">Priority</div>
+                <div className="col-span-2">Due Date</div>
+                <div className="col-span-1 text-right">Estimate</div>
+              </div>
+
+              <div className="flex-1 overflow-y-auto divide-y divide-[#1B1F2C]">
+                {filteredTasks.length === 0 ? (
+                  <div className="h-48 flex items-center justify-center text-xs text-zinc-500">
+                    No tasks found in this scope.
+                  </div>
+                ) : (
+                  filteredTasks.map((task) => (
+                    <div
+                      key={task.id}
+                      onClick={() => setSelectedTaskForDetail(task)}
+                      className="h-10 px-4 grid grid-cols-12 gap-2 items-center hover:bg-[#161926] cursor-pointer text-xs transition"
+                    >
+                      <div className="col-span-5 flex items-center gap-2 truncate font-medium text-zinc-200">
+                        <span
+                          className="w-2 h-2 rounded-full flex-shrink-0"
+                          style={{ backgroundColor: task.status_color }}
+                        />
+                        <span className="truncate">{task.name}</span>
+                        {task.checklists.length > 0 && (
+                          <span className="text-[10px] text-zinc-500 font-mono">
+                            [{task.checklists.filter((c) => c.is_completed).length}/
+                            {task.checklists.length}]
+                          </span>
                         )}
+                      </div>
+
+                      <div className="col-span-2">
+                        <span
+                          className="px-2 py-0.5 rounded text-[10px] font-semibold"
+                          style={{
+                            backgroundColor: `${task.status_color}20`,
+                            color: task.status_color,
+                          }}
+                        >
+                          {task.status_name}
+                        </span>
+                      </div>
+
+                      <div className="col-span-2">
+                        <span className="capitalize text-zinc-400">{task.priority}</span>
+                      </div>
+
+                      <div className="col-span-2 text-zinc-400">
+                        {task.due_date
+                          ? new Date(task.due_date).toLocaleDateString([], {
+                              month: "short",
+                              day: "numeric",
+                            })
+                          : "—"}
+                      </div>
+
+                      <div className="col-span-1 text-right text-zinc-400 font-mono">
+                        {task.time_estimate_minutes > 0
+                          ? `${task.time_estimate_minutes}m`
+                          : "—"}
+                      </div>
+                    </div>
+                  ))
+                )}
+              </div>
+            </div>
+          ) : (
+            /* EXECUTIVE OVERVIEW VIEW */
+            <div className="h-full overflow-y-auto space-y-6">
+              {/* Executive Stat Cards */}
+              <div className="grid grid-cols-4 gap-4">
+                <div className="p-4 rounded-xl bg-[#11131C] border border-[#222630] space-y-1">
+                  <span className="text-xs text-zinc-400">Total Tasks</span>
+                  <div className="text-2xl font-bold text-white">{overviewStats.total}</div>
+                </div>
+
+                <div className="p-4 rounded-xl bg-[#11131C] border border-[#222630] space-y-1">
+                  <span className="text-xs text-blue-400">Active In Flight</span>
+                  <div className="text-2xl font-bold text-blue-300">
+                    {overviewStats.active}
+                  </div>
+                </div>
+
+                <div className="p-4 rounded-xl bg-[#11131C] border border-[#222630] space-y-1">
+                  <span className="text-xs text-emerald-400">Completed</span>
+                  <div className="text-2xl font-bold text-emerald-300">
+                    {overviewStats.completed}
+                  </div>
+                </div>
+
+                <div className="p-4 rounded-xl bg-[#11131C] border border-[#222630] space-y-1">
+                  <span className="text-xs text-amber-400">Estimated Effort</span>
+                  <div className="text-2xl font-bold text-amber-300">
+                    {overviewStats.totalEstHours} hrs
+                  </div>
+                </div>
+              </div>
+
+              {/* Status Breakdown Bar */}
+              <div className="p-5 rounded-xl bg-[#11131C] border border-[#222630] space-y-3">
+                <div className="flex items-center justify-between text-xs font-semibold text-zinc-300">
+                  <span>Execution Breakdown</span>
+                  <span className="text-zinc-500 font-mono">
+                    {overviewStats.total} total items
+                  </span>
+                </div>
+
+                <div className="w-full h-3 rounded-full bg-[#181B26] overflow-hidden flex">
+                  {currentSpaceStatuses.map((st) => {
+                    const count = filteredTasks.filter((t) => t.status_id === st.id).length;
+                    const pct = overviewStats.total > 0 ? (count / overviewStats.total) * 100 : 0;
+                    if (pct === 0) return null;
+                    return (
+                      <div
+                        key={st.id}
+                        style={{ width: `${pct}%`, backgroundColor: st.color_hex }}
+                        title={`${st.name}: ${count} (${Math.round(pct)}%)`}
+                      />
+                    );
+                  })}
+                </div>
+
+                <div className="flex flex-wrap gap-4 pt-1">
+                  {currentSpaceStatuses.map((st) => {
+                    const count = filteredTasks.filter((t) => t.status_id === st.id).length;
+                    return (
+                      <div key={st.id} className="flex items-center gap-1.5 text-xs text-zinc-400">
+                        <span
+                          className="w-2.5 h-2.5 rounded-full"
+                          style={{ backgroundColor: st.color_hex }}
+                        />
+                        <span>{st.name}:</span>
+                        <span className="font-semibold text-zinc-200">{count}</span>
                       </div>
                     );
                   })}
                 </div>
               </div>
-            );
-          })}
+            </div>
+          )}
         </div>
-      )}
+      </main>
 
-      {/* New Task Composer Modal */}
-      {composerOpen && (
-        <div className="fixed inset-0 z-50 bg-black/75 backdrop-blur-md flex items-center justify-center p-4">
-          <div className="w-full max-w-xl rounded-2xl border border-white/15 bg-[#0c1018] p-6 shadow-2xl space-y-4">
-            <div className="flex items-center justify-between border-b border-white/10 pb-3">
-              <div className="flex items-center gap-2">
-                <FolderKanban size={18} className="text-blue-400" />
-                <h2 className="text-sm font-bold uppercase tracking-wider text-white">
-                  Create Sovereign PMS Task
-                </h2>
-              </div>
-              <button
-                onClick={() => setComposerOpen(false)}
-                className="text-zinc-400 hover:text-white"
-              >
-                <X size={18} />
-              </button>
-            </div>
+      {/* 4. Task Detail Modal (90vw, 85vh, 65% / 35%) */}
+      <TaskDetailModal
+        task={selectedTaskForDetail}
+        statuses={currentSpaceStatuses}
+        allTasks={tasks}
+        isOpen={!!selectedTaskForDetail}
+        onClose={() => setSelectedTaskForDetail(null)}
+        onUpdateTask={handleUpdateTask}
+        onToggleChecklist={handleToggleChecklist}
+        onAddChecklist={handleAddChecklist}
+        onAddComment={handleAddComment}
+        onAddDependency={handleAddDependency}
+        onAddSubtask={handleAddSubtask}
+        onDeleteTask={handleDeleteTask}
+      />
 
-            <form onSubmit={handleCreateTask} className="space-y-3.5">
-              <div>
-                <label className="text-[11px] text-zinc-400 font-semibold block mb-1">
-                  Task Title
-                </label>
-                <input
-                  required
-                  value={newTaskName}
-                  onChange={(e) => setNewTaskName(e.target.value)}
-                  placeholder="e.g., Harden Supabase pgQuery Connection Pooler"
-                  className="w-full rounded-xl bg-black/50 border border-white/10 px-3.5 py-2 text-sm text-white focus:outline-none focus:border-blue-500"
-                />
-              </div>
-
-              <div className="grid grid-cols-2 gap-3">
-                <div>
-                  <label className="text-[11px] text-zinc-400 font-semibold block mb-1">
-                    Target List
-                  </label>
-                  <select
-                    value={newTaskListId}
-                    onChange={(e) => setNewTaskListId(e.target.value)}
-                    className="w-full rounded-xl bg-black/50 border border-white/10 px-3 py-2 text-xs text-white"
-                  >
-                    {lists.map((l) => (
-                      <option key={l.id} value={l.id} className="bg-[#0c1018]">
-                        {l.space_name} — {l.name}
-                      </option>
-                    ))}
-                  </select>
-                </div>
-
-                <div>
-                  <label className="text-[11px] text-zinc-400 font-semibold block mb-1">
-                    Initial Gate Column
-                  </label>
-                  <select
-                    value={newTaskCategory}
-                    onChange={(e) =>
-                      setNewTaskCategory(e.target.value as PmsStatusCategory)
-                    }
-                    className="w-full rounded-xl bg-black/50 border border-white/10 px-3 py-2 text-xs text-white"
-                  >
-                    {COLUMNS.map((c) => (
-                      <option key={c.key} value={c.key} className="bg-[#0c1018]">
-                        {c.title}
-                      </option>
-                    ))}
-                  </select>
-                </div>
-              </div>
-
-              <div className="grid grid-cols-3 gap-3">
-                <div>
-                  <label className="text-[11px] text-zinc-400 font-semibold block mb-1">
-                    Priority
-                  </label>
-                  <select
-                    value={newTaskPriority}
-                    onChange={(e) => setNewTaskPriority(e.target.value)}
-                    className="w-full rounded-xl bg-black/50 border border-white/10 px-3 py-2 text-xs text-white"
-                  >
-                    <option value="urgent" className="bg-[#0c1018]">
-                      Urgent
-                    </option>
-                    <option value="high" className="bg-[#0c1018]">
-                      High
-                    </option>
-                    <option value="normal" className="bg-[#0c1018]">
-                      Normal
-                    </option>
-                    <option value="low" className="bg-[#0c1018]">
-                      Low
-                    </option>
-                  </select>
-                </div>
-
-                <div>
-                  <label className="text-[11px] text-zinc-400 font-semibold block mb-1">
-                    Estimate (Minutes)
-                  </label>
-                  <input
-                    type="number"
-                    min={0}
-                    value={newTaskEstimate}
-                    onChange={(e) => setNewTaskEstimate(e.target.value)}
-                    className="w-full rounded-xl bg-black/50 border border-white/10 px-3 py-2 text-xs text-white"
-                  />
-                </div>
-
-                <div>
-                  <label className="text-[11px] text-zinc-400 font-semibold block mb-1">
-                    Tags (comma separated)
-                  </label>
-                  <input
-                    value={newTaskTags}
-                    onChange={(e) => setNewTaskTags(e.target.value)}
-                    className="w-full rounded-xl bg-black/50 border border-white/10 px-3 py-2 text-xs text-white"
-                  />
-                </div>
-              </div>
-
-              <div>
-                <label className="text-[11px] text-zinc-400 font-semibold block mb-1">
-                  Markdown Operational Spec
-                </label>
-                <textarea
-                  rows={2}
-                  value={newTaskDesc}
-                  onChange={(e) => setNewTaskDesc(e.target.value)}
-                  placeholder="Acceptance criteria, architectural context..."
-                  className="w-full rounded-xl bg-black/50 border border-white/10 px-3.5 py-2 text-xs text-white"
-                />
-              </div>
-
-              <div>
-                <label className="text-[11px] text-zinc-400 font-semibold block mb-1">
-                  Checklist Items (one per line)
-                </label>
-                <textarea
-                  rows={3}
-                  value={newTaskChecklists}
-                  onChange={(e) => setNewTaskChecklists(e.target.value)}
-                  placeholder={"Verify PostgreSQL constraint\nRun verification test"}
-                  className="w-full rounded-xl bg-black/50 border border-white/10 px-3.5 py-2 text-xs text-white font-mono"
-                />
-              </div>
-
-              <label className="flex items-center gap-2 text-xs text-zinc-300 cursor-pointer">
-                <input
-                  type="checkbox"
-                  checked={newTaskShared}
-                  onChange={(e) => setNewTaskShared(e.target.checked)}
-                  className="rounded border-white/20"
-                />
-                Expose task to Shared Pod Collective (`is_shared = true`)
-              </label>
-
-              <div className="flex justify-end gap-2 pt-2">
-                <button
-                  type="button"
-                  onClick={() => setComposerOpen(false)}
-                  className="px-4 py-2 rounded-xl border border-white/10 text-xs text-zinc-300 hover:bg-white/5"
-                >
-                  Cancel
-                </button>
-                <button
-                  type="submit"
-                  disabled={submittingTask}
-                  className="px-4 py-2 rounded-xl bg-blue-600 hover:bg-blue-500 text-xs font-semibold text-white flex items-center gap-2"
-                >
-                  {submittingTask && <Loader2 size={13} className="animate-spin" />}
-                  Commit to Sovereign PMS
-                </button>
-              </div>
-            </form>
-          </div>
-        </div>
-      )}
-
-      {/* One-Click ClickUp Ingestion Modal */}
-      {ingestOpen && (
-        <div className="fixed inset-0 z-50 bg-black/80 backdrop-blur-md flex items-center justify-center p-4">
-          <div className="w-full max-w-2xl rounded-2xl border border-indigo-500/30 bg-[#0b0f19] p-6 shadow-2xl space-y-5 max-h-[90vh] overflow-y-auto">
-            <div className="flex items-start justify-between gap-4 border-b border-white/10 pb-4">
-              <div>
-                <div className="flex items-center gap-2">
-                  <Database size={18} className="text-indigo-400" />
-                  <h2 className="text-sm font-bold uppercase tracking-wider text-white">
-                    Automated ClickUp Ingestion & Sovereign Cutover Engine
-                  </h2>
-                </div>
-                <p className="text-xs text-zinc-400 mt-1">
-                  Idempotent <code className="text-indigo-300">ON CONFLICT (original_clickup_id) DO UPDATE</code> pipeline — safely re-runnable with zero duplicate rows.
-                </p>
-              </div>
-              <button
-                onClick={() => setIngestOpen(false)}
-                className="text-zinc-400 hover:text-white"
-              >
-                <X size={18} />
-              </button>
-            </div>
-
-            {/* Instant Zero-Credential Simulation Card */}
-            <div className="rounded-xl border border-emerald-500/30 bg-emerald-500/[0.07] p-4 flex flex-wrap items-center justify-between gap-3">
-              <div>
-                <div className="text-xs font-bold text-emerald-300 flex items-center gap-1.5">
-                  <Sparkles size={14} /> Zero-Credential Instant Verification
-                </div>
-                <p className="text-[11px] text-zinc-300 mt-0.5">
-                  Simulate importing a multi-space ClickUp Workspace (Spaces → Lists → Tasks → Subtasks + Checklists) with status translation.
-                </p>
-              </div>
-              <button
-                onClick={runSampleClickUpImport}
-                disabled={ingesting}
-                className="px-3.5 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-bold flex items-center gap-2 shrink-0 shadow-lg shadow-emerald-600/20"
-              >
-                {ingesting ? (
-                  <Loader2 size={13} className="animate-spin" />
-                ) : (
-                  <Sparkles size={13} />
-                )}
-                Simulate Sample ClickUp Workspace Import
-              </button>
-            </div>
-
-            {/* Mode Tabs */}
-            <div className="flex gap-2 border-b border-white/10 pb-2">
-              <button
-                onClick={() => setIngestTab("token")}
-                className={`px-3.5 py-1.5 rounded-lg text-xs font-semibold transition-all ${
-                  ingestTab === "token"
-                    ? "bg-indigo-600 text-white"
-                    : "text-zinc-400 hover:text-white bg-white/[0.03]"
-                }`}
-              >
-                1. ClickUp Personal API Token (pk_...)
-              </button>
-              <button
-                onClick={() => setIngestTab("export")}
-                className={`px-3.5 py-1.5 rounded-lg text-xs font-semibold transition-all ${
-                  ingestTab === "export"
-                    ? "bg-indigo-600 text-white"
-                    : "text-zinc-400 hover:text-white bg-white/[0.03]"
-                }`}
-              >
-                2. JSON / CSV Export Upload
-              </button>
-            </div>
-
-            {ingestTab === "token" ? (
-              <div className="space-y-3.5">
-                <div className="rounded-xl bg-white/[0.03] border border-white/[0.07] p-3 text-[11px] text-zinc-300 space-y-1">
-                  <div className="font-semibold text-indigo-300 flex items-center gap-1.5">
-                    <Layers size={12} /> Traversal & Intelligent Status Mapping:
-                  </div>
-                  <p className="text-zinc-400">
-                    Fetches <code className="text-zinc-200">/api/v2/team → space → folder/list → task?subtasks=true&include_closed=true</code> and maps custom statuses into <code className="text-zinc-200">open | unstarted | active | blocked | review | closed</code>.
-                  </p>
-                </div>
-
-                <div>
-                  <label className="text-[11px] font-semibold text-zinc-300 block mb-1">
-                    ClickUp Personal API Token
-                  </label>
-                  <input
-                    type="password"
-                    value={clickupToken}
-                    onChange={(e) => setClickupToken(e.target.value)}
-                    placeholder="pk_84920194_XXXXXXXXXXXXXXXXXXXXXXXXXXXX"
-                    className="w-full rounded-xl bg-black/50 border border-white/15 px-3.5 py-2.5 text-xs font-mono text-white focus:outline-none focus:border-indigo-500"
-                  />
-                </div>
-
-                <button
-                  onClick={runLiveTokenImport}
-                  disabled={ingesting || !clickupToken.trim()}
-                  className="w-full py-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-500 disabled:opacity-40 text-white text-xs font-bold flex items-center justify-center gap-2"
-                >
-                  {ingesting ? (
-                    <Loader2 size={14} className="animate-spin" />
-                  ) : (
-                    <CloudDownload size={14} />
-                  )}
-                  Execute Live ClickUp API Ingestion
-                </button>
-              </div>
-            ) : (
-              <div className="space-y-3.5">
-                <div className="flex items-center justify-between gap-3 flex-wrap">
-                  <div className="inline-flex rounded-lg bg-black/40 p-1 border border-white/10">
-                    <button
-                      onClick={() => setExportFormat("json")}
-                      className={`px-3 py-1 rounded text-xs font-semibold ${
-                        exportFormat === "json"
-                          ? "bg-indigo-600 text-white"
-                          : "text-zinc-400"
-                      }`}
-                    >
-                      ClickUp JSON
-                    </button>
-                    <button
-                      onClick={() => setExportFormat("csv")}
-                      className={`px-3 py-1 rounded text-xs font-semibold ${
-                        exportFormat === "csv"
-                          ? "bg-indigo-600 text-white"
-                          : "text-zinc-400"
-                      }`}
-                    >
-                      ClickUp CSV
-                    </button>
-                  </div>
-
-                  <label className="px-3 py-1.5 rounded-xl bg-white/[0.06] hover:bg-white/[0.12] border border-white/10 text-xs text-zinc-200 cursor-pointer flex items-center gap-1.5">
-                    <Upload size={13} /> Upload .json / .csv File
-                    <input
-                      type="file"
-                      accept=".json,.csv,text/csv,application/json"
-                      onChange={handleFileUpload}
-                      className="hidden"
-                    />
-                  </label>
-                </div>
-
-                <textarea
-                  rows={6}
-                  value={rawExportText}
-                  onChange={(e) => setRawExportText(e.target.value)}
-                  placeholder={
-                    exportFormat === "json"
-                      ? '[{"id":"868a991","name":"Migrate Auth","status":"in progress","priority":"high","list_name":"Sprint 12"}]'
-                      : "Task ID,Task Name,Status,Priority,List Name,Space Name\n868a991,Migrate Auth,in progress,high,Sprint 12,Engineering"
-                  }
-                  className="w-full rounded-xl bg-black/50 border border-white/15 p-3 text-xs font-mono text-zinc-200 focus:outline-none focus:border-indigo-500"
-                />
-
-                <button
-                  onClick={runPayloadImport}
-                  disabled={ingesting || !rawExportText.trim()}
-                  className="w-full py-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-500 disabled:opacity-40 text-white text-xs font-bold flex items-center justify-center gap-2"
-                >
-                  {ingesting ? (
-                    <Loader2 size={14} className="animate-spin" />
-                  ) : (
-                    <FileJson size={14} />
-                  )}
-                  Ingest & Upsert Export Payload
-                </button>
-              </div>
-            )}
-
-            {ingestFeedback && (
-              <div
-                className={`rounded-xl p-3.5 border text-xs flex items-start gap-2.5 ${
-                  ingestFeedback.type === "success"
-                    ? "bg-emerald-500/10 border-emerald-500/30 text-emerald-200"
-                    : "bg-rose-500/10 border-rose-500/30 text-rose-200"
-                }`}
-              >
-                {ingestFeedback.type === "success" ? (
-                  <ShieldCheck size={16} className="text-emerald-400 shrink-0 mt-0.5" />
-                ) : (
-                  <AlertOctagon size={16} className="text-rose-400 shrink-0 mt-0.5" />
-                )}
-                <span>{ingestFeedback.message}</span>
-              </div>
-            )}
-          </div>
-        </div>
-      )}
-    </ExecutiveModuleShell>
+      {/* 5. New Space Creator Modal */}
+      <NewSpaceModal
+        isOpen={isNewSpaceModalOpen}
+        onClose={() => setIsNewSpaceModalOpen(false)}
+        onCreateSpace={handleCreateSpace}
+      />
+    </div>
   );
 }

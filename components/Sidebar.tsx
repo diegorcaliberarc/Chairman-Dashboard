@@ -40,6 +40,7 @@ import {
   X,
   Dumbbell,
   Database,
+  Settings,
 } from "lucide-react";
 import { useRouter, usePathname } from "next/navigation";
 import { UserAccountModal } from "./UserAccountModal";
@@ -318,33 +319,33 @@ const PILLARS_CONFIG: Array<{
 ];
 
 interface SidebarProps {
-  activeTab: string;
-  setActiveTab: (tab: any) => void;
-  calConnected: boolean;
-  onCalToggle: () => void;
-  isAppearanceOpen: boolean;
-  setIsAppearanceOpen: (open: boolean) => void;
-  user: any;
-  deepWork: boolean;
-  setDeepWork: (val: boolean | ((p: boolean) => boolean)) => void;
-  activeTasksCount: number;
-  activeSubtasksCount: number;
-  tasksLoading: boolean;
+  activeTab?: string;
+  setActiveTab?: (tab: any) => void;
+  calConnected?: boolean;
+  onCalToggle?: () => void;
+  isAppearanceOpen?: boolean;
+  setIsAppearanceOpen?: (open: boolean) => void;
+  user?: any;
+  deepWork?: boolean;
+  setDeepWork?: (val: boolean | ((p: boolean) => boolean)) => void;
+  activeTasksCount?: number;
+  activeSubtasksCount?: number;
+  tasksLoading?: boolean;
 }
 
 export function Sidebar({
-  activeTab,
-  setActiveTab,
-  calConnected,
-  onCalToggle,
-  isAppearanceOpen,
-  setIsAppearanceOpen,
-  user,
-  deepWork,
-  setDeepWork,
-  activeTasksCount,
-  activeSubtasksCount,
-  tasksLoading,
+  activeTab = "overview",
+  setActiveTab = () => {},
+  calConnected = false,
+  onCalToggle = () => {},
+  isAppearanceOpen = false,
+  setIsAppearanceOpen = () => {},
+  user = null,
+  deepWork = false,
+  setDeepWork = () => {},
+  activeTasksCount = 0,
+  activeSubtasksCount = 0,
+  tasksLoading = false,
 }: SidebarProps) {
   const [accountModalOpen, setAccountModalOpen] = useState(false);
   const [novaOpen, setNovaOpen] = useState(false);
@@ -570,18 +571,6 @@ export function Sidebar({
               );
             })}
           </div>
-
-          {/* Bottom Col 1 Summary Pill */}
-          <div className="p-2 border-t border-zinc-200/50 dark:border-white/10 text-center">
-            <button
-              type="button"
-              onClick={() => handleSelectPillar("all")}
-              className="w-full py-1.5 px-2 rounded-lg text-[10px] font-semibold text-zinc-500 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-white hover:bg-white/10 transition-colors flex items-center justify-center gap-1.5"
-            >
-              <Layers size={11} />
-              {!col1Collapsed && <span>Reset All</span>}
-            </button>
-          </div>
         </div>
 
         {/* ====================================================================
@@ -703,36 +692,17 @@ export function Sidebar({
             })}
           </div>
 
-          {/* Telemetry (Mission Progress & Clock) */}
-          {!col2Collapsed && (
-            <div className="px-3 pb-3">
-              <div className="w-full text-left p-3 rounded-xl bg-white/[0.03] border border-white/10 flex flex-col gap-2.5 shadow-inner">
-                <div className="select-none flex flex-col gap-1.5">
-                  <div className="text-[8.5px] tracking-widest uppercase text-zinc-400">
-                    {tasksLoading ? "Syncing…" : "Mission Progress"}
-                  </div>
-                  <div className="flex items-center justify-between text-xs font-bold text-white">
-                    <span>{activeTasksCount} Pending Tasks</span>
-                    <span className="font-mono text-zinc-400">{activeSubtasksCount} Subs</span>
-                  </div>
-                </div>
-                <div className="h-px bg-white/10" />
-                <LiveClock />
-              </div>
-            </div>
-          )}
-
-          {/* Bottom Footer User Profile & Settings */}
-          <div className="mt-auto p-3 border-t border-zinc-200/50 dark:border-white/10 bg-zinc-50/50 dark:bg-white/5 flex items-center justify-between gap-1.5">
+          {/* Bottom Footer User Profile & Execution Settings */}
+          <div className="mt-auto p-2.5 border-t border-zinc-200/50 dark:border-white/10 bg-zinc-50/50 dark:bg-white/5 flex items-center justify-between gap-1.5 h-14">
             <button
               onClick={() => setAccountModalOpen(true)}
-              className="flex items-center gap-2 flex-1 min-w-0 p-1 rounded-lg hover:bg-zinc-200/50 dark:hover:bg-white/10 transition-colors text-left"
-              title="User Account"
+              className="flex items-center gap-2 flex-1 min-w-0 p-1 rounded-xl hover:bg-zinc-200/50 dark:hover:bg-white/10 transition-colors text-left"
+              title="Execution & Account Settings"
             >
               {user?.image ? (
-                <img src={user.image} alt="User" className="w-7 h-7 rounded-full shrink-0" />
+                <img src={user.image} alt="User" className="w-8 h-8 rounded-xl object-cover ring-1 ring-[#0969DA]/40 shrink-0" />
               ) : (
-                <div className="w-7 h-7 rounded-full bg-blue-500/20 flex items-center justify-center text-blue-500 text-xs font-bold shrink-0">
+                <div className="w-8 h-8 rounded-xl bg-[#0969DA]/20 border border-[#0969DA]/40 flex items-center justify-center text-[#58A6FF] text-xs font-bold shrink-0">
                   {(user?.name ?? "C")[0].toUpperCase()}
                 </div>
               )}
@@ -741,28 +711,40 @@ export function Sidebar({
                   <div className="text-xs font-bold text-zinc-900 dark:text-white truncate">
                     {user?.name?.split(" ")[0] ?? "Chairman"}
                   </div>
-                  <div className="text-[9.5px] text-zinc-500 dark:text-zinc-400 truncate">Online</div>
+                  <div className="text-[9.5px] text-zinc-500 dark:text-zinc-400 truncate flex items-center gap-1">
+                    <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
+                    <span>Online</span>
+                  </div>
                 </div>
               )}
             </button>
 
-            {/* Actions */}
+            {/* Actions: Settings Gear (32px × 32px) + Calendar + Palette */}
             <div className="flex items-center gap-1 shrink-0">
               <button
+                type="button"
+                onClick={() => setAccountModalOpen(true)}
+                className="w-8 h-8 rounded-xl flex items-center justify-center text-zinc-400 hover:text-white hover:bg-white/10 border border-transparent hover:border-white/10 transition-all"
+                title="Execution & Account Settings"
+              >
+                <Settings size={15} />
+              </button>
+
+              <button
                 onClick={onCalToggle}
-                className={`p-1.5 rounded-lg transition-colors ${
+                className={`w-8 h-8 rounded-xl flex items-center justify-center transition-colors ${
                   calConnected
-                    ? "text-[color:var(--theme-grad-start)] bg-[rgba(var(--theme-grad-start-rgb),0.1)]"
+                    ? "text-[#58A6FF] bg-[#0969DA]/15 border border-[#0969DA]/30"
                     : "text-zinc-500 hover:text-zinc-900 dark:hover:text-white hover:bg-zinc-200/50 dark:hover:bg-white/10"
                 }`}
-                title={calConnected ? "Cal Live" : "Connect Calendar"}
+                title={calConnected ? "Google Calendar Live" : "Connect Google Calendar"}
               >
                 <CalendarDays size={15} />
               </button>
 
               <button
                 onClick={() => setIsAppearanceOpen(true)}
-                className="p-1.5 rounded-lg text-zinc-500 hover:text-zinc-900 dark:hover:text-white hover:bg-zinc-200/50 dark:hover:bg-white/10 transition-colors"
+                className="w-8 h-8 rounded-xl flex items-center justify-center text-zinc-500 hover:text-zinc-900 dark:hover:text-white hover:bg-zinc-200/50 dark:hover:bg-white/10 transition-colors"
                 title="Appearance, Fonts & Themes"
               >
                 <Palette size={15} />
@@ -773,7 +755,14 @@ export function Sidebar({
       </aside>
 
       {accountModalOpen && (
-        <UserAccountModal user={user || {}} onClose={() => setAccountModalOpen(false)} />
+        <UserAccountModal
+          user={user || {}}
+          calConnected={calConnected}
+          onCalToggle={onCalToggle}
+          activeTasksCount={activeTasksCount}
+          activeSubtasksCount={activeSubtasksCount}
+          onClose={() => setAccountModalOpen(false)}
+        />
       )}
       {isAppearanceOpen && (
         <AppearanceSettings onClose={() => setIsAppearanceOpen(false)} />
