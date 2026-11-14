@@ -711,9 +711,8 @@ function SectorCard({ category, allMetrics, onSave }: any) {
   return (
     <div className={`relative w-full ${cardHeight} perspective-1000 group`}>
       <div
-        className={`w-full h-full absolute transition-transform duration-500 preserve-3d ${
-          isFlipped ? "rotate-y-180" : ""
-        }`}
+        className={`w-full h-full absolute transition-transform duration-500 preserve-3d ${isFlipped ? "rotate-y-180" : ""
+          }`}
       >
         {/* Front */}
         <div className="absolute w-full h-full backface-hidden bg-white/80 dark:bg-black/60 backdrop-blur-xl border border-zinc-200/50 dark:border-white/10 rounded-xl p-5 flex flex-col shadow-[0_0_30px_rgba(0,0,0,0.08)] dark:shadow-[0_0_30px_rgba(255,255,255,0.02)]">
@@ -726,11 +725,10 @@ function SectorCard({ category, allMetrics, onSave }: any) {
             </div>
             <button
               onClick={() => isActiveSector && setIsFlipped(true)}
-              className={`p-1.5 rounded-md transition-colors ${
-                isActiveSector
-                  ? "hover:bg-zinc-200/50 dark:hover:bg-white/10 text-zinc-500"
-                  : "opacity-50 cursor-not-allowed text-zinc-300 dark:text-zinc-700"
-              }`}
+              className={`p-1.5 rounded-md transition-colors ${isActiveSector
+                ? "hover:bg-zinc-200/50 dark:hover:bg-white/10 text-zinc-500"
+                : "opacity-50 cursor-not-allowed text-zinc-300 dark:text-zinc-700"
+                }`}
             >
               <Edit2 size={14} />
             </button>
@@ -1741,6 +1739,94 @@ export default function KPIsPage() {
       pushRow("joy", "$10/HR DELEGATION RATIO", "Opportunity Cost Limit", "≤ 2h", `${p.lowValue}h`, computeVariancePct(p.lowValue, 2, "lower"), getJoyStatus(p.lowValue, "lowvalue"), "joy_low_value_hours");
     }
 
+    // 5. CEO (5)
+    {
+      const v = valsOf("ceo");
+      const p = calculateCeoPhysics(v);
+      pushRow("ceo", "NET VELOCITY (FCF)", "Capital Physics", "> $0", `$${p.fcf.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`, computeVariancePct(p.fcf, 0, "higher"), getCeoStatus(p.fcf, "fcf"), "ceo_fcf");
+      pushRow("ceo", "THE RUIN RATIO", "Capital Buffer", "≥ 10.0x", `${p.ruin.toFixed(1)}x`, computeVariancePct(p.ruin, 10, "higher"), getCeoStatus(p.ruin, "ruin"), "ceo_ruin_buffer");
+      pushRow("ceo", "THE BUY-BACK RATE", "Operational Leverage", "≥ 80%", `${p.buyback.toFixed(1)}%`, computeVariancePct(p.buyback, 80, "higher"), getCeoStatus(p.buyback, "buyback"), "ceo_buyback_rate");
+      pushRow("ceo", "LOGIC ALIGNMENT", "5 Guidelines", "100%", `${p.logic.toFixed(1)}%`, computeVariancePct(p.logic, 100, "higher"), getCeoStatus(p.logic, "logic"), "ceo_logic_alignment");
+      pushRow("ceo", "ARCHITECTURAL AUTONOMY", "System Autonomy", "≥ 80%", `${p.autonomy.toFixed(1)}%`, computeVariancePct(p.autonomy, 80, "higher"), getCeoStatus(p.autonomy, "autonomy"), "ceo_autonomy_score");
+    }
+
+    // 6. COO (5)
+    {
+      const v = valsOf("coo");
+      const p = calculateCooPhysics(v);
+      pushRow("coo", "ACTIVE MISSION VELOCITY", "Forward Momentum", "≥ 90%", `${p.velocity.toFixed(1)}%`, computeVariancePct(p.velocity, 90, "higher"), getCooStatus(p.velocity, "velocity"), "coo_mission_velocity");
+      pushRow("coo", "CRITICAL EXCEPTION RATE", "System Fragility", "0 Failures", `${p.exception} Failures`, computeVariancePct(p.exception, 0, "lower"), getCooStatus(p.exception, "exception"), "coo_exception_rate");
+      pushRow("coo", "QA FIDELITY SCORE", "Design Integrity", "100%", `${p.qa.toFixed(1)}%`, computeVariancePct(p.qa, 100, "higher"), getCooStatus(p.qa, "qa"), "coo_qa_fidelity");
+      pushRow("coo", "MTTR (BUG RESOLUTION)", "Pipeline Friction", "≤ 4.0 Hrs", `${p.mttr.toFixed(1)} Hrs`, computeVariancePct(p.mttr, 4, "lower"), getCooStatus(p.mttr, "mttr"), "coo_mttr_hours");
+      pushRow("coo", "SOP AUTONOMY", "Hand-Off Readiness", "≥ 90%", `${p.sop.toFixed(1)}%`, computeVariancePct(p.sop, 90, "higher"), getCooStatus(p.sop, "sop"), "coo_sop_autonomy");
+    }
+
+    // 7. CMO (5)
+    {
+      const v = valsOf("cmo");
+      const p = calculateCmoPhysics(v);
+      pushRow("cmo", "THE LTV:CAC RATIO", "Capital Leverage", "≥ 3.0:1", `${p.ltv_cac.toFixed(1)}:1`, computeVariancePct(p.ltv_cac, 3, "higher"), getCmoStatus(p.ltv_cac, "ltv_cac"), "cmo_ltv_cac_ratio");
+      pushRow("cmo", "LEAD VELOCITY RATE", "Pipeline Momentum", "≥ 10%", `${p.lead_vel.toFixed(1)}%`, computeVariancePct(p.lead_vel, 10, "higher"), getCmoStatus(p.lead_vel, "lead_vel"), "cmo_lead_velocity");
+      pushRow("cmo", "GRAND SLAM CONVERSION", "Conversion Gravity", "≥ 5.0%", `${p.conv_rate.toFixed(1)}%`, computeVariancePct(p.conv_rate, 5, "higher"), getCmoStatus(p.conv_rate, "conv_rate"), "cmo_conversion_rate");
+      pushRow("cmo", "TIME-TO-VALUE (TTV)", "Activation Speed", "≤ 24 Hrs", `${p.ttv.toFixed(1)} Hrs`, computeVariancePct(p.ttv, 24, "lower"), getCmoStatus(p.ttv, "ttv"), "cmo_ttv_hours");
+      pushRow("cmo", "SIGNAL-TO-NOISE (CLARITY)", "Messaging Clarity", "≥ 9/10", `${p.storybrand}/10`, computeVariancePct(p.storybrand, 9, "higher"), getCmoStatus(p.storybrand, "storybrand"), "cmo_storybrand_score");
+    }
+
+    // 8. CFO (5)
+    {
+      const v = valsOf("cfo");
+      const p = calculateCfoPhysics(v);
+      pushRow("cfo", "NET RETURN ON INTELLIGENCE", "Profitability / NROI", "> $0", `$${p.nroi.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`, computeVariancePct(p.nroi, 0, "higher"), getCfoStatus(p.nroi, "nroi"), "cfo_nroi");
+      pushRow("cfo", "ABSOLUTE RUIN BUFFER", "Structural Preservation", "≥ $500", `$${p.buffer.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`, computeVariancePct(p.buffer, 500, "higher"), getCfoStatus(p.buffer, "buffer"), "cfo_buffer_distance");
+      pushRow("cfo", "COST PER SETUP (CPAS)", "Intelligence Cost", "≤ $1.00", `$${p.cpas.toFixed(2)}`, computeVariancePct(p.cpas, 1, "lower"), getCfoStatus(p.cpas, "cpas"), "cfo_cpas");
+      pushRow("cfo", "BLACK SWAN RESILIENCE", "Market Anti-Fragility", "100%", `${p.swan.toFixed(1)}%`, computeVariancePct(p.swan, 100, "higher"), getCfoStatus(p.swan, "swan"), "cfo_black_swan_score");
+      pushRow("cfo", "TELEMETRY-TO-LEDGER SYNC", "Data Friction", "100%", `${p.sync.toFixed(1)}%`, computeVariancePct(p.sync, 100, "higher"), getCfoStatus(p.sync, "sync"), "cfo_ledger_sync");
+    }
+
+    // 9. CTO (5)
+    {
+      const v = valsOf("cto");
+      const p = calculateCtoPhysics(v);
+      pushRow("cto", "TELEMETRY LATENCY", "Execution Velocity", "< 50 ms", `${p.latency} ms`, computeVariancePct(p.latency, 50, "lower"), getCtoStatus(p.latency, "latency"), "cto_telemetry_latency");
+      pushRow("cto", "INFRASTRUCTURE UPTIME", "System Stability", "≥ 99.99%", `${p.uptime.toFixed(2)}%`, computeVariancePct(p.uptime, 99.99, "higher"), getCtoStatus(p.uptime, "uptime"), "cto_uptime_percentage");
+      pushRow("cto", "ACTIVE MISSION VELOCITY", "Clean Sprint Velocity", "≥ 90%", `${p.velocity.toFixed(1)}%`, computeVariancePct(p.velocity, 90, "higher"), getCtoStatus(p.velocity, "velocity"), "cto_mission_velocity");
+      pushRow("cto", "CRITICAL MTTR", "Live-Market Bugs", "< 15 Mins", `${p.mttr} Mins`, computeVariancePct(p.mttr, 15, "lower"), getCtoStatus(p.mttr, "mttr"), "cto_mttr_minutes");
+      pushRow("cto", "THE BUS FACTOR", "Engineering Autonomy", "≥ 90/100", `${p.bus}/100`, computeVariancePct(p.bus, 90, "higher"), getCtoStatus(p.bus, "bus"), "cto_bus_factor");
+    }
+
+    // 10. CPO (5)
+    {
+      const v = valsOf("cpo");
+      const p = calculateCpoPhysics(v);
+      pushRow("cpo", "CHURN VELOCITY", "Retention Entropy", "≤ 3.0%", `${p.churn.toFixed(1)}%`, computeVariancePct(p.churn, 3, "lower"), getCpoStatus(p.churn, "churn"), "cpo_churn_velocity");
+      pushRow("cpo", "ALPHA DELIVERY RATE", "Live-Market Edge", "≥ 65%", `${p.alpha.toFixed(1)}%`, computeVariancePct(p.alpha, 65, "higher"), getCpoStatus(p.alpha, "alpha"), "cpo_alpha_winrate");
+      pushRow("cpo", "UI TIME-TO-VALUE", "Cognitive Friction", "≤ 3.0 Secs", `${p.ttv.toFixed(1)} Secs`, computeVariancePct(p.ttv, 3, "lower"), getCpoStatus(p.ttv, "ttv"), "cpo_ui_ttv");
+      pushRow("cpo", 'THE "MUST-HAVE" SCORE', "Product/Market Fit", "≥ 40%", `${p.pmf.toFixed(1)}%`, computeVariancePct(p.pmf, 40, "higher"), getCpoStatus(p.pmf, "pmf"), "cpo_pmf_score");
+      pushRow("cpo", "FRONTEND ESSENTIALISM", "Signal-to-Noise", "≥ 95/100", `${p.ess}/100`, computeVariancePct(p.ess, 95, "higher"), getCpoStatus(p.ess, "ess"), "cpo_essentialism");
+    }
+
+    // 11. CRO (5)
+    {
+      const v = valsOf("cro");
+      const p = calculateCroPhysics(v);
+      pushRow("cro", "LEAD-TO-CLOSE RATE", "Kinetic Conversion", "≥ 20%", `${p.lead_to_close.toFixed(1)}%`, computeVariancePct(p.lead_to_close, 20, "higher"), getCroStatus(p.lead_to_close, "lead_to_close"), "cro_lead_to_close");
+      pushRow("cro", "NET CASH CAPTURED", "Capital Capture", "> $0", `$${p.net_cash.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`, computeVariancePct(p.net_cash, 0, "higher"), getCroStatus(p.net_cash, "net_cash"), "cro_net_cash");
+      pushRow("cro", "SALES CYCLE VELOCITY", "Pipeline Friction", "≤ 14 Days", `${p.cycle} Days`, computeVariancePct(p.cycle, 14, "lower"), getCroStatus(p.cycle, "cycle"), "cro_sales_cycle_days");
+      pushRow("cro", "THE RECLAIM RATE", "Salvage Velocity", "≥ 15%", `${p.reclaim.toFixed(1)}%`, computeVariancePct(p.reclaim, 15, "higher"), getCroStatus(p.reclaim, "reclaim"), "cro_reclaim_rate");
+      pushRow("cro", "PIPELINE HYGIENE", "CRM Accuracy", "≥ 95/100", `${p.hygiene}/100`, computeVariancePct(p.hygiene, 95, "higher"), getCroStatus(p.hygiene, "hygiene"), "cro_pipeline_hygiene");
+    }
+
+    // 12. CHO (5)
+    {
+      const v = valsOf("cho");
+      const p = calculateChoPhysics(v);
+      pushRow("cho", "THE TOP-GRADING INDEX", "Human Capital Gravity", "≥ 90%", `${p.density.toFixed(1)}%`, computeVariancePct(p.density, 90, "higher"), getChoStatus(p.density, "density"), "cho_talent_density");
+      pushRow("cho", "REGRETTABLE CHURN", "Talent Entropy", "≤ 5.0%", `${p.churn.toFixed(1)}%`, computeVariancePct(p.churn, 5, "lower"), getChoStatus(p.churn, "churn"), "cho_regrettable_churn");
+      pushRow("cho", "RAMP-UP VELOCITY", "Time-to-Value", "≤ 14 Days", `${p.ramp} Days`, computeVariancePct(p.ramp, 14, "lower"), getChoStatus(p.ramp, "ramp"), "cho_ramp_days");
+      pushRow("cho", "SOP EXECUTION RATE", "Operational Accuracy", "100%", `${p.sop.toFixed(1)}%`, computeVariancePct(p.sop, 100, "higher"), getChoStatus(p.sop, "sop"), "cho_sop_execution");
+      pushRow("cho", "COGNITIVE DRAG INDEX", "Administrative Noise", "≤ 10/100", `${p.drag}/100`, computeVariancePct(p.drag, 10, "lower"), getChoStatus(p.drag, "drag"), "cho_cognitive_drag");
+    }
+
     return rows;
   }, [sectorRawValues]);
 
@@ -1935,11 +2021,10 @@ export default function KPIsPage() {
                         <button
                           key={v.id}
                           onClick={() => setViewMode(v.id as "matrix" | "cards" | "both")}
-                          className={`px-3 py-1.5 rounded-lg text-xs font-semibold flex items-center gap-1.5 transition-all ${
-                            active
-                              ? "bg-amber-500/20 text-amber-700 dark:text-amber-200 border border-amber-400/40"
-                              : "text-zinc-500 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-white"
-                          }`}
+                          className={`px-3 py-1.5 rounded-lg text-xs font-semibold flex items-center gap-1.5 transition-all ${active
+                            ? "bg-amber-500/20 text-amber-700 dark:text-amber-200 border border-amber-400/40"
+                            : "text-zinc-500 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-white"
+                            }`}
                         >
                           <Icon className="w-3.5 h-3.5" />
                           <span>{v.label}</span>
@@ -1983,8 +2068,8 @@ export default function KPIsPage() {
                       scorecardSummary.overallScore >= 80
                         ? "GREEN"
                         : scorecardSummary.overallScore >= 65
-                        ? "YELLOW"
-                        : "RED"
+                          ? "YELLOW"
+                          : "RED"
                     }
                     width={92}
                     height={32}
@@ -2055,11 +2140,10 @@ export default function KPIsPage() {
                         key={cad}
                         type="button"
                         onClick={() => setCheckInCadence(cad)}
-                        className={`px-2.5 py-1 rounded-md text-[11px] font-bold uppercase tracking-wider ${
-                          checkInCadence === cad
-                            ? "bg-amber-400 text-slate-950"
-                            : "text-zinc-300 hover:text-white"
-                        }`}
+                        className={`px-2.5 py-1 rounded-md text-[11px] font-bold uppercase tracking-wider ${checkInCadence === cad
+                          ? "bg-amber-400 text-slate-950"
+                          : "text-zinc-300 hover:text-white"
+                          }`}
                       >
                         {cad}
                       </button>
@@ -2102,11 +2186,10 @@ export default function KPIsPage() {
                   <div className="flex flex-wrap items-center gap-1.5">
                     <button
                       onClick={() => setSelectedSectorFilter("all")}
-                      className={`px-2.5 py-1 rounded-lg text-[10.5px] font-bold uppercase tracking-wider transition-colors ${
-                        selectedSectorFilter === "all"
-                          ? "bg-amber-500/25 text-amber-700 dark:text-amber-200 border border-amber-400/40"
-                          : "bg-zinc-100 dark:bg-white/[0.04] text-zinc-500 dark:text-zinc-400 hover:text-white"
-                      }`}
+                      className={`px-2.5 py-1 rounded-lg text-[10.5px] font-bold uppercase tracking-wider transition-colors ${selectedSectorFilter === "all"
+                        ? "bg-amber-500/25 text-amber-700 dark:text-amber-200 border border-amber-400/40"
+                        : "bg-zinc-100 dark:bg-white/[0.04] text-zinc-500 dark:text-zinc-400 hover:text-white"
+                        }`}
                     >
                       All 12 Sectors
                     </button>
@@ -2114,11 +2197,10 @@ export default function KPIsPage() {
                       <button
                         key={cat.id}
                         onClick={() => setSelectedSectorFilter(cat.id)}
-                        className={`px-2.5 py-1 rounded-lg text-[10.5px] font-bold uppercase tracking-wider transition-colors border ${
-                          selectedSectorFilter === cat.id
-                            ? "bg-white/15 text-white border-white/30"
-                            : "bg-zinc-100 dark:bg-white/[0.03] text-zinc-500 dark:text-zinc-400 border-transparent hover:text-white"
-                        }`}
+                        className={`px-2.5 py-1 rounded-lg text-[10.5px] font-bold uppercase tracking-wider transition-colors border ${selectedSectorFilter === cat.id
+                          ? "bg-white/15 text-white border-white/30"
+                          : "bg-zinc-100 dark:bg-white/[0.03] text-zinc-500 dark:text-zinc-400 border-transparent hover:text-white"
+                          }`}
                         style={
                           selectedSectorFilter === cat.id ? { borderColor: cat.color, color: cat.color } : undefined
                         }
@@ -2134,11 +2216,10 @@ export default function KPIsPage() {
                         <button
                           key={st}
                           onClick={() => setRagFilter(st)}
-                          className={`px-2 py-0.5 rounded text-[10px] font-bold uppercase ${
-                            ragFilter === st
-                              ? "bg-white dark:bg-white/15 text-zinc-900 dark:text-white"
-                              : "text-zinc-500 dark:text-zinc-400"
-                          }`}
+                          className={`px-2 py-0.5 rounded text-[10px] font-bold uppercase ${ragFilter === st
+                            ? "bg-white dark:bg-white/15 text-zinc-900 dark:text-white"
+                            : "text-zinc-500 dark:text-zinc-400"
+                            }`}
                         >
                           {st === "ALL" ? "All RAG" : st === "GREEN" ? "Optimal" : st === "YELLOW" ? "Warning" : "Critical"}
                         </button>
@@ -2323,13 +2404,12 @@ export default function KPIsPage() {
 
                                     <td className="py-2.5 px-3">
                                       <span
-                                        className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider border ${
-                                          row.rag === "GREEN"
-                                            ? "bg-emerald-500/15 text-emerald-400 border-emerald-500/30"
-                                            : row.rag === "YELLOW"
+                                        className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider border ${row.rag === "GREEN"
+                                          ? "bg-emerald-500/15 text-emerald-400 border-emerald-500/30"
+                                          : row.rag === "YELLOW"
                                             ? "bg-yellow-500/15 text-yellow-400 border-yellow-500/30"
                                             : "bg-red-500/15 text-red-400 border-red-500/30"
-                                        }`}
+                                          }`}
                                       >
                                         {row.statusLabel}
                                       </span>
@@ -2365,11 +2445,10 @@ export default function KPIsPage() {
                                           type="button"
                                           onClick={() => handleInlineQuickSave(row)}
                                           title="Save KPI Input"
-                                          className={`p-1.5 rounded-lg border transition-colors ${
-                                            savedFlashKey === row.key
-                                              ? "bg-emerald-500/20 border-emerald-400/40 text-emerald-300"
-                                              : "bg-zinc-100 dark:bg-white/[0.06] hover:bg-amber-500/20 border-zinc-200 dark:border-white/10 text-zinc-600 dark:text-zinc-300"
-                                          }`}
+                                          className={`p-1.5 rounded-lg border transition-colors ${savedFlashKey === row.key
+                                            ? "bg-emerald-500/20 border-emerald-400/40 text-emerald-300"
+                                            : "bg-zinc-100 dark:bg-white/[0.06] hover:bg-amber-500/20 border-zinc-200 dark:border-white/10 text-zinc-600 dark:text-zinc-300"
+                                            }`}
                                         >
                                           {savedFlashKey === row.key ? (
                                             <Check className="w-3.5 h-3.5" />

@@ -8,6 +8,7 @@ interface YearlyRadialViewProps {
   activeMonth: number; // 0..11
   telemetry: ConcentricTelemetry;
   seasons: SeasonCard[];
+  monthEventsCount?: number[];
   onSelectMonth: (monthIndex: number) => void;
   onSelectSeason: (seasonId: string) => void;
 }
@@ -17,6 +18,7 @@ export function YearlyRadialView({
   activeMonth,
   telemetry,
   seasons,
+  monthEventsCount = [],
   onSelectMonth,
   onSelectSeason,
 }: YearlyRadialViewProps) {
@@ -278,7 +280,7 @@ export function YearlyRadialView({
                 />
                 <text
                   x={m.labelX}
-                  y={m.labelY + 3.5}
+                  y={m.labelY - (monthEventsCount[m.monthIndex] ? 1 : -3.5)}
                   textAnchor="middle"
                   fill={isTodayMonth ? "#FFD074" : m.isPast ? "#60A5FA" : "rgba(255,255,255,0.65)"}
                   fontSize={isTodayMonth ? 10.5 : 9}
@@ -287,6 +289,19 @@ export function YearlyRadialView({
                 >
                   {m.name}
                 </text>
+                {monthEventsCount[m.monthIndex] > 0 && (
+                  <text
+                    x={m.labelX}
+                    y={m.labelY + 9}
+                    textAnchor="middle"
+                    fill={isTodayMonth ? "#FFB347" : "#58A6FF"}
+                    fontSize={7.5}
+                    fontWeight={800}
+                    fontFamily="monospace"
+                  >
+                    {monthEventsCount[m.monthIndex]}
+                  </text>
+                )}
                 {isTodayMonth && (
                   <circle
                     cx={m.labelX}

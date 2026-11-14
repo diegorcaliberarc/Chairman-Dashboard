@@ -178,6 +178,49 @@ export function WeeklyRadialView({
                   {day.dateNum}
                 </text>
 
+                {/* Real Event Focus or Events Count Badge */}
+                {day.primaryFocus && (
+                  <text
+                    x={labelX}
+                    y={labelY + 34}
+                    textAnchor="middle"
+                    fill={isToday ? "#FFB347" : "rgba(255,255,255,0.75)"}
+                    fontSize={9.5}
+                    fontWeight={700}
+                    letterSpacing="0.02em"
+                  >
+                    {day.primaryFocus.length > 16
+                      ? day.primaryFocus.slice(0, 14) + "…"
+                      : day.primaryFocus}
+                  </text>
+                )}
+
+                {typeof day.eventsCount === "number" && day.eventsCount > 0 && (
+                  <g>
+                    <rect
+                      x={labelX - 24}
+                      y={labelY + 44}
+                      width={48}
+                      height={14}
+                      rx={7}
+                      fill={isToday ? "rgba(255, 179, 71, 0.25)" : "rgba(88, 166, 255, 0.2)"}
+                      stroke={isToday ? "#FFB347" : "#58A6FF"}
+                      strokeWidth={0.8}
+                    />
+                    <text
+                      x={labelX}
+                      y={labelY + 54}
+                      textAnchor="middle"
+                      fill={isToday ? "#FFB347" : "#58A6FF"}
+                      fontSize={8}
+                      fontWeight={800}
+                      fontFamily="monospace"
+                    >
+                      {day.eventsCount} {day.eventsCount === 1 ? "EVENT" : "EVENTS"}
+                    </text>
+                  </g>
+                )}
+
                 {isToday && (
                   <text
                     x={labelX}

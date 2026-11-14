@@ -7,7 +7,38 @@ import {
   ConcentricTelemetry,
 } from "./temporalTypes";
 
-export function getWeekDays(referenceDate: Date = new Date()): DaySegment[] {
+export function eventMatchesDate(date: Date, targetDateStr: string, tz: string = "America/Denver"): boolean {
+  try {
+    const localDateStr = new Intl.DateTimeFormat("en-CA", { timeZone: tz }).format(date);
+    return localDateStr === targetDateStr;
+  } catch {
+    const targetMid = new Date(`${targetDateStr}T12:00:00Z`).getTime();
+    return Math.abs(date.getTime() - targetMid) <= 14 * 60 * 60 * 1000;
+  }
+}
+
+function inferDomainAndMedia(title: string, category?: string) {
+  const t = (title || "").toLowerCase();
+  if (t.includes("workout") || t.includes("gym") || t.includes("training") || t.includes("lift") || category === "workout") {
+    return { domain: "physical_training" as const, media: "/circadian/gym-workout.jpg", icon: "dumbbell" };
+  }
+  if (t.includes("dinner") || t.includes("lunch") || t.includes("breakfast") || t.includes("meal") || t.includes("refuel") || t.includes("fast")) {
+    return { domain: "nutrition" as const, media: "/circadian/nutrition-steak.jpg", icon: "utensils" };
+  }
+  if (t.includes("walk") || t.includes("dog") || t.includes("huskies") || t.includes("nova") || t.includes("astro") || t.includes("family")) {
+    return { domain: "family_pets" as const, media: "/circadian/huskies-walk.jpg", icon: "dog" };
+  }
+  if (t.includes("rest") || t.includes("sleep") || t.includes("bed") || t.includes("cozier")) {
+    return { domain: "logistics" as const, media: "/circadian/cozier-rest.jpg", icon: "bed" };
+  }
+  return { domain: "engineering" as const, media: "/circadian/saas-build.jpg", icon: "laptop" };
+}
+
+export function getWeekDays(
+  referenceDate: Date = new Date(),
+  allEvents: Array<{ title: string; start_time: string; end_time: string; color_hex?: string; category?: string }> = [],
+  tz: string = "America/Denver"
+): DaySegment[] {
   const current = new Date(referenceDate);
   // Find Monday of current week
   const day = current.getDay();
@@ -91,7 +122,7 @@ export function getWeekDays(referenceDate: Date = new Date()): DaySegment[] {
     const dayNum = String(d.getDate()).padStart(2, "0");
     const dStr = `${y}-${m}-${dayNum}`;
 
-    const isToday = dStr === todayStr || i === 3; // THU 12 as showcase if needed
+    const isToday = dStr === todayStr;
     const isPast = !isToday && d < new Date();
     const color = isToday
       ? "#FF9900"
@@ -101,6 +132,21 @@ export function getWeekDays(referenceDate: Date = new Date()): DaySegment[] {
       ? "#9D4EDD"
       : "#99FF33";
 
+    // Match real Google / database events for this day
+    const dayEvents = allEvents.filter((ev) => {
+      const s = new Date(ev.start_time);
+      return eventMatchesDate(s, dStr, tz);
+    });
+
+    const hasRealEvents = dayEvents.length > 0;
+    const primaryEvent = hasRealEvents ? dayEvents[0] : null;
+    const inferred = primaryEvent ? inferDomainAndMedia(primaryEvent.title, primaryEvent.category) : null;
+
+    const primaryFocus = primaryEvent ? primaryEvent.title : presets[i].focus;
+    const domain = inferred ? inferred.domain : presets[i].domain;
+    const mediaUrl = inferred ? inferred.media : presets[i].media;
+    const iconName = inferred ? inferred.icon : presets[i].icon;
+
     return {
       isoDay: i + 1,
       dayName: name,
@@ -109,29 +155,53 @@ export function getWeekDays(referenceDate: Date = new Date()): DaySegment[] {
       isActiveToday: isToday,
       isPast,
       statusColor: color,
-      primaryFocus: presets[i].focus,
-      domain: presets[i].domain,
-      mediaUrl: presets[i].media,
-      iconName: presets[i].icon,
+      primaryFocus,
+      domain,
+      mediaUrl,
+      iconName,
       telemetry: {
         healthPct: presets[i].health,
-        workPct: presets[i].work,
+        workPct: hasRealEvents ? Math.min(100, dayEvents.length * 35) : presets[i].work,
         sleepPct: presets[i].sleep,
       },
+      eventsCount: dayEvents.length,
+      events: dayEvents.map((e) => ({
+        id: (e as any).id || e.title,
+        title: e.title,
+        time: new Date(e.start_time).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }),
+        color: e.color_hex || "#3B82F6",
+      })),
     };
   });
 }
 
-export function getMonthNodes(year: number = 2026, month: number = 10): MonthNode[] {
+export function getMonthNodes(
+  year: number = 2026,
+  month: number = 10,
+  allEvents: Array<{ title: string; start_time: string; end_time: string; color_hex?: string }> = [],
+  tz: string = "America/Denver"
+): MonthNode[] {
   // month is 0-indexed (10 = November)
   const daysInMonth = new Date(year, month + 1, 0).getDate();
-  const today = 12; // Nov 12
+  const todayStr = new Date().toISOString().split("T")[0];
 
   const nodes: MonthNode[] = [];
   for (let d = 1; d <= daysInMonth; d++) {
-    const isToday = d === today;
-    const isPast = d < today;
+    const mStr = String(month + 1).padStart(2, "0");
+    const dStr = String(d).padStart(2, "0");
+    const dateStr = `${year}-${mStr}-${dStr}`;
+
+    const isToday = dateStr === todayStr;
+    const dObj = new Date(year, month, d);
+    const isPast = !isToday && dObj < new Date();
     const isActiveWeek = d >= 9 && d <= 15;
+
+    // Check real events for this node
+    const dayEvents = allEvents.filter((ev) => {
+      const s = new Date(ev.start_time);
+      return eventMatchesDate(s, dateStr, tz);
+    });
+    const hasEvents = dayEvents.length > 0;
 
     let status: MonthNode["status"] = "upcoming";
     let statusColor = "rgba(255, 255, 255, 0.25)";
@@ -139,6 +209,9 @@ export function getMonthNodes(year: number = 2026, month: number = 10): MonthNod
     if (isToday) {
       status = "active_today";
       statusColor = "#FF9900";
+    } else if (hasEvents) {
+      status = "active_week";
+      statusColor = isPast ? "#0088FF" : "#99FF33";
     } else if (isActiveWeek) {
       status = "active_week";
       statusColor = isPast ? "#0088FF" : "#9D4EDD";
@@ -150,31 +223,45 @@ export function getMonthNodes(year: number = 2026, month: number = 10): MonthNod
       statusColor = "rgba(255, 255, 255, 0.18)";
     }
 
-    const mStr = String(month + 1).padStart(2, "0");
-    const dStr = String(d).padStart(2, "0");
-
     nodes.push({
       dayOfMonth: d,
-      dateStr: `${year}-${mStr}-${dStr}`,
+      dateStr,
       isCurrentMonth: true,
       isToday,
       isActiveWeek,
       isPast,
       status,
       statusColor,
-      taskCount: isPast ? 4 : isToday ? 5 : 2,
+      taskCount: hasEvents ? dayEvents.length : (isPast ? 4 : isToday ? 5 : 2),
+      eventsCount: dayEvents.length,
+      primaryEvent: dayEvents[0]?.title,
     });
   }
   return nodes;
 }
 
-export function getSeasonCards(): SeasonCard[] {
+export function getSeasonCards(
+  selectedYear: number = 2026,
+  allEvents: Array<{ title: string; start_time: string }> = []
+): SeasonCard[] {
+  const getEventCountInMonths = (monthIndices: number[]) => {
+    return allEvents.filter((ev) => {
+      const d = new Date(ev.start_time);
+      return d.getFullYear() === selectedYear && monthIndices.includes(d.getMonth());
+    }).length;
+  };
+
+  const winterCount = getEventCountInMonths([11, 0, 1]); // Dec, Jan, Feb
+  const springCount = getEventCountInMonths([2, 3, 4]);  // Mar, Apr, May
+  const summerCount = getEventCountInMonths([5, 6, 7]);  // Jun, Jul, Aug
+  const fallCount = getEventCountInMonths([8, 9, 10]);   // Sep, Oct, Nov
+
   return [
     {
       id: "winter",
       title: "WINTER",
       months: "DEC · JAN · FEB",
-      subtitle: "Winter Break & Foundation",
+      subtitle: winterCount > 0 ? `${winterCount} Events Scheduled` : "Winter Break & Foundation",
       strategicImperative: "Restoration & High-Altitude Strength",
       accentColor: "#38bdf8",
       mediaUrl: "/circadian/cozier-rest.jpg",
@@ -184,7 +271,7 @@ export function getSeasonCards(): SeasonCard[] {
       id: "spring",
       title: "SPRING",
       months: "MAR · APR · MAY",
-      subtitle: "Launch Season",
+      subtitle: springCount > 0 ? `${springCount} Events Scheduled` : "Launch Season",
       strategicImperative: "Commercial Scale & New Feature Deployments",
       accentColor: "#99FF33",
       mediaUrl: "/circadian/gym-workout.jpg",
@@ -194,7 +281,7 @@ export function getSeasonCards(): SeasonCard[] {
       id: "summer",
       title: "SUMMER",
       months: "JUN · JUL · AUG",
-      subtitle: "Summertime & Outdoor Recon",
+      subtitle: summerCount > 0 ? `${summerCount} Events Scheduled` : "Summertime & Outdoor Recon",
       strategicImperative: "Fitness Peak & Wilderness Pack Treks",
       accentColor: "#FF5500",
       mediaUrl: "/circadian/huskies-walk.jpg",
@@ -204,7 +291,7 @@ export function getSeasonCards(): SeasonCard[] {
       id: "fall",
       title: "FALL",
       months: "SEP · OCT · NOV",
-      subtitle: "Q4 Milestones & Revenue Lock",
+      subtitle: fallCount > 0 ? `${fallCount} Events Scheduled` : "Q4 Milestones & Revenue Lock",
       strategicImperative: "Active Season · Enterprise Architecture & Cash Reserves",
       accentColor: "#FF9900",
       mediaUrl: "/circadian/saas-build.jpg",

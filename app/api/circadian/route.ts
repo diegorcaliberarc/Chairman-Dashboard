@@ -47,12 +47,40 @@ function projectRecurringToDate(event: any, targetDateStr?: string) {
   };
 }
 
+function eventMatchesDate(date: Date, targetDateStr: string, tz: string = "America/Denver"): boolean {
+  try {
+    const localDateStr = new Intl.DateTimeFormat("en-CA", { timeZone: tz }).format(date);
+    return localDateStr === targetDateStr;
+  } catch {
+    const targetMid = new Date(`${targetDateStr}T12:00:00Z`).getTime();
+    return Math.abs(date.getTime() - targetMid) <= 14 * 60 * 60 * 1000;
+  }
+}
+
+function inferDomainAndMedia(title: string, category?: string) {
+  const t = (title || "").toLowerCase();
+  if (t.includes("workout") || t.includes("gym") || t.includes("training") || t.includes("lift") || category === "workout") {
+    return { domain: "physical_training" as const, mediaUrl: "/circadian/gym-workout.jpg", color: "#FF9900" };
+  }
+  if (t.includes("dinner") || t.includes("lunch") || t.includes("breakfast") || t.includes("meal") || t.includes("refuel") || t.includes("fast")) {
+    return { domain: "nutrition" as const, mediaUrl: "/circadian/nutrition-steak.jpg", color: "#10B981" };
+  }
+  if (t.includes("walk") || t.includes("dog") || t.includes("huskies") || t.includes("nova") || t.includes("astro") || t.includes("family")) {
+    return { domain: "family_pets" as const, mediaUrl: "/circadian/huskies-walk.jpg", color: "#99FF33" };
+  }
+  if (t.includes("rest") || t.includes("sleep") || t.includes("bed") || t.includes("cozier")) {
+    return { domain: "logistics" as const, mediaUrl: "/circadian/cozier-rest.jpg", color: "#38BDF8" };
+  }
+  return { domain: "engineering" as const, mediaUrl: "/circadian/saas-build.jpg", color: "#58A6FF" };
+}
+
 export async function GET(req: NextRequest) {
   const session = await getServerSession(authOptions);
   const userId = ((session as any)?.userId as string | undefined) ?? null;
 
   const { searchParams } = new URL(req.url);
   const dateStr = searchParams.get("date") || undefined;
+  const tz = searchParams.get("tz") || "America/Denver";
 
   try {
     const whereClause = userId ? { userId } : { userId: null };
@@ -116,14 +144,12 @@ export async function GET(req: NextRequest) {
     }));
 
     if (dateStr) {
-      const dayStart = new Date(`${dateStr}T00:00:00`);
-      const dayEnd = new Date(`${dateStr}T23:59:59.999`);
       filtered = filtered
         .filter((ev) => {
           if (ev.isRecurring) return true;
           const s = new Date(ev.startTime);
           const e = new Date(ev.endTime);
-          return s <= dayEnd && e >= dayStart;
+          return eventMatchesDate(s, dateStr, tz) || eventMatchesDate(e, dateStr, tz);
         })
         .map((ev) => projectRecurringToDate(ev, dateStr));
     }
@@ -145,26 +171,28 @@ export async function GET(req: NextRequest) {
           const s = new Date(row.start_time);
           const e = new Date(row.end_time);
           if (dateStr) {
-            const dayStart = new Date(`${dateStr}T00:00:00`);
-            const dayEnd = new Date(`${dateStr}T23:59:59.999`);
-            if (!row.recurrence_rule && (s > dayEnd || e < dayStart)) {
-              continue;
+            if (!row.recurrence_rule && !row.all_day) {
+              const matches = eventMatchesDate(s, dateStr, tz) || eventMatchesDate(e, dateStr, tz);
+              if (!matches) {
+                continue;
+              }
             }
           }
+          const inferred = inferDomainAndMedia(row.title, row.category);
           (filtered as any[]).push({
             id: row.id,
             userId: row.user_id,
             title: row.title,
             description: row.description || "",
-            domain: (row.category === "work" ? "engineering" : row.category === "workout" ? "physical_training" : "family_pets") as any,
+            domain: inferred.domain,
             startTime: s.toISOString(),
             endTime: e.toISOString(),
             isRecurring: Boolean(row.recurrence_rule),
             recurrenceRule: row.recurrence_rule,
-            mediaUrl: "/circadian/saas-build.jpg",
+            mediaUrl: inferred.mediaUrl,
             mediaType: "image" as any,
             mediaAspectRatio: "16:9",
-            accentColor: row.color_hex || "#3B82F6",
+            accentColor: row.color_hex || inferred.color,
             quadrantSlot: null,
             telemetrySource: row.google_event_id ? "google_calendar" : null,
             checklists: [],

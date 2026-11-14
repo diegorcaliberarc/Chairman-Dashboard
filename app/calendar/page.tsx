@@ -144,17 +144,45 @@ export default function UnifiedMasterCalendarPage() {
   const { data: session } = useSession();
   const user = session?.user;
   const [dbCalConnected, setDbCalConnected] = useState(false);
+  const [allCalendarEvents, setAllCalendarEvents] = useState<CalendarEventItem[]>([]);
+
+  const fetchAllCalendarEvents = useCallback(async () => {
+    try {
+      const res = await fetch("/api/calendar-events");
+      if (res.ok) {
+        const data = await res.json();
+        if (Array.isArray(data.events)) {
+          setAllCalendarEvents(
+            data.events.map((ev: any) => ({
+              id: ev.id,
+              title: ev.title,
+              description: ev.description || undefined,
+              start_time: typeof ev.start_time === "string" ? ev.start_time : new Date(ev.start_time).toISOString(),
+              end_time: typeof ev.end_time === "string" ? ev.end_time : new Date(ev.end_time).toISOString(),
+              all_day: Boolean(ev.all_day),
+              category: (ev.category || "google_sync") as any,
+              color_hex: ev.color_hex || "#3B82F6",
+            }))
+          );
+        }
+      }
+    } catch (err) {
+      console.error("Failed to fetch all calendar events:", err);
+    }
+  }, []);
 
   useEffect(() => {
+    fetchAllCalendarEvents();
     fetch("/api/calendar/google-sync")
       .then((r) => (r.ok ? r.json() : null))
       .then((d) => {
         if (d?.connected || d?.success) {
           setDbCalConnected(true);
+          fetchAllCalendarEvents();
         }
       })
       .catch(() => {});
-  }, []);
+  }, [fetchAllCalendarEvents]);
 
   const calConnected = !!(session as any)?.accessToken || dbCalConnected;
 
@@ -325,7 +353,8 @@ export default function UnifiedMasterCalendarPage() {
   const fetchCircadianEvents = useCallback(async (dateStr: string) => {
     setLoadingEvents(true);
     try {
-      const res = await fetch(`/api/circadian?date=${dateStr}`);
+      const tz = typeof Intl !== "undefined" ? Intl.DateTimeFormat().resolvedOptions().timeZone : "America/Denver";
+      const res = await fetch(`/api/circadian?date=${dateStr}&tz=${encodeURIComponent(tz)}`);
       if (res.ok) {
         const data = await res.json();
         if (Array.isArray(data.events) && data.events.length > 0) {
@@ -523,22 +552,36 @@ export default function UnifiedMasterCalendarPage() {
   const effectiveMinutes =
     scrubbedMinutes !== null ? scrubbedMinutes : liveMinutes;
 
-  // Traditional Event Mapping
+  // Traditional Event Mapping (Union of DB Google Calendar events + Circadian events)
   const calendarEventItems = useMemo<CalendarEventItem[]>(() => {
-    return events.map((e) => ({
-      id: e.id,
-      title: e.title,
-      description: e.description || undefined,
-      start_time: e.startTime,
-      end_time: e.endTime,
-      category: ((e.domain as string) === "engineering"
-        ? "work"
-        : (e.domain as string) === "physical_training"
-        ? "workout"
-        : "personal") as any,
-      color_hex: e.accentColor || "#3B82F6",
-    }));
-  }, [events]);
+    const map = new Map<string, CalendarEventItem>();
+
+    // 1. All historical and future Google Calendar & DB events
+    for (const ce of allCalendarEvents) {
+      map.set(ce.id, ce);
+    }
+
+    // 2. Overlay circadian dial events
+    for (const e of events) {
+      if (!map.has(e.id)) {
+        map.set(e.id, {
+          id: e.id,
+          title: e.title,
+          description: e.description || undefined,
+          start_time: e.startTime,
+          end_time: e.endTime,
+          category: ((e.domain as string) === "engineering"
+            ? "work"
+            : (e.domain as string) === "physical_training"
+            ? "workout"
+            : "personal") as any,
+          color_hex: e.accentColor || "#3B82F6",
+        });
+      }
+    }
+
+    return Array.from(map.values());
+  }, [allCalendarEvents, events]);
 
   const filteredCalendarEventItems = useMemo(() => {
     return calendarEventItems.filter(
@@ -649,9 +692,10 @@ export default function UnifiedMasterCalendarPage() {
       const res = await fetch("/api/calendar/google-sync", { method: "POST" });
       const data = await res.json();
       if (data.connected === false && !calConnected) {
-        signIn("google");
+        signIn("google", { callbackUrl: typeof window !== "undefined" ? window.location.href : "/calendar" });
         return;
       }
+      await fetchAllCalendarEvents();
       await fetchCircadianEvents(selectedDate);
     } catch (err) {
       console.error("GCal sync error:", err);
@@ -676,16 +720,29 @@ export default function UnifiedMasterCalendarPage() {
 
   const currentWeekDays = useMemo(() => {
     const [y, m, d] = selectedDate.split("-").map(Number);
-    return getWeekDays(new Date(y, m - 1, d));
-  }, [selectedDate]);
+    const tz = typeof Intl !== "undefined" ? Intl.DateTimeFormat().resolvedOptions().timeZone : "America/Denver";
+    return getWeekDays(new Date(y, m - 1, d), allCalendarEvents, tz);
+  }, [selectedDate, allCalendarEvents]);
 
   const currentMonthNodes = useMemo(() => {
-    return getMonthNodes(selectedYear, activeMonthIndex);
-  }, [selectedYear, activeMonthIndex]);
+    const tz = typeof Intl !== "undefined" ? Intl.DateTimeFormat().resolvedOptions().timeZone : "America/Denver";
+    return getMonthNodes(selectedYear, activeMonthIndex, allCalendarEvents, tz);
+  }, [selectedYear, activeMonthIndex, allCalendarEvents]);
 
   const seasonalCards = useMemo(() => {
-    return getSeasonCards();
-  }, []);
+    return getSeasonCards(selectedYear, allCalendarEvents);
+  }, [selectedYear, allCalendarEvents]);
+
+  const monthEventsCount = useMemo(() => {
+    const counts = new Array(12).fill(0);
+    for (const ev of allCalendarEvents) {
+      const d = new Date(ev.start_time);
+      if (d.getFullYear() === selectedYear) {
+        counts[d.getMonth()]++;
+      }
+    }
+    return counts;
+  }, [allCalendarEvents, selectedYear]);
 
   const concentricTelemetry = useMemo(() => {
     return {
@@ -845,6 +902,7 @@ export default function UnifiedMasterCalendarPage() {
             setIsSyncingGCal(true);
             try {
               await fetch("/api/calendar/google-sync", { method: "POST" });
+              await fetchAllCalendarEvents();
               await fetchCircadianEvents(selectedDate);
             } finally {
               setIsSyncingGCal(false);
@@ -1183,6 +1241,7 @@ export default function UnifiedMasterCalendarPage() {
                     activeMonth={activeMonthIndex}
                     telemetry={concentricTelemetry}
                     seasons={seasonalCards}
+                    monthEventsCount={monthEventsCount}
                     onSelectMonth={(mIdx) => {
                       setActiveMonthIndex(mIdx);
                       setActiveHorizon("MONTH");

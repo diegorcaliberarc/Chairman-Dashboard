@@ -241,6 +241,17 @@ export function MonthlyRadialView({
                 >
                   {node.dayOfMonth}
                 </text>
+
+                {typeof node.eventsCount === "number" && node.eventsCount > 0 && (
+                  <circle
+                    cx={node.x}
+                    cy={node.y - (isToday ? 15 : 12)}
+                    r={2.4}
+                    fill={isToday ? "#FFB347" : "#58A6FF"}
+                    stroke="#090A0F"
+                    strokeWidth={0.8}
+                  />
+                )}
               </g>
             );
           })}

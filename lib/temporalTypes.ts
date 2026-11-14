@@ -24,6 +24,8 @@ export interface DaySegment {
   mediaUrl: string;
   iconName: string;
   telemetry: ConcentricTelemetry;
+  eventsCount?: number;
+  events?: Array<{ id: string; title: string; time?: string; color?: string }>;
 }
 
 export interface MonthNode {
@@ -36,6 +38,8 @@ export interface MonthNode {
   status: "completed" | "active_today" | "active_week" | "upcoming" | "dimmed";
   statusColor: string;
   taskCount: number;
+  eventsCount?: number;
+  primaryEvent?: string;
 }
 
 export interface SeasonCard {
