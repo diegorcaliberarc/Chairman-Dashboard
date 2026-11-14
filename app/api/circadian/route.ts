@@ -47,31 +47,70 @@ function projectRecurringToDate(event: any, targetDateStr?: string) {
   };
 }
 
-function eventMatchesDate(date: Date, targetDateStr: string, tz: string = "America/Denver"): boolean {
+function eventOverlapsDate(start: Date, end: Date, targetDateStr: string, tz: string = "America/Denver"): boolean {
   try {
-    const localDateStr = new Intl.DateTimeFormat("en-CA", { timeZone: tz }).format(date);
-    return localDateStr === targetDateStr;
+    const startStr = new Intl.DateTimeFormat("en-CA", { timeZone: tz }).format(start);
+    const endStr = new Intl.DateTimeFormat("en-CA", { timeZone: tz }).format(end);
+    return startStr <= targetDateStr && endStr >= targetDateStr;
   } catch {
     const targetMid = new Date(`${targetDateStr}T12:00:00Z`).getTime();
-    return Math.abs(date.getTime() - targetMid) <= 14 * 60 * 60 * 1000;
+    return Math.abs(start.getTime() - targetMid) <= 18 * 60 * 60 * 1000;
   }
 }
 
 function inferDomainAndMedia(title: string, category?: string) {
   const t = (title || "").toLowerCase();
-  if (t.includes("workout") || t.includes("gym") || t.includes("training") || t.includes("lift") || category === "workout") {
+  if (
+    t.includes("workout") ||
+    t.includes("gym") ||
+    t.includes("training") ||
+    t.includes("lift") ||
+    t.includes("exercise") ||
+    t.includes("run") ||
+    category === "workout"
+  ) {
     return { domain: "physical_training" as const, mediaUrl: "/circadian/gym-workout.jpg", color: "#FF9900" };
   }
-  if (t.includes("dinner") || t.includes("lunch") || t.includes("breakfast") || t.includes("meal") || t.includes("refuel") || t.includes("fast")) {
+  if (
+    t.includes("dinner") ||
+    t.includes("lunch") ||
+    t.includes("breakfast") ||
+    t.includes("meal") ||
+    t.includes("refuel") ||
+    t.includes("fast") ||
+    t.includes("protein") ||
+    t.includes("eat")
+  ) {
     return { domain: "nutrition" as const, mediaUrl: "/circadian/nutrition-steak.jpg", color: "#10B981" };
   }
-  if (t.includes("walk") || t.includes("dog") || t.includes("huskies") || t.includes("nova") || t.includes("astro") || t.includes("family")) {
+  if (
+    t.includes("walk") ||
+    t.includes("dog") ||
+    t.includes("dogs") ||
+    t.includes("huskies") ||
+    t.includes("nova") ||
+    t.includes("astro") ||
+    t.includes("poop break") ||
+    t.includes("yard break") ||
+    t.includes("park") ||
+    t.includes("max") ||
+    t.includes("school")
+  ) {
     return { domain: "family_pets" as const, mediaUrl: "/circadian/huskies-walk.jpg", color: "#99FF33" };
   }
-  if (t.includes("rest") || t.includes("sleep") || t.includes("bed") || t.includes("cozier")) {
-    return { domain: "logistics" as const, mediaUrl: "/circadian/cozier-rest.jpg", color: "#38BDF8" };
+  if (
+    t.includes("rest") ||
+    t.includes("sleep") ||
+    t.includes("bed") ||
+    t.includes("cozier") ||
+    t.includes("shower") ||
+    t.includes("prep") ||
+    t.includes("wake up") ||
+    t.includes("trash")
+  ) {
+    return { domain: "logistics" as const, mediaUrl: "/circadian/cozier-rest.jpg", color: "#A855F7" };
   }
-  return { domain: "engineering" as const, mediaUrl: "/circadian/saas-build.jpg", color: "#58A6FF" };
+  return { domain: "engineering" as const, mediaUrl: "/circadian/saas-build.jpg", color: "#38BDF8" };
 }
 
 export async function GET(req: NextRequest) {
@@ -84,7 +123,7 @@ export async function GET(req: NextRequest) {
 
   try {
     const whereClause = userId ? { userId } : { userId: null };
-    let existing = await prisma.circadianEvent.findMany({
+    const existing = await prisma.circadianEvent.findMany({
       where: whereClause,
       include: {
         checklists: {
@@ -94,50 +133,7 @@ export async function GET(req: NextRequest) {
       orderBy: { startTime: "asc" },
     });
 
-    // Auto-seed the Chairman's baseline circadian blueprint on first load
-    if (existing.length === 0) {
-      const defaults = buildDefaultCircadianEvents(dateStr);
-      for (const def of defaults) {
-        await prisma.circadianEvent.create({
-          data: {
-            userId,
-            title: def.title,
-            description: def.description ?? null,
-            domain: def.domain,
-            startTime: new Date(def.startTime),
-            endTime: new Date(def.endTime),
-            isRecurring: def.isRecurring,
-            recurrenceRule: def.recurrenceRule ?? null,
-            mediaUrl: def.mediaUrl,
-            mediaType: def.mediaType,
-            mediaAspectRatio: def.mediaAspectRatio,
-            accentColor: def.accentColor,
-            quadrantSlot: def.quadrantSlot ?? null,
-            telemetrySource: def.telemetrySource ?? null,
-            checklists: {
-              create: def.checklists.map((c, idx) => ({
-                label: c.label,
-                isCompleted: c.isCompleted,
-                sortOrder: idx,
-              })),
-            },
-          },
-        });
-      }
-
-      existing = await prisma.circadianEvent.findMany({
-        where: whereClause,
-        include: {
-          checklists: {
-            orderBy: { sortOrder: "asc" },
-          },
-        },
-        orderBy: { startTime: "asc" },
-      });
-    }
-
-    // Filter to events matching target date or daily recurring events
-    let filtered = existing.map((ev) => ({
+    let filtered: any[] = existing.map((ev) => ({
       ...ev,
       startTime: ev.startTime.toISOString(),
       endTime: ev.endTime.toISOString(),
@@ -149,12 +145,12 @@ export async function GET(req: NextRequest) {
           if (ev.isRecurring) return true;
           const s = new Date(ev.startTime);
           const e = new Date(ev.endTime);
-          return eventMatchesDate(s, dateStr, tz) || eventMatchesDate(e, dateStr, tz);
+          return eventOverlapsDate(s, e, dateStr, tz);
         })
         .map((ev) => projectRecurringToDate(ev, dateStr));
     }
 
-    // Also fetch custom events from public.calendar_events so Google Grid & Solar Arc stay 100% unified
+    // Hydrate directly from public.calendar_events
     try {
       const calRows: any = await prisma.$queryRawUnsafe(`
         SELECT id, user_id, google_event_id, title, description,
@@ -170,16 +166,16 @@ export async function GET(req: NextRequest) {
           }
           const s = new Date(row.start_time);
           const e = new Date(row.end_time);
-          if (dateStr) {
-            if (!row.recurrence_rule && !row.all_day) {
-              const matches = eventMatchesDate(s, dateStr, tz) || eventMatchesDate(e, dateStr, tz);
-              if (!matches) {
-                continue;
-              }
+
+          if (dateStr && !row.recurrence_rule && !row.all_day) {
+            const matches = eventOverlapsDate(s, e, dateStr, tz);
+            if (!matches) {
+              continue;
             }
           }
+
           const inferred = inferDomainAndMedia(row.title, row.category);
-          (filtered as any[]).push({
+          filtered.push({
             id: row.id,
             userId: row.user_id,
             title: row.title,
@@ -206,13 +202,13 @@ export async function GET(req: NextRequest) {
       console.warn("Could not query public.calendar_events in circadian GET:", e);
     }
 
+    // Sort events by startTime
+    filtered.sort((a, b) => new Date(a.startTime).getTime() - new Date(b.startTime).getTime());
+
     return NextResponse.json({ events: filtered });
   } catch (err: any) {
-    console.error("Circadian GET fallback:", err?.message ?? err);
-    return NextResponse.json({
-      events: buildDefaultCircadianEvents(dateStr),
-      fallback: true,
-    });
+    console.error("Circadian GET error:", err?.message ?? err);
+    return NextResponse.json({ events: [] });
   }
 }
 

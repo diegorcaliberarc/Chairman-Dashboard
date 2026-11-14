@@ -52,7 +52,6 @@ import {
 } from "@/components/circadian/CircadianDialStage";
 import { CalendarOpsCommandDeck } from "@/components/circadian/CalendarOpsCommandDeck";
 import { CircadianEventModal } from "@/components/circadian/CircadianEventModal";
-import { buildDefaultCircadianEvents } from "@/lib/circadianDefaults";
 import {
   CURATED_BLOCK_PALETTE,
   CalendarHabitDTO,
@@ -99,45 +98,6 @@ function toLocalDateInputValue(d: Date): string {
   const m = String(d.getMonth() + 1).padStart(2, "0");
   const day = String(d.getDate()).padStart(2, "0");
   return `${y}-${m}-${day}`;
-}
-
-function buildGoToWorkShowcaseEvent(baseDateStr?: string): CircadianEventDTO {
-  const base = baseDateStr ? new Date(`${baseDateStr}T00:00:00`) : new Date();
-  const y = base.getFullYear();
-  const m = base.getMonth();
-  const d = base.getDate();
-  return {
-    id: "default-go-to-work",
-    title: "Go to Work",
-    description:
-      "07:00–08:00 opening shift block with Roman-numeral execution subtasks.",
-    startTime: new Date(y, m, d, 7, 0, 0).toISOString(),
-    endTime: new Date(y, m, d, 8, 0, 0).toISOString(),
-    domain: "engineering",
-    accentColor: "#f59e0b",
-    isRecurring: true,
-    recurrenceRule: "FREQ=DAILY",
-    mediaUrl: "/circadian/saas-build.jpg",
-    mediaType: "image",
-    mediaAspectRatio: "16:9",
-    checklists: [
-      { id: "gtw-chk-1", label: "Inspect dispatch queue & active tickets", isCompleted: true, sortOrder: 0 },
-      { id: "gtw-chk-2", label: "Verify telemetry pipelines & edge monitors", isCompleted: true, sortOrder: 1 },
-      { id: "gtw-chk-3", label: "Conduct team standup & allocate blockers", isCompleted: false, sortOrder: 2 },
-      { id: "gtw-chk-4", label: "Finalize morning roadmap commitment", isCompleted: false, sortOrder: 3 },
-    ],
-  };
-}
-
-function ensureGoToWorkInEvents(
-  list: CircadianEventDTO[],
-  dateStr?: string
-): CircadianEventDTO[] {
-  const hasWork = list.some((e) =>
-    e.title.toLowerCase().includes("go to work")
-  );
-  if (hasWork) return list;
-  return [buildGoToWorkShowcaseEvent(dateStr), ...list];
 }
 
 export default function UnifiedMasterCalendarPage() {
@@ -238,9 +198,7 @@ export default function UnifiedMasterCalendarPage() {
   // Nested Subtasks Style & Agenda Expansion state
   const [globalSubtaskStyle, setGlobalSubtaskStyle] = useState<SubtaskListStyle>("roman");
   const [subtaskStylesById, setSubtaskStylesById] = useState<Record<string, SubtaskListStyle>>({});
-  const [expandedAgendaIds, setExpandedAgendaIds] = useState<Record<string, boolean>>({
-    "default-go-to-work": true,
-  });
+  const [expandedAgendaIds, setExpandedAgendaIds] = useState<Record<string, boolean>>({});
 
   // Calendar Operations State (Habits, Highlight Spans, Work Shifts, Year Appointments)
   const [habits, setHabits] = useState<CalendarHabitDTO[]>([]);
@@ -357,19 +315,11 @@ export default function UnifiedMasterCalendarPage() {
       const res = await fetch(`/api/circadian?date=${dateStr}&tz=${encodeURIComponent(tz)}`);
       if (res.ok) {
         const data = await res.json();
-        if (Array.isArray(data.events) && data.events.length > 0) {
-          const list = ensureGoToWorkInEvents(data.events, dateStr);
-          setEvents(list);
-          const gtw = list.find((e) =>
-            e.title.toLowerCase().includes("go to work")
-          );
-          if (gtw) {
-            setExpandedAgendaIds((prev) => ({ ...prev, [gtw.id]: true }));
+        if (Array.isArray(data.events)) {
+          setEvents(data.events);
+          if (data.events.length > 0) {
+            setExpandedAgendaIds((prev) => ({ ...prev, [data.events[0].id]: true }));
           }
-        } else {
-          setEvents(
-            ensureGoToWorkInEvents(buildDefaultCircadianEvents(dateStr), dateStr)
-          );
         }
       }
     } catch (err) {
