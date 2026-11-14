@@ -4,7 +4,6 @@ import { NextRequest, NextResponse } from "next/server";
 import { getServerSession } from "next-auth/next";
 import { authOptions } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
-import { buildDefaultCircadianEvents } from "@/lib/circadianDefaults";
 import { EventDomain, MediaTypeEnum } from "@/lib/circadianTypes";
 
 const VALID_DOMAINS: EventDomain[] = [
@@ -58,7 +57,7 @@ function eventOverlapsDate(start: Date, end: Date, targetDateStr: string, tz: st
   }
 }
 
-function inferDomainAndMedia(title: string, category?: string) {
+function inferDomainAndColor(title: string, category?: string): { domain: EventDomain; color: string } {
   const t = (title || "").toLowerCase();
   if (
     t.includes("workout") ||
@@ -66,10 +65,9 @@ function inferDomainAndMedia(title: string, category?: string) {
     t.includes("training") ||
     t.includes("lift") ||
     t.includes("exercise") ||
-    t.includes("run") ||
     category === "workout"
   ) {
-    return { domain: "physical_training" as const, mediaUrl: "/circadian/gym-workout.jpg", color: "#FF9900" };
+    return { domain: "physical_training", color: "#FF9900" };
   }
   if (
     t.includes("dinner") ||
@@ -79,9 +77,10 @@ function inferDomainAndMedia(title: string, category?: string) {
     t.includes("refuel") ||
     t.includes("fast") ||
     t.includes("protein") ||
-    t.includes("eat")
+    t.includes("eat") ||
+    t.includes("feed")
   ) {
-    return { domain: "nutrition" as const, mediaUrl: "/circadian/nutrition-steak.jpg", color: "#10B981" };
+    return { domain: "nutrition", color: "#10B981" };
   }
   if (
     t.includes("walk") ||
@@ -90,27 +89,28 @@ function inferDomainAndMedia(title: string, category?: string) {
     t.includes("huskies") ||
     t.includes("nova") ||
     t.includes("astro") ||
-    t.includes("poop break") ||
+    t.includes("poop") ||
     t.includes("yard break") ||
     t.includes("park") ||
     t.includes("max") ||
+    t.includes("comet") ||
     t.includes("school")
   ) {
-    return { domain: "family_pets" as const, mediaUrl: "/circadian/huskies-walk.jpg", color: "#99FF33" };
+    return { domain: "family_pets", color: "#99FF33" };
   }
   if (
     t.includes("rest") ||
     t.includes("sleep") ||
     t.includes("bed") ||
-    t.includes("cozier") ||
     t.includes("shower") ||
     t.includes("prep") ||
     t.includes("wake up") ||
-    t.includes("trash")
+    t.includes("trash") ||
+    t.includes("medication")
   ) {
-    return { domain: "logistics" as const, mediaUrl: "/circadian/cozier-rest.jpg", color: "#A855F7" };
+    return { domain: "logistics", color: "#A855F7" };
   }
-  return { domain: "engineering" as const, mediaUrl: "/circadian/saas-build.jpg", color: "#38BDF8" };
+  return { domain: "engineering", color: "#38BDF8" };
 }
 
 export async function GET(req: NextRequest) {
@@ -174,7 +174,7 @@ export async function GET(req: NextRequest) {
             }
           }
 
-          const inferred = inferDomainAndMedia(row.title, row.category);
+          const inferred = inferDomainAndColor(row.title, row.category);
           filtered.push({
             id: row.id,
             userId: row.user_id,
@@ -186,7 +186,7 @@ export async function GET(req: NextRequest) {
             isRecurring: Boolean(row.recurrence_rule),
             recurrenceRule: row.recurrence_rule,
             allDay: Boolean(row.all_day),
-            mediaUrl: inferred.mediaUrl,
+            mediaUrl: "",
             mediaType: "image" as any,
             mediaAspectRatio: "16:9",
             accentColor: row.color_hex || inferred.color,
@@ -227,7 +227,7 @@ export async function POST(req: NextRequest) {
       endTime,
       isRecurring = true,
       recurrenceRule = "FREQ=DAILY",
-      mediaUrl = "/circadian/saas-build.jpg",
+      mediaUrl = "",
       mediaType = "image",
       mediaAspectRatio = "16:9",
       accentColor = "#2563eb",

@@ -186,16 +186,18 @@ export function YearlyRadialView({
               >
                 {/* Photo Wedge Background with Clipping */}
                 <g clipPath={`url(#season-clip-${season.id})`}>
-                  <image
-                    href={season.mediaUrl}
-                    x={bbox.x - 30}
-                    y={bbox.y - 30}
-                    width={bbox.width + 60}
-                    height={bbox.height + 60}
-                    preserveAspectRatio="xMidYMid slice"
-                    opacity={isFocal ? 0.85 : 0.45}
-                    className="group-hover:opacity-90 transition-opacity duration-300"
-                  />
+                  {season.mediaUrl ? (
+                    <image
+                      href={season.mediaUrl}
+                      x={bbox.x - 30}
+                      y={bbox.y - 30}
+                      width={bbox.width + 60}
+                      height={bbox.height + 60}
+                      preserveAspectRatio="xMidYMid slice"
+                      opacity={isFocal ? 0.85 : 0.45}
+                      className="group-hover:opacity-90 transition-opacity duration-300"
+                    />
+                  ) : null}
                   {/* Glassmorphic Gradient Overlay */}
                   <rect
                     x={bbox.x - 40}

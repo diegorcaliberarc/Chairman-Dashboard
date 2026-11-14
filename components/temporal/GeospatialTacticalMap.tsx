@@ -456,18 +456,22 @@ export function GeospatialTacticalMap({
                     />
 
                     {/* Clip preview image inside pin */}
-                    <clipPath id={`pin-clip-${wp.id}`}>
-                      <circle cx="0" cy="0" r="14" />
-                    </clipPath>
-                    <image
-                      href={wp.mediaUrl}
-                      x="-14"
-                      y="-14"
-                      width="28"
-                      height="28"
-                      preserveAspectRatio="xMidYMid slice"
-                      clipPath={`url(#pin-clip-${wp.id})`}
-                    />
+                    {wp.mediaUrl && (
+                      <>
+                        <clipPath id={`pin-clip-${wp.id}`}>
+                          <circle cx="0" cy="0" r="14" />
+                        </clipPath>
+                        <image
+                          href={wp.mediaUrl}
+                          x="-14"
+                          y="-14"
+                          width="28"
+                          height="28"
+                          preserveAspectRatio="xMidYMid slice"
+                          clipPath={`url(#pin-clip-${wp.id})`}
+                        />
+                      </>
+                    )}
 
                     {/* Milestone Time Badge */}
                     <rect

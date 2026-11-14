@@ -915,39 +915,52 @@ export function CircadianDialStage({
                     height={wedge.bbox.height}
                     fill="#111827"
                   />
-                  {event.mediaType === "video_loop" ? (
-                    <foreignObject
-                      x={wedge.bbox.x}
-                      y={wedge.bbox.y}
-                      width={wedge.bbox.width}
-                      height={wedge.bbox.height}
-                    >
-                      <video
-                        src={event.mediaUrl}
-                        autoPlay
-                        loop
-                        muted
-                        playsInline
-                        className="w-full h-full object-cover"
+                  {event.mediaUrl ? (
+                    <>
+                      {event.mediaType === "video_loop" ? (
+                        <foreignObject
+                          x={wedge.bbox.x}
+                          y={wedge.bbox.y}
+                          width={wedge.bbox.width}
+                          height={wedge.bbox.height}
+                        >
+                          <video
+                            src={event.mediaUrl}
+                            autoPlay
+                            loop
+                            muted
+                            playsInline
+                            className="w-full h-full object-cover"
+                          />
+                        </foreignObject>
+                      ) : (
+                        <image
+                          href={event.mediaUrl}
+                          x={wedge.bbox.x}
+                          y={wedge.bbox.y}
+                          width={wedge.bbox.width}
+                          height={wedge.bbox.height}
+                          preserveAspectRatio="xMidYMid slice"
+                        />
+                      )}
+                      <rect
+                        x={wedge.bbox.x}
+                        y={wedge.bbox.y}
+                        width={wedge.bbox.width}
+                        height={wedge.bbox.height}
+                        fill="url(#wedgeVignette)"
                       />
-                    </foreignObject>
+                    </>
                   ) : (
-                    <image
-                      href={event.mediaUrl}
+                    <rect
                       x={wedge.bbox.x}
                       y={wedge.bbox.y}
                       width={wedge.bbox.width}
                       height={wedge.bbox.height}
-                      preserveAspectRatio="xMidYMid slice"
+                      fill={strokeColor}
+                      fillOpacity={isHighlighted ? 0.35 : 0.18}
                     />
                   )}
-                  <rect
-                    x={wedge.bbox.x}
-                    y={wedge.bbox.y}
-                    width={wedge.bbox.width}
-                    height={wedge.bbox.height}
-                    fill="url(#wedgeVignette)"
-                  />
                 </g>
 
                 <path
@@ -1133,83 +1146,148 @@ export function CircadianDialStage({
             borderColor: `${selectedWedgeItem.event.accentColor}66`,
           }}
         >
-          <div className="relative aspect-video w-full overflow-hidden bg-zinc-900">
-            {selectedWedgeItem.event.mediaType === "video_loop" ? (
-              <video
-                src={selectedWedgeItem.event.mediaUrl}
-                autoPlay
-                loop
-                muted
-                playsInline
-                className="w-full h-full object-cover"
-              />
-            ) : (
-              <img
-                src={selectedWedgeItem.event.mediaUrl}
-                alt={selectedWedgeItem.event.title}
-                className="w-full h-full object-cover"
-              />
-            )}
-            <div className="absolute inset-0 bg-gradient-to-t from-[#0b0e17] via-transparent to-black/30" />
-
-            <div className="absolute top-2 left-2 flex items-center gap-1.5">
-              <span
-                className="px-2 py-0.5 rounded-full text-[9px] font-bold tracking-widest uppercase backdrop-blur-md border"
-                style={{
-                  backgroundColor: "rgba(9,13,22,0.75)",
-                  color: selectedWedgeItem.event.accentColor,
-                  borderColor: `${selectedWedgeItem.event.accentColor}55`,
-                }}
-              >
-                {DOMAIN_CONFIG[selectedWedgeItem.event.domain].shortLabel}
-              </span>
-            </div>
-
-            <div className="absolute top-2 right-2 flex items-center gap-1">
-              {onToggleSubtaskStyle && (
-                <button
-                  onClick={() =>
-                    onToggleSubtaskStyle(selectedWedgeItem.event.id)
-                  }
-                  className="px-1.5 py-1 rounded-lg bg-black/60 hover:bg-black/80 text-[9px] font-mono font-bold text-amber-300 transition-colors"
-                  title="Toggle Roman Numerals (I, II, III) vs Bullets (•)"
-                >
-                  {selectedInspectorStyle === "roman" ? "I·II" : "•"}
-                </button>
+          {selectedWedgeItem.event.mediaUrl ? (
+            <div className="relative aspect-video w-full overflow-hidden bg-zinc-900">
+              {selectedWedgeItem.event.mediaType === "video_loop" ? (
+                <video
+                  src={selectedWedgeItem.event.mediaUrl}
+                  autoPlay
+                  loop
+                  muted
+                  playsInline
+                  className="w-full h-full object-cover"
+                />
+              ) : (
+                <img
+                  src={selectedWedgeItem.event.mediaUrl}
+                  alt={selectedWedgeItem.event.title}
+                  className="w-full h-full object-cover"
+                />
               )}
-              <button
-                onClick={() => onEditEvent(selectedWedgeItem.event)}
-                className="p-1.5 rounded-lg bg-black/60 hover:bg-black/80 text-zinc-200 transition-colors"
-                title="Edit Block"
-              >
-                <Edit3 size={12} />
-              </button>
-              <button
-                onClick={() => onDeleteEvent(selectedWedgeItem.event.id)}
-                className="p-1.5 rounded-lg bg-black/60 hover:bg-red-950/80 text-zinc-300 hover:text-red-400 transition-colors"
-                title="Delete Block"
-              >
-                <Trash2 size={12} />
-              </button>
-              <button
-                onClick={() => onSelectEvent(null)}
-                className="p-1.5 rounded-lg bg-black/60 hover:bg-black/80 text-zinc-200 transition-colors"
-                title="Close"
-              >
-                <X size={12} />
-              </button>
-            </div>
+              <div className="absolute inset-0 bg-gradient-to-t from-[#0b0e17] via-transparent to-black/30" />
 
-            <div className="absolute bottom-2 left-3 right-3">
-              <div className="text-[10px] font-mono font-semibold text-amber-300/95">
-                {minutesTo12Hour(selectedWedgeItem.startMin)} —{" "}
-                {minutesTo12Hour(selectedWedgeItem.endMin)}
+              <div className="absolute top-2 left-2 flex items-center gap-1.5">
+                <span
+                  className="px-2 py-0.5 rounded-full text-[9px] font-bold tracking-widest uppercase backdrop-blur-md border"
+                  style={{
+                    backgroundColor: "rgba(9,13,22,0.75)",
+                    color: selectedWedgeItem.event.accentColor,
+                    borderColor: `${selectedWedgeItem.event.accentColor}55`,
+                  }}
+                >
+                  {DOMAIN_CONFIG[selectedWedgeItem.event.domain]?.shortLabel || selectedWedgeItem.event.domain}
+                </span>
               </div>
-              <h4 className="text-sm font-bold text-white leading-tight truncate">
+
+              <div className="absolute top-2 right-2 flex items-center gap-1">
+                {onToggleSubtaskStyle && (
+                  <button
+                    onClick={() =>
+                      onToggleSubtaskStyle(selectedWedgeItem.event.id)
+                    }
+                    className="px-1.5 py-1 rounded-lg bg-black/60 hover:bg-black/80 text-[9px] font-mono font-bold text-amber-300 transition-colors"
+                    title="Toggle Roman Numerals (I, II, III) vs Bullets (•)"
+                  >
+                    {selectedInspectorStyle === "roman" ? "I·II" : "•"}
+                  </button>
+                )}
+                <button
+                  onClick={() => onEditEvent(selectedWedgeItem.event)}
+                  className="p-1.5 rounded-lg bg-black/60 hover:bg-black/80 text-zinc-200 transition-colors"
+                  title="Edit Block"
+                >
+                  <Edit3 size={12} />
+                </button>
+                <button
+                  onClick={() => onDeleteEvent(selectedWedgeItem.event.id)}
+                  className="p-1.5 rounded-lg bg-black/60 hover:bg-red-950/80 text-zinc-300 hover:text-red-400 transition-colors"
+                  title="Delete Block"
+                >
+                  <Trash2 size={12} />
+                </button>
+                <button
+                  onClick={() => onSelectEvent(null)}
+                  className="p-1.5 rounded-lg bg-black/60 hover:bg-black/80 text-zinc-200 transition-colors"
+                  title="Close"
+                >
+                  <X size={12} />
+                </button>
+              </div>
+
+              <div className="absolute bottom-2 left-3 right-3">
+                <div className="text-[10px] font-mono font-semibold text-amber-300/95">
+                  {minutesTo12Hour(selectedWedgeItem.startMin)} —{" "}
+                  {minutesTo12Hour(selectedWedgeItem.endMin)}
+                </div>
+                <h4 className="text-sm font-bold text-white leading-tight truncate">
+                  {selectedWedgeItem.event.title}
+                </h4>
+              </div>
+            </div>
+          ) : (
+            <div
+              className="p-3.5 border-b relative"
+              style={{
+                backgroundColor: `${selectedWedgeItem.event.accentColor}14`,
+                borderColor: `${selectedWedgeItem.event.accentColor}33`,
+              }}
+            >
+              <div className="flex items-center justify-between gap-1 mb-2">
+                <span
+                  className="px-2 py-0.5 rounded-full text-[9px] font-bold tracking-widest uppercase border"
+                  style={{
+                    backgroundColor: `${selectedWedgeItem.event.accentColor}25`,
+                    color: selectedWedgeItem.event.accentColor,
+                    borderColor: `${selectedWedgeItem.event.accentColor}55`,
+                  }}
+                >
+                  {DOMAIN_CONFIG[selectedWedgeItem.event.domain]?.shortLabel || selectedWedgeItem.event.domain}
+                </span>
+
+                <div className="flex items-center gap-1">
+                  {onToggleSubtaskStyle && (
+                    <button
+                      onClick={() =>
+                        onToggleSubtaskStyle(selectedWedgeItem.event.id)
+                      }
+                      className="px-1.5 py-1 rounded-lg bg-black/60 hover:bg-black/80 text-[9px] font-mono font-bold text-amber-300 transition-colors"
+                      title="Toggle Roman Numerals (I, II, III) vs Bullets (•)"
+                    >
+                      {selectedInspectorStyle === "roman" ? "I·II" : "•"}
+                    </button>
+                  )}
+                  <button
+                    onClick={() => onEditEvent(selectedWedgeItem.event)}
+                    className="p-1.5 rounded-lg bg-black/60 hover:bg-black/80 text-zinc-200 transition-colors"
+                    title="Edit Block"
+                  >
+                    <Edit3 size={12} />
+                  </button>
+                  <button
+                    onClick={() => onDeleteEvent(selectedWedgeItem.event.id)}
+                    className="p-1.5 rounded-lg bg-black/60 hover:bg-red-950/80 text-zinc-300 hover:text-red-400 transition-colors"
+                    title="Delete Block"
+                  >
+                    <Trash2 size={12} />
+                  </button>
+                  <button
+                    onClick={() => onSelectEvent(null)}
+                    className="p-1.5 rounded-lg bg-black/60 hover:bg-black/80 text-zinc-200 transition-colors"
+                    title="Close"
+                  >
+                    <X size={12} />
+                  </button>
+                </div>
+              </div>
+
+              <div className="text-[10px] font-mono font-semibold" style={{ color: selectedWedgeItem.event.accentColor }}>
+                {minutesTo12Hour(selectedWedgeItem.startMin)} — {minutesTo12Hour(selectedWedgeItem.endMin)}
+              </div>
+              <h4 className="text-sm font-bold text-white leading-tight truncate mt-0.5">
                 {selectedWedgeItem.event.title}
               </h4>
             </div>
-          </div>
+          )}
 
           <div className="p-3 space-y-2.5">
             {selectedWedgeItem.event.description && (
@@ -1336,35 +1414,68 @@ export function CircadianDialStage({
                 borderColor: isHighlighted ? color : "rgba(255,255,255,0.12)",
               }}
             >
-              <div className="relative aspect-video w-full overflow-hidden bg-zinc-900">
-                <img
-                  src={event.mediaUrl}
-                  alt={event.title}
-                  className="w-full h-full object-cover"
-                />
-                <div className="absolute inset-0 bg-gradient-to-t from-[#0b0e17] via-black/15 to-transparent" />
-                <span
-                  className="absolute top-2 left-2 px-2 py-0.5 rounded-full text-[8px] font-bold tracking-widest uppercase bg-black/70 border"
-                  style={{ color, borderColor: `${color}55` }}
-                >
-                  {slotLabel}
-                </span>
-                <span className="absolute top-2 right-2 px-1.5 py-0.5 rounded bg-black/70 text-[9px] font-mono text-zinc-200">
-                  {Math.round((durMin / 60) * 10) / 10}h
-                </span>
-                <div className="absolute bottom-1.5 left-2.5 right-2.5">
-                  <div
-                    className="text-[9.5px] font-mono font-bold uppercase"
-                    style={{ color }}
+              {event.mediaUrl ? (
+                <div className="relative aspect-video w-full overflow-hidden bg-zinc-900">
+                  <img
+                    src={event.mediaUrl}
+                    alt={event.title}
+                    className="w-full h-full object-cover"
+                  />
+                  <div className="absolute inset-0 bg-gradient-to-t from-[#0b0e17] via-black/15 to-transparent" />
+                  <span
+                    className="absolute top-2 left-2 px-2 py-0.5 rounded-full text-[8px] font-bold tracking-widest uppercase bg-black/70 border"
+                    style={{ color, borderColor: `${color}55` }}
                   >
-                    {minutesTo12Hour(startMin)} |{" "}
-                    {DOMAIN_CONFIG[event.domain].shortLabel}
-                  </div>
-                  <div className="text-xs font-bold text-white truncate">
-                    {event.title}
+                    {slotLabel}
+                  </span>
+                  <span className="absolute top-2 right-2 px-1.5 py-0.5 rounded bg-black/70 text-[9px] font-mono text-zinc-200">
+                    {Math.round((durMin / 60) * 10) / 10}h
+                  </span>
+                  <div className="absolute bottom-1.5 left-2.5 right-2.5">
+                    <div
+                      className="text-[9.5px] font-mono font-bold uppercase"
+                      style={{ color }}
+                    >
+                      {minutesTo12Hour(startMin)} |{" "}
+                      {DOMAIN_CONFIG[event.domain]?.shortLabel || event.domain}
+                    </div>
+                    <div className="text-xs font-bold text-white truncate">
+                      {event.title}
+                    </div>
                   </div>
                 </div>
-              </div>
+              ) : (
+                <div
+                  className="p-3 border-b flex flex-col gap-1.5"
+                  style={{
+                    backgroundColor: `${color}14`,
+                    borderColor: `${color}30`,
+                  }}
+                >
+                  <div className="flex items-center justify-between">
+                    <span
+                      className="px-2 py-0.5 rounded-full text-[8px] font-bold tracking-widest uppercase border"
+                      style={{ color, borderColor: `${color}55`, backgroundColor: `${color}20` }}
+                    >
+                      {slotLabel}
+                    </span>
+                    <span className="text-[10px] font-mono font-bold text-zinc-300">
+                      {Math.round((durMin / 60) * 10) / 10}h
+                    </span>
+                  </div>
+                  <div>
+                    <div
+                      className="text-[9px] font-mono font-bold uppercase"
+                      style={{ color }}
+                    >
+                      {minutesTo12Hour(startMin)} | {DOMAIN_CONFIG[event.domain]?.shortLabel || event.domain}
+                    </div>
+                    <div className="text-xs font-bold text-white truncate mt-0.5">
+                      {event.title}
+                    </div>
+                  </div>
+                </div>
+              )}
 
               <div
                 className="p-2.5 space-y-1"

@@ -598,66 +598,6 @@ async function seedIfEmpty(
       );
     }
   }
-
-  // 5. Ensure "Go to Work" 07:00–08:20 opening block exists on CircadianEvent so it renders on the Solar Dial & Agenda
-  try {
-    const whereClause = prismaUserId ? { userId: prismaUserId } : { userId: null };
-    const existingEvents = await prisma.circadianEvent.findMany({
-      where: whereClause,
-      select: { id: true, title: true },
-    });
-    const hasGoToWork = existingEvents.some((e) =>
-      e.title.toLowerCase().includes("go to work")
-    );
-    if (existingEvents.length > 0 && !hasGoToWork) {
-      const base = parseYMD(dateStr);
-      const start = new Date(
-        base.getFullYear(),
-        base.getMonth(),
-        base.getDate(),
-        7,
-        0,
-        0,
-        0
-      );
-      const end = new Date(
-        base.getFullYear(),
-        base.getMonth(),
-        base.getDate(),
-        8,
-        20,
-        0,
-        0
-      );
-      await prisma.circadianEvent.create({
-        data: {
-          userId: prismaUserId,
-          title: "Go to Work",
-          description:
-            "07:00–08:00 structured opening shift hour with Roman-numeral execution subtasks.",
-          domain: "engineering",
-          startTime: start,
-          endTime: end,
-          isRecurring: true,
-          recurrenceRule: "FREQ=DAILY",
-          mediaUrl: "/circadian/saas-build.jpg",
-          mediaType: "image",
-          mediaAspectRatio: "16:9",
-          accentColor: "#38bdf8",
-          telemetrySource: "clickup",
-          checklists: {
-            create: DEFAULT_MORNING_WORK_SUBTASKS.map((s, idx) => ({
-              label: `${s.label} (${s.timeWindow})`,
-              isCompleted: s.isCompleted,
-              sortOrder: idx,
-            })),
-          },
-        },
-      });
-    }
-  } catch {
-    // Non-fatal if circadian_events isn't initialized yet
-  }
 }
 
 async function buildFullState(userId: string, dateStr: string, year: number) {
@@ -1413,7 +1353,7 @@ export async function POST(req: NextRequest) {
           endHour: 11,
           endMin: 45,
           color: "#f59e0b",
-          mediaUrl: "/circadian/saas-build.jpg",
+          mediaUrl: "",
           items: [],
         },
         eng: {
@@ -1425,7 +1365,7 @@ export async function POST(req: NextRequest) {
           endHour: 16,
           endMin: 0,
           color: "#8b5cf6",
-          mediaUrl: "/circadian/saas-build.jpg",
+          mediaUrl: "",
           items: [],
         },
         life: {
@@ -1437,7 +1377,7 @@ export async function POST(req: NextRequest) {
           endHour: 17,
           endMin: 20,
           color: "#10b981",
-          mediaUrl: "/circadian/huskies-walk.jpg",
+          mediaUrl: "",
           items: [],
         },
       };

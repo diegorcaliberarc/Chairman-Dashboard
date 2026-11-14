@@ -58,7 +58,7 @@ export function CircadianEventModal({
   const [startHHMM, setStartHHMM] = useState("09:00");
   const [endHHMM, setEndHHMM] = useState("11:00");
   const [isRecurring, setIsRecurring] = useState(true);
-  const [mediaUrl, setMediaUrl] = useState("/circadian/saas-build.jpg");
+  const [mediaUrl, setMediaUrl] = useState("");
   const [mediaType, setMediaType] = useState<MediaTypeEnum>("image");
   const [accentColor, setAccentColor] = useState("#2563eb");
   const [quadrantSlot, setQuadrantSlot] = useState<number | null>(null);
@@ -99,7 +99,7 @@ export function CircadianEventModal({
       setStartHHMM("10:00");
       setEndHHMM("11:30");
       setIsRecurring(true);
-      setMediaUrl("/circadian/saas-build.jpg");
+      setMediaUrl("");
       setMediaType("image");
       setAccentColor("#2563eb");
       setQuadrantSlot(null);

@@ -160,27 +160,27 @@ const VALID_CIRCADIAN_DOMAINS: Record<
 > = {
   engineering: {
     domain: "engineering",
-    mediaUrl: "/circadian/saas-build.jpg",
+    mediaUrl: "",
     accentColor: "#3b82f6",
   },
   physical_training: {
     domain: "physical_training",
-    mediaUrl: "/circadian/gym-workout.jpg",
+    mediaUrl: "",
     accentColor: "#ef4444",
   },
   nutrition: {
     domain: "nutrition",
-    mediaUrl: "/circadian/nutrition-steak.jpg",
+    mediaUrl: "",
     accentColor: "#10b981",
   },
   family_pets: {
     domain: "family_pets",
-    mediaUrl: "/circadian/huskies-walk.jpg",
+    mediaUrl: "",
     accentColor: "#f59e0b",
   },
   logistics: {
     domain: "logistics",
-    mediaUrl: "/circadian/sky-timelapse.jpg",
+    mediaUrl: "",
     accentColor: "#8b5cf6",
   },
 };

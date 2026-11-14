@@ -20,18 +20,18 @@ export function eventMatchesDate(date: Date, targetDateStr: string, tz: string =
 function inferDomainAndMedia(title: string, category?: string) {
   const t = (title || "").toLowerCase();
   if (t.includes("workout") || t.includes("gym") || t.includes("training") || t.includes("lift") || category === "workout") {
-    return { domain: "physical_training" as const, media: "/circadian/gym-workout.jpg", icon: "dumbbell" };
+    return { domain: "physical_training" as const, media: "", icon: "dumbbell" };
   }
-  if (t.includes("dinner") || t.includes("lunch") || t.includes("breakfast") || t.includes("meal") || t.includes("refuel") || t.includes("fast")) {
-    return { domain: "nutrition" as const, media: "/circadian/nutrition-steak.jpg", icon: "utensils" };
+  if (t.includes("dinner") || t.includes("lunch") || t.includes("breakfast") || t.includes("meal") || t.includes("refuel") || t.includes("fast") || t.includes("feed")) {
+    return { domain: "nutrition" as const, media: "", icon: "utensils" };
   }
-  if (t.includes("walk") || t.includes("dog") || t.includes("huskies") || t.includes("nova") || t.includes("astro") || t.includes("family")) {
-    return { domain: "family_pets" as const, media: "/circadian/huskies-walk.jpg", icon: "dog" };
+  if (t.includes("walk") || t.includes("dog") || t.includes("dogs") || t.includes("huskies") || t.includes("nova") || t.includes("astro") || t.includes("family") || t.includes("comet")) {
+    return { domain: "family_pets" as const, media: "", icon: "dog" };
   }
-  if (t.includes("rest") || t.includes("sleep") || t.includes("bed") || t.includes("cozier")) {
-    return { domain: "logistics" as const, media: "/circadian/cozier-rest.jpg", icon: "bed" };
+  if (t.includes("rest") || t.includes("sleep") || t.includes("bed") || t.includes("shower") || t.includes("prep") || t.includes("wake up") || t.includes("trash")) {
+    return { domain: "logistics" as const, media: "", icon: "bed" };
   }
-  return { domain: "engineering" as const, media: "/circadian/saas-build.jpg", icon: "laptop" };
+  return { domain: "engineering" as const, media: "", icon: "laptop" };
 }
 
 export function getWeekDays(
@@ -47,72 +47,6 @@ export function getWeekDays(
 
   const names = ["MON", "TUE", "WED", "THU", "FRI", "SAT", "SUN"];
   const todayStr = new Date().toISOString().split("T")[0];
-
-  const presets = [
-    {
-      focus: "Cozier Rest & Reset",
-      domain: "logistics" as const,
-      media: "/circadian/cozier-rest.jpg",
-      icon: "bed",
-      health: 88,
-      work: 95,
-      sleep: 96,
-    },
-    {
-      focus: "SaaS Build Sprint",
-      domain: "engineering" as const,
-      media: "/circadian/saas-build.jpg",
-      icon: "laptop",
-      health: 82,
-      work: 100,
-      sleep: 90,
-    },
-    {
-      focus: "Deep System Architecture",
-      domain: "engineering" as const,
-      media: "/circadian/saas-build.jpg",
-      icon: "laptop",
-      health: 85,
-      work: 92,
-      sleep: 88,
-    },
-    {
-      focus: "Hypertrophy Push & Deadlift",
-      domain: "physical_training" as const,
-      media: "/circadian/gym-workout.jpg",
-      icon: "dumbbell",
-      health: 96,
-      work: 90,
-      sleep: 92,
-    },
-    {
-      focus: "Operations & Client Sync",
-      domain: "engineering" as const,
-      media: "/circadian/saas-build.jpg",
-      icon: "briefcase",
-      health: 80,
-      work: 94,
-      sleep: 85,
-    },
-    {
-      focus: "Nova & Astro Trail Trek",
-      domain: "family_pets" as const,
-      media: "/circadian/huskies-walk.jpg",
-      icon: "dog",
-      health: 98,
-      work: 70,
-      sleep: 95,
-    },
-    {
-      focus: "Macro Refuel & Cast-Iron",
-      domain: "nutrition" as const,
-      media: "/circadian/nutrition-steak.jpg",
-      icon: "utensils",
-      health: 94,
-      work: 65,
-      sleep: 98,
-    },
-  ];
 
   return names.map((name, i) => {
     const d = new Date(monday);
@@ -142,10 +76,10 @@ export function getWeekDays(
     const primaryEvent = hasRealEvents ? dayEvents[0] : null;
     const inferred = primaryEvent ? inferDomainAndMedia(primaryEvent.title, primaryEvent.category) : null;
 
-    const primaryFocus = primaryEvent ? primaryEvent.title : presets[i].focus;
-    const domain = inferred ? inferred.domain : presets[i].domain;
-    const mediaUrl = inferred ? inferred.media : presets[i].media;
-    const iconName = inferred ? inferred.icon : presets[i].icon;
+    const primaryFocus = primaryEvent ? primaryEvent.title : (isToday ? "Today's Agenda" : "No scheduled events");
+    const domain = inferred ? inferred.domain : "engineering";
+    const mediaUrl = inferred ? inferred.media : "";
+    const iconName = inferred ? inferred.icon : "calendar";
 
     return {
       isoDay: i + 1,
@@ -160,9 +94,9 @@ export function getWeekDays(
       mediaUrl,
       iconName,
       telemetry: {
-        healthPct: presets[i].health,
-        workPct: hasRealEvents ? Math.min(100, dayEvents.length * 35) : presets[i].work,
-        sleepPct: presets[i].sleep,
+        healthPct: hasRealEvents ? Math.min(100, 75 + dayEvents.length * 5) : 80,
+        workPct: hasRealEvents ? Math.min(100, dayEvents.length * 20) : 50,
+        sleepPct: 90,
       },
       eventsCount: dayEvents.length,
       events: dayEvents.map((e) => ({
@@ -264,7 +198,7 @@ export function getSeasonCards(
       subtitle: winterCount > 0 ? `${winterCount} Events Scheduled` : "Winter Break & Foundation",
       strategicImperative: "Restoration & High-Altitude Strength",
       accentColor: "#38bdf8",
-      mediaUrl: "/circadian/cozier-rest.jpg",
+      mediaUrl: "",
       isActiveCurrent: false,
     },
     {
@@ -274,7 +208,7 @@ export function getSeasonCards(
       subtitle: springCount > 0 ? `${springCount} Events Scheduled` : "Launch Season",
       strategicImperative: "Commercial Scale & New Feature Deployments",
       accentColor: "#99FF33",
-      mediaUrl: "/circadian/gym-workout.jpg",
+      mediaUrl: "",
       isActiveCurrent: false,
     },
     {
@@ -284,7 +218,7 @@ export function getSeasonCards(
       subtitle: summerCount > 0 ? `${summerCount} Events Scheduled` : "Summertime & Outdoor Recon",
       strategicImperative: "Fitness Peak & Wilderness Pack Treks",
       accentColor: "#FF5500",
-      mediaUrl: "/circadian/huskies-walk.jpg",
+      mediaUrl: "",
       isActiveCurrent: false,
     },
     {
@@ -294,7 +228,7 @@ export function getSeasonCards(
       subtitle: fallCount > 0 ? `${fallCount} Events Scheduled` : "Q4 Milestones & Revenue Lock",
       strategicImperative: "Active Season · Enterprise Architecture & Cash Reserves",
       accentColor: "#FF9900",
-      mediaUrl: "/circadian/saas-build.jpg",
+      mediaUrl: "",
       isActiveCurrent: true,
     },
   ];
@@ -316,7 +250,7 @@ export const EL_PASO_TACTICAL_WAYPOINTS: TacticalWaypoint[] = [
     elevation: 1220,
     status: "completed",
     accentColor: "#0088FF",
-    mediaUrl: "/circadian/cozier-rest.jpg",
+    mediaUrl: "",
     subtasks: ["Cold face splash & electrolytes", "Thyroid & morning supplements", "66°F room airflow reset"],
     isHomeBaseHub: true,
     homeRadialOffset: [
@@ -338,7 +272,7 @@ export const EL_PASO_TACTICAL_WAYPOINTS: TacticalWaypoint[] = [
     elevation: 1250,
     status: "completed",
     accentColor: "#0088FF",
-    mediaUrl: "/circadian/huskies-walk.jpg",
+    mediaUrl: "",
     subtasks: ["Nova & Astro harness check", "1.8 Mile morning optical flow", "Hydrate pack"],
   },
   {
@@ -352,7 +286,7 @@ export const EL_PASO_TACTICAL_WAYPOINTS: TacticalWaypoint[] = [
     elevation: 1220,
     status: "completed",
     accentColor: "#0088FF",
-    mediaUrl: "/circadian/saas-build.jpg",
+    mediaUrl: "",
     subtasks: ["Zone 1-4 rotary sprinklers", "Inspect desert perimeter"],
   },
   {
@@ -366,7 +300,7 @@ export const EL_PASO_TACTICAL_WAYPOINTS: TacticalWaypoint[] = [
     elevation: 1220,
     status: "completed",
     accentColor: "#0088FF",
-    mediaUrl: "/circadian/nutrition-steak.jpg",
+    mediaUrl: "",
     subtasks: ["Pasture-raised eggs & sourdough", "60g protein intake floor", "Espresso brew"],
   },
   {
@@ -380,7 +314,7 @@ export const EL_PASO_TACTICAL_WAYPOINTS: TacticalWaypoint[] = [
     elevation: 1180,
     status: "completed",
     accentColor: "#0088FF",
-    mediaUrl: "/circadian/gym-workout.jpg",
+    mediaUrl: "",
     subtasks: ["Vehicle checklist & safe transit", "School gate drop-off", "Clear morning traffic"],
   },
   {
@@ -394,7 +328,7 @@ export const EL_PASO_TACTICAL_WAYPOINTS: TacticalWaypoint[] = [
     elevation: 1140,
     status: "active",
     accentColor: "#FF9900",
-    mediaUrl: "/circadian/saas-build.jpg",
+    mediaUrl: "",
     subtasks: ["Supabase RLS & Auth hardening", "ClickUp C-suite triage", "High-leverage sprint block"],
   },
   {
@@ -408,7 +342,7 @@ export const EL_PASO_TACTICAL_WAYPOINTS: TacticalWaypoint[] = [
     elevation: 1145,
     status: "upcoming",
     accentColor: "#99FF33",
-    mediaUrl: "/circadian/nutrition-steak.jpg",
+    mediaUrl: "",
     subtasks: ["Grilled chicken & avocado refuel", "15m sunlight exposure walk"],
   },
   {
@@ -422,7 +356,7 @@ export const EL_PASO_TACTICAL_WAYPOINTS: TacticalWaypoint[] = [
     elevation: 1180,
     status: "upcoming",
     accentColor: "#99FF33",
-    mediaUrl: "/circadian/gym-workout.jpg",
+    mediaUrl: "",
     subtasks: ["Arrive at pickup queue by 15:20", "Brief afternoon debrief"],
   },
   {
@@ -436,7 +370,7 @@ export const EL_PASO_TACTICAL_WAYPOINTS: TacticalWaypoint[] = [
     elevation: 1250,
     status: "upcoming",
     accentColor: "#9D4EDD",
-    mediaUrl: "/circadian/huskies-walk.jpg",
+    mediaUrl: "",
     subtasks: ["Sunset twilight optic flow", "2-Mile evening exercise pace", "Inspect paws and coat"],
   },
   {
@@ -450,7 +384,7 @@ export const EL_PASO_TACTICAL_WAYPOINTS: TacticalWaypoint[] = [
     elevation: 1220,
     status: "upcoming",
     accentColor: "#9D4EDD",
-    mediaUrl: "/circadian/nutrition-steak.jpg",
+    mediaUrl: "",
     subtasks: ["Grass-fed ribeye & sweet potato", "Hit 180g protein daily floor", "Close feeding window"],
   },
   {
@@ -464,7 +398,7 @@ export const EL_PASO_TACTICAL_WAYPOINTS: TacticalWaypoint[] = [
     elevation: 1220,
     status: "upcoming",
     accentColor: "#38bdf8",
-    mediaUrl: "/circadian/cozier-rest.jpg",
+    mediaUrl: "",
     subtasks: ["Nighttime magnesium & zinc", "Blue-light zero emission", "7.5h deep recovery lock"],
   },
 ];

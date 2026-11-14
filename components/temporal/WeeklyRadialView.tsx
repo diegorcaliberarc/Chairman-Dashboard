@@ -127,16 +127,18 @@ export function WeeklyRadialView({
               >
                 {/* Photo Wedge Background with Clipping */}
                 <g clipPath={`url(#clip-w-${day.isoDay})`}>
-                  <image
-                    href={day.mediaUrl}
-                    x={bbox.x - 20}
-                    y={bbox.y - 20}
-                    width={bbox.width + 40}
-                    height={bbox.height + 40}
-                    preserveAspectRatio="xMidYMid slice"
-                    opacity={isToday ? 0.95 : 0.45}
-                    className="group-hover:opacity-95 transition-opacity"
-                  />
+                  {day.mediaUrl ? (
+                    <image
+                      href={day.mediaUrl}
+                      x={bbox.x - 20}
+                      y={bbox.y - 20}
+                      width={bbox.width + 40}
+                      height={bbox.height + 40}
+                      preserveAspectRatio="xMidYMid slice"
+                      opacity={isToday ? 0.95 : 0.45}
+                      className="group-hover:opacity-95 transition-opacity"
+                    />
+                  ) : null}
                   <rect
                     x={bbox.x - 30}
                     y={bbox.y - 30}
