@@ -1201,31 +1201,6 @@ export default function UnifiedMasterCalendarPage() {
                     }}
                   />
                 )}
-
-                {/* Bottom-Left Micro-Statistics Card */}
-                <div className="xl:absolute xl:left-4 xl:bottom-4 z-20 w-full xl:w-[270px] rounded-2xl bg-[#12151e]/90 backdrop-blur-xl border border-white/[0.08] p-4 shadow-2xl space-y-2">
-                  <div className="flex items-center justify-between text-[10px] font-bold tracking-wider text-zinc-400 uppercase">
-                    <span>MICRO-STATISTICS</span>
-                    {loadingEvents && <RefreshCw className="w-3 h-3 animate-spin text-zinc-500" />}
-                  </div>
-                  <div className="flex items-center justify-between gap-4">
-                    <div>
-                      <div className="text-2xl font-bold text-white tracking-tight leading-none font-mono">
-                        {telemetryVelocity.toLocaleString()}
-                      </div>
-                      <div className="text-[11px] text-zinc-400 mt-1">Real-Time</div>
-                    </div>
-                    <div className="flex items-center gap-2 pl-3 border-l border-white/10">
-                      <div className="w-8 h-8 rounded-full bg-amber-500/20 border border-amber-500/40 flex items-center justify-center text-amber-400">
-                        <HeartPulse className="w-4 h-4" />
-                      </div>
-                      <div>
-                        <div className="text-xs font-semibold text-zinc-200">Health</div>
-                        <div className="text-[11px] font-bold text-amber-400">{healthScore}%</div>
-                      </div>
-                    </div>
-                  </div>
-                </div>
               </div>
 
               {/* Right Executive Rail: Daily Focus + Agenda + Integration Badges */}
