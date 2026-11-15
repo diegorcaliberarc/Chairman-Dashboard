@@ -267,7 +267,7 @@ export function CircadianDialStage({
       }
       // Sort vertically by target natural anchor Y
       items.sort((a, b) => a.anchorPt.y - b.anchorPt.y);
-      const minGap = 52; // Minimum vertical gap between adjacent labels
+      const minGap = 56; // Minimum vertical gap between adjacent labels
       const topBound = 60;
       const bottomBound = VB_H - 60;
 
@@ -304,8 +304,8 @@ export function CircadianDialStage({
       // Enforce clean column rail alignment matching reference mockup
       for (const item of items) {
         item.labelX = isRightSide
-          ? CX + R_WEDGE_OUTER + 28 * scaleFactor
-          : CX - R_WEDGE_OUTER - 28 * scaleFactor;
+          ? CX + R_WEDGE_OUTER + 34 * scaleFactor
+          : CX - R_WEDGE_OUTER - 34 * scaleFactor;
       }
     };
 
@@ -846,13 +846,14 @@ export function CircadianDialStage({
             {/* Crisp High-Contrast Digital Time Display Floating Concentrically in Center */}
             <text
               x={CX}
-              y={CY + 6 * scaleFactor}
+              y={CY - 1 * scaleFactor}
               textAnchor="middle"
+              dominantBaseline="middle"
               fill="#ffffff"
               stroke="rgba(8, 11, 20, 0.95)"
               strokeWidth={4 * scaleFactor}
               paintOrder="stroke"
-              fontSize={24 * scaleFactor}
+              fontSize={25 * scaleFactor}
               fontWeight={800}
               letterSpacing="-0.02em"
               style={{ fontVariantNumeric: "tabular-nums" }}
@@ -861,13 +862,14 @@ export function CircadianDialStage({
             </text>
             <text
               x={CX}
-              y={CY + 22 * scaleFactor}
+              y={CY + 18 * scaleFactor}
               textAnchor="middle"
+              dominantBaseline="middle"
               fill="rgba(226, 232, 240, 0.95)"
               stroke="rgba(8, 11, 20, 0.95)"
               strokeWidth={3 * scaleFactor}
               paintOrder="stroke"
-              fontSize={8 * scaleFactor}
+              fontSize={8.5 * scaleFactor}
               fontWeight={700}
               letterSpacing="0.14em"
             >
@@ -1081,10 +1083,10 @@ export function CircadianDialStage({
                   ? Math.min(labelX - 10, CX + R_WEDGE_OUTER + 16)
                   : Math.max(labelX + 10, CX - R_WEDGE_OUTER - 16);
 
-                const pillWidth = Math.min(240, Math.max(136, event.title.length * 7.4 + 28));
-                const pillHeight = 42;
-                const pillX = isRight ? labelX - 6 : labelX - pillWidth + 6;
-                const pillY = labelY - 21;
+                const pillWidth = Math.min(270, Math.max(154, event.title.length * 8.2 + 34));
+                const pillHeight = 48;
+                const pillX = isRight ? labelX - 8 : labelX - pillWidth + 8;
+                const pillY = labelY - 24;
 
                 return (
                   <g
@@ -1096,18 +1098,18 @@ export function CircadianDialStage({
                     <circle
                       cx={wedge.outerMidPoint.x}
                       cy={wedge.outerMidPoint.y}
-                      r={isHighlighted ? 3.4 : 2.4}
+                      r={isHighlighted ? 4.2 : 3.0}
                       fill={strokeColor}
                       filter={isHighlighted ? "url(#arcNeonGlow)" : undefined}
                     />
                     <polyline
                       points={`${wedge.outerMidPoint.x},${wedge.outerMidPoint.y} ${elbowX},${labelY} ${
-                        isRight ? labelX - 6 : labelX + 6
+                        isRight ? labelX - 8 : labelX + 8
                       },${labelY}`}
                       fill="none"
                       stroke={strokeColor}
-                      strokeWidth={isHighlighted ? 2.2 : 1.4}
-                      strokeOpacity={isHighlighted ? 0.95 : 0.65}
+                      strokeWidth={isHighlighted ? 2.4 : 1.6}
+                      strokeOpacity={isHighlighted ? 0.95 : 0.75}
                     />
 
                     {/* High-Contrast Dark Glass Backdrop Pill */}
@@ -1116,34 +1118,34 @@ export function CircadianDialStage({
                       y={pillY}
                       width={pillWidth}
                       height={pillHeight}
-                      rx={8}
+                      rx={9}
                       fill="rgba(8, 12, 22, 0.94)"
-                      stroke={isHighlighted ? strokeColor : "rgba(255, 255, 255, 0.12)"}
-                      strokeWidth={isHighlighted ? 1.6 : 1.0}
+                      stroke={isHighlighted ? strokeColor : "rgba(255, 255, 255, 0.14)"}
+                      strokeWidth={isHighlighted ? 1.8 : 1.1}
                       filter="url(#arcNeonGlow)"
                     />
 
                     {/* Task Title */}
                     <text
-                      x={isRight ? labelX + 4 : labelX - 4}
-                      y={labelY - 4}
+                      x={isRight ? labelX + 6 : labelX - 6}
+                      y={labelY - 5}
                       textAnchor={textAnchor}
                       fill="#f8fafc"
-                      fontSize={12.5}
+                      fontSize={13.5}
                       fontWeight={isHighlighted ? 800 : 700}
                       letterSpacing="0.01em"
                     >
-                      {event.title.length > 26 ? event.title.slice(0, 25) + "…" : event.title}
+                      {event.title.length > 28 ? event.title.slice(0, 27) + "…" : event.title}
                     </text>
 
                     {/* Time Window (24-Hour Military Format) */}
                     <text
-                      x={isRight ? labelX + 4 : labelX - 4}
-                      y={labelY + 12}
+                      x={isRight ? labelX + 6 : labelX - 6}
+                      y={labelY + 14}
                       textAnchor={textAnchor}
                       fill={isHighlighted ? strokeColor : "rgba(148, 163, 184, 0.95)"}
-                      fontSize={10.2}
-                      fontWeight={600}
+                      fontSize={11.2}
+                      fontWeight={700}
                       style={{ fontVariantNumeric: "tabular-nums" }}
                     >
                       {minutesToMilitary(startMin)} - {minutesToMilitary(endMin, true)}
