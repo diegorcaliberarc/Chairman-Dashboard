@@ -1,20 +1,33 @@
 "use client";
 
-import React, { useState, useEffect, useCallback, useMemo } from "react";
+import React, { useState, useEffect, useCallback } from "react";
 import { ExecutiveModuleShell } from "@/components/chairman/ExecutiveModuleShell";
-import { MacroTelemetryCard } from "@/components/MacroTelemetryCard";
+import { TopKpiStrip } from "@/components/sitrep/TopKpiStrip";
+import { FastDailyEntryForm } from "@/components/sitrep/FastDailyEntryForm";
+import { WeightTrajectoryChart } from "@/components/sitrep/WeightTrajectoryChart";
+import { CaloricBalanceChart } from "@/components/sitrep/CaloricBalanceChart";
+import { MacroStepConsistencyChart } from "@/components/sitrep/MacroStepConsistencyChart";
+import { SitrepHistoryTable } from "@/components/sitrep/SitrepHistoryTable";
+import { QuickDebriefDrawer } from "@/components/sitrep/QuickDebriefDrawer";
 import { FastingTimerCard } from "@/components/FastingTimerCard";
 import { FoodLoggerCard } from "@/components/FoodLoggerCard";
 import { FoodFeedCard, FoodEntry } from "@/components/FoodFeedCard";
 import { MealPlanCard, MealPlanRecord } from "@/components/MealPlanCard";
-import { TrendChartsCard, TrendDataPoint } from "@/components/TrendChartsCard";
+import { MacroTelemetryCard } from "@/components/MacroTelemetryCard";
+import { DailySitrepLog } from "@/lib/commandTypes";
 import {
   Calendar,
   ChevronLeft,
   ChevronRight,
   RefreshCw,
+  Activity,
   Utensils,
+  Moon,
   Sparkles,
+  TrendingDown,
+  BarChart3,
+  ListFilter,
+  ShieldCheck,
 } from "lucide-react";
 
 function getTodayIso(): string {
@@ -26,216 +39,233 @@ function getTodayIso(): string {
 }
 
 export default function MacroOpsPage() {
+  const [activeTab, setActiveTab] = useState<"sitrep" | "nutrition">("sitrep");
   const [selectedDate, setSelectedDate] = useState<string>(getTodayIso());
-  const [selectedRange, setSelectedRange] = useState<"7D" | "30D" | "All">("30D");
+  const [isDebriefOpen, setIsDebriefOpen] = useState(false);
 
-  // Server Data
+  // SITREP Live State
+  const [sitrepHistory, setSitrepHistory] = useState<DailySitrepLog[]>([]);
+  const [todayLog, setTodayLog] = useState<DailySitrepLog | null>(null);
+  const [targetWeightLbs, setTargetWeightLbs] = useState<number>(155.0);
+  const [sitrepStats, setSitrepStats] = useState<any>({
+    currentWeight: null,
+    weightDelta: null,
+    movingAvg: null,
+    targetWeightLbs: 155.0,
+    distanceToTarget: null,
+    passRatePct: 0,
+    avgDeficit: 0,
+    avgProtein: 0,
+    avgSteps: 0,
+  });
+  const [isSitrepLoading, setIsSitrepLoading] = useState(true);
+
+  // Nutrition state (Legacy support)
   const [dailyLog, setDailyLog] = useState<any>(null);
   const [entries, setEntries] = useState<FoodEntry[]>([]);
   const [mealPlans, setMealPlans] = useState<MealPlanRecord[]>([]);
-  const [trends, setTrends] = useState<TrendDataPoint[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
 
-  // Fetch Nutrition Data
-  const loadData = useCallback(async () => {
-    setIsLoading(true);
+  // Load SITREP data
+  const loadSitrepData = useCallback(async () => {
+    setIsSitrepLoading(true);
     try {
-      const res = await fetch(`/api/nutrition?date=${selectedDate}&range=${selectedRange}`);
-      if (!res.ok) throw new Error("Failed to load nutrition data");
+      const res = await fetch(`/api/sitrep?date=${selectedDate}&limit=60`);
+      if (!res.ok) throw new Error("Failed to load SITREP telemetry");
       const data = await res.json();
-      setDailyLog(data.dailyLog);
-      setEntries(data.entries || []);
-      setMealPlans(data.mealPlans || []);
-      setTrends(data.trends || []);
+      if (data.success) {
+        setSitrepHistory(data.history || []);
+        setTodayLog(data.todayLog || null);
+        setTargetWeightLbs(data.targetWeightLbs || 155.0);
+        setSitrepStats(data.stats || {});
+      }
     } catch (err) {
-      console.error("Error loading nutrition:", err);
+      console.error("Error loading SITREP:", err);
     } finally {
-      setIsLoading(false);
+      setIsSitrepLoading(false);
     }
-  }, [selectedDate, selectedRange]);
+  }, [selectedDate]);
+
+  // Load legacy nutrition data
+  const loadNutritionData = useCallback(async () => {
+    try {
+      const res = await fetch(`/api/nutrition?date=${selectedDate}&range=30D`);
+      if (res.ok) {
+        const data = await res.json();
+        setDailyLog(data.dailyLog);
+        setEntries(data.entries || []);
+        setMealPlans(data.mealPlans || []);
+      }
+    } catch (e) {
+      console.error("Error loading legacy nutrition:", e);
+    }
+  }, [selectedDate]);
 
   useEffect(() => {
-    loadData();
-  }, [loadData]);
+    loadSitrepData();
+    loadNutritionData();
+  }, [loadSitrepData, loadNutritionData]);
 
-  // Aggregate macros from today's entries
-  const aggregatedMacros = useMemo(() => {
-    let calories = 0;
-    let protein = 0;
-    let carbs = 0;
-    let fat = 0;
-    let cholesterol = 0;
-    let waterOz = 0;
-    let totalMassLbs = 0;
-
-    entries.forEach((e) => {
-      calories += Number(e.calories) || 0;
-      protein += Number(e.protein_g) || 0;
-      carbs += Number(e.carbs_g) || 0;
-      fat += Number(e.fat_g) || 0;
-      cholesterol += Number(e.cholesterol_mg) || 0;
-      waterOz += Number(e.water_oz) || 0;
-      totalMassLbs += Number(e.weight_lbs) || 0;
-    });
-
-    return {
-      calories,
-      protein: Number(protein.toFixed(1)),
-      carbs: Number(carbs.toFixed(1)),
-      fat: Number(fat.toFixed(1)),
-      cholesterol: Math.round(cholesterol),
-      waterOz: Number(waterOz.toFixed(1)),
-      totalMassLbs: Number(totalMassLbs.toFixed(2)),
-    };
-  }, [entries]);
-
-  // Date Navigation Handlers
-  const handlePrevDay = () => {
-    const cur = new Date(selectedDate + "T12:00:00Z");
-    cur.setDate(cur.getDate() - 1);
-    setSelectedDate(cur.toISOString().split("T")[0]);
+  const handleDateChange = (date: string) => {
+    setSelectedDate(date);
   };
-
-  const handleNextDay = () => {
-    const cur = new Date(selectedDate + "T12:00:00Z");
-    cur.setDate(cur.getDate() + 1);
-    setSelectedDate(cur.toISOString().split("T")[0]);
-  };
-
-  const handleToday = () => {
-    setSelectedDate(getTodayIso());
-  };
-
-  // Update Biometrics Handler
-  const handleUpdateBiometrics = async (weight: number | null, steps: number) => {
-    await fetch("/api/nutrition", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        action: "update_biometrics",
-        log_date: selectedDate,
-        morning_weight_lbs: weight,
-        steps_count: steps,
-      }),
-    });
-    await loadData();
-  };
-
-  const isToday = selectedDate === getTodayIso();
 
   return (
     <ExecutiveModuleShell
       moduleId="MACRO_OPS"
-      eyebrow="Nutrition & Recomposition"
-      title="MacroOps Metabolic Engine"
-      subtitle="High-Speed Food Logging, Intermittent Fasting Protocol & Body Recomposition Analytics"
-      accentColor="#10b981"
+      eyebrow="Objective 155 Sovereign Telemetry"
+      title="Daily SITREP & Biometric Console"
+      subtitle="15-Column Biometric Tracker, 7-Day Moving Average Trigger, Caloric Deficit & Mission Grades"
+      accentColor="#f59e0b"
       headerActions={
         <div className="flex items-center gap-2">
-          {/* Date Selector Navigation */}
-          <div className="flex items-center gap-1 bg-[#141418] p-1 rounded-2xl border border-[#1E1E24] text-xs font-mono">
+          {/* Tab Switcher */}
+          <div className="flex items-center p-1 rounded-xl bg-zinc-900 border border-white/10 text-xs font-mono">
             <button
-              type="button"
-              onClick={handlePrevDay}
-              className="p-1 rounded-xl text-zinc-400 hover:text-white hover:bg-zinc-800"
-              title="Previous Day"
-            >
-              <ChevronLeft className="w-3.5 h-3.5" />
-            </button>
-
-            <button
-              type="button"
-              onClick={handleToday}
-              className={`px-2.5 py-0.5 rounded-lg text-xs font-bold transition-colors ${
-                isToday ? "bg-emerald-500/20 text-emerald-400" : "text-zinc-300 hover:text-white"
+              onClick={() => setActiveTab("sitrep")}
+              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg transition font-bold ${
+                activeTab === "sitrep"
+                  ? "bg-amber-500/20 text-amber-300 border border-amber-500/30"
+                  : "text-zinc-400 hover:text-white"
               }`}
             >
-              {isToday ? "Today" : selectedDate}
+              <Activity size={13} />
+              <span>SITREP & RECHARTS</span>
             </button>
-
             <button
-              type="button"
-              onClick={handleNextDay}
-              className="p-1 rounded-xl text-zinc-400 hover:text-white hover:bg-zinc-800"
-              title="Next Day"
+              onClick={() => setActiveTab("nutrition")}
+              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg transition font-bold ${
+                activeTab === "nutrition"
+                  ? "bg-emerald-500/20 text-emerald-400 border border-emerald-500/30"
+                  : "text-zinc-400 hover:text-white"
+              }`}
             >
-              <ChevronRight className="w-3.5 h-3.5" />
+              <Utensils size={13} />
+              <span>FOOD LEDGER</span>
             </button>
           </div>
 
-          {/* Refresh Button */}
+          {/* Quick Debrief Button */}
           <button
-            type="button"
-            onClick={loadData}
-            title="Refresh Data"
-            className="p-2 rounded-2xl bg-[#141418] border border-[#1E1E24] text-zinc-400 hover:text-white hover:border-zinc-700 transition-colors"
+            onClick={() => setIsDebriefOpen(true)}
+            className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-400 hover:to-amber-500 text-zinc-950 font-bold font-mono text-xs tracking-wider shadow-lg active:scale-95 transition"
           >
-            <RefreshCw className={`w-3.5 h-3.5 ${isLoading ? "animate-spin text-emerald-400" : ""}`} />
+            <Moon size={13} />
+            <span>QUICK DEBRIEF</span>
+          </button>
+
+          {/* Refresh */}
+          <button
+            onClick={() => {
+              loadSitrepData();
+              loadNutritionData();
+            }}
+            className="p-2 rounded-xl bg-zinc-900 border border-white/10 text-zinc-400 hover:text-white hover:border-zinc-700 transition"
+            title="Refresh Telemetry"
+          >
+            <RefreshCw size={14} className={isSitrepLoading ? "animate-spin text-amber-400" : ""} />
           </button>
         </div>
       }
     >
-      <div className="min-h-screen bg-[#0A0A0C] text-zinc-100 p-4 sm:p-6 lg:p-8 max-w-7xl mx-auto space-y-6">
-        {/* ====================================================================
-         * CARD 1: DAILY COMMAND & MACRO TELEMETRY
-         * ================================================================== */}
-        <MacroTelemetryCard
-          calorieTarget={Number(dailyLog?.calorie_target) || 1700}
-          consumedCalories={aggregatedMacros.calories}
-          proteinTarget={Number(dailyLog?.protein_target_g) || 180}
-          consumedProtein={aggregatedMacros.protein}
-          consumedCarbs={aggregatedMacros.carbs}
-          consumedFat={aggregatedMacros.fat}
-          cholesterolCap={Number(dailyLog?.cholesterol_cap_mg) || 255}
-          consumedCholesterol={aggregatedMacros.cholesterol}
-          waterTargetOz={Number(dailyLog?.water_target_oz) || 128}
-          consumedWaterOz={aggregatedMacros.waterOz}
-          totalMassLbs={aggregatedMacros.totalMassLbs}
-          morningWeightLbs={dailyLog?.morning_weight_lbs ? Number(dailyLog.morning_weight_lbs) : null}
-          stepsCount={Number(dailyLog?.steps_count) || 0}
-          onUpdateBiometrics={handleUpdateBiometrics}
-        />
+      <div className="min-h-screen bg-[#07090E] text-zinc-100 p-4 sm:p-6 lg:p-8 max-w-7xl mx-auto space-y-6">
+        {activeTab === "sitrep" ? (
+          <>
+            {/* 1. TOP KPI STRIP */}
+            <TopKpiStrip stats={sitrepStats} todayLog={todayLog} />
 
-        {/* ====================================================================
-         * CARD 2: FASTING & FEEDING WINDOW TIMER (12:00 PM - 6:00 PM LOCKED)
-         * ================================================================== */}
-        <FastingTimerCard />
+            {/* 2. FAST DAILY ENTRY FORM (DATE STEPPER + 1-CLICK UPSERT) */}
+            <FastDailyEntryForm
+              selectedDate={selectedDate}
+              onDateChange={handleDateChange}
+              existingLog={todayLog}
+              onSaved={loadSitrepData}
+            />
 
-        {/* ====================================================================
-         * CARD 3: NATURAL LANGUAGE AI FOOD LOGGER (TEXT / VOICE / STAPLES)
-         * ================================================================== */}
-        <FoodLoggerCard
-          logDate={selectedDate}
-          onEntriesAdded={loadData}
-        />
+            {/* 3. RECHARTS TREND DECK (3 EXPANDED TELEMETRY CHARTS) */}
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+              {/* Weight Trajectory vs 7-Day Moving Avg vs 155 Target */}
+              <div className="p-5 rounded-2xl bg-zinc-950/60 border border-white/10 backdrop-blur-xl shadow-2xl space-y-3">
+                <div className="flex items-center justify-between border-b border-white/10 pb-3">
+                  <div className="flex items-center gap-2">
+                    <TrendingDown size={16} className="text-amber-400" />
+                    <div>
+                      <h4 className="text-xs font-mono font-bold uppercase tracking-wider text-white">
+                        Weight Trajectory & 7-Day Moving Average
+                      </h4>
+                      <p className="text-[11px] text-zinc-400">
+                        Daily scale readings vs. trailing 7-day average against the {targetWeightLbs} lbs target line
+                      </p>
+                    </div>
+                  </div>
+                </div>
+                <WeightTrajectoryChart data={sitrepHistory} targetWeightLbs={targetWeightLbs} />
+              </div>
 
-        {/* ====================================================================
-         * CARD 4: VISUAL FOOD LOG FEED (MATCHED PHOTOGRAPHY & INLINE EDIT)
-         * ================================================================== */}
-        <FoodFeedCard
-          entries={entries}
-          onEntryUpdated={loadData}
-          onEntryDeleted={loadData}
-        />
+              {/* Caloric Energy Balance & Net Deficit */}
+              <div className="p-5 rounded-2xl bg-zinc-950/60 border border-white/10 backdrop-blur-xl shadow-2xl space-y-3">
+                <div className="flex items-center justify-between border-b border-white/10 pb-3">
+                  <div className="flex items-center gap-2">
+                    <BarChart3 size={16} className="text-rose-400" />
+                    <div>
+                      <h4 className="text-xs font-mono font-bold uppercase tracking-wider text-white">
+                        Caloric Energy Balance & Deficit
+                      </h4>
+                      <p className="text-[11px] text-zinc-400">
+                        Intake vs. expenditure with daily net deficit margin (target &ge; 350 kcal)
+                      </p>
+                    </div>
+                  </div>
+                </div>
+                <CaloricBalanceChart data={sitrepHistory} />
+              </div>
+            </div>
 
-        {/* ====================================================================
-         * CARD 5: ACTIVE MEAL PLAN & AI PLAN GENERATOR
-         * ================================================================== */}
-        <MealPlanCard
-          mealPlans={mealPlans}
-          onMealLogged={loadData}
-          onPlanUpdated={loadData}
-        />
+            {/* Step Count & Protein Consistency */}
+            <div className="p-5 rounded-2xl bg-zinc-950/60 border border-white/10 backdrop-blur-xl shadow-2xl space-y-3">
+              <div className="flex items-center justify-between border-b border-white/10 pb-3">
+                <div className="flex items-center gap-2">
+                  <Activity size={16} className="text-cyan-400" />
+                  <div>
+                    <h4 className="text-xs font-mono font-bold uppercase tracking-wider text-white">
+                      Physical Activity & Protein Consistency
+                    </h4>
+                    <p className="text-[11px] text-zinc-400">
+                      Step volume (miles) and protein intake against the 10,000 steps and 160g thresholds
+                    </p>
+                  </div>
+                </div>
+              </div>
+              <MacroStepConsistencyChart data={sitrepHistory} />
+            </div>
 
-        {/* ====================================================================
-         * CARD 6: PERFORMANCE & BODY COMPOSITION TRENDS (RECHARTS)
-         * ================================================================== */}
-        <TrendChartsCard
-          trends={trends}
-          selectedRange={selectedRange}
-          onRangeChange={(r) => setSelectedRange(r)}
-        />
+            {/* 4. SORTABLE HISTORICAL TELEMETRY TABLE WITH CSV EXPORT */}
+            <div className="p-5 rounded-2xl bg-zinc-950/60 border border-white/10 backdrop-blur-xl shadow-2xl">
+              <SitrepHistoryTable
+                data={sitrepHistory}
+                onRefresh={loadSitrepData}
+                onEditItem={(item) => setSelectedDate(item.log_date)}
+              />
+            </div>
+          </>
+        ) : (
+          /* NUTRITIONAL LEDGER & FOOD LOGGER TAB */
+          <div className="space-y-6">
+            <FastingTimerCard />
+            <FoodLoggerCard logDate={selectedDate} onEntriesAdded={loadNutritionData} />
+            <FoodFeedCard entries={entries} onEntryUpdated={loadNutritionData} onEntryDeleted={loadNutritionData} />
+            <MealPlanCard mealPlans={mealPlans} onMealLogged={loadNutritionData} onPlanUpdated={loadNutritionData} />
+          </div>
+        )}
       </div>
+
+      {/* QUICK DEBRIEF DRAWER */}
+      <QuickDebriefDrawer
+        isOpen={isDebriefOpen}
+        onClose={() => setIsDebriefOpen(false)}
+        selectedDate={selectedDate}
+        existingLog={todayLog}
+        onSaved={loadSitrepData}
+      />
     </ExecutiveModuleShell>
   );
 }

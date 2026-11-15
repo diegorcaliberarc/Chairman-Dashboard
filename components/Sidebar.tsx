@@ -41,6 +41,7 @@ import {
   Dumbbell,
   Database,
   Settings,
+  Compass,
 } from "lucide-react";
 import { useRouter, usePathname } from "next/navigation";
 import { useSession } from "next-auth/react";
@@ -88,6 +89,17 @@ interface NavModuleItem {
 }
 
 const ALL_MODULE_ITEMS: NavModuleItem[] = [
+  // Command & Strategy
+  {
+    id: "COMMAND",
+    label: "COMMAND CENTER",
+    pillar: "all",
+    icon: <Compass size={15} />,
+    route: "/command",
+    badge: "5-Tier",
+    description: "North Star target cascade, weekly FRAGO & PACE plan",
+  },
+
   // Health
   {
     id: "WORKOUTS",
