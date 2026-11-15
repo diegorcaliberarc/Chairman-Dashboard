@@ -136,8 +136,8 @@ export function CircadianDialStage({
   const R_TIMELAPSE_INNER = 180 * scaleFactor;
   const R_TIMELAPSE_OUTER = 196 * scaleFactor;
   const R_SOLAR_ARC = 126 * scaleFactor;
-  const R_WEDGE_INNER = 183 * scaleFactor;
-  const R_WEDGE_OUTER = 298 * scaleFactor;
+  const R_WEDGE_INNER = 180 * scaleFactor;
+  const R_WEDGE_OUTER = 296 * scaleFactor;
 
   const activeId = hoveredEventId ?? selectedEventId;
 
