@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useCallback, useEffect, useMemo, useState } from "react";
+import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import Link from "next/link";
 import { useSession, signIn, signOut } from "next-auth/react";
 import {
@@ -100,11 +100,17 @@ function toLocalDateInputValue(d: Date): string {
   return `${y}-${m}-${day}`;
 }
 
+// Fast In-Memory & Session Caches for Instant Hydration (0ms)
+const circadianEventsCache = new Map<string, CircadianEventDTO[]>();
+const calendarOpsCache = new Map<string, any>();
+const radarLayersCache = new Map<string, any[]>();
+
 export default function UnifiedMasterCalendarPage() {
   const { data: session } = useSession();
   const user = session?.user;
   const [dbCalConnected, setDbCalConnected] = useState(false);
   const [allCalendarEvents, setAllCalendarEvents] = useState<CalendarEventItem[]>([]);
+  const initialSyncRanRef = useRef(false);
 
   const fetchAllCalendarEvents = useCallback(async () => {
     try {
@@ -133,15 +139,19 @@ export default function UnifiedMasterCalendarPage() {
 
   useEffect(() => {
     fetchAllCalendarEvents();
-    fetch("/api/calendar/google-sync")
-      .then((r) => (r.ok ? r.json() : null))
-      .then((d) => {
-        if (d?.connected || d?.success) {
-          setDbCalConnected(true);
-          fetchAllCalendarEvents();
-        }
-      })
-      .catch(() => {});
+    if (!initialSyncRanRef.current) {
+      initialSyncRanRef.current = true;
+      // Background non-blocking sync
+      fetch("/api/calendar/google-sync")
+        .then((r) => (r.ok ? r.json() : null))
+        .then((d) => {
+          if (d?.connected || d?.success) {
+            setDbCalConnected(true);
+            fetchAllCalendarEvents();
+          }
+        })
+        .catch(() => {});
+    }
   }, [fetchAllCalendarEvents]);
 
   const calConnected = !!(session as any)?.accessToken || dbCalConnected;
@@ -171,9 +181,27 @@ export default function UnifiedMasterCalendarPage() {
   const [selectedYear, setSelectedYear] = useState<number>(2026);
   const [activeMonthIndex, setActiveMonthIndex] = useState<number>(10); // Nov (0-indexed)
 
-  // Circadian events, Chairman tasks, KPIs & Modal state
-  const [events, setEvents] = useState<CircadianEventDTO[]>([]);
-  const [loadingEvents, setLoadingEvents] = useState<boolean>(true);
+  // Circadian events, Chairman tasks, KPIs & Modal state (Instant Hydration)
+  const [events, setEvents] = useState<CircadianEventDTO[]>(() => {
+    if (typeof window !== "undefined") {
+      try {
+        const todayStr = toLocalDateInputValue(new Date());
+        if (circadianEventsCache.has(todayStr)) {
+          return circadianEventsCache.get(todayStr)!;
+        }
+        const cached = sessionStorage.getItem(`circadian_events_${todayStr}`);
+        if (cached) {
+          const parsed = JSON.parse(cached);
+          if (Array.isArray(parsed) && parsed.length > 0) {
+            circadianEventsCache.set(todayStr, parsed);
+            return parsed;
+          }
+        }
+      } catch {}
+    }
+    return [];
+  });
+  const [loadingEvents, setLoadingEvents] = useState<boolean>(() => events.length === 0);
   const [selectedEventId, setSelectedEventId] = useState<string | null>(null);
   const [modalOpen, setModalOpen] = useState<boolean>(false);
   const [editingEvent, setEditingEvent] = useState<CircadianEventDTO | null>(null);
@@ -307,9 +335,28 @@ export default function UnifiedMasterCalendarPage() {
     }
   }, [currentDateObj, selectedDate]);
 
-  // Load Circadian Events for selected date
+  // Load Circadian Events for selected date (SWR with Instant In-Memory + Session Cache)
   const fetchCircadianEvents = useCallback(async (dateStr: string) => {
-    setLoadingEvents(true);
+    // 1. Instant Cache Hit Check (0ms render!)
+    const memoryHit = circadianEventsCache.get(dateStr);
+    if (memoryHit && memoryHit.length > 0) {
+      setEvents(memoryHit);
+      setLoadingEvents(false);
+    } else if (typeof window !== "undefined") {
+      try {
+        const raw = sessionStorage.getItem(`circadian_events_${dateStr}`);
+        if (raw) {
+          const parsed = JSON.parse(raw);
+          if (Array.isArray(parsed) && parsed.length > 0) {
+            circadianEventsCache.set(dateStr, parsed);
+            setEvents(parsed);
+            setLoadingEvents(false);
+          }
+        }
+      } catch {}
+    }
+
+    // 2. Background Revalidation
     try {
       const tz = typeof Intl !== "undefined" ? Intl.DateTimeFormat().resolvedOptions().timeZone : "America/Denver";
       const res = await fetch(`/api/circadian?date=${dateStr}&tz=${encodeURIComponent(tz)}`);
@@ -317,6 +364,12 @@ export default function UnifiedMasterCalendarPage() {
         const data = await res.json();
         if (Array.isArray(data.events)) {
           setEvents(data.events);
+          circadianEventsCache.set(dateStr, data.events);
+          if (typeof window !== "undefined") {
+            try {
+              sessionStorage.setItem(`circadian_events_${dateStr}`, JSON.stringify(data.events));
+            } catch {}
+          }
           if (data.events.length > 0) {
             setExpandedAgendaIds((prev) => ({ ...prev, [data.events[0].id]: true }));
           }
@@ -340,6 +393,22 @@ export default function UnifiedMasterCalendarPage() {
 
   const fetchCalendarOps = useCallback(
     async (dateStr: string) => {
+      // 1. Instant Cache Check
+      const memoryHit = calendarOpsCache.get(dateStr);
+      if (memoryHit) {
+        applyCalendarOpsData(memoryHit);
+      } else if (typeof window !== "undefined") {
+        try {
+          const raw = sessionStorage.getItem(`calendar_ops_${dateStr}`);
+          if (raw) {
+            const parsed = JSON.parse(raw);
+            calendarOpsCache.set(dateStr, parsed);
+            applyCalendarOpsData(parsed);
+          }
+        } catch {}
+      }
+
+      // 2. Background Revalidation
       try {
         const year = dateStr.slice(0, 4);
         const res = await fetch(
@@ -347,6 +416,12 @@ export default function UnifiedMasterCalendarPage() {
         );
         if (res.ok) {
           const data = await res.json();
+          calendarOpsCache.set(dateStr, data);
+          if (typeof window !== "undefined") {
+            try {
+              sessionStorage.setItem(`calendar_ops_${dateStr}`, JSON.stringify(data));
+            } catch {}
+          }
           applyCalendarOpsData(data);
         }
       } catch (err) {
@@ -356,19 +431,21 @@ export default function UnifiedMasterCalendarPage() {
     [applyCalendarOpsData]
   );
 
-  useEffect(() => {
-    fetchCalendarOps(selectedDate).finally(() => {
-      fetchCircadianEvents(selectedDate);
-    });
-  }, [selectedDate, fetchCalendarOps, fetchCircadianEvents]);
-
   // Fetch Radar Layers
   const fetchRadarLayers = useCallback(async (dateStr: string) => {
+    // 1. Instant Cache Check
+    const memoryHit = radarLayersCache.get(dateStr);
+    if (memoryHit) {
+      setRadarLayers(memoryHit);
+    }
+
+    // 2. Background Revalidation
     try {
       const res = await fetch(`/api/circadian/radar?date=${dateStr}`);
       if (res.ok) {
         const data = await res.json();
         if (Array.isArray(data.layers)) {
+          radarLayersCache.set(dateStr, data.layers);
           setRadarLayers(data.layers);
         }
       }
@@ -377,9 +454,12 @@ export default function UnifiedMasterCalendarPage() {
     }
   }, []);
 
+  // Parallelized Non-blocking Data Hydration (No Waterfall!)
   useEffect(() => {
+    fetchCircadianEvents(selectedDate);
+    fetchCalendarOps(selectedDate);
     fetchRadarLayers(selectedDate);
-  }, [selectedDate, fetchRadarLayers]);
+  }, [selectedDate, fetchCircadianEvents, fetchCalendarOps, fetchRadarLayers]);
 
   // Load Chairman Dashboard Tasks & Health KPIs
   useEffect(() => {

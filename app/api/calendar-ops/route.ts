@@ -360,222 +360,222 @@ async function seedIfEmpty(
       subtasks: NestedSubtaskItem[];
       notes: string;
     }> = [
-      {
-        title: "Go to Work — Primary Shift & 07:00–08:00 Launch",
-        category: "work",
-        date: dateStr,
-        start: "07:00",
-        end: "15:00",
-        color: "#38bdf8",
-        spent: 24.5,
-        anticipated: 320.0,
-        actual: 340.0,
-        style: "roman",
-        subtasks: DEFAULT_MORNING_WORK_SUBTASKS,
-        notes: "07:00–08:00 opening hour structured in Roman numerals I–IV + shift differential bonus.",
-      },
-      {
-        title: "Q1 Capital Allocation & Treasury Kickoff",
-        category: "financial",
-        date: `${year}-01-15`,
-        start: "09:00",
-        end: "10:30",
-        color: "#10b981",
-        spent: 0,
-        anticipated: 1850.0,
-        actual: 1920.0,
-        style: "roman",
-        subtasks: [
-          { id: "s1", label: "Reconcile annual tax reserve buckets", timeWindow: "09:00–09:30", isCompleted: true },
-          { id: "s2", label: "Lock 12-month savings & ETF auto-draft", timeWindow: "09:30–10:30", isCompleted: true },
-        ],
-        notes: "January dividend + retainer settlement.",
-      },
-      {
-        title: "SaaS Architecture Retainer Deliverable",
-        category: "client",
-        date: `${year}-02-18`,
-        start: "11:00",
-        end: "13:00",
-        color: "#8b5cf6",
-        spent: 45.0,
-        anticipated: 2400.0,
-        actual: 2400.0,
-        style: "roman",
-        subtasks: [
-          { id: "s1", label: "System architecture diagram sign-off", timeWindow: "11:00–12:00", isCompleted: true },
-          { id: "s2", label: "Production Supabase & API deployment", timeWindow: "12:00–13:00", isCompleted: true },
-        ],
-        notes: "Client milestone invoice settled in full.",
-      },
-      {
-        title: "Executive Biometric Labs & Dental Prophylaxis",
-        category: "medical",
-        date: `${year}-03-11`,
-        start: "08:30",
-        end: "10:00",
-        color: "#06b6d4",
-        spent: 165.0,
-        anticipated: 0,
-        actual: 0,
-        style: "bullets",
-        subtasks: [
-          { id: "s1", label: "Fasting lipid & ApoB blood panel", isCompleted: true },
-          { id: "s2", label: "6-month dental cleaning & scan", isCompleted: true },
-        ],
-        notes: "HSA health investment.",
-      },
-      {
-        title: "Q1 Federal & State Estimated Tax Filing",
-        category: "financial",
-        date: `${year}-04-15`,
-        start: "10:00",
-        end: "11:30",
-        color: "#f59e0b",
-        spent: 680.0,
-        anticipated: 1500.0,
-        actual: 1650.0,
-        style: "roman",
-        subtasks: [
-          { id: "s1", label: "CPA ledger review & deduction audit", timeWindow: "10:00–10:45", isCompleted: true },
-          { id: "s2", label: "Transmit EFTPS voucher + client advisory payout", timeWindow: "10:45–11:30", isCompleted: true },
-        ],
-        notes: "Spring tax checkpoint + advisory payout.",
-      },
-      {
-        title: "Enterprise Platform Sprint Payout",
-        category: "client",
-        date: `${year}-05-21`,
-        start: "13:00",
-        end: "15:00",
-        color: "#2563eb",
-        spent: 38.0,
-        anticipated: 2800.0,
-        actual: 2950.0,
-        style: "roman",
-        subtasks: [
-          { id: "s1", label: "Executive dashboard demo & QA", timeWindow: "13:00–14:00", isCompleted: true },
-          { id: "s2", label: "Performance bonus scope sign-off", timeWindow: "14:00–15:00", isCompleted: true },
-        ],
-        notes: "Includes +$150 early delivery bonus.",
-      },
-      {
-        title: "Nova & Astro Annual Veterinary Wellness",
-        category: "personal",
-        date: `${year}-06-12`,
-        start: "15:30",
-        end: "17:00",
-        color: "#ec4899",
-        spent: 240.0,
-        anticipated: 0,
-        actual: 0,
-        style: "bullets",
-        subtasks: [
-          { id: "s1", label: "Husky vaccinations & orthopedic check", isCompleted: true },
-          { id: "s2", label: "Restock 90-day joint & coat nutrition", isCompleted: false },
-        ],
-        notes: "Pack health care.",
-      },
-      {
-        title: "Mid-Year SaaS MRR & Contract Renewal",
-        category: "client",
-        date: `${year}-07-16`,
-        start: "09:30",
-        end: "11:00",
-        color: "#10b981",
-        spent: 32.0,
-        anticipated: 3200.0,
-        actual: 3200.0,
-        style: "roman",
-        subtasks: [
-          { id: "s1", label: "Q3 SLA uptime & latency report", timeWindow: "09:30–10:15", isCompleted: false },
-          { id: "s2", label: "Execute H2 retainer renewal", timeWindow: "10:15–11:00", isCompleted: false },
-        ],
-        notes: "H2 contract anchor.",
-      },
-      {
-        title: "Strategic Partner Product Workshop",
-        category: "client",
-        date: `${year}-08-20`,
-        start: "10:00",
-        end: "14:00",
-        color: "#f97316",
-        spent: 95.0,
-        anticipated: 2200.0,
-        actual: 2350.0,
-        style: "roman",
-        subtasks: [
-          { id: "s1", label: "Zero-code AI workflow architecture", timeWindow: "10:00–12:00", isCompleted: false },
-          { id: "s2", label: "Live prototype handoff", timeWindow: "12:00–14:00", isCompleted: false },
-        ],
-        notes: "Full-day partner build session.",
-      },
-      {
-        title: "Q3 Tax & Portfolio Rebalance",
-        category: "financial",
-        date: `${year}-09-15`,
-        start: "09:00",
-        end: "10:00",
-        color: "#eab308",
-        spent: 420.0,
-        anticipated: 1400.0,
-        actual: 1400.0,
-        style: "bullets",
-        subtasks: [
-          { id: "s1", label: "Quarterly treasury dividend sweep", isCompleted: false },
-          { id: "s2", label: "Q3 estimated voucher check", isCompleted: false },
-        ],
-        notes: "Q3 fiscal discipline.",
-      },
-      {
-        title: "Q4 Peak Shift & Overtime Expansion",
-        category: "work",
-        date: `${year}-10-14`,
-        start: "07:00",
-        end: "16:00",
-        color: "#38bdf8",
-        spent: 28.0,
-        anticipated: 640.0,
-        actual: 680.0,
-        style: "roman",
-        subtasks: DEFAULT_MORNING_WORK_SUBTASKS,
-        notes: "Double-shift high-demand window.",
-      },
-      {
-        title: "Black Friday SaaS Release & Consulting",
-        category: "client",
-        date: `${year}-11-19`,
-        start: "09:00",
-        end: "12:00",
-        color: "#8b5cf6",
-        spent: 54.0,
-        anticipated: 3500.0,
-        actual: 3750.0,
-        style: "roman",
-        subtasks: [
-          { id: "s1", label: "Load test & edge cache verification", timeWindow: "09:00–10:30", isCompleted: false },
-          { id: "s2", label: "Launch telemetry room & client sign-off", timeWindow: "10:30–12:00", isCompleted: false },
-        ],
-        notes: "Peak Q4 product release.",
-      },
-      {
-        title: "Year-End Board Review & Bonus Closeout",
-        category: "financial",
-        date: `${year}-12-18`,
-        start: "14:00",
-        end: "16:00",
-        color: "#10b981",
-        spent: 110.0,
-        anticipated: 4000.0,
-        actual: 4200.0,
-        style: "roman",
-        subtasks: [
-          { id: "s1", label: "12-month net cashflow & savings audit", timeWindow: "14:00–15:00", isCompleted: false },
-          { id: "s2", label: "Set next-year shift & retainer targets", timeWindow: "15:00–16:00", isCompleted: false },
-        ],
-        notes: "Annual treasury close.",
-      },
-    ];
+        {
+          title: "Go to Work — Primary Shift & 07:00–08:00 Launch",
+          category: "work",
+          date: dateStr,
+          start: "07:00",
+          end: "15:00",
+          color: "#38bdf8",
+          spent: 24.5,
+          anticipated: 320.0,
+          actual: 340.0,
+          style: "roman",
+          subtasks: DEFAULT_MORNING_WORK_SUBTASKS,
+          notes: "07:00–08:00 opening hour structured in Roman numerals I–IV + shift differential bonus.",
+        },
+        {
+          title: "Q1 Capital Allocation & Treasury Kickoff",
+          category: "financial",
+          date: `${year}-01-15`,
+          start: "09:00",
+          end: "10:30",
+          color: "#10b981",
+          spent: 0,
+          anticipated: 1850.0,
+          actual: 1920.0,
+          style: "roman",
+          subtasks: [
+            { id: "s1", label: "Reconcile annual tax reserve buckets", timeWindow: "09:00–09:30", isCompleted: true },
+            { id: "s2", label: "Lock 12-month savings & ETF auto-draft", timeWindow: "09:30–10:30", isCompleted: true },
+          ],
+          notes: "January dividend + retainer settlement.",
+        },
+        {
+          title: "SaaS Architecture Retainer Deliverable",
+          category: "client",
+          date: `${year}-02-18`,
+          start: "11:00",
+          end: "13:00",
+          color: "#8b5cf6",
+          spent: 45.0,
+          anticipated: 2400.0,
+          actual: 2400.0,
+          style: "roman",
+          subtasks: [
+            { id: "s1", label: "System architecture diagram sign-off", timeWindow: "11:00–12:00", isCompleted: true },
+            { id: "s2", label: "Production Supabase & API deployment", timeWindow: "12:00–13:00", isCompleted: true },
+          ],
+          notes: "Client milestone invoice settled in full.",
+        },
+        {
+          title: "Executive Biometric Labs & Dental Prophylaxis",
+          category: "medical",
+          date: `${year}-03-11`,
+          start: "08:30",
+          end: "10:00",
+          color: "#06b6d4",
+          spent: 165.0,
+          anticipated: 0,
+          actual: 0,
+          style: "bullets",
+          subtasks: [
+            { id: "s1", label: "Fasting lipid & ApoB blood panel", isCompleted: true },
+            { id: "s2", label: "6-month dental cleaning & scan", isCompleted: true },
+          ],
+          notes: "HSA health investment.",
+        },
+        {
+          title: "Q1 Federal & State Estimated Tax Filing",
+          category: "financial",
+          date: `${year}-04-15`,
+          start: "10:00",
+          end: "11:30",
+          color: "#f59e0b",
+          spent: 680.0,
+          anticipated: 1500.0,
+          actual: 1650.0,
+          style: "roman",
+          subtasks: [
+            { id: "s1", label: "CPA ledger review & deduction audit", timeWindow: "10:00–10:45", isCompleted: true },
+            { id: "s2", label: "Transmit EFTPS voucher + client advisory payout", timeWindow: "10:45–11:30", isCompleted: true },
+          ],
+          notes: "Spring tax checkpoint + advisory payout.",
+        },
+        {
+          title: "Enterprise Platform Sprint Payout",
+          category: "client",
+          date: `${year}-05-21`,
+          start: "13:00",
+          end: "15:00",
+          color: "#2563eb",
+          spent: 38.0,
+          anticipated: 2800.0,
+          actual: 2950.0,
+          style: "roman",
+          subtasks: [
+            { id: "s1", label: "Executive dashboard demo & QA", timeWindow: "13:00–14:00", isCompleted: true },
+            { id: "s2", label: "Performance bonus scope sign-off", timeWindow: "14:00–15:00", isCompleted: true },
+          ],
+          notes: "Includes +$150 early delivery bonus.",
+        },
+        {
+          title: "Nova & Astro Annual Veterinary Wellness",
+          category: "personal",
+          date: `${year}-06-12`,
+          start: "15:30",
+          end: "17:00",
+          color: "#ec4899",
+          spent: 240.0,
+          anticipated: 0,
+          actual: 0,
+          style: "bullets",
+          subtasks: [
+            { id: "s1", label: "Husky vaccinations & orthopedic check", isCompleted: true },
+            { id: "s2", label: "Restock 90-day joint & coat nutrition", isCompleted: false },
+          ],
+          notes: "Pack health care.",
+        },
+        {
+          title: "Mid-Year SaaS MRR & Contract Renewal",
+          category: "client",
+          date: `${year}-07-16`,
+          start: "09:30",
+          end: "11:00",
+          color: "#10b981",
+          spent: 32.0,
+          anticipated: 3200.0,
+          actual: 3200.0,
+          style: "roman",
+          subtasks: [
+            { id: "s1", label: "Q3 SLA uptime & latency report", timeWindow: "09:30–10:15", isCompleted: false },
+            { id: "s2", label: "Execute H2 retainer renewal", timeWindow: "10:15–11:00", isCompleted: false },
+          ],
+          notes: "H2 contract anchor.",
+        },
+        {
+          title: "Strategic Partner Product Workshop",
+          category: "client",
+          date: `${year}-08-20`,
+          start: "10:00",
+          end: "14:00",
+          color: "#f97316",
+          spent: 95.0,
+          anticipated: 2200.0,
+          actual: 2350.0,
+          style: "roman",
+          subtasks: [
+            { id: "s1", label: "Zero-code AI workflow architecture", timeWindow: "10:00–12:00", isCompleted: false },
+            { id: "s2", label: "Live prototype handoff", timeWindow: "12:00–14:00", isCompleted: false },
+          ],
+          notes: "Full-day partner build session.",
+        },
+        {
+          title: "Q3 Tax & Portfolio Rebalance",
+          category: "financial",
+          date: `${year}-09-15`,
+          start: "09:00",
+          end: "10:00",
+          color: "#eab308",
+          spent: 420.0,
+          anticipated: 1400.0,
+          actual: 1400.0,
+          style: "bullets",
+          subtasks: [
+            { id: "s1", label: "Quarterly treasury dividend sweep", isCompleted: false },
+            { id: "s2", label: "Q3 estimated voucher check", isCompleted: false },
+          ],
+          notes: "Q3 fiscal discipline.",
+        },
+        {
+          title: "Q4 Peak Shift & Overtime Expansion",
+          category: "work",
+          date: `${year}-10-14`,
+          start: "07:00",
+          end: "16:00",
+          color: "#38bdf8",
+          spent: 28.0,
+          anticipated: 640.0,
+          actual: 680.0,
+          style: "roman",
+          subtasks: DEFAULT_MORNING_WORK_SUBTASKS,
+          notes: "Double-shift high-demand window.",
+        },
+        {
+          title: "Black Friday SaaS Release & Consulting",
+          category: "client",
+          date: `${year}-11-19`,
+          start: "09:00",
+          end: "12:00",
+          color: "#8b5cf6",
+          spent: 54.0,
+          anticipated: 3500.0,
+          actual: 3750.0,
+          style: "roman",
+          subtasks: [
+            { id: "s1", label: "Load test & edge cache verification", timeWindow: "09:00–10:30", isCompleted: false },
+            { id: "s2", label: "Launch telemetry room & client sign-off", timeWindow: "10:30–12:00", isCompleted: false },
+          ],
+          notes: "Peak Q4 product release.",
+        },
+        {
+          title: "Year-End Board Review & Bonus Closeout",
+          category: "financial",
+          date: `${year}-12-18`,
+          start: "14:00",
+          end: "16:00",
+          color: "#10b981",
+          spent: 110.0,
+          anticipated: 4000.0,
+          actual: 4200.0,
+          style: "roman",
+          subtasks: [
+            { id: "s1", label: "12-month net cashflow & savings audit", timeWindow: "14:00–15:00", isCompleted: false },
+            { id: "s2", label: "Set next-year shift & retainer targets", timeWindow: "15:00–16:00", isCompleted: false },
+          ],
+          notes: "Annual treasury close.",
+        },
+      ];
 
     for (const a of annualSeeds) {
       await pgExec(
@@ -600,19 +600,90 @@ async function seedIfEmpty(
   }
 }
 
+let schemaEnsured = false;
+async function ensureSchemaOnce() {
+  if (schemaEnsured) return;
+  try {
+    await ensureSchema();
+    schemaEnsured = true;
+  } catch (e) {
+    console.warn("ensureSchemaOnce warning:", e);
+  }
+}
+
+const seededUsers = new Set<string>();
+async function seedIfEmptyOnce(
+  userId: string,
+  prismaUserId: string | null,
+  dateStr: string,
+  year: number
+) {
+  if (seededUsers.has(userId)) return;
+  try {
+    await seedIfEmpty(userId, prismaUserId, dateStr, year);
+    seededUsers.add(userId);
+  } catch (e) {
+    console.warn("seedIfEmptyOnce warning:", e);
+  }
+}
+
 async function buildFullState(userId: string, dateStr: string, year: number) {
-  // 1. Habits + today's logs
-  const habitRows = await pgQuery<any>(
-    `SELECT h.id, h.title, h.subtitle, h.unit, h.target_value, h.ring_color, h.icon_name, h.sort_order,
-            COALESCE(l.current_value, 0) AS current_value
-     FROM calendar_habits h
-     LEFT JOIN calendar_habit_logs l
-       ON l.habit_id = h.id AND l.log_date = $2::date
-     WHERE h.user_id = $1
-     ORDER BY h.sort_order ASC, h.created_at ASC`,
-    userId,
-    dateStr
+  const dt = parseYMD(dateStr);
+  const monthStart = `${dt.getFullYear()}-${String(dt.getMonth() + 1).padStart(2, "0")}-01`;
+  const monthEndDay = new Date(dt.getFullYear(), dt.getMonth() + 1, 0).getDate();
+  const monthEnd = `${dt.getFullYear()}-${String(dt.getMonth() + 1).padStart(2, "0")}-${String(monthEndDay).padStart(2, "0")}`;
+
+  // Fetch logs spanning 20 days before monthStart through monthEnd so weekly/biweekly windows across month boundaries are exact
+  const windowStart = formatYMD(
+    new Date(dt.getFullYear(), dt.getMonth(), dt.getDate() - 21)
   );
+  const windowEnd = monthEnd > dateStr ? monthEnd : dateStr;
+
+  // Execute all 5 domain queries in PARALLEL to eliminate sequential roundtrips
+  const [habitRows, spanRows, cfgRows, logRows, apptRows] = await Promise.all([
+    pgQuery<any>(
+      `SELECT h.id, h.title, h.subtitle, h.unit, h.target_value, h.ring_color, h.icon_name, h.sort_order,
+              COALESCE(l.current_value, 0) AS current_value
+       FROM calendar_habits h
+       LEFT JOIN calendar_habit_logs l
+         ON l.habit_id = h.id AND l.log_date = $2::date
+       WHERE h.user_id = $1
+       ORDER BY h.sort_order ASC, h.created_at ASC`,
+      userId,
+      dateStr
+    ),
+    pgQuery<any>(
+      `SELECT id, label, span_type, start_minute, end_minute, start_date, end_date, color, opacity, is_active
+       FROM calendar_highlight_spans
+       WHERE user_id = $1
+       ORDER BY created_at ASC`,
+      userId
+    ),
+    pgQuery<any>(
+      `SELECT role_label, pay_per_shift, hourly_rate, hours_per_shift, total_scheduled_days, shifts_per_week
+       FROM work_shift_configs
+       WHERE user_id = $1`,
+      userId
+    ),
+    pgQuery<any>(
+      `SELECT id, work_date, shifts_count, pay_rate_override, anticipated_pay, actual_pay, daily_expense, status, notes, subtask_style, subtasks
+       FROM work_shift_logs
+       WHERE user_id = $1 AND work_date >= $2::date AND work_date <= $3::date
+       ORDER BY work_date DESC`,
+      userId,
+      windowStart < monthStart ? windowStart : monthStart,
+      windowEnd
+    ),
+    pgQuery<any>(
+      `SELECT id, title, category, appointment_date, start_time, end_time, accent_color,
+              daily_money_used, anticipated_pay, actual_pay, subtask_style, subtasks, notes
+       FROM yearly_appointments
+       WHERE user_id = $1 AND EXTRACT(YEAR FROM appointment_date) = $2
+       ORDER BY appointment_date ASC, start_time ASC`,
+      userId,
+      year
+    ),
+  ]);
 
   const habits: CalendarHabitDTO[] = habitRows.map((r) => {
     const target = Math.max(0.01, Number(r.target_value || 1));
@@ -633,14 +704,6 @@ async function buildFullState(userId: string, dateStr: string, year: number) {
   });
 
   // 2. Highlight spans
-  const spanRows = await pgQuery<any>(
-    `SELECT id, label, span_type, start_minute, end_minute, start_date, end_date, color, opacity, is_active
-     FROM calendar_highlight_spans
-     WHERE user_id = $1
-     ORDER BY created_at ASC`,
-    userId
-  );
-
   const highlightSpans: CalendarHighlightSpanDTO[] = spanRows.map((r) => ({
     id: String(r.id),
     label: String(r.label),
@@ -655,12 +718,6 @@ async function buildFullState(userId: string, dateStr: string, year: number) {
   }));
 
   // 3. Work Shift Config + Logs + 4-Horizon Shift × Pay Summary
-  const cfgRows = await pgQuery<any>(
-    `SELECT role_label, pay_per_shift, hourly_rate, hours_per_shift, total_scheduled_days, shifts_per_week
-     FROM work_shift_configs
-     WHERE user_id = $1`,
-    userId
-  );
   const cfgRow = cfgRows[0] || {};
   const shiftConfig: WorkShiftConfigDTO = {
     roleLabel: String(cfgRow.role_label || "Primary Operations & Engineering Shift"),
@@ -670,27 +727,6 @@ async function buildFullState(userId: string, dateStr: string, year: number) {
     totalScheduledDays: Math.max(1, Number(cfgRow.total_scheduled_days ?? 22)),
     shiftsPerWeek: Math.max(0.5, Number(cfgRow.shifts_per_week ?? 5)),
   };
-
-  const dt = parseYMD(dateStr);
-  const monthStart = `${dt.getFullYear()}-${String(dt.getMonth() + 1).padStart(2, "0")}-01`;
-  const monthEndDay = new Date(dt.getFullYear(), dt.getMonth() + 1, 0).getDate();
-  const monthEnd = `${dt.getFullYear()}-${String(dt.getMonth() + 1).padStart(2, "0")}-${String(monthEndDay).padStart(2, "0")}`;
-
-  // Fetch logs spanning 20 days before monthStart through monthEnd so weekly/biweekly windows across month boundaries are exact
-  const windowStart = formatYMD(
-    new Date(dt.getFullYear(), dt.getMonth(), dt.getDate() - 21)
-  );
-  const windowEnd = monthEnd > dateStr ? monthEnd : dateStr;
-
-  const logRows = await pgQuery<any>(
-    `SELECT id, work_date, shifts_count, pay_rate_override, anticipated_pay, actual_pay, daily_expense, status, notes, subtask_style, subtasks
-     FROM work_shift_logs
-     WHERE user_id = $1 AND work_date >= $2::date AND work_date <= $3::date
-     ORDER BY work_date DESC`,
-    userId,
-    windowStart < monthStart ? windowStart : monthStart,
-    windowEnd
-  );
 
   const shiftLogs: WorkShiftLogDTO[] = logRows.map((r) => ({
     id: String(r.id),
@@ -707,8 +743,8 @@ async function buildFullState(userId: string, dateStr: string, year: number) {
       r.status === "off"
         ? "off"
         : r.status === "scheduled"
-        ? "scheduled"
-        : "worked",
+          ? "scheduled"
+          : "worked",
     notes: String(r.notes || ""),
     subtaskStyle: r.subtask_style === "bullets" ? "bullets" : "roman",
     subtasks: parseSubtasksJson(r.subtasks),
@@ -786,17 +822,7 @@ async function buildFullState(userId: string, dateStr: string, year: number) {
       ) / 100,
   };
 
-  // 4. Full-Year Appointments
-  const apptRows = await pgQuery<any>(
-    `SELECT id, title, category, appointment_date, start_time, end_time, accent_color,
-            daily_money_used, anticipated_pay, actual_pay, subtask_style, subtasks, notes
-     FROM yearly_appointments
-     WHERE user_id = $1 AND EXTRACT(YEAR FROM appointment_date) = $2
-     ORDER BY appointment_date ASC, start_time ASC`,
-    userId,
-    year
-  );
-
+  // 4. Full-Year Appointments (already loaded in parallel batch)
   const appointments: YearlyAppointmentDTO[] = apptRows.map((r) => ({
     id: String(r.id),
     title: String(r.title),
@@ -983,11 +1009,15 @@ export async function GET(req: NextRequest) {
     const session = await getServerSession(authOptions).catch(() => null);
     const prismaUserId = ((session as any)?.userId as string | undefined) ?? null;
 
-    await ensureSchema();
-    await seedIfEmpty(userId, prismaUserId, dateStr, year);
+    await ensureSchemaOnce();
+    await seedIfEmptyOnce(userId, prismaUserId, dateStr, year);
     const state = await buildFullState(userId, dateStr, year);
 
-    return NextResponse.json(state);
+    return NextResponse.json(state, {
+      headers: {
+        "Cache-Control": "private, max-age=15, stale-while-revalidate=60",
+      },
+    });
   } catch (err: any) {
     console.error("calendar-ops GET fallback:", err?.message ?? err);
     return NextResponse.json(buildOfflineFallback(dateStr, year));
@@ -1008,7 +1038,7 @@ export async function POST(req: NextRequest) {
     const session = await getServerSession(authOptions).catch(() => null);
     const prismaUserId = ((session as any)?.userId as string | undefined) ?? null;
 
-    await ensureSchema();
+    await ensureSchemaOnce();
 
     // ── 1. Habit Ring Actions ────────────────────────────────────────────────
     if (action === "log_habit" && body.habitId) {
@@ -1210,8 +1240,8 @@ export async function POST(req: NextRequest) {
         body.status === "off"
           ? "off"
           : body.status === "scheduled"
-          ? "scheduled"
-          : "worked",
+            ? "scheduled"
+            : "worked",
         String(body.notes || ""),
         body.subtaskStyle === "bullets" ? "bullets" : "roman",
         JSON.stringify(
@@ -1473,7 +1503,7 @@ export async function POST(req: NextRequest) {
           .then(() => {
             createdCount++;
           })
-          .catch(() => {});
+          .catch(() => { });
       }
 
       const state = await buildFullState(userId, dateStr, year);
@@ -1504,7 +1534,7 @@ export async function POST(req: NextRequest) {
             where: { id: events[i].id },
             data: { accentColor: hex },
           })
-          .catch(() => {});
+          .catch(() => { });
       }
 
       // Also randomize appointments on selectedDate for unified harmony
@@ -1533,7 +1563,7 @@ export async function POST(req: NextRequest) {
             where: { id: String(body.eventId) },
             data: { accentColor: hex },
           })
-          .catch(() => {});
+          .catch(() => { });
       }
     }
 

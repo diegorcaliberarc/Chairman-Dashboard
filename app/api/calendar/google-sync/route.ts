@@ -225,48 +225,53 @@ export async function GET(req: NextRequest) {
         const items = eventsData.items || [];
         totalFound += items.length;
 
-        for (const item of items) {
-          if (!item.id || item.status === "cancelled") continue;
+        const validItems = items.filter((item: any) => item.id && item.status !== "cancelled");
+        const CHUNK_SIZE = 10;
+        for (let i = 0; i < validItems.length; i += CHUNK_SIZE) {
+          const chunk = validItems.slice(i, i + CHUNK_SIZE);
+          await Promise.all(
+            chunk.map(async (item: any) => {
+              const title = item.summary || "Untitled Google Event";
+              const description = item.description || null;
+              const allDay = Boolean(item.start?.date);
+              const startTime = item.start?.dateTime || `${item.start?.date}T00:00:00Z`;
+              const endTime = item.end?.dateTime || `${item.end?.date}T23:59:59Z`;
+              const { category, colorHex } = inferCategoryAndColor(title, item.colorId);
 
-          const title = item.summary || "Untitled Google Event";
-          const description = item.description || null;
-          const allDay = Boolean(item.start?.date);
-          const startTime = item.start?.dateTime || `${item.start?.date}T00:00:00Z`;
-          const endTime = item.end?.dateTime || `${item.end?.date}T23:59:59Z`;
-          const { category, colorHex } = inferCategoryAndColor(title, item.colorId);
-
-          try {
-            await prisma.$executeRawUnsafe(
-              `INSERT INTO public.calendar_events (
-                google_event_id, title, description, start_time, end_time,
-                all_day, category, color_hex, updated_at
-              )
-              VALUES (
-                $1, $2, $3, $4::timestamptz, $5::timestamptz,
-                $6, $7::calendar_category_enum, $8, NOW()
-              )
-              ON CONFLICT (google_event_id) DO UPDATE
-              SET title = EXCLUDED.title,
-                  description = EXCLUDED.description,
-                  start_time = EXCLUDED.start_time,
-                  end_time = EXCLUDED.end_time,
-                  all_day = EXCLUDED.all_day,
-                  color_hex = EXCLUDED.color_hex,
-                  category = EXCLUDED.category,
-                  updated_at = NOW();`,
-              item.id,
-              title,
-              description,
-              startTime,
-              endTime,
-              allDay,
-              category,
-              colorHex
-            );
-            totalSynced++;
-          } catch (err) {
-            console.warn(`Failed to upsert Google event ${item.id}:`, err);
-          }
+              try {
+                await prisma.$executeRawUnsafe(
+                  `INSERT INTO public.calendar_events (
+                    google_event_id, title, description, start_time, end_time,
+                    all_day, category, color_hex, updated_at
+                  )
+                  VALUES (
+                    $1, $2, $3, $4::timestamptz, $5::timestamptz,
+                    $6, $7::calendar_category_enum, $8, NOW()
+                  )
+                  ON CONFLICT (google_event_id) DO UPDATE
+                  SET title = EXCLUDED.title,
+                      description = EXCLUDED.description,
+                      start_time = EXCLUDED.start_time,
+                      end_time = EXCLUDED.end_time,
+                      all_day = EXCLUDED.all_day,
+                      color_hex = EXCLUDED.color_hex,
+                      category = EXCLUDED.category,
+                      updated_at = NOW();`,
+                  item.id,
+                  title,
+                  description,
+                  startTime,
+                  endTime,
+                  allDay,
+                  category,
+                  colorHex
+                );
+                totalSynced++;
+              } catch (err) {
+                console.warn(`Failed to upsert Google event ${item.id}:`, err);
+              }
+            })
+          );
         }
 
         pageToken = eventsData.nextPageToken;

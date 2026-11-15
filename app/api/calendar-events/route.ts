@@ -1,7 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { PrismaClient } from "@prisma/client";
-
-const prisma = new PrismaClient();
+import { prisma } from "@/lib/prisma";
 
 const isValidUuid = (id?: string | null): boolean =>
   typeof id === "string" &&
@@ -41,7 +39,14 @@ export async function GET(req: NextRequest) {
     query += ` ORDER BY start_time ASC`;
 
     const events: any = await prisma.$queryRawUnsafe(query, ...params);
-    return NextResponse.json({ events });
+    return NextResponse.json(
+      { events },
+      {
+        headers: {
+          "Cache-Control": "private, max-age=15, stale-while-revalidate=60",
+        },
+      }
+    );
   } catch (error: any) {
     console.error("GET /api/calendar-events error:", error);
     return NextResponse.json({ error: error.message }, { status: 500 });

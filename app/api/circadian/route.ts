@@ -123,15 +123,41 @@ export async function GET(req: NextRequest) {
 
   try {
     const whereClause = userId ? { userId } : { userId: null };
-    const existing = await prisma.circadianEvent.findMany({
-      where: whereClause,
-      include: {
-        checklists: {
-          orderBy: { sortOrder: "asc" },
+
+    // Parallelize circadianEvent and calendar_events queries, bounding to date window when dateStr provided
+    const calQuery = dateStr
+      ? prisma.$queryRawUnsafe(
+          `SELECT id, user_id, google_event_id, title, description,
+                  start_time, end_time, all_day, category, color_hex, recurrence_rule
+           FROM public.calendar_events
+           WHERE (start_time >= ($1::date - INTERVAL '1 day') AND start_time <= ($1::date + INTERVAL '2 days'))
+              OR recurrence_rule IS NOT NULL
+              OR all_day = TRUE
+           ORDER BY start_time ASC`,
+          dateStr
+        )
+      : prisma.$queryRawUnsafe(`
+          SELECT id, user_id, google_event_id, title, description,
+                 start_time, end_time, all_day, category, color_hex, recurrence_rule
+          FROM public.calendar_events
+          ORDER BY start_time ASC
+        `);
+
+    const [existing, calRowsRaw] = await Promise.all([
+      prisma.circadianEvent.findMany({
+        where: whereClause,
+        include: {
+          checklists: {
+            orderBy: { sortOrder: "asc" },
+          },
         },
-      },
-      orderBy: { startTime: "asc" },
-    });
+        orderBy: { startTime: "asc" },
+      }),
+      calQuery.catch((e) => {
+        console.warn("Could not query public.calendar_events in circadian GET:", e);
+        return [];
+      }),
+    ]);
 
     let filtered: any[] = existing.map((ev) => ({
       ...ev,
@@ -152,12 +178,7 @@ export async function GET(req: NextRequest) {
 
     // Hydrate directly from public.calendar_events
     try {
-      const calRows: any = await prisma.$queryRawUnsafe(`
-        SELECT id, user_id, google_event_id, title, description,
-               start_time, end_time, all_day, category, color_hex, recurrence_rule
-        FROM public.calendar_events
-        ORDER BY start_time ASC
-      `);
+      const calRows: any = calRowsRaw;
 
       if (Array.isArray(calRows) && calRows.length > 0) {
         for (const row of calRows) {
@@ -206,7 +227,14 @@ export async function GET(req: NextRequest) {
     // Sort events by startTime
     filtered.sort((a, b) => new Date(a.startTime).getTime() - new Date(b.startTime).getTime());
 
-    return NextResponse.json({ events: filtered });
+    return NextResponse.json(
+      { events: filtered },
+      {
+        headers: {
+          "Cache-Control": "private, max-age=15, stale-while-revalidate=60",
+        },
+      }
+    );
   } catch (err: any) {
     console.error("Circadian GET error:", err?.message ?? err);
     return NextResponse.json({ events: [] });
