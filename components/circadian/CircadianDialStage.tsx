@@ -137,7 +137,7 @@ export function CircadianDialStage({
   const R_TIMELAPSE_OUTER = 196 * scaleFactor;
   const R_SOLAR_ARC = 126 * scaleFactor;
   const R_WEDGE_INNER = 180 * scaleFactor;
-  const R_WEDGE_OUTER = 296 * scaleFactor;
+  const R_WEDGE_OUTER = 328 * scaleFactor;
 
   const activeId = hoveredEventId ?? selectedEventId;
 
@@ -260,14 +260,14 @@ export function CircadianDialStage({
       if (items.length <= 1) {
         if (items.length === 1) {
           items[0].labelX = isRightSide
-            ? CX + R_WEDGE_OUTER + 46 * scaleFactor
-            : CX - R_WEDGE_OUTER - 46 * scaleFactor;
+            ? CX + R_WEDGE_OUTER + 28 * scaleFactor
+            : CX - R_WEDGE_OUTER - 28 * scaleFactor;
         }
         return;
       }
       // Sort vertically by target natural anchor Y
       items.sort((a, b) => a.anchorPt.y - b.anchorPt.y);
-      const minGap = 48; // Minimum vertical gap between adjacent labels
+      const minGap = 52; // Minimum vertical gap between adjacent labels
       const topBound = 60;
       const bottomBound = VB_H - 60;
 
@@ -304,8 +304,8 @@ export function CircadianDialStage({
       // Enforce clean column rail alignment matching reference mockup
       for (const item of items) {
         item.labelX = isRightSide
-          ? CX + R_WEDGE_OUTER + 46 * scaleFactor
-          : CX - R_WEDGE_OUTER - 46 * scaleFactor;
+          ? CX + R_WEDGE_OUTER + 28 * scaleFactor
+          : CX - R_WEDGE_OUTER - 28 * scaleFactor;
       }
     };
 
@@ -843,31 +843,16 @@ export function CircadianDialStage({
           {/* 4. CLEAN CENTRAL DIGITAL CLOCK READOUT & LIVE TIME INDICATOR              */}
           {/* ========================================================================= */}
           <g id="center-digital-clock" className="pointer-events-none select-none">
-            {/* Sleek Frosted Dark Glass Center Aperture */}
-            <circle
-              cx={CX}
-              cy={CY}
-              r={58 * scaleFactor}
-              fill="rgba(8, 12, 22, 0.88)"
-              stroke="rgba(255, 255, 255, 0.16)"
-              strokeWidth="1.2"
-              filter="url(#dialAtmosphereGlow)"
-            />
-            <circle
-              cx={CX}
-              cy={CY}
-              r={52 * scaleFactor}
-              fill="none"
-              stroke="rgba(255, 255, 255, 0.08)"
-              strokeWidth="1"
-            />
-            {/* Crisp Digital Time Display */}
+            {/* Crisp High-Contrast Digital Time Display Floating Concentrically in Center */}
             <text
               x={CX}
-              y={CY + 5 * scaleFactor}
+              y={CY + 6 * scaleFactor}
               textAnchor="middle"
               fill="#ffffff"
-              fontSize={22 * scaleFactor}
+              stroke="rgba(8, 11, 20, 0.95)"
+              strokeWidth={4 * scaleFactor}
+              paintOrder="stroke"
+              fontSize={24 * scaleFactor}
               fontWeight={800}
               letterSpacing="-0.02em"
               style={{ fontVariantNumeric: "tabular-nums" }}
@@ -876,20 +861,23 @@ export function CircadianDialStage({
             </text>
             <text
               x={CX}
-              y={CY + 21 * scaleFactor}
+              y={CY + 22 * scaleFactor}
               textAnchor="middle"
-              fill="rgba(148, 163, 184, 0.88)"
-              fontSize={7.8 * scaleFactor}
+              fill="rgba(226, 232, 240, 0.95)"
+              stroke="rgba(8, 11, 20, 0.95)"
+              strokeWidth={3 * scaleFactor}
+              paintOrder="stroke"
+              fontSize={8 * scaleFactor}
               fontWeight={700}
-              letterSpacing="0.12em"
+              letterSpacing="0.14em"
             >
               24H SOLAR ARC
             </text>
 
             {/* Subtle Live Time Radial Needle & Glowing Dot */}
             <line
-              x1={polarToCartesian(CX, CY, 58 * scaleFactor, minutesToAngleRad(currentMinutes)).x}
-              y1={polarToCartesian(CX, CY, 58 * scaleFactor, minutesToAngleRad(currentMinutes)).y}
+              x1={polarToCartesian(CX, CY, 42 * scaleFactor, minutesToAngleRad(currentMinutes)).x}
+              y1={polarToCartesian(CX, CY, 42 * scaleFactor, minutesToAngleRad(currentMinutes)).y}
               x2={polarToCartesian(CX, CY, R_SKY - 2 * scaleFactor, minutesToAngleRad(currentMinutes)).x}
               y2={polarToCartesian(CX, CY, R_SKY - 2 * scaleFactor, minutesToAngleRad(currentMinutes)).y}
               stroke="#f59e0b"
@@ -1090,13 +1078,13 @@ export function CircadianDialStage({
                 const strokeColor = timelapseColor;
 
                 const elbowX = isRight
-                  ? Math.min(labelX - 10, CX + R_WEDGE_OUTER + 22)
-                  : Math.max(labelX + 10, CX - R_WEDGE_OUTER - 22);
+                  ? Math.min(labelX - 10, CX + R_WEDGE_OUTER + 16)
+                  : Math.max(labelX + 10, CX - R_WEDGE_OUTER - 16);
 
-                const pillWidth = Math.min(220, Math.max(126, event.title.length * 6.8 + 26));
-                const pillHeight = 36;
+                const pillWidth = Math.min(240, Math.max(136, event.title.length * 7.4 + 28));
+                const pillHeight = 42;
                 const pillX = isRight ? labelX - 6 : labelX - pillWidth + 6;
-                const pillY = labelY - 18;
+                const pillY = labelY - 21;
 
                 return (
                   <g
@@ -1108,7 +1096,7 @@ export function CircadianDialStage({
                     <circle
                       cx={wedge.outerMidPoint.x}
                       cy={wedge.outerMidPoint.y}
-                      r={isHighlighted ? 3.2 : 2.2}
+                      r={isHighlighted ? 3.4 : 2.4}
                       fill={strokeColor}
                       filter={isHighlighted ? "url(#arcNeonGlow)" : undefined}
                     />
@@ -1118,7 +1106,7 @@ export function CircadianDialStage({
                       },${labelY}`}
                       fill="none"
                       stroke={strokeColor}
-                      strokeWidth={isHighlighted ? 2 : 1.3}
+                      strokeWidth={isHighlighted ? 2.2 : 1.4}
                       strokeOpacity={isHighlighted ? 0.95 : 0.65}
                     />
 
@@ -1138,23 +1126,23 @@ export function CircadianDialStage({
                     {/* Task Title */}
                     <text
                       x={isRight ? labelX + 4 : labelX - 4}
-                      y={labelY - 3}
+                      y={labelY - 4}
                       textAnchor={textAnchor}
                       fill="#f8fafc"
-                      fontSize={11}
-                      fontWeight={isHighlighted ? 700 : 600}
+                      fontSize={12.5}
+                      fontWeight={isHighlighted ? 800 : 700}
                       letterSpacing="0.01em"
                     >
-                      {event.title.length > 24 ? event.title.slice(0, 23) + "…" : event.title}
+                      {event.title.length > 26 ? event.title.slice(0, 25) + "…" : event.title}
                     </text>
 
                     {/* Time Window (24-Hour Military Format) */}
                     <text
                       x={isRight ? labelX + 4 : labelX - 4}
-                      y={labelY + 11}
+                      y={labelY + 12}
                       textAnchor={textAnchor}
                       fill={isHighlighted ? strokeColor : "rgba(148, 163, 184, 0.95)"}
-                      fontSize={9.2}
+                      fontSize={10.2}
                       fontWeight={600}
                       style={{ fontVariantNumeric: "tabular-nums" }}
                     >
