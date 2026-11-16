@@ -722,7 +722,7 @@ export function CircadianDialStage({
 
             {/* Authentic Reference Dial from Mockup (Sky, Sunset, Dawn, Night City Lights) */}
             <image
-              href="/circadian/reference_dial_hi_res.png?v=celestial_final_v2"
+              href="/circadian/reference_dial_celestial_v5.png?v=5.0.0"
               x={CX - R_SKY}
               y={CY - R_SKY}
               width={R_SKY * 2}
