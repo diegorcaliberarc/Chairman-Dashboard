@@ -655,11 +655,11 @@ export function CircadianDialStage({
             <stop offset="100%" stopColor="#020617" stopOpacity="0.75" />
           </radialGradient>
 
-          {/* Soft Center Core Depth Gradient */}
-          <radialGradient id="centerCoreAperture" cx="50%" cy="50%" r="50%">
-            <stop offset="0%" stopColor="#020617" stopOpacity="0.72" />
-            <stop offset="50%" stopColor="#030712" stopOpacity="0.38" />
-            <stop offset="100%" stopColor="#030712" stopOpacity="0" />
+          {/* Authentic Concentric Smoked Glass Cockpit Core Gradient */}
+          <radialGradient id="centerCoreGlassGrad" cx="50%" cy="50%" r="50%">
+            <stop offset="0%" stopColor="#080c18" stopOpacity="0.94" />
+            <stop offset="70%" stopColor="#050812" stopOpacity="0.97" />
+            <stop offset="100%" stopColor="#03060f" stopOpacity="0.99" />
           </radialGradient>
 
           <clipPath id="skySphereCircleClip">
@@ -722,7 +722,7 @@ export function CircadianDialStage({
 
             {/* Authentic Reference Dial from Mockup (Sky, Sunset, Dawn, Night City Lights) */}
             <image
-              href="/circadian/reference_dial_celestial_v5.png?v=5.0.0"
+              href="/circadian/reference_dial_celestial_v6.png?v=6.0.0"
               x={CX - R_SKY}
               y={CY - R_SKY}
               width={R_SKY * 2}
@@ -843,14 +843,35 @@ export function CircadianDialStage({
           {/* 4. CLEAN CENTRAL DIGITAL CLOCK READOUT & LIVE TIME INDICATOR              */}
           {/* ========================================================================= */}
           <g id="center-digital-clock" className="pointer-events-none select-none">
+            {/* 100% Mathematically Centered Smoked Glass Cockpit Disc */}
+            <circle
+              cx={CX}
+              cy={CY}
+              r={72 * scaleFactor}
+              fill="url(#centerCoreGlassGrad)"
+              stroke="rgba(255, 255, 255, 0.16)"
+              strokeWidth={1.2}
+              filter="url(#arcNeonGlow)"
+            />
+            {/* Concentric Subtle Hairline Orbit Track */}
+            <circle
+              cx={CX}
+              cy={CY}
+              r={62 * scaleFactor}
+              fill="none"
+              stroke="rgba(255, 255, 255, 0.08)"
+              strokeWidth={0.8}
+              strokeDasharray="3 4"
+            />
+
             {/* Crisp High-Contrast Digital Time Display Floating Concentrically in Center */}
             <text
               x={CX}
-              y={CY - 1 * scaleFactor}
+              y={CY - 2 * scaleFactor}
               textAnchor="middle"
               dominantBaseline="middle"
               fill="#ffffff"
-              stroke="rgba(8, 11, 20, 0.95)"
+              stroke="rgba(4, 7, 15, 0.95)"
               strokeWidth={4.5 * scaleFactor}
               paintOrder="stroke"
               fontSize={27 * scaleFactor}
@@ -862,11 +883,11 @@ export function CircadianDialStage({
             </text>
             <text
               x={CX}
-              y={CY + 19 * scaleFactor}
+              y={CY + 18 * scaleFactor}
               textAnchor="middle"
               dominantBaseline="middle"
               fill="rgba(226, 232, 240, 0.95)"
-              stroke="rgba(8, 11, 20, 0.95)"
+              stroke="rgba(4, 7, 15, 0.95)"
               strokeWidth={3 * scaleFactor}
               paintOrder="stroke"
               fontSize={9.2 * scaleFactor}
@@ -878,8 +899,8 @@ export function CircadianDialStage({
 
             {/* Subtle Live Time Radial Needle & Glowing Dot */}
             <line
-              x1={polarToCartesian(CX, CY, 42 * scaleFactor, minutesToAngleRad(currentMinutes)).x}
-              y1={polarToCartesian(CX, CY, 42 * scaleFactor, minutesToAngleRad(currentMinutes)).y}
+              x1={polarToCartesian(CX, CY, 72 * scaleFactor, minutesToAngleRad(currentMinutes)).x}
+              y1={polarToCartesian(CX, CY, 72 * scaleFactor, minutesToAngleRad(currentMinutes)).y}
               x2={polarToCartesian(CX, CY, R_SKY - 2 * scaleFactor, minutesToAngleRad(currentMinutes)).x}
               y2={polarToCartesian(CX, CY, R_SKY - 2 * scaleFactor, minutesToAngleRad(currentMinutes)).y}
               stroke="#f59e0b"
