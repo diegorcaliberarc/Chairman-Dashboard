@@ -267,9 +267,9 @@ export function CircadianDialStage({
       }
       // Sort vertically by target natural anchor Y
       items.sort((a, b) => a.anchorPt.y - b.anchorPt.y);
-      const minGap = 56; // Minimum vertical gap between adjacent labels
-      const topBound = 60;
-      const bottomBound = VB_H - 60;
+      const minGap = 62; // Minimum vertical gap between adjacent labels
+      const topBound = 55;
+      const bottomBound = VB_H - 55;
 
       // Forward pass
       for (let i = 1; i < items.length; i++) {
@@ -722,7 +722,7 @@ export function CircadianDialStage({
 
             {/* Authentic Reference Dial from Mockup (Sky, Sunset, Dawn, Night City Lights) */}
             <image
-              href="/circadian/reference_dial_hi_res.png"
+              href="/circadian/reference_dial_hi_res.png?v=celestial_final_v2"
               x={CX - R_SKY}
               y={CY - R_SKY}
               width={R_SKY * 2}
@@ -851,9 +851,9 @@ export function CircadianDialStage({
               dominantBaseline="middle"
               fill="#ffffff"
               stroke="rgba(8, 11, 20, 0.95)"
-              strokeWidth={4 * scaleFactor}
+              strokeWidth={4.5 * scaleFactor}
               paintOrder="stroke"
-              fontSize={25 * scaleFactor}
+              fontSize={27 * scaleFactor}
               fontWeight={800}
               letterSpacing="-0.02em"
               style={{ fontVariantNumeric: "tabular-nums" }}
@@ -862,14 +862,14 @@ export function CircadianDialStage({
             </text>
             <text
               x={CX}
-              y={CY + 18 * scaleFactor}
+              y={CY + 19 * scaleFactor}
               textAnchor="middle"
               dominantBaseline="middle"
               fill="rgba(226, 232, 240, 0.95)"
               stroke="rgba(8, 11, 20, 0.95)"
               strokeWidth={3 * scaleFactor}
               paintOrder="stroke"
-              fontSize={8.5 * scaleFactor}
+              fontSize={9.2 * scaleFactor}
               fontWeight={700}
               letterSpacing="0.14em"
             >
@@ -1083,10 +1083,10 @@ export function CircadianDialStage({
                   ? Math.min(labelX - 10, CX + R_WEDGE_OUTER + 16)
                   : Math.max(labelX + 10, CX - R_WEDGE_OUTER - 16);
 
-                const pillWidth = Math.min(270, Math.max(154, event.title.length * 8.2 + 34));
-                const pillHeight = 48;
+                const pillWidth = Math.min(310, Math.max(175, event.title.length * 9.0 + 38));
+                const pillHeight = 54;
                 const pillX = isRight ? labelX - 8 : labelX - pillWidth + 8;
-                const pillY = labelY - 24;
+                const pillY = labelY - 27;
 
                 return (
                   <g
@@ -1098,7 +1098,7 @@ export function CircadianDialStage({
                     <circle
                       cx={wedge.outerMidPoint.x}
                       cy={wedge.outerMidPoint.y}
-                      r={isHighlighted ? 4.2 : 3.0}
+                      r={isHighlighted ? 4.8 : 3.5}
                       fill={strokeColor}
                       filter={isHighlighted ? "url(#arcNeonGlow)" : undefined}
                     />
@@ -1108,7 +1108,7 @@ export function CircadianDialStage({
                       },${labelY}`}
                       fill="none"
                       stroke={strokeColor}
-                      strokeWidth={isHighlighted ? 2.4 : 1.6}
+                      strokeWidth={isHighlighted ? 2.6 : 1.8}
                       strokeOpacity={isHighlighted ? 0.95 : 0.75}
                     />
 
@@ -1118,20 +1118,20 @@ export function CircadianDialStage({
                       y={pillY}
                       width={pillWidth}
                       height={pillHeight}
-                      rx={9}
+                      rx={10}
                       fill="rgba(8, 12, 22, 0.94)"
-                      stroke={isHighlighted ? strokeColor : "rgba(255, 255, 255, 0.14)"}
-                      strokeWidth={isHighlighted ? 1.8 : 1.1}
+                      stroke={isHighlighted ? strokeColor : "rgba(255, 255, 255, 0.15)"}
+                      strokeWidth={isHighlighted ? 1.9 : 1.2}
                       filter="url(#arcNeonGlow)"
                     />
 
                     {/* Task Title */}
                     <text
-                      x={isRight ? labelX + 6 : labelX - 6}
-                      y={labelY - 5}
+                      x={isRight ? labelX + 8 : labelX - 8}
+                      y={labelY - 6}
                       textAnchor={textAnchor}
                       fill="#f8fafc"
-                      fontSize={13.5}
+                      fontSize={14.8}
                       fontWeight={isHighlighted ? 800 : 700}
                       letterSpacing="0.01em"
                     >
@@ -1140,11 +1140,11 @@ export function CircadianDialStage({
 
                     {/* Time Window (24-Hour Military Format) */}
                     <text
-                      x={isRight ? labelX + 6 : labelX - 6}
-                      y={labelY + 14}
+                      x={isRight ? labelX + 8 : labelX - 8}
+                      y={labelY + 15}
                       textAnchor={textAnchor}
                       fill={isHighlighted ? strokeColor : "rgba(148, 163, 184, 0.95)"}
-                      fontSize={11.2}
+                      fontSize={12.2}
                       fontWeight={700}
                       style={{ fontVariantNumeric: "tabular-nums" }}
                     >
