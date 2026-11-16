@@ -14,19 +14,14 @@ import { FoodFeedCard, FoodEntry } from "@/components/FoodFeedCard";
 import { MealPlanCard, MealPlanRecord } from "@/components/MealPlanCard";
 import { DailySitrepLog } from "@/lib/commandTypes";
 
-// Modular Macro Ops components (Stitch Layout Decomposition)
+// Modular Orbital Metabolic / Phoenix Executive Telemetry HUD Components
 import { MacroSubheader } from "@/components/macro-ops/MacroSubheader";
+import { CircadianHeatmapStrip } from "@/components/macro-ops/CircadianHeatmapStrip";
 import { MacroFuelCommandHub } from "@/components/macro-ops/MacroFuelCommandHub";
-import { FastingCockpitCard } from "@/components/macro-ops/FastingCockpitCard";
-import { CellularHydrationCard } from "@/components/macro-ops/CellularHydrationCard";
-import { BodyMassTelemetryCard } from "@/components/macro-ops/BodyMassTelemetryCard";
-import { CnsReadinessBioLogCard } from "@/components/macro-ops/CnsReadinessBioLogCard";
-import { NeuralMealScannerCard } from "@/components/macro-ops/NeuralMealScannerCard";
+import { PolarAdherenceWheelCard } from "@/components/macro-ops/PolarAdherenceWheelCard";
+import { GengarHydrationCard } from "@/components/macro-ops/GengarHydrationCard";
+import { MetabolicFlowSankeyCard } from "@/components/macro-ops/MetabolicFlowSankeyCard";
 import { DailyFuelLedgerCard } from "@/components/macro-ops/DailyFuelLedgerCard";
-import { ActiveStrainOutputCard } from "@/components/macro-ops/ActiveStrainOutputCard";
-import { KineticStepCounterCard } from "@/components/macro-ops/KineticStepCounterCard";
-import { ComplianceMatrix30DCard } from "@/components/macro-ops/ComplianceMatrix30DCard";
-import { MiniTrendHorizonsCard } from "@/components/macro-ops/MiniTrendHorizonsCard";
 import { QuickMealLogModal } from "@/components/macro-ops/QuickMealLogModal";
 
 import {
@@ -37,7 +32,6 @@ import {
   RefreshCw,
   TrendingDown,
   BarChart3,
-  Sparkles,
 } from "lucide-react";
 
 function getTodayIso(): string {
@@ -116,7 +110,7 @@ export default function MacroOpsPage() {
     loadNutritionData();
   }, [loadSitrepData, loadNutritionData]);
 
-  // Macro Totals calculated from food entries
+  // Macro Totals calculated from live food entries
   const totals = useMemo(() => {
     if (!entries || entries.length === 0) return undefined;
     return entries.reduce(
@@ -169,27 +163,12 @@ export default function MacroOpsPage() {
     await updateSitrepField({ water_oz: nextWater });
   };
 
-  const handleUpdateWeight = async (weightLbs: number) => {
-    await updateSitrepField({ morning_weight_lbs: weightLbs });
-  };
-
   const handleUpdateSteps = async (steps: number) => {
     await updateSitrepField({ total_steps: steps });
   };
 
   const handleUpdateFastingHours = async (hours: number) => {
     await updateSitrepField({ fasting_hours: hours });
-  };
-
-  const handleToggleWorkout = async (
-    field: "lift_completed" | "cardio_completed",
-    value: boolean
-  ) => {
-    await updateSitrepField({ [field]: value });
-  };
-
-  const handleUpdateNotes = async (notes: string) => {
-    await updateSitrepField({ notes });
   };
 
   const handleDeleteEntry = async (id: string) => {
@@ -203,6 +182,51 @@ export default function MacroOpsPage() {
       }
     } catch (err) {
       console.error("Failed to delete entry:", err);
+    }
+  };
+
+  const handleQuickLogMeal = async (meal: {
+    name: string;
+    calories: number;
+    protein_g: number;
+    carbs_g: number;
+    fat_g: number;
+    meal_window: string;
+  }) => {
+    try {
+      await fetch("/api/nutrition", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          action: "add_entry",
+          date: selectedDate,
+          entry: {
+            name: meal.name,
+            meal_window: meal.meal_window,
+            raw_input: `${meal.name} · ${meal.calories} kcal`,
+            quantity_grams: 250,
+            weight_lbs: 0.55,
+            calories: meal.calories,
+            protein_g: meal.protein_g,
+            carbs_g: meal.carbs_g,
+            fat_g: meal.fat_g,
+            is_estimated: false,
+          },
+        }),
+      });
+
+      // Update SITREP totals
+      const newCalories = (todayLog?.calories_eaten || 0) + meal.calories;
+      const newProtein = (todayLog?.protein_g || 0) + meal.protein_g;
+      await updateSitrepField({
+        calories_eaten: newCalories,
+        protein_g: newProtein,
+      });
+
+      await loadNutritionData();
+      await loadSitrepData();
+    } catch (err) {
+      console.error("Failed to quick log meal:", err);
     }
   };
 
@@ -247,10 +271,10 @@ export default function MacroOpsPage() {
   return (
     <ExecutiveModuleShell
       moduleId="MACRO_OPS"
-      eyebrow="Objective 155 Sovereign Telemetry"
-      title="Daily SITREP & Biometric Console"
-      subtitle="Vitality OS · 15-Column Biometric Tracker, 7-Day Moving Average Trigger, Caloric Deficit & Mission Grades"
-      accentColor="#10b981"
+      eyebrow="ORBITAL METABOLIC // PHOENIX EXECUTIVE TELEMETRY HUD"
+      title="Orbital Metabolic & Phoenix Bio-Telemetry OS"
+      subtitle="Real-Time Nitrogen Saturation, Circadian Glycogen Flux, Kinetic Steps & Cellular Homeostasis"
+      accentColor="#06b6d4"
       headerActions={
         <div className="flex items-center gap-2">
           {/* Tab Switcher */}
@@ -259,7 +283,7 @@ export default function MacroOpsPage() {
               onClick={() => setActiveTab("vitality")}
               className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg transition font-bold ${
                 activeTab === "vitality"
-                  ? "bg-emerald-500/20 text-emerald-300 border border-emerald-500/30"
+                  ? "bg-cyan-500/20 text-cyan-300 border border-cyan-500/30"
                   : "text-zinc-400 hover:text-white"
               }`}
             >
@@ -276,14 +300,14 @@ export default function MacroOpsPage() {
               }`}
             >
               <Activity size={13} />
-              <span>SITREP & RECHARTS</span>
+              <span>SITREP &amp; RECHARTS</span>
             </button>
 
             <button
               onClick={() => setActiveTab("mealplan")}
               className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg transition font-bold ${
                 activeTab === "mealplan"
-                  ? "bg-cyan-500/20 text-cyan-300 border border-cyan-500/30"
+                  ? "bg-emerald-500/20 text-emerald-300 border border-emerald-500/30"
                   : "text-zinc-400 hover:text-white"
               }`}
             >
@@ -292,13 +316,22 @@ export default function MacroOpsPage() {
             </button>
           </div>
 
+          {/* Quick Fuel Entry Modal Button */}
+          <button
+            onClick={() => setIsMealModalOpen(true)}
+            className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-cyan-500 hover:bg-cyan-400 text-zinc-950 font-bold font-mono text-xs tracking-wider shadow-lg shadow-cyan-500/20 active:scale-95 transition"
+          >
+            <Utensils size={13} />
+            <span>+ LOG FUEL</span>
+          </button>
+
           {/* Quick Debrief Button */}
           <button
             onClick={() => setIsDebriefOpen(true)}
             className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-400 hover:to-amber-500 text-zinc-950 font-bold font-mono text-xs tracking-wider shadow-lg active:scale-95 transition"
           >
             <Moon size={13} />
-            <span>QUICK DEBRIEF</span>
+            <span className="hidden sm:inline">DEBRIEF</span>
           </button>
 
           {/* Refresh */}
@@ -310,70 +343,71 @@ export default function MacroOpsPage() {
             className="p-2 rounded-xl bg-surface border border-border text-zinc-400 hover:text-white hover:border-zinc-700 transition"
             title="Refresh Telemetry"
           >
-            <RefreshCw size={14} className={isSitrepLoading ? "animate-spin text-amber-400" : ""} />
+            <RefreshCw size={14} className={isSitrepLoading ? "animate-spin text-cyan-400" : ""} />
           </button>
         </div>
       }
     >
       <div className="min-h-screen bg-background text-zinc-100 w-full">
-        {/* SUBHEADER / DATE SELECTOR & BIO-TELEMETRY STRIP */}
-        <MacroSubheader
-          selectedDate={selectedDate}
-          onDateChange={(date) => setSelectedDate(date)}
-          todayLog={todayLog}
-          sitrepStats={sitrepStats}
-          sitrepHistory={sitrepHistory}
-          isLoading={isSitrepLoading}
-          onOpenLogMeal={() => setIsMealModalOpen(true)}
-          onQuickAddWater={handleQuickAddWater}
-          onOpenDebrief={() => setIsDebriefOpen(true)}
-          onRefresh={() => {
-            loadSitrepData();
-            loadNutritionData();
-          }}
-        />
-
         {activeTab === "vitality" ? (
-          <>
-            {/* 1. MACRO FUEL COMMAND HUB (HIGH IMPACT NUMBERS - 4 CARDS) */}
+          <div className="space-y-4">
+            {/* 1. SUBHEADER: 7-DAY PILL RAIL + COMPACT FASTING PILL + KINETIC STEP ENGINE */}
+            <MacroSubheader
+              selectedDate={selectedDate}
+              onDateChange={(date) => setSelectedDate(date)}
+              todayLog={todayLog}
+              sitrepStats={sitrepStats}
+              sitrepHistory={sitrepHistory}
+              isLoading={isSitrepLoading}
+              onOpenLogMeal={() => setIsMealModalOpen(true)}
+              onQuickAddWater={handleQuickAddWater}
+              onOpenDebrief={() => setIsDebriefOpen(true)}
+              onRefresh={() => {
+                loadSitrepData();
+                loadNutritionData();
+              }}
+              onUpdateSteps={handleUpdateSteps}
+              onUpdateFastingHours={handleUpdateFastingHours}
+            />
+
+            {/* 2. ACTIVITY & METABOLIC HEATMAP STRIP (12 Intervals × 5 Vector Tracks) */}
+            <div className="px-4 lg:px-6">
+              <CircadianHeatmapStrip
+                todayLog={todayLog}
+                entries={entries}
+              />
+            </div>
+
+            {/* 3. MACRO FUEL COMMAND HUB (4 EQUAL CARDS - ZERO DUMMY DEFAULTS) */}
             <MacroFuelCommandHub
               todayLog={todayLog}
               dailyLog={dailyLog}
               totals={totals}
             />
 
-            {/* 2. 3-COLUMN MASTER COCKPIT */}
-            <div className="w-full px-4 lg:px-6 py-6 grid grid-cols-1 lg:grid-cols-12 gap-6">
-              {/* LEFT COLUMN: BIOMETRIC PROTOCOL ENGINE (3 Cols) */}
-              <div className="lg:col-span-12 xl:col-span-3 flex flex-col gap-6">
-                <FastingCockpitCard
+            {/* 4. MAIN BODY GRID: 12-COLUMN ARCHITECTURE */}
+            <div className="w-full px-4 lg:px-6 pb-8 grid grid-cols-1 xl:grid-cols-12 gap-6">
+              {/* LEFT COLUMN: POLAR WHEEL + GENGAR HYDRATION (4 COLS) */}
+              <div className="xl:col-span-4 flex flex-col gap-6">
+                <PolarAdherenceWheelCard
                   todayLog={todayLog}
-                  onUpdateFastingHours={handleUpdateFastingHours}
+                  dailyLog={dailyLog}
+                  totals={totals}
                 />
-                <CellularHydrationCard
+                <GengarHydrationCard
                   todayLog={todayLog}
                   dailyLog={dailyLog}
                   onQuickAddWater={handleQuickAddWater}
                 />
-                <BodyMassTelemetryCard
-                  todayLog={todayLog}
-                  sitrepHistory={sitrepHistory}
-                  targetWeightLbs={targetWeightLbs}
-                  onUpdateWeight={handleUpdateWeight}
-                />
-                <CnsReadinessBioLogCard
-                  todayLog={todayLog}
-                  onUpdateNotes={handleUpdateNotes}
-                />
               </div>
 
-              {/* CENTER COLUMN: OPTICAL SCANNER & FOOD DIARY (5 Cols) */}
-              <div className="lg:col-span-12 xl:col-span-5 flex flex-col gap-6">
-                <NeuralMealScannerCard
-                  onMealScanned={(item) => {
-                    handleConfirmPending(item);
-                  }}
-                  onOpenManualInput={() => setIsMealModalOpen(true)}
+              {/* RIGHT EXPANDED SECTION: SANKEY SPECTRUM + DAILY FUEL LEDGER (8 COLS) */}
+              <div className="xl:col-span-8 flex flex-col gap-6">
+                <MetabolicFlowSankeyCard
+                  entries={entries}
+                  totalCalories={totals?.calories || todayLog?.calories_eaten || 0}
+                  totals={totals}
+                  onOpenAddMeal={() => setIsMealModalOpen(true)}
                 />
                 <DailyFuelLedgerCard
                   entries={entries}
@@ -381,24 +415,11 @@ export default function MacroOpsPage() {
                   onOpenAddMeal={() => setIsMealModalOpen(true)}
                   onDeleteEntry={handleDeleteEntry}
                   onConfirmPending={handleConfirmPending}
+                  onQuickLogMeal={handleQuickLogMeal}
                 />
-              </div>
-
-              {/* RIGHT COLUMN: ACTIVITY, MATRIX & TREND HORIZONS (4 Cols) */}
-              <div className="lg:col-span-12 xl:col-span-4 flex flex-col gap-6">
-                <ActiveStrainOutputCard
-                  todayLog={todayLog}
-                  onToggleWorkout={handleToggleWorkout}
-                />
-                <KineticStepCounterCard
-                  todayLog={todayLog}
-                  onUpdateSteps={handleUpdateSteps}
-                />
-                <ComplianceMatrix30DCard sitrepHistory={sitrepHistory} />
-                <MiniTrendHorizonsCard sitrepHistory={sitrepHistory} />
               </div>
             </div>
-          </>
+          </div>
         ) : activeTab === "sitrep" ? (
           /* SITREP & EXPANDED RECHARTS DECK + 15-COLUMN TABLE */
           <div className="p-4 sm:p-6 lg:p-8 max-w-7xl mx-auto space-y-6">
@@ -418,7 +439,7 @@ export default function MacroOpsPage() {
                     <TrendingDown size={16} className="text-amber-400" />
                     <div>
                       <h4 className="text-xs font-mono font-bold uppercase tracking-wider text-white">
-                        Weight Trajectory & 7-Day Moving Average
+                        Weight Trajectory &amp; 7-Day Moving Average
                       </h4>
                       <p className="text-[11px] text-zinc-400">
                         Daily scale readings vs. trailing 7-day average against the {targetWeightLbs} lbs target line
@@ -435,7 +456,7 @@ export default function MacroOpsPage() {
                     <BarChart3 size={16} className="text-rose-400" />
                     <div>
                       <h4 className="text-xs font-mono font-bold uppercase tracking-wider text-white">
-                        Caloric Energy Balance & Deficit
+                        Caloric Energy Balance &amp; Deficit
                       </h4>
                       <p className="text-[11px] text-zinc-400">
                         Intake vs. expenditure with daily net deficit margin (target &ge; 350 kcal)
@@ -453,7 +474,7 @@ export default function MacroOpsPage() {
                   <Activity size={16} className="text-cyan-400" />
                   <div>
                     <h4 className="text-xs font-mono font-bold uppercase tracking-wider text-white">
-                      Physical Activity & Protein Consistency
+                      Physical Activity &amp; Protein Consistency
                     </h4>
                     <p className="text-[11px] text-zinc-400">
                       Step volume (miles) and protein intake against the 10,000 steps and 160g thresholds

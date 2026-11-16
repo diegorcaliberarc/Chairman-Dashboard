@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState } from "react";
-import { Droplet, Plus } from "lucide-react";
+import { Droplet, Plus, Sparkles } from "lucide-react";
 import { DailySitrepLog } from "@/lib/commandTypes";
 
 interface GengarHydrationCardProps {
@@ -16,14 +16,15 @@ export function GengarHydrationCard({
   onQuickAddWater,
 }: GengarHydrationCardProps) {
   const [isUpdating, setIsUpdating] = useState(false);
+  const [customOz, setCustomOz] = useState("");
 
-  // Target in Liters: 3.8L (~128 oz)
+  // Target in Liters: 3.8L (~128.5 oz)
   const targetLiters = 3.8;
   const targetOz = 128.5;
 
-  // Convert current water_oz to Liters
+  // Convert current water_oz to Liters (0.0 if not logged)
   const currentOz = todayLog?.water_oz || 0;
-  const currentLiters = currentOz > 0 ? +(currentOz / 33.814).toFixed(1) : 3.2; // default high-fidelity display 3.2L if empty
+  const currentLiters = currentOz > 0 ? +(currentOz / 33.814).toFixed(1) : 0.0;
   const progressPct = Math.min(100, Math.round((currentLiters / targetLiters) * 100));
   const remainingMl = Math.max(0, Math.round((targetLiters - currentLiters) * 1000));
 
@@ -38,17 +39,30 @@ export function GengarHydrationCard({
     }
   };
 
+  const handleCustomAdd = async (e: React.FormEvent) => {
+    e.preventDefault();
+    const val = parseFloat(customOz);
+    if (!val || isNaN(val) || !onQuickAddWater) return;
+    setIsUpdating(true);
+    try {
+      await onQuickAddWater(val);
+      setCustomOz("");
+    } finally {
+      setIsUpdating(false);
+    }
+  };
+
   return (
     <div className="p-4 rounded-2xl bg-surface/80 border border-border backdrop-blur-xl flex flex-col shadow-2xl">
       <div className="flex items-center justify-between mb-2">
         <div className="flex items-center gap-2">
           <Droplet className="w-4 h-4 text-sky-400" />
           <span className="font-mono font-bold text-xs uppercase tracking-wider text-zinc-100">
-            Hydration Matrix
+            Cellular Hydration Matrix
           </span>
         </div>
         <span className="font-mono text-[10px] text-sky-400 font-bold uppercase px-2 py-0.5 rounded-md bg-sky-500/10 border border-sky-500/30">
-          Electrolytes ++
+          Target 3.8L
         </span>
       </div>
 
@@ -60,7 +74,6 @@ export function GengarHydrationCard({
             className="w-full h-full object-contain p-1 relative z-10 transition-transform hover:scale-105"
             src="https://lh3.googleusercontent.com/aida/ALJJyrAlNjd9-1iSx6MsZb8jyXPUFqR6AwuPVk4yI6xlIZitoqC4oqGHEO934gZ7B6ZFYtkMgk8OqW5O1g5oyNnpr6zewRHjvr97Q0-yTyNIZT0qVpbwIHJuRq-psHjEouFwNWJfGOmZUAJKan0xe-HXbF7ttx2AmDOC7FMDyhfKPHWN8gjdka_o5culWNMNpbUeKy1WpoCI3Gr7RUiir0Ma24JCg9v4i_W4OAOsT_bGfP0h"
             onError={(e) => {
-              // Fallback SVG if image host is unavailable
               e.currentTarget.style.display = "none";
             }}
           />
@@ -77,7 +90,11 @@ export function GengarHydrationCard({
               <span className="text-base font-bold text-sky-400">/ {targetLiters} L</span>
             </div>
             <div className="text-[9px] text-zinc-400 uppercase font-semibold">
-              {remainingMl > 0 ? `${remainingMl} ML TO DAILY OPTIMAL` : "DAILY TARGET REACHED"}
+              {currentLiters === 0
+                ? "NO HYDRATION LOGGED TODAY"
+                : remainingMl > 0
+                ? `${remainingMl} ML TO DAILY OPTIMAL`
+                : "DAILY TARGET REACHED"}
             </div>
           </div>
 
@@ -90,33 +107,61 @@ export function GengarHydrationCard({
 
           <div className="flex items-center justify-between text-[9px] text-zinc-400 mt-0.5">
             <span className="text-sky-400 font-bold">{progressPct}% OF GOAL</span>
-            <span className="text-zinc-500">PACE: ON TRACK</span>
+            <span className="text-zinc-500">
+              {currentOz > 0 ? `${currentOz.toFixed(0)} oz recorded` : "Awaiting input"}
+            </span>
           </div>
         </div>
       </div>
 
       {/* Quick Action Buttons */}
-      <div className="grid grid-cols-2 gap-2 mt-1 font-mono">
+      <div className="grid grid-cols-3 gap-2 mt-1 font-mono">
         <button
           onClick={() => handleAddMl(250)}
           disabled={isUpdating}
-          className="py-2 px-2 bg-background/80 hover:bg-surface border border-sky-500/30 hover:border-sky-400 rounded-lg font-bold text-xs text-sky-400 uppercase flex items-center justify-center gap-1 transition-all shadow-[0_0_10px_rgba(56,189,248,0.15)] active:scale-95 disabled:opacity-50"
-          type="button"
+          className="flex items-center justify-center gap-1 py-2 px-1.5 rounded-xl bg-background/80 hover:bg-sky-500/20 text-sky-300 border border-sky-500/30 text-[10px] font-bold uppercase transition active:scale-95 disabled:opacity-50"
         >
-          <Plus className="w-3.5 h-3.5" />
-          <span>250ml</span>
+          <Plus size={11} />
+          <span>+250ml</span>
         </button>
 
         <button
           onClick={() => handleAddMl(500)}
           disabled={isUpdating}
-          className="py-2 px-2 bg-background/80 hover:bg-surface border border-sky-500/30 hover:border-sky-400 rounded-lg font-bold text-xs text-sky-400 uppercase flex items-center justify-center gap-1 transition-all shadow-[0_0_10px_rgba(56,189,248,0.15)] active:scale-95 disabled:opacity-50"
-          type="button"
+          className="flex items-center justify-center gap-1 py-2 px-1.5 rounded-xl bg-background/80 hover:bg-sky-500/20 text-sky-300 border border-sky-500/30 text-[10px] font-bold uppercase transition active:scale-95 disabled:opacity-50"
         >
-          <Plus className="w-3.5 h-3.5" />
-          <span>500ml Flask</span>
+          <Plus size={11} />
+          <span>+500ml</span>
+        </button>
+
+        <button
+          onClick={() => handleAddMl(1000)}
+          disabled={isUpdating}
+          className="flex items-center justify-center gap-1 py-2 px-1.5 rounded-xl bg-background/80 hover:bg-sky-500/20 text-sky-300 border border-sky-500/30 text-[10px] font-bold uppercase transition active:scale-95 disabled:opacity-50"
+        >
+          <Plus size={11} />
+          <span>+1000ml</span>
         </button>
       </div>
+
+      {/* Inline Custom Water Input */}
+      <form onSubmit={handleCustomAdd} className="flex items-center gap-1.5 mt-2 font-mono">
+        <input
+          type="number"
+          step="any"
+          placeholder="Log Custom oz..."
+          value={customOz}
+          onChange={(e) => setCustomOz(e.target.value)}
+          className="flex-1 bg-background/80 border border-border rounded-lg px-2.5 py-1 text-xs text-white placeholder-zinc-500 focus:outline-none focus:border-sky-400"
+        />
+        <button
+          type="submit"
+          disabled={!customOz || isUpdating}
+          className="px-3 py-1 bg-sky-500 hover:bg-sky-400 text-zinc-950 font-bold text-xs rounded-lg transition active:scale-95 disabled:opacity-40"
+        >
+          Add
+        </button>
+      </form>
     </div>
   );
 }

@@ -1,7 +1,7 @@
 "use client";
 
-import React from "react";
-import { CalendarRange, Sparkles } from "lucide-react";
+import React, { useMemo } from "react";
+import { CalendarRange } from "lucide-react";
 import { DailySitrepLog } from "@/lib/commandTypes";
 import { FoodEntry } from "@/components/FoodFeedCard";
 
@@ -10,23 +10,74 @@ interface CircadianHeatmapStripProps {
   entries?: FoodEntry[];
 }
 
-export function CircadianHeatmapStrip({ todayLog, entries }: CircadianHeatmapStripProps) {
-  // 12 2-hour synchronous intervals
+export function CircadianHeatmapStrip({ todayLog, entries = [] }: CircadianHeatmapStripProps) {
+  // 12 2-hour synchronous intervals: 00:00 to 22:00
   const intervals = [
     "12a", "2a", "4a", "6a", "8a", "10a",
     "12p", "2p", "4p", "6p", "8p", "10p"
   ];
 
-  // Pre-calculated orbital density matrices
-  const stepDensity = [0, 0, 0, 2, 6, 8, 3, 4, 11, 7, 2, 0];
-  const proteinDensity = [0, 0, 0, 0, 0, 0, 10, 1, 12, 2, 8, 0];
-  const carbDensity = [0, 0, 0, 0, 0, 0, 7, 0, 14, 4, 2, 0];
-  const fiberDensity = [0, 0, 0, 0, 0, 0, 8, 0, 3, 0, 9, 0];
-  const hydrationDensity = [0, 0, 0, 3, 6, 5, 8, 9, 10, 6, 4, 1];
+  // Dynamically compute vector densities from real database records (0 if no data)
+  const { stepDensity, proteinDensity, carbDensity, fiberDensity, hydrationDensity } = useMemo(() => {
+    const steps = new Array(12).fill(0);
+    const protein = new Array(12).fill(0);
+    const carbs = new Array(12).fill(0);
+    const fiber = new Array(12).fill(0);
+    const hydration = new Array(12).fill(0);
+
+    // Map food entries into intervals based on meal window or timestamp
+    entries.forEach((e) => {
+      const windowName = (e.meal_window || "").toLowerCase();
+      let slot = 6; // default 12p
+      if (windowName.includes("breakfast")) slot = 4; // 8a
+      else if (windowName.includes("morning")) slot = 3; // 6a
+      else if (windowName.includes("lunch")) slot = 6; // 12p
+      else if (windowName.includes("pre") || windowName.includes("snack")) slot = 8; // 4p
+      else if (windowName.includes("dinner")) slot = 9; // 6p
+      else if (windowName.includes("post") || windowName.includes("night")) slot = 10; // 8p
+
+      const pG = Number(e.protein_g) || 0;
+      const cG = Number(e.carbs_g) || 0;
+
+      // Scale 0-15 intensity based on grams
+      protein[slot] = Math.min(15, protein[slot] + Math.round(pG / 4));
+      carbs[slot] = Math.min(15, carbs[slot] + Math.round(cG / 5));
+      fiber[slot] = Math.min(15, fiber[slot] + Math.max(1, Math.round(cG / 15)));
+    });
+
+    // Map total steps from todayLog across daytime active hours if logged
+    const totalSteps = todayLog?.total_steps || 0;
+    if (totalSteps > 0) {
+      // Distribute steps across active daytime slots (6a to 8p: slots 3, 4, 5, 6, 7, 8, 9, 10)
+      const activeSlots = [3, 4, 5, 6, 7, 8, 9, 10];
+      const intensity = Math.min(14, Math.max(1, Math.round((totalSteps / 12000) * 10)));
+      activeSlots.forEach((s) => {
+        steps[s] = intensity;
+      });
+    }
+
+    // Map water from todayLog
+    const waterOz = todayLog?.water_oz || 0;
+    if (waterOz > 0) {
+      const waterSlots = [3, 4, 5, 6, 7, 8, 9, 10];
+      const intensity = Math.min(14, Math.max(1, Math.round((waterOz / 128) * 10)));
+      waterSlots.forEach((s) => {
+        hydration[s] = intensity;
+      });
+    }
+
+    return {
+      stepDensity: steps,
+      proteinDensity: protein,
+      carbDensity: carbs,
+      fiberDensity: fiber,
+      hydrationDensity: hydration,
+    };
+  }, [entries, todayLog]);
 
   const getCellClass = (value: number, type: "cyan" | "sky" | "rose" | "purple") => {
     if (value === 0) {
-      return "bg-surface/40 text-zinc-600 border border-transparent";
+      return "bg-surface/30 text-zinc-600 border border-transparent";
     }
 
     if (type === "cyan") {
@@ -63,7 +114,7 @@ export function CircadianHeatmapStrip({ todayLog, entries }: CircadianHeatmapStr
         <div className="flex items-center gap-2">
           <CalendarRange className="w-4 h-4 text-cyan-400" />
           <span className="font-mono font-bold text-xs uppercase tracking-widest text-zinc-100">
-            Circadian Kinetic & Ingestion Heatmap Spectrum
+            Circadian Kinetic &amp; Ingestion Heatmap Spectrum
           </span>
           <span className="font-mono text-zinc-500 text-xs hidden md:inline">
             // 24h Synchronous Density Matrix
@@ -102,14 +153,17 @@ export function CircadianHeatmapStrip({ todayLog, entries }: CircadianHeatmapStr
             {stepDensity.map((val, idx) => (
               <div
                 key={`step-${idx}`}
-                className={`h-6 rounded-md flex items-center justify-center text-[10px] transition-all ${getCellClass(val, "cyan")}`}
+                className={`h-7 rounded flex items-center justify-center text-[10px] transition-all ${getCellClass(
+                  val,
+                  "cyan"
+                )}`}
               >
-                {val}
+                {val > 0 ? val : ""}
               </div>
             ))}
           </div>
 
-          {/* Row 2: Protein Pacing */}
+          {/* Row 2: Protein Synthesis */}
           <div className="grid grid-cols-[140px_repeat(12,1fr)] items-center gap-1.5">
             <div className="flex items-center gap-1.5 text-xs text-zinc-200 pl-1">
               <span className="w-2 h-2 rounded-full bg-sky-400 shadow-[0_0_6px_rgba(56,189,248,0.8)]"></span>
@@ -117,26 +171,32 @@ export function CircadianHeatmapStrip({ todayLog, entries }: CircadianHeatmapStr
             </div>
             {proteinDensity.map((val, idx) => (
               <div
-                key={`protein-${idx}`}
-                className={`h-6 rounded-md flex items-center justify-center text-[10px] transition-all ${getCellClass(val, "sky")}`}
+                key={`prot-${idx}`}
+                className={`h-7 rounded flex items-center justify-center text-[10px] transition-all ${getCellClass(
+                  val,
+                  "sky"
+                )}`}
               >
-                {val}
+                {val > 0 ? val : ""}
               </div>
             ))}
           </div>
 
-          {/* Row 3: Carbohydrates */}
+          {/* Row 3: Carbs & Glycogen Refuel */}
           <div className="grid grid-cols-[140px_repeat(12,1fr)] items-center gap-1.5">
             <div className="flex items-center gap-1.5 text-xs text-zinc-200 pl-1">
-              <span className="w-2 h-2 rounded-full bg-rose-500 shadow-[0_0_6px_rgba(244,63,94,0.8)]"></span>
+              <span className="w-2 h-2 rounded-full bg-rose-400 shadow-[0_0_6px_rgba(244,63,94,0.8)]"></span>
               <span className="font-bold text-[11px] truncate uppercase tracking-wider">Carbohydrates</span>
             </div>
             {carbDensity.map((val, idx) => (
               <div
                 key={`carb-${idx}`}
-                className={`h-6 rounded-md flex items-center justify-center text-[10px] transition-all ${getCellClass(val, "rose")}`}
+                className={`h-7 rounded flex items-center justify-center text-[10px] transition-all ${getCellClass(
+                  val,
+                  "rose"
+                )}`}
               >
-                {val}
+                {val > 0 ? val : ""}
               </div>
             ))}
           </div>
@@ -145,14 +205,17 @@ export function CircadianHeatmapStrip({ todayLog, entries }: CircadianHeatmapStr
           <div className="grid grid-cols-[140px_repeat(12,1fr)] items-center gap-1.5">
             <div className="flex items-center gap-1.5 text-xs text-zinc-200 pl-1">
               <span className="w-2 h-2 rounded-full bg-purple-400 shadow-[0_0_6px_rgba(168,85,247,0.8)]"></span>
-              <span className="font-bold text-[11px] truncate uppercase tracking-wider">Whole Foods / Fiber</span>
+              <span className="font-bold text-[11px] truncate uppercase tracking-wider">Fiber Density</span>
             </div>
             {fiberDensity.map((val, idx) => (
               <div
-                key={`fiber-${idx}`}
-                className={`h-6 rounded-md flex items-center justify-center text-[10px] transition-all ${getCellClass(val, "purple")}`}
+                key={`fib-${idx}`}
+                className={`h-7 rounded flex items-center justify-center text-[10px] transition-all ${getCellClass(
+                  val,
+                  "purple"
+                )}`}
               >
-                {val}
+                {val > 0 ? val : ""}
               </div>
             ))}
           </div>
@@ -160,15 +223,18 @@ export function CircadianHeatmapStrip({ todayLog, entries }: CircadianHeatmapStr
           {/* Row 5: Hydration Flux */}
           <div className="grid grid-cols-[140px_repeat(12,1fr)] items-center gap-1.5">
             <div className="flex items-center gap-1.5 text-xs text-zinc-200 pl-1">
-              <span className="w-2 h-2 rounded-full bg-cyan-400 shadow-[0_0_6px_rgba(6,182,212,0.8)]"></span>
+              <span className="w-2 h-2 rounded-full bg-sky-300 shadow-[0_0_6px_rgba(125,211,252,0.8)]"></span>
               <span className="font-bold text-[11px] truncate uppercase tracking-wider">Hydration Flux</span>
             </div>
             {hydrationDensity.map((val, idx) => (
               <div
-                key={`hydration-${idx}`}
-                className={`h-6 rounded-md flex items-center justify-center text-[10px] transition-all ${getCellClass(val, "cyan")}`}
+                key={`hyd-${idx}`}
+                className={`h-7 rounded flex items-center justify-center text-[10px] transition-all ${getCellClass(
+                  val,
+                  "sky"
+                )}`}
               >
-                {val}
+                {val > 0 ? val : ""}
               </div>
             ))}
           </div>

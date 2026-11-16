@@ -12,6 +12,7 @@ import {
   Flame,
   Moon,
   Check,
+  Sparkles,
 } from "lucide-react";
 import { FoodEntry } from "@/components/FoodFeedCard";
 
@@ -20,193 +21,279 @@ interface DailyFuelLedgerCardProps {
   selectedDate: string;
   onOpenAddMeal: () => void;
   onDeleteEntry?: (id: string) => Promise<void>;
-  onConfirmPending?: (entry: FoodEntry) => Promise<void>;
+  onConfirmPending?: (entry: any) => Promise<void>;
+  onQuickLogMeal?: (meal: {
+    name: string;
+    calories: number;
+    protein_g: number;
+    carbs_g: number;
+    fat_g: number;
+    meal_window: string;
+  }) => Promise<void>;
 }
 
 export function DailyFuelLedgerCard({
-  entries,
+  entries = [],
   selectedDate,
   onOpenAddMeal,
   onDeleteEntry,
   onConfirmPending,
+  onQuickLogMeal,
 }: DailyFuelLedgerCardProps) {
-  // If no entries are logged yet, provide structured defaults or empty state
-  const defaultMeals: Array<Partial<FoodEntry> & { isPending?: boolean }> = [
-    {
-      id: "mock-1",
-      name: "Avocado Tartine & Organic Poached Eggs",
-      meal_window: "breakfast",
-      raw_input: "07:15 AM · 2 Slices Sourdough, Pasture Eggs, EVOO",
-      calories: 480,
-      protein_g: 26,
-      carbs_g: 42,
-      fat_g: 18,
-      is_estimated: false,
-    },
-    {
-      id: "mock-2",
-      name: "Sous-Vide Wagyu Flank & Microgreen Salad",
-      meal_window: "lunch",
-      raw_input: "12:45 PM · 250g Beef, Sweet Potato, Chimichurri",
-      calories: 690,
-      protein_g: 62,
-      carbs_g: 48,
-      fat_g: 22,
-      is_estimated: false,
-    },
-    {
-      id: "mock-3",
-      name: "Whey Isolate Hydrolysate & Nitro Cold Brew",
-      meal_window: "pre_workout",
-      raw_input: "16:15 PM · 1.5 Scoops, 1 Banana, Creatine 5g",
-      calories: 210,
-      protein_g: 38,
-      carbs_g: 28,
-      fat_g: 2,
-      is_estimated: false,
-    },
-    {
-      id: "mock-4",
-      name: "Mediterranean Branzino & Grilled Asparagus",
-      meal_window: "dinner",
-      raw_input: "Scheduled for 19:30 PM · 220g Fish, Steamed Greens",
-      calories: 460,
-      protein_g: 42,
-      carbs_g: 12,
-      fat_g: 12,
-      isPending: true,
-      is_estimated: true,
-    },
-  ];
-
-  const displayList = entries.length > 0 ? entries : defaultMeals;
+  // Inline Quick Add Form State
+  const [showInlineForm, setShowInlineForm] = useState(false);
+  const [mealName, setMealName] = useState("");
+  const [calories, setCalories] = useState("");
+  const [protein, setProtein] = useState("");
+  const [carbs, setCarbs] = useState("");
+  const [fat, setFat] = useState("");
+  const [mealWindow, setMealWindow] = useState("lunch");
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   const getMealIcon = (windowName?: string) => {
     switch (windowName?.toLowerCase()) {
       case "breakfast":
-        return <Coffee size={18} className="text-amber-400" />;
+        return <Coffee size={16} className="text-amber-400" />;
       case "lunch":
-        return <Sun size={18} className="text-cyan-400" />;
+        return <Sun size={16} className="text-cyan-400" />;
       case "pre_workout":
       case "snack":
-        return <Flame size={18} className="text-emerald-400" />;
+        return <Flame size={16} className="text-emerald-400" />;
       case "dinner":
       default:
-        return <Moon size={18} className="text-purple-400" />;
+        return <Moon size={16} className="text-purple-400" />;
     }
   };
 
-  const [confirmingId, setConfirmingId] = useState<string | null>(null);
+  const handleInlineSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!mealName.trim() || !calories || !onQuickLogMeal) return;
 
-  const handleConfirm = async (item: any) => {
-    setConfirmingId(item.id);
+    setIsSubmitting(true);
     try {
-      if (onConfirmPending) {
-        await onConfirmPending(item);
-      }
+      await onQuickLogMeal({
+        name: mealName.trim(),
+        calories: Number(calories) || 0,
+        protein_g: Number(protein) || 0,
+        carbs_g: Number(carbs) || 0,
+        fat_g: Number(fat) || 0,
+        meal_window: mealWindow,
+      });
+
+      // Reset
+      setMealName("");
+      setCalories("");
+      setProtein("");
+      setCarbs("");
+      setFat("");
+      setShowInlineForm(false);
+    } catch (err) {
+      console.error("Failed to log fuel entry:", err);
     } finally {
-      setConfirmingId(null);
+      setIsSubmitting(false);
     }
   };
 
   return (
-    <div className="p-4 sm:p-5 rounded-2xl bg-surface border border-border flex flex-col shadow-xl">
-      <div className="flex items-center justify-between mb-4">
+    <div className="p-4 sm:p-5 rounded-2xl bg-surface/80 border border-border backdrop-blur-xl relative overflow-hidden flex flex-col group shadow-2xl">
+      {/* Header */}
+      <div className="flex items-center justify-between pb-3 mb-3 border-b border-border">
         <div className="flex items-center gap-2">
-          <Utensils size={18} className="text-zinc-400" />
-          <span className="font-mono font-bold text-sm text-zinc-100 uppercase tracking-wider">
-            Daily Fuel Ledger
+          <Utensils className="w-4 h-4 text-cyan-400" />
+          <span className="font-mono font-bold text-xs uppercase tracking-wider text-zinc-100">
+            Daily Fuel Ledger // Ingestion Registry
           </span>
         </div>
+
         <div className="flex items-center gap-2">
-          <span className="font-mono text-[10px] text-zinc-400 uppercase tracking-wider">
-            {displayList.length} Meals Programmed
-          </span>
           <button
-            onClick={onOpenAddMeal}
-            className="flex items-center gap-1 px-2.5 py-1 rounded-lg bg-background hover:bg-zinc-800 border border-border text-xs font-mono font-bold text-emerald-400 transition"
+            onClick={() => setShowInlineForm(!showInlineForm)}
+            className="flex items-center gap-1.5 px-3 py-1 rounded-lg bg-cyan-500/10 hover:bg-cyan-500/20 text-cyan-300 border border-cyan-500/30 text-xs font-mono font-bold uppercase transition active:scale-95"
           >
             <Plus size={13} />
-            <span>Add Meal</span>
+            <span>{showInlineForm ? "Close Input" : "Quick Input"}</span>
+          </button>
+
+          <button
+            onClick={onOpenAddMeal}
+            className="flex items-center gap-1.5 px-3 py-1 rounded-lg bg-emerald-500 hover:bg-emerald-400 text-zinc-950 text-xs font-mono font-bold uppercase transition active:scale-95 shadow-md shadow-emerald-500/20"
+          >
+            <Plus size={13} />
+            <span>Full Log Modal</span>
           </button>
         </div>
       </div>
 
-      {/* Meal Rows */}
-      <div className="space-y-2.5">
-        {displayList.map((meal, idx) => {
-          const isPending = (meal as any).isPending;
-          return (
-            <div
-              key={meal.id || `meal-${idx}`}
-              className={`p-3 rounded-xl border transition-all flex items-center justify-between ${
-                isPending
-                  ? "bg-surface/60 border-dashed border-zinc-700 hover:border-zinc-500"
-                  : "bg-background border-border hover:border-zinc-600"
-              }`}
+      {/* Inline Fast Food Input Form */}
+      {showInlineForm && (
+        <form
+          onSubmit={handleInlineSubmit}
+          className="mb-4 p-3 rounded-xl bg-background/90 border border-cyan-500/30 font-mono text-xs space-y-3"
+        >
+          <div className="flex items-center justify-between">
+            <span className="font-bold text-cyan-400 uppercase text-[11px]">
+              Direct Fuel Entry // {selectedDate}
+            </span>
+            <span className="text-[10px] text-zinc-500">Auto-saves to database</span>
+          </div>
+
+          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-6 gap-2">
+            <div className="md:col-span-2">
+              <label className="block text-[10px] text-zinc-400 mb-0.5">Meal / Food Name</label>
+              <input
+                type="text"
+                placeholder="e.g. Ribeye Steak & Sweet Potato"
+                value={mealName}
+                onChange={(e) => setMealName(e.target.value)}
+                required
+                className="w-full bg-surface border border-border rounded-lg px-2.5 py-1.5 text-zinc-100 placeholder-zinc-500 focus:outline-none focus:border-cyan-400"
+              />
+            </div>
+
+            <div>
+              <label className="block text-[10px] text-zinc-400 mb-0.5">Calories (kcal)</label>
+              <input
+                type="number"
+                placeholder="550"
+                value={calories}
+                onChange={(e) => setCalories(e.target.value)}
+                required
+                className="w-full bg-surface border border-border rounded-lg px-2.5 py-1.5 text-zinc-100 placeholder-zinc-500 focus:outline-none focus:border-cyan-400"
+              />
+            </div>
+
+            <div>
+              <label className="block text-[10px] text-cyan-400 mb-0.5">Protein (g)</label>
+              <input
+                type="number"
+                placeholder="45"
+                value={protein}
+                onChange={(e) => setProtein(e.target.value)}
+                className="w-full bg-surface border border-border rounded-lg px-2.5 py-1.5 text-zinc-100 placeholder-zinc-500 focus:outline-none focus:border-cyan-400"
+              />
+            </div>
+
+            <div>
+              <label className="block text-[10px] text-rose-400 mb-0.5">Carbs (g)</label>
+              <input
+                type="number"
+                placeholder="30"
+                value={carbs}
+                onChange={(e) => setCarbs(e.target.value)}
+                className="w-full bg-surface border border-border rounded-lg px-2.5 py-1.5 text-zinc-100 placeholder-zinc-500 focus:outline-none focus:border-rose-400"
+              />
+            </div>
+
+            <div>
+              <label className="block text-[10px] text-purple-400 mb-0.5">Fat (g)</label>
+              <input
+                type="number"
+                placeholder="18"
+                value={fat}
+                onChange={(e) => setFat(e.target.value)}
+                className="w-full bg-surface border border-border rounded-lg px-2.5 py-1.5 text-zinc-100 placeholder-zinc-500 focus:outline-none focus:border-purple-400"
+              />
+            </div>
+          </div>
+
+          <div className="flex items-center justify-between pt-1">
+            <div className="flex items-center gap-2">
+              <label className="text-[10px] text-zinc-400">Window:</label>
+              <select
+                value={mealWindow}
+                onChange={(e) => setMealWindow(e.target.value)}
+                className="bg-surface border border-border rounded-lg px-2 py-1 text-xs text-zinc-200 focus:outline-none focus:border-cyan-400"
+              >
+                <option value="breakfast">Breakfast</option>
+                <option value="lunch">Lunch</option>
+                <option value="pre_workout">Pre-Workout</option>
+                <option value="dinner">Dinner</option>
+                <option value="snack">Snack</option>
+              </select>
+            </div>
+
+            <button
+              type="submit"
+              disabled={isSubmitting || !mealName || !calories}
+              className="px-4 py-1.5 rounded-lg bg-cyan-500 hover:bg-cyan-400 text-zinc-950 font-bold uppercase text-xs tracking-wider transition active:scale-95 disabled:opacity-50"
             >
-              {/* Left Details */}
+              {isSubmitting ? "Logging..." : "Log Fuel Entry"}
+            </button>
+          </div>
+        </form>
+      )}
+
+      {/* Entries List */}
+      <div className="flex flex-col gap-2 font-mono">
+        {entries.length === 0 ? (
+          <div className="p-8 text-center rounded-xl bg-background/60 border border-border/80 flex flex-col items-center justify-center gap-2">
+            <div className="w-10 h-10 rounded-full bg-surface border border-border flex items-center justify-center text-zinc-500">
+              <Utensils size={18} />
+            </div>
+            <div className="text-xs font-bold text-zinc-300 uppercase tracking-wider">
+              No Fuel Entries Logged For {selectedDate}
+            </div>
+            <p className="text-[11px] text-zinc-500 max-w-sm">
+              Telemetry is in idle state with zero calories recorded. Click &ldquo;Quick Input&rdquo; above to record your first meal.
+            </p>
+          </div>
+        ) : (
+          entries.map((item) => (
+            <div
+              key={item.id}
+              className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 p-3 rounded-xl bg-background/80 border border-border hover:border-cyan-500/40 transition group"
+            >
               <div className="flex items-center gap-3">
-                <div className="w-10 h-10 rounded-xl bg-zinc-900 border border-border flex items-center justify-center shrink-0">
-                  {getMealIcon(meal.meal_window)}
+                <div className="w-8 h-8 rounded-lg bg-surface border border-border flex items-center justify-center flex-shrink-0">
+                  {getMealIcon(item.meal_window)}
                 </div>
 
                 <div>
-                  <div className="font-mono text-xs sm:text-sm font-bold text-zinc-100 flex items-center gap-2">
-                    <span>{meal.name}</span>
-                    {isPending && (
-                      <span className="px-1.5 py-0.5 rounded bg-zinc-800 border border-zinc-700 text-zinc-400 font-mono text-[9px] uppercase tracking-wider">
-                        Pending
-                      </span>
-                    )}
+                  <div className="flex items-center gap-2">
+                    <span className="font-bold text-xs text-zinc-100">{item.name}</span>
+                    <span className="px-1.5 py-0.5 rounded text-[9px] font-bold uppercase bg-surface text-zinc-400 border border-border">
+                      {item.meal_window || "Meal"}
+                    </span>
                   </div>
-                  <div className="font-mono text-[11px] text-zinc-400 mt-0.5 line-clamp-1">
-                    {meal.raw_input || `${meal.quantity_grams || 300}g · Verified Whole Food`}
-                  </div>
-                  <div className="flex items-center gap-2 mt-1 text-[11px] font-mono">
-                    <span className="text-cyan-400 font-bold">{meal.protein_g}g P</span>
-                    <span className="text-zinc-600">•</span>
-                    <span className="text-emerald-400">{meal.carbs_g}g C</span>
-                    <span className="text-zinc-600">•</span>
-                    <span className="text-purple-400">{meal.fat_g}g F</span>
-                  </div>
+                  {item.raw_input && (
+                    <div className="text-[10px] text-zinc-500 mt-0.5 line-clamp-1">
+                      {item.raw_input}
+                    </div>
+                  )}
                 </div>
               </div>
 
-              {/* Right Calories & Action */}
-              <div className="text-right pl-3 shrink-0 flex flex-col items-end gap-1">
-                <div className="font-mono text-sm sm:text-base font-extrabold text-zinc-100">
-                  {meal.calories}
-                  <span className="text-[10px] font-normal text-zinc-400 ml-1">kcal</span>
+              <div className="flex items-center gap-3 justify-between sm:justify-end">
+                {/* Macro Chips */}
+                <div className="flex items-center gap-1.5 text-[10px]">
+                  <span className="px-2 py-0.5 rounded bg-surface border border-border font-bold text-zinc-100">
+                    {item.calories} <span className="text-zinc-500 font-normal">kcal</span>
+                  </span>
+                  <span className="px-1.5 py-0.5 rounded bg-cyan-500/10 border border-cyan-500/20 text-cyan-400 font-bold">
+                    P: {item.protein_g}g
+                  </span>
+                  <span className="px-1.5 py-0.5 rounded bg-rose-500/10 border border-rose-500/20 text-rose-400 font-bold">
+                    C: {item.carbs_g}g
+                  </span>
+                  <span className="px-1.5 py-0.5 rounded bg-purple-500/10 border border-purple-500/20 text-purple-400 font-bold">
+                    F: {item.fat_g}g
+                  </span>
                 </div>
 
-                {isPending ? (
+                {/* Delete Button */}
+                {onDeleteEntry && (
                   <button
-                    onClick={() => handleConfirm(meal)}
-                    disabled={confirmingId === meal.id}
-                    className="px-2.5 py-1 rounded-lg bg-emerald-500 hover:bg-emerald-400 text-zinc-950 font-mono text-[10px] font-bold uppercase shadow-sm shadow-emerald-500/30 transition active:scale-95"
+                    onClick={() => onDeleteEntry(item.id)}
+                    className="p-1 rounded text-zinc-500 hover:text-rose-400 transition"
+                    title="Delete Entry"
                   >
-                    Confirm Eaten
+                    <Trash2 size={13} />
                   </button>
-                ) : (
-                  <div className="flex items-center gap-1 text-[10px] font-mono text-emerald-400 font-semibold">
-                    <CheckCircle2 size={12} />
-                    <span>VERIFIED</span>
-                    {onDeleteEntry && meal.id && !meal.id.startsWith("mock") && (
-                      <button
-                        onClick={() => onDeleteEntry(meal.id!)}
-                        className="p-1 text-zinc-500 hover:text-rose-400 transition ml-1"
-                        title="Delete Entry"
-                      >
-                        <Trash2 size={12} />
-                      </button>
-                    )}
-                  </div>
                 )}
               </div>
             </div>
-          );
-        })}
+          ))
+        )}
       </div>
     </div>
   );
