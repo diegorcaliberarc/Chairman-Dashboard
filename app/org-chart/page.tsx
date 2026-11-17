@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useCallback, useMemo, useState } from "react";
+import React, { useCallback, useEffect, useMemo, useState } from "react";
 import {
   ReactFlow,
   Background,
@@ -18,7 +18,17 @@ import {
 } from "@xyflow/react";
 import "@xyflow/react/dist/style.css";
 import { ExecutiveModuleShell } from "@/components/chairman/ExecutiveModuleShell";
-import { Network } from "lucide-react";
+import {
+  Network,
+  GitBranch,
+  Layers,
+  Plus,
+  RefreshCw,
+  FolderPlus,
+  Compass,
+  FileCode,
+  ShieldCheck,
+} from "lucide-react";
 
 import { SystemNode } from "@/components/topology/customNodes/SystemNode";
 import { StickyNoteNode } from "@/components/topology/customNodes/StickyNoteNode";
@@ -31,6 +41,22 @@ import { TopologyTopBar } from "@/components/topology/TopologyTopBar";
 import { TOPOLOGY_TEMPLATES, TopologyTemplate } from "@/components/topology/topologyTemplates";
 import { getAutoLayoutedNodes } from "@/components/topology/layoutUtils";
 
+import {
+  INITIAL_DIAGRAM_SPACES,
+  KNOWN_MODULES_REGISTRY,
+  ArchitectureNode,
+  DiagramSpace,
+  getMasterTopologyMermaid,
+  getCoreEngineMermaid,
+  getWealthPortfolioMermaid,
+  getHealthLifeMermaid,
+} from "@/lib/architectureRegistry";
+
+import { MermaidArchitectureViewer } from "@/components/topology/MermaidArchitectureViewer";
+import { NodeInspectorDrawer } from "@/components/topology/NodeInspectorDrawer";
+import { MermaidSourceDrawer } from "@/components/topology/MermaidSourceDrawer";
+import { NewSpaceModal } from "@/components/topology/NewSpaceModal";
+
 const nodeTypes = {
   systemNode: SystemNode,
   topologyNode: SystemNode,
@@ -40,19 +66,20 @@ const nodeTypes = {
   textNode: TextNode,
 };
 
+// ─────────────────────────────────────────────────────────────────────────────
+// Mode B: Freeform Miro / Lucidspark Canvas Engine
+// ─────────────────────────────────────────────────────────────────────────────
 function MiroLucidCanvasEngine() {
   const initialTemplate = TOPOLOGY_TEMPLATES[0];
   const [nodes, setNodes, onNodesChange] = useNodesState(initialTemplate.nodes);
   const [edges, setEdges, onEdgesChange] = useEdgesState(initialTemplate.edges);
 
-  // Interaction & Styling modes (Miro / Lucidspark)
   const [interactionMode, setInteractionMode] = useState<"select" | "pan">("select");
   const [edgeStyle, setEdgeStyle] = useState<"smoothstep" | "default" | "straight">("smoothstep");
   const [isAnimatedEdges, setIsAnimatedEdges] = useState<boolean>(true);
   const [backgroundVariant, setBackgroundVariant] = useState<BackgroundVariant>(BackgroundVariant.Dots);
   const [searchQuery, setSearchQuery] = useState<string>("");
 
-  // ── Edge Connection Handler (Drag & Drop Connector Line) ──────────────────
   const onConnect = useCallback(
     (params: Connection) => {
       setEdges((eds) =>
@@ -71,7 +98,6 @@ function MiroLucidCanvasEngine() {
     [edgeStyle, isAnimatedEdges, setEdges]
   );
 
-  // ── Node Creation Actions (Toolbar Dock) ──────────────────────────────────
   const handleAddSticky = (colorId: string) => {
     const id = `sticky-${Date.now()}`;
     const newNode: Node = {
@@ -117,7 +143,7 @@ function MiroLucidCanvasEngine() {
         height: 380,
       },
     };
-    setNodes((nds) => [newNode, ...nds]); // place frame behind nodes
+    setNodes((nds) => [newNode, ...nds]);
   };
 
   const handleAddText = () => {
@@ -153,19 +179,16 @@ function MiroLucidCanvasEngine() {
     setNodes((nds) => [...nds, newNode]);
   };
 
-  // ── Auto-Layout / Tidy ────────────────────────────────────────────────────
   const handleAutoLayout = (direction: "TB" | "LR") => {
     const layouted = getAutoLayoutedNodes(nodes, edges, direction);
     setNodes(layouted);
   };
 
-  // ── Template Switcher ─────────────────────────────────────────────────────
   const handleSelectTemplate = (tpl: TopologyTemplate) => {
     setNodes(tpl.nodes);
     setEdges(tpl.edges);
   };
 
-  // ── Export & Import JSON ──────────────────────────────────────────────────
   const handleExportJson = () => {
     const data = { nodes, edges, exportedAt: new Date().toISOString() };
     const blob = new Blob([JSON.stringify(data, null, 2)], { type: "application/json" });
@@ -187,7 +210,6 @@ function MiroLucidCanvasEngine() {
     }
   };
 
-  // ── Search & Filter Dimming (Miro & Lucid Quick Find) ─────────────────────
   const processedNodes = useMemo(() => {
     if (!searchQuery.trim()) return nodes;
     const q = searchQuery.toLowerCase();
@@ -207,8 +229,7 @@ function MiroLucidCanvasEngine() {
   }, [nodes, searchQuery]);
 
   return (
-    <div className="relative w-full h-[calc(100vh-140px)] min-h-[760px] rounded-3xl border border-[#1A1D24] bg-[#08090C] overflow-hidden shadow-2xl">
-      {/* Top Facilitation & Sprint Timer Bar */}
+    <div className="relative w-full h-[calc(100vh-210px)] min-h-[640px] rounded-3xl border border-[#1A1D24] bg-[#08090C] overflow-hidden shadow-2xl">
       <TopologyTopBar
         onAutoLayout={handleAutoLayout}
         backgroundVariant={backgroundVariant}
@@ -222,7 +243,6 @@ function MiroLucidCanvasEngine() {
         edgeCount={edges.length}
       />
 
-      {/* Left Floating Creation Toolbar (Lucidspark & Miro Dock) */}
       <TopologyToolbar
         interactionMode={interactionMode}
         setInteractionMode={setInteractionMode}
@@ -237,7 +257,6 @@ function MiroLucidCanvasEngine() {
         setIsAnimatedEdges={setIsAnimatedEdges}
       />
 
-      {/* Interactive Infinite Canvas */}
       <ReactFlow
         nodes={processedNodes}
         edges={edges}
@@ -252,20 +271,11 @@ function MiroLucidCanvasEngine() {
         maxZoom={2.0}
         proOptions={{ hideAttribution: true }}
       >
-        <Background
-          variant={backgroundVariant}
-          gap={24}
-          size={1.5}
-          color="#1A1D24"
-        />
-
-        {/* Viewport Zoom & Fit Controls (Bottom-Right Miro Style) */}
+        <Background variant={backgroundVariant} gap={24} size={1.5} color="#1A1D24" />
         <Controls
           className="!bg-[#0E1017]/90 !backdrop-blur-xl !border-white/10 !text-zinc-100 !rounded-2xl !p-1 !shadow-2xl"
           showInteractive={false}
         />
-
-        {/* Radar MiniMap */}
         <MiniMap
           nodeColor={(n) => {
             if (n.type === "stickyNote") return "#FACC15";
@@ -281,36 +291,271 @@ function MiroLucidCanvasEngine() {
   );
 }
 
+// ─────────────────────────────────────────────────────────────────────────────
+// Master Org Chart & Architecture Canvas Page
+// ─────────────────────────────────────────────────────────────────────────────
 export default function OrgChartTopologyPage() {
+  const [engineMode, setEngineMode] = useState<"mermaid" | "whiteboard">("mermaid");
+  const [spaces, setSpaces] = useState<DiagramSpace[]>(INITIAL_DIAGRAM_SPACES);
+  const [activeSpaceId, setActiveSpaceId] = useState<string>("master");
+  const [modules, setModules] = useState<ArchitectureNode[]>(KNOWN_MODULES_REGISTRY);
+
+  const [selectedNode, setSelectedNode] = useState<ArchitectureNode | null>(null);
+  const [isCodeDrawerOpen, setIsCodeDrawerOpen] = useState(false);
+  const [isNewSpaceModalOpen, setIsNewSpaceModalOpen] = useState(false);
+  const [isScanning, setIsScanning] = useState(false);
+
+  // Active space lookup
+  const activeSpace = useMemo(() => {
+    return spaces.find((s) => s.id === activeSpaceId) || spaces[0] || INITIAL_DIAGRAM_SPACES[0];
+  }, [spaces, activeSpaceId]);
+
+  // Load persisted spaces from localStorage on mount, then sync with API
+  useEffect(() => {
+    try {
+      const stored = localStorage.getItem("chairman_topology_spaces");
+      if (stored) {
+        const parsed = JSON.parse(stored);
+        if (Array.isArray(parsed) && parsed.length > 0) {
+          setSpaces(parsed);
+        }
+      }
+    } catch (e) {
+      console.warn("Could not read local diagram spaces:", e);
+    }
+
+    // Background fetch from /api/architecture/map
+    fetchArchitectureMap();
+  }, []);
+
+  const fetchArchitectureMap = async () => {
+    setIsScanning(true);
+    try {
+      const res = await fetch("/api/architecture/map");
+      const data = await res.json();
+      if (data?.success) {
+        if (Array.isArray(data.spaces) && data.spaces.length > 0) {
+          // Merge spaces preserving user edits
+          setSpaces((prev) => {
+            const merged = [...data.spaces];
+            // Keep any locally created spaces
+            for (const p of prev) {
+              if (!merged.some((m) => m.id === p.id)) {
+                merged.push(p);
+              }
+            }
+            return merged;
+          });
+        }
+        if (Array.isArray(data.modules)) {
+          setModules(data.modules);
+        }
+      }
+    } catch (err) {
+      console.warn("Architecture map scan warning:", err);
+    } finally {
+      setIsScanning(false);
+    }
+  };
+
+  // Persist spaces helper
+  const persistSpaces = (nextSpaces: DiagramSpace[]) => {
+    setSpaces(nextSpaces);
+    try {
+      localStorage.setItem("chairman_topology_spaces", JSON.stringify(nextSpaces));
+    } catch (e) {
+      console.warn("Could not cache spaces to localStorage:", e);
+    }
+  };
+
+  // Toggle layout direction (TD <-> LR) for current space
+  const handleToggleDirection = () => {
+    const nextDir: "TD" | "LR" = activeSpace.direction === "LR" ? "TD" : "LR";
+    const updatedCode = activeSpace.mermaidCode.replace(
+      /^flowchart\s+(TD|LR|TB|BT|RL)/m,
+      `flowchart ${nextDir}`
+    );
+
+    const updated = spaces.map((s) =>
+      s.id === activeSpace.id ? { ...s, direction: nextDir, mermaidCode: updatedCode } : s
+    );
+    persistSpaces(updated);
+  };
+
+  // Apply code in editor
+  const handleApplyCode = (newCode: string) => {
+    const updated = spaces.map((s) =>
+      s.id === activeSpace.id ? { ...s, mermaidCode: newCode } : s
+    );
+    setSpaces(updated);
+  };
+
+  // Save code permanently
+  const handleSaveCode = async (newCode: string) => {
+    const updatedSpace = {
+      ...activeSpace,
+      mermaidCode: newCode,
+      updatedAt: new Date().toISOString(),
+    };
+    const updated = spaces.map((s) => (s.id === activeSpace.id ? updatedSpace : s));
+    persistSpaces(updated);
+
+    // Call API to persist in Supabase
+    try {
+      await fetch("/api/architecture/map", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ space: updatedSpace }),
+      });
+    } catch (e) {
+      console.warn("API save warning:", e);
+    }
+  };
+
+  // Reset current space to original code
+  const handleResetCode = () => {
+    let defaultCode = "";
+    if (activeSpace.id === "master") defaultCode = getMasterTopologyMermaid(activeSpace.direction);
+    else if (activeSpace.id === "core") defaultCode = getCoreEngineMermaid(activeSpace.direction);
+    else if (activeSpace.id === "wealth") defaultCode = getWealthPortfolioMermaid(activeSpace.direction);
+    else if (activeSpace.id === "health") defaultCode = getHealthLifeMermaid(activeSpace.direction);
+    else defaultCode = activeSpace.mermaidCode;
+
+    handleApplyCode(defaultCode);
+  };
+
+  // Add new space
+  const handleCreateSpace = (newSpace: DiagramSpace) => {
+    const next = [...spaces, newSpace];
+    persistSpaces(next);
+    setActiveSpaceId(newSpace.id);
+
+    // Save to API
+    try {
+      fetch("/api/architecture/map", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ space: newSpace }),
+      });
+    } catch (e) {
+      console.warn("Failed to POST new space:", e);
+    }
+  };
+
   return (
     <ExecutiveModuleShell
       moduleId="ORG_CHART"
       eyebrow="System Architecture, Topology & Whiteboard"
       title="Topology Map & Architecture Canvas"
-      subtitle="Lucidspark & Miro Grade Collaborative Whiteboard with Sticky Notes, Shapes, Connectors, Frames & Sprint Timers"
+      subtitle="Multi-Page Auto-Directed Mermaid Architecture Whiteboard & Interactive Subsystem Visualizer"
       accentColor="#0969DA"
     >
-      <div className="p-2 sm:p-4 lg:p-6 max-w-[1700px] mx-auto space-y-3">
-        {/* Sub-header instruction banner */}
-        <div className="flex flex-wrap items-center justify-between gap-3 px-2 text-xs font-mono text-zinc-400">
-          <div className="flex items-center gap-2">
-            <Network size={14} className="text-[#58A6FF]" />
-            <span>
-              Miro/Lucid Mode: Press <span className="text-zinc-200 font-bold">V</span> to select,{" "}
-              <span className="text-zinc-200 font-bold">H</span> to pan, drag handles to connect, or click node toolbar for emojis & options.
-            </span>
+      <div className="p-2 sm:p-4 lg:p-6 max-w-[1780px] mx-auto space-y-3">
+        {/* Workspace Switcher & Multi-Page Tabs Header */}
+        <div className="flex flex-wrap items-center justify-between gap-3 p-2 rounded-2xl bg-[#080C18]/90 border border-white/10 backdrop-blur-xl shadow-xl">
+          {/* Workspace Space Tabs */}
+          <div className="flex items-center gap-1.5 overflow-x-auto no-scrollbar py-0.5 max-w-full">
+            {spaces.map((s) => (
+              <button
+                key={s.id}
+                onClick={() => {
+                  setActiveSpaceId(s.id);
+                  setSelectedNode(null);
+                }}
+                className={`flex items-center gap-2 px-3.5 py-1.5 rounded-xl text-xs font-semibold whitespace-nowrap transition-all ${
+                  activeSpaceId === s.id
+                    ? "bg-sky-500/20 text-sky-300 border border-sky-500/40 shadow-sm"
+                    : "text-zinc-400 hover:text-white hover:bg-white/5 border border-transparent"
+                }`}
+              >
+                <span>{s.title}</span>
+                <span className="px-1.5 py-0.2 rounded-full text-[10px] font-mono bg-white/10 text-zinc-300">
+                  {s.badge}
+                </span>
+              </button>
+            ))}
+
+            {/* + New Space Button */}
+            <button
+              onClick={() => setIsNewSpaceModalOpen(true)}
+              className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl border border-dashed border-white/20 hover:border-sky-400/50 hover:bg-sky-500/10 text-zinc-400 hover:text-sky-300 text-xs font-mono transition whitespace-nowrap"
+              title="Create Custom Diagram Space"
+            >
+              <Plus size={13} />
+              <span>New Space</span>
+            </button>
           </div>
-          <div className="flex items-center gap-3 text-[11px]">
-            <span className="px-2 py-0.5 rounded-full bg-white/[0.04] border border-white/10">
-              Infinite Canvas · 60fps GPU Accelerated
-            </span>
+
+          {/* Engine Mode Toggle (Mermaid Auto-Directed vs Freeform Whiteboard) */}
+          <div className="flex items-center gap-2 flex-shrink-0">
+            <div className="flex items-center rounded-xl bg-black/60 p-0.5 border border-white/10 text-xs">
+              <button
+                onClick={() => setEngineMode("mermaid")}
+                className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold transition ${
+                  engineMode === "mermaid"
+                    ? "bg-sky-500/20 text-sky-300 border border-sky-500/30 shadow-sm"
+                    : "text-zinc-400 hover:text-white"
+                }`}
+                title="Auto-Directed Mermaid Directed Graph Engine (Zero Overlapping Nodes)"
+              >
+                <GitBranch size={13} className={engineMode === "mermaid" ? "text-sky-300" : "text-zinc-400"} />
+                <span>Mermaid Architecture</span>
+              </button>
+
+              <button
+                onClick={() => setEngineMode("whiteboard")}
+                className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold transition ${
+                  engineMode === "whiteboard"
+                    ? "bg-amber-500/20 text-amber-300 border border-amber-500/30 shadow-sm"
+                    : "text-zinc-400 hover:text-white"
+                }`}
+                title="Miro / Lucidspark Freeform Whiteboard (Sticky Notes & Connectors)"
+              >
+                <Layers size={13} className={engineMode === "whiteboard" ? "text-amber-300" : "text-zinc-400"} />
+                <span>Freeform Miro</span>
+              </button>
+            </div>
           </div>
         </div>
 
-        {/* Master Canvas Wrapped in Provider */}
-        <ReactFlowProvider>
-          <MiroLucidCanvasEngine />
-        </ReactFlowProvider>
+        {/* Master Canvas Container */}
+        <div className="relative w-full">
+          {engineMode === "mermaid" ? (
+            <MermaidArchitectureViewer
+              space={activeSpace}
+              modules={modules}
+              onNodeSelect={(node) => setSelectedNode(node)}
+              onToggleCodeDrawer={() => setIsCodeDrawerOpen((v) => !v)}
+              onToggleDirection={handleToggleDirection}
+              onRefreshScan={fetchArchitectureMap}
+              isScanning={isScanning}
+            />
+          ) : (
+            <ReactFlowProvider>
+              <MiroLucidCanvasEngine />
+            </ReactFlowProvider>
+          )}
+
+          {/* Interactive Floating Node Inspector */}
+          <NodeInspectorDrawer node={selectedNode} onClose={() => setSelectedNode(null)} />
+
+          {/* Collapsible Mermaid Code Source Drawer */}
+          <MermaidSourceDrawer
+            isOpen={isCodeDrawerOpen}
+            onClose={() => setIsCodeDrawerOpen(false)}
+            initialCode={activeSpace.mermaidCode}
+            onApply={handleApplyCode}
+            onSave={handleSaveCode}
+            onReset={handleResetCode}
+          />
+
+          {/* New Space Creation Modal */}
+          <NewSpaceModal
+            isOpen={isNewSpaceModalOpen}
+            onClose={() => setIsNewSpaceModalOpen(false)}
+            onCreateSpace={handleCreateSpace}
+          />
+        </div>
       </div>
     </ExecutiveModuleShell>
   );
