@@ -149,8 +149,9 @@ export default function MacroOpsPage() {
         protein: acc.protein + (Number(curr.protein_g) || 0),
         carbs: acc.carbs + (Number(curr.carbs_g) || 0),
         fat: acc.fat + (Number(curr.fat_g) || 0),
+        water_oz: acc.water_oz + (Number(curr.water_oz) || 0),
       }),
-      { calories: 0, protein: 0, carbs: 0, fat: 0 }
+      { calories: 0, protein: 0, carbs: 0, fat: 0, water_oz: 0 }
     );
   }, [entries]);
 
@@ -179,8 +180,22 @@ export default function MacroOpsPage() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(payload),
       });
+
       if (res.ok) {
-        await loadSitrepData();
+        const data = await res.json();
+        const savedLog = data.entry || data.log || data.todayLog;
+        if (savedLog) {
+          setTodayLog(savedLog);
+          setSitrepHistory((prev) => {
+            const idx = prev.findIndex((h) => h.log_date === selectedDate);
+            if (idx >= 0) {
+              const updated = [...prev];
+              updated[idx] = savedLog;
+              return updated;
+            }
+            return [savedLog, ...prev];
+          });
+        }
       }
     } catch (err) {
       console.error("Failed to update sitrep field:", err);
@@ -188,8 +203,78 @@ export default function MacroOpsPage() {
   };
 
   const handleQuickAddWater = async (deltaOz: number) => {
-    const currentWater = todayLog?.water_oz || 0;
+    const currentWater = Number(todayLog?.water_oz || 0);
     const nextWater = +(currentWater + deltaOz).toFixed(1);
+
+    // 1. Optimistic update immediately for zero-lag UI response
+    setTodayLog((prev) =>
+      prev
+        ? { ...prev, water_oz: nextWater }
+        : {
+            id: "temp-sitrep",
+            user_id: "",
+            log_date: selectedDate,
+            morning_weight_lbs: null,
+            moving_avg_7d_lbs: null,
+            total_steps: 0,
+            miles: 0,
+            calories_eaten: totals?.calories || 0,
+            kcal_burned: 0,
+            kcal_deficit: 0,
+            protein_g: totals?.protein || 0,
+            water_oz: nextWater,
+            sleep_hours: null,
+            recovery_score: null,
+            lift_completed: false,
+            cardio_completed: false,
+            fasting_hours: null,
+            sitrep_grade: "partial",
+            notes: null,
+            created_at: new Date().toISOString(),
+            updated_at: new Date().toISOString(),
+          }
+    );
+
+    // Invalidate cached copy so fresh data persists
+    delete cacheRef.current[selectedDate];
+
+    // 2. Persist to sitrep database
+    await updateSitrepField({ water_oz: nextWater });
+  };
+
+  const handleSetWater = async (totalOz: number) => {
+    const nextWater = Math.max(0, +totalOz.toFixed(1));
+
+    // 1. Optimistic update immediately for zero-lag UI response
+    setTodayLog((prev) =>
+      prev
+        ? { ...prev, water_oz: nextWater }
+        : {
+            id: "temp-sitrep",
+            user_id: "",
+            log_date: selectedDate,
+            morning_weight_lbs: null,
+            moving_avg_7d_lbs: null,
+            total_steps: 0,
+            miles: 0,
+            calories_eaten: totals?.calories || 0,
+            kcal_burned: 0,
+            kcal_deficit: 0,
+            protein_g: totals?.protein || 0,
+            water_oz: nextWater,
+            sleep_hours: null,
+            recovery_score: null,
+            lift_completed: false,
+            cardio_completed: false,
+            fasting_hours: null,
+            sitrep_grade: "partial",
+            notes: null,
+            created_at: new Date().toISOString(),
+            updated_at: new Date().toISOString(),
+          }
+    );
+
+    delete cacheRef.current[selectedDate];
     await updateSitrepField({ water_oz: nextWater });
   };
 
@@ -443,7 +528,9 @@ export default function MacroOpsPage() {
                 <GengarHydrationCard
                   todayLog={todayLog}
                   dailyLog={dailyLog}
+                  totals={totals}
                   onQuickAddWater={handleQuickAddWater}
+                  onSetWater={handleSetWater}
                 />
               </div>
 

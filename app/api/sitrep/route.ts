@@ -205,32 +205,35 @@ export async function POST(req: NextRequest) {
     );
 
     const saved = rows[0];
+    const logObj = {
+      id: saved.id,
+      user_id: saved.user_id,
+      log_date: formatDateIso(saved.log_date),
+      morning_weight_lbs: saved.morning_weight_lbs !== null ? Number(saved.morning_weight_lbs) : null,
+      moving_avg_7d_lbs: saved.moving_avg_7d_lbs !== null ? Number(saved.moving_avg_7d_lbs) : null,
+      total_steps: Number(saved.total_steps || 0),
+      miles: Number(saved.miles || 0),
+      calories_eaten: Number(saved.calories_eaten || 0),
+      kcal_burned: Number(saved.kcal_burned || 0),
+      kcal_deficit: Number(saved.kcal_deficit || 0),
+      protein_g: Number(saved.protein_g || 0),
+      water_oz: Number(saved.water_oz || 0),
+      sleep_hours: saved.sleep_hours !== null ? Number(saved.sleep_hours) : null,
+      recovery_score: saved.recovery_score !== null ? Number(saved.recovery_score) : null,
+      lift_completed: Boolean(saved.lift_completed),
+      cardio_completed: Boolean(saved.cardio_completed),
+      fasting_hours: saved.fasting_hours !== null ? Number(saved.fasting_hours) : null,
+      sitrep_grade: saved.sitrep_grade,
+      notes: saved.notes,
+      created_at: saved.created_at,
+      updated_at: saved.updated_at,
+    };
 
     return NextResponse.json({
       success: true,
-      entry: {
-        id: saved.id,
-        user_id: saved.user_id,
-        log_date: formatDateIso(saved.log_date),
-        morning_weight_lbs: saved.morning_weight_lbs !== null ? Number(saved.morning_weight_lbs) : null,
-        moving_avg_7d_lbs: saved.moving_avg_7d_lbs !== null ? Number(saved.moving_avg_7d_lbs) : null,
-        total_steps: Number(saved.total_steps || 0),
-        miles: Number(saved.miles || 0),
-        calories_eaten: Number(saved.calories_eaten || 0),
-        kcal_burned: Number(saved.kcal_burned || 0),
-        kcal_deficit: Number(saved.kcal_deficit || 0),
-        protein_g: Number(saved.protein_g || 0),
-        water_oz: Number(saved.water_oz || 0),
-        sleep_hours: saved.sleep_hours !== null ? Number(saved.sleep_hours) : null,
-        recovery_score: saved.recovery_score !== null ? Number(saved.recovery_score) : null,
-        lift_completed: Boolean(saved.lift_completed),
-        cardio_completed: Boolean(saved.cardio_completed),
-        fasting_hours: saved.fasting_hours !== null ? Number(saved.fasting_hours) : null,
-        sitrep_grade: saved.sitrep_grade,
-        notes: saved.notes,
-        created_at: saved.created_at,
-        updated_at: saved.updated_at,
-      },
+      entry: logObj,
+      log: logObj,
+      todayLog: logObj,
     });
   } catch (error: any) {
     console.error("POST /api/sitrep error:", error);
