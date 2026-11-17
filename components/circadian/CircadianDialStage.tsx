@@ -119,6 +119,9 @@ export function CircadianDialStage({
   const [isDraggingTime, setIsDraggingTime] = useState(false);
   const [quickItemText, setQuickItemText] = useState("");
 
+  // Label View Mode: "orbital" (Direct Orbital HUD matching Image 2) vs "split" (Split Column Rails matching Image 1)
+  const [labelMode, setLabelMode] = useState<"orbital" | "split">("orbital");
+
   // Interactive In-Canvas Zoom & Pan states
   const [zoom, setZoom] = useState(1.0);
   const [pan, setPan] = useState({ x: 0, y: 0 });
@@ -234,7 +237,7 @@ export function CircadianDialStage({
         const prev = raw[idx - 1];
         const angDiff = Math.abs(item.midAngleDeg - prev.midAngleDeg);
         if (angDiff < 18) {
-          staggerLevel = (idx % 3);
+          staggerLevel = idx % 3;
         }
       }
       const radialOffset = staggerLevel * 32 * scaleFactor;
@@ -245,13 +248,55 @@ export function CircadianDialStage({
         item.midAngleRad
       );
 
+      // Image 2 Direct Orbital HUD label positioning
+      const orbitalDist = R_WEDGE_OUTER + (20 + staggerLevel * 18) * scaleFactor;
+      const orbitalAnchor = polarToCartesian(
+        CX,
+        CY,
+        orbitalDist,
+        item.midAngleRad
+      );
+      const cosA = Math.cos(item.midAngleRad);
+      const sinA = Math.sin(item.midAngleRad);
+
+      let orbitalAnchorMode: "start" | "end" | "middle" = "start";
+      let orbitalTx = orbitalAnchor.x;
+      let orbitalTy1 = orbitalAnchor.y - 6 * scaleFactor;
+      let orbitalTy2 = orbitalAnchor.y + 11 * scaleFactor;
+
+      if (cosA > 0.3) {
+        orbitalAnchorMode = "start";
+        orbitalTx = orbitalAnchor.x + 8 * scaleFactor;
+      } else if (cosA < -0.3) {
+        orbitalAnchorMode = "end";
+        orbitalTx = orbitalAnchor.x - 8 * scaleFactor;
+      } else {
+        orbitalAnchorMode = "middle";
+        if (sinA < 0) {
+          orbitalTy1 = orbitalAnchor.y - 12 * scaleFactor;
+          orbitalTy2 = orbitalAnchor.y + 4 * scaleFactor;
+        } else {
+          orbitalTy1 = orbitalAnchor.y + 10 * scaleFactor;
+          orbitalTy2 = orbitalAnchor.y + 26 * scaleFactor;
+        }
+      }
+
+      const timeRange12h = `${minutesTo12Hour(item.startMin, true)} – ${minutesTo12Hour(item.endMin, true)}`;
+
       return {
         ...item,
+        staggerLevel,
         anchorPt,
         isRight,
         labelX: isRight ? anchorPt.x + 22 : anchorPt.x - 22,
         labelY: anchorPt.y,
         textAnchor: (isRight ? "start" : "end") as "start" | "end",
+        orbitalAnchor,
+        orbitalAnchorMode,
+        orbitalTx,
+        orbitalTy1,
+        orbitalTy2,
+        timeRange12h,
       };
     });
 
@@ -552,36 +597,71 @@ export function CircadianDialStage({
       onPointerUp={handlePointerUp}
       onPointerLeave={handlePointerUp}
     >
-      {/* Dedicated Floating Canvas Zoom & Pan HUD (Top Right) */}
-      <div className="absolute top-3 right-3 z-40 flex items-center gap-1 p-1 rounded-xl bg-[#090D18]/90 backdrop-blur-xl border border-white/10 shadow-2xl text-zinc-300">
-        <button
-          onClick={() => setZoom((z) => Math.min(2.5, +(z + 0.15).toFixed(2)))}
-          className="p-1.5 rounded-lg hover:bg-white/10 hover:text-white transition"
-          title="Zoom In"
-        >
-          <ZoomIn size={14} />
-        </button>
-        <button
-          onClick={resetZoomPan}
-          className="px-2 py-0.5 text-[10px] font-mono font-bold text-amber-300 hover:text-amber-200 transition"
-          title="Reset Zoom & Pan to 100%"
-        >
-          {Math.round(zoom * 100)}%
-        </button>
-        <button
-          onClick={() => setZoom((z) => Math.max(0.75, +(z - 0.15).toFixed(2)))}
-          className="p-1.5 rounded-lg hover:bg-white/10 hover:text-white transition"
-          title="Zoom Out"
-        >
-          <ZoomOut size={14} />
-        </button>
-        <button
-          onClick={resetZoomPan}
-          className="p-1.5 rounded-lg hover:bg-white/10 hover:text-white transition border-l border-white/10 ml-0.5"
-          title="Center Canvas"
-        >
-          <RotateCcw size={13} />
-        </button>
+      {/* Dedicated Floating Canvas Controls & Mode Switcher (Top Right) */}
+      <div className="absolute top-3 right-3 z-40 flex items-center gap-2">
+        {/* Switchable Label Mode Toggle: Orbital HUD (Image 2) vs Split Columns (Image 1) */}
+        {viewMode === "solar" && (
+          <div className="flex items-center bg-[#090D18]/90 backdrop-blur-xl border border-white/10 rounded-xl p-0.5 shadow-2xl text-zinc-300">
+            <button
+              type="button"
+              onClick={() => setLabelMode("orbital")}
+              className={`flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-[11px] font-semibold transition ${
+                labelMode === "orbital"
+                  ? "bg-amber-400/20 text-amber-300 border border-amber-400/30 shadow-sm"
+                  : "text-zinc-400 hover:text-white"
+              }`}
+              title="Direct Orbital HUD Labels (Image 2 style)"
+            >
+              <Sparkles size={12} className={labelMode === "orbital" ? "text-amber-300" : "text-zinc-400"} />
+              <span>Orbital HUD</span>
+            </button>
+            <button
+              type="button"
+              onClick={() => setLabelMode("split")}
+              className={`flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-[11px] font-semibold transition ${
+                labelMode === "split"
+                  ? "bg-sky-400/20 text-sky-300 border border-sky-400/30 shadow-sm"
+                  : "text-zinc-400 hover:text-white"
+              }`}
+              title="Split Column Rails (Image 1 style)"
+            >
+              <ListOrdered size={12} className={labelMode === "split" ? "text-sky-300" : "text-zinc-400"} />
+              <span>Split Columns</span>
+            </button>
+          </div>
+        )}
+
+        {/* Zoom & Pan HUD */}
+        <div className="flex items-center gap-1 p-1 rounded-xl bg-[#090D18]/90 backdrop-blur-xl border border-white/10 shadow-2xl text-zinc-300">
+          <button
+            onClick={() => setZoom((z) => Math.min(2.5, +(z + 0.15).toFixed(2)))}
+            className="p-1.5 rounded-lg hover:bg-white/10 hover:text-white transition"
+            title="Zoom In"
+          >
+            <ZoomIn size={14} />
+          </button>
+          <button
+            onClick={resetZoomPan}
+            className="px-2 py-0.5 text-[10px] font-mono font-bold text-amber-300 hover:text-amber-200 transition"
+            title="Reset Zoom & Pan to 100%"
+          >
+            {Math.round(zoom * 100)}%
+          </button>
+          <button
+            onClick={() => setZoom((z) => Math.max(0.75, +(z - 0.15).toFixed(2)))}
+            className="p-1.5 rounded-lg hover:bg-white/10 hover:text-white transition"
+            title="Zoom Out"
+          >
+            <ZoomOut size={14} />
+          </button>
+          <button
+            onClick={resetZoomPan}
+            className="p-1.5 rounded-lg hover:bg-white/10 hover:text-white transition border-l border-white/10 ml-0.5"
+            title="Center Canvas"
+          >
+            <RotateCcw size={13} />
+          </button>
+        </div>
       </div>
 
       {/* Master 1:1 Isotropic SVG Viewport — 1000×1000 Circle Geometry */}
@@ -654,6 +734,28 @@ export function CircadianDialStage({
             <stop offset="85%" stopColor="#020617" stopOpacity="0.25" />
             <stop offset="100%" stopColor="#020617" stopOpacity="0.75" />
           </radialGradient>
+
+          {/* Subtle Dark Vignette Overlay for Photo-Filled Wedges */}
+          <radialGradient id="wedgeVignette" cx="50%" cy="50%" r="70%">
+            <stop offset="0%" stopColor="#000000" stopOpacity="0.08" />
+            <stop offset="60%" stopColor="#000000" stopOpacity="0.25" />
+            <stop offset="100%" stopColor="#000000" stopOpacity="0.65" />
+          </radialGradient>
+
+          {/* Image 2 Smoked Lens Aperture Gradient */}
+          <radialGradient id="centerIrisGlassGrad" cx="50%" cy="50%" r="50%">
+            <stop offset="0%" stopColor="#080c1a" stopOpacity="0.85" />
+            <stop offset="50%" stopColor="#0b1022" stopOpacity="0.88" />
+            <stop offset="85%" stopColor="#04060d" stopOpacity="0.95" />
+            <stop offset="100%" stopColor="#020308" stopOpacity="0.98" />
+          </radialGradient>
+
+          {/* Luminous Golden Solar Arc Gradient */}
+          <linearGradient id="goldenArcGrad" x1="0" y1="0" x2="1" y2="1">
+            <stop offset="0%" stopColor="#fef08a" />
+            <stop offset="50%" stopColor="#f59e0b" />
+            <stop offset="100%" stopColor="#d97706" />
+          </linearGradient>
 
           {/* Authentic Concentric Smoked Glass Cockpit Core Gradient */}
           <radialGradient id="centerCoreGlassGrad" cx="50%" cy="50%" r="50%">
@@ -742,71 +844,71 @@ export function CircadianDialStage({
           </g>
 
           {/* ========================================================================= */}
-          {/* 3. 24-HOUR MILITARY CLOCK CARDINAL MARKERS (00:00 BOTTOM -> 12:00 TOP)    */}
+          {/* 3. CARDINAL CLOCK HOUR MARKERS (MATCHING IMAGE 2 AESTHETIC)               */}
           {/* ========================================================================= */}
-          <g id="dial-clock-cardinal-markers" className="pointer-events-none select-none font-mono">
-            {/* Top: 12:00 (High Noon Solar Apex) */}
+          <g id="dial-clock-cardinal-markers" className="pointer-events-none select-none font-sans">
+            {/* Top: 12:00 PM (Solar Apex High Noon) */}
             <text
               x={CX}
               y={CY - R_SKY + 22 * scaleFactor}
               textAnchor="middle"
               fill="#ffffff"
-              stroke="rgba(8, 11, 20, 0.92)"
+              stroke="rgba(8, 11, 20, 0.95)"
               strokeWidth="3.2"
               paintOrder="stroke"
               fontSize={13 * scaleFactor}
-              fontWeight={900}
-              letterSpacing="0.04em"
+              fontWeight={800}
+              letterSpacing="0.03em"
             >
-              12:00
+              12:00 PM
             </text>
 
-            {/* Left: 06:00 (Western Sunrise Dawn) */}
+            {/* Left: - 6:00 AM (Western Sunrise Dawn) */}
             <text
-              x={CX - R_SKY + 26 * scaleFactor}
+              x={CX - R_SKY + 34 * scaleFactor}
               y={CY + 4.5 * scaleFactor}
               textAnchor="middle"
               fill="#fef3c7"
-              stroke="rgba(8, 11, 20, 0.92)"
+              stroke="rgba(8, 11, 20, 0.95)"
               strokeWidth="3.2"
               paintOrder="stroke"
               fontSize={12 * scaleFactor}
-              fontWeight={900}
-              letterSpacing="0.04em"
+              fontWeight={800}
+              letterSpacing="0.03em"
             >
-              06:00
+              - 6:00 AM
             </text>
 
-            {/* Right: 18:00 (Sunset Dusk) */}
+            {/* Right: 6:00 PM - (Sunset Dusk) */}
             <text
-              x={CX + R_SKY - 26 * scaleFactor}
+              x={CX + R_SKY - 34 * scaleFactor}
               y={CY + 4.5 * scaleFactor}
               textAnchor="middle"
               fill="#fef3c7"
-              stroke="rgba(8, 11, 20, 0.92)"
+              stroke="rgba(8, 11, 20, 0.95)"
               strokeWidth="3.2"
               paintOrder="stroke"
               fontSize={12 * scaleFactor}
-              fontWeight={900}
-              letterSpacing="0.04em"
+              fontWeight={800}
+              letterSpacing="0.03em"
             >
-              18:00
+              6:00 PM -
             </text>
 
-            {/* Bottom: 00:00 / 24:00 (Midnight Nadir) */}
+            {/* Bottom: 12:00 AM (Midnight Nadir) */}
             <text
               x={CX}
               y={CY + R_SKY - 12 * scaleFactor}
               textAnchor="middle"
               fill="#cbd5e1"
-              stroke="rgba(8, 11, 20, 0.95)"
+              stroke="rgba(8, 11, 20, 0.96)"
               strokeWidth="3.2"
               paintOrder="stroke"
-              fontSize={11 * scaleFactor}
+              fontSize={11.5 * scaleFactor}
               fontWeight={800}
-              letterSpacing="0.04em"
+              letterSpacing="0.03em"
             >
-              00:00 / 24:00
+              12:00 AM
             </text>
 
             {/* 24-Hour Precision Hour Ticks Around Rim */}
@@ -840,85 +942,175 @@ export function CircadianDialStage({
           </g>
 
           {/* ========================================================================= */}
-          {/* 4. CLEAN CENTRAL DIGITAL CLOCK READOUT & LIVE TIME INDICATOR              */}
+          {/* 4. CENTRAL APERTURE & IMAGE 2 LUMINOUS GOLDEN SOLAR TIME ARC              */}
           {/* ========================================================================= */}
-          <g id="center-digital-clock" className="pointer-events-none select-none">
-            {/* 100% Mathematically Centered Smoked Glass Cockpit Disc */}
-            <circle
-              cx={CX}
-              cy={CY}
-              r={72 * scaleFactor}
-              fill="url(#centerCoreGlassGrad)"
-              stroke="rgba(255, 255, 255, 0.16)"
-              strokeWidth={1.2}
-              filter="url(#arcNeonGlow)"
-            />
-            {/* Concentric Subtle Hairline Orbit Track */}
-            <circle
-              cx={CX}
-              cy={CY}
-              r={62 * scaleFactor}
-              fill="none"
-              stroke="rgba(255, 255, 255, 0.08)"
-              strokeWidth={0.8}
-              strokeDasharray="3 4"
-            />
+          {(() => {
+            const R_APERTURE = 106 * scaleFactor;
+            const R_GOLD_ARC = 94 * scaleFactor;
+            const R_CORE = 64 * scaleFactor;
 
-            {/* Crisp High-Contrast Digital Time Display Floating Concentrically in Center */}
-            <text
-              x={CX}
-              y={CY - 2 * scaleFactor}
-              textAnchor="middle"
-              dominantBaseline="middle"
-              fill="#ffffff"
-              stroke="rgba(4, 7, 15, 0.95)"
-              strokeWidth={4.5 * scaleFactor}
-              paintOrder="stroke"
-              fontSize={27 * scaleFactor}
-              fontWeight={800}
-              letterSpacing="-0.02em"
-              style={{ fontVariantNumeric: "tabular-nums" }}
-            >
-              {minutesTo12Hour(currentMinutes, true)}
-            </text>
-            <text
-              x={CX}
-              y={CY + 18 * scaleFactor}
-              textAnchor="middle"
-              dominantBaseline="middle"
-              fill="rgba(226, 232, 240, 0.95)"
-              stroke="rgba(4, 7, 15, 0.95)"
-              strokeWidth={3 * scaleFactor}
-              paintOrder="stroke"
-              fontSize={9.2 * scaleFactor}
-              fontWeight={700}
-              letterSpacing="0.14em"
-            >
-              24H SOLAR ARC
-            </text>
+            const currentAngleRad = minutesToAngleRad(currentMinutes);
+            const nadirAngleRad = currentAngleRad + Math.PI;
 
-            {/* Subtle Live Time Radial Needle & Glowing Dot */}
-            <line
-              x1={polarToCartesian(CX, CY, 72 * scaleFactor, minutesToAngleRad(currentMinutes)).x}
-              y1={polarToCartesian(CX, CY, 72 * scaleFactor, minutesToAngleRad(currentMinutes)).y}
-              x2={polarToCartesian(CX, CY, R_SKY - 2 * scaleFactor, minutesToAngleRad(currentMinutes)).x}
-              y2={polarToCartesian(CX, CY, R_SKY - 2 * scaleFactor, minutesToAngleRad(currentMinutes)).y}
-              stroke="#f59e0b"
-              strokeWidth={1.8}
-              strokeLinecap="round"
-              filter="url(#arcNeonGlow)"
-              opacity="0.85"
-            />
-            <circle
-              cx={polarToCartesian(CX, CY, R_SKY - 2 * scaleFactor, minutesToAngleRad(currentMinutes)).x}
-              cy={polarToCartesian(CX, CY, R_SKY - 2 * scaleFactor, minutesToAngleRad(currentMinutes)).y}
-              r={3.8 * scaleFactor}
-              fill="#fef08a"
-              stroke="#f59e0b"
-              strokeWidth="1.5"
-              filter="url(#arcNeonGlow)"
-            />
-          </g>
+            const node1 = polarToCartesian(CX, CY, R_GOLD_ARC, currentAngleRad);
+            const node2 = polarToCartesian(CX, CY, R_GOLD_ARC, nadirAngleRad);
+
+            // Compute arc sweep between 06:00 (dawn) and current time or across solar day
+            const dayStartMin = 360; // 06:00 AM
+            const dayEndMin = 1080;  // 06:00 PM
+
+            return (
+              <g id="center-solar-aperture" className="pointer-events-none select-none">
+                {/* Smoked Lens Aperture Disc */}
+                <circle
+                  cx={CX}
+                  cy={CY}
+                  r={R_APERTURE}
+                  fill="url(#centerIrisGlassGrad)"
+                  stroke="rgba(255, 255, 255, 0.18)"
+                  strokeWidth={1.2}
+                  filter="url(#arcNeonGlow)"
+                />
+
+                {/* Subtle Concentric Hairline Track */}
+                <circle
+                  cx={CX}
+                  cy={CY}
+                  r={R_GOLD_ARC}
+                  fill="none"
+                  stroke="rgba(245, 158, 11, 0.22)"
+                  strokeWidth={1.2}
+                  strokeDasharray="2 3"
+                />
+
+                {/* Radiant Golden Solar Daytime Arc (Image 2 aesthetic) */}
+                <path
+                  d={describeTimeArc(CX, CY, R_GOLD_ARC, dayStartMin, Math.max(dayStartMin + 30, Math.min(dayEndMin, currentMinutes)))}
+                  fill="none"
+                  stroke="url(#goldenArcGrad)"
+                  strokeWidth={3.5 * scaleFactor}
+                  strokeLinecap="round"
+                  filter="url(#radiantOuterGlow)"
+                />
+
+                {/* Golden Node 1: Current Live Solar Time with Tag */}
+                <g id="solar-node-current">
+                  <circle
+                    cx={node1.x}
+                    cy={node1.y}
+                    r={6.5 * scaleFactor}
+                    fill="#fef08a"
+                    filter="url(#solarNodeGlow)"
+                  />
+                  <circle
+                    cx={node1.x}
+                    cy={node1.y}
+                    r={3.0 * scaleFactor}
+                    fill="#ffffff"
+                  />
+                  <text
+                    x={node1.x}
+                    y={node1.y - 9 * scaleFactor}
+                    textAnchor="middle"
+                    fill="#fef3c7"
+                    stroke="rgba(4, 7, 15, 0.95)"
+                    strokeWidth={3}
+                    paintOrder="stroke"
+                    fontSize={10 * scaleFactor}
+                    fontWeight={700}
+                    letterSpacing="0.02em"
+                  >
+                    {minutesTo12Hour(currentMinutes, true)}
+                  </text>
+                </g>
+
+                {/* Golden Node 2: Nadir / Horizon Complementary Node with Tag */}
+                <g id="solar-node-nadir">
+                  <circle
+                    cx={node2.x}
+                    cy={node2.y}
+                    r={6.5 * scaleFactor}
+                    fill="#fef08a"
+                    filter="url(#solarNodeGlow)"
+                  />
+                  <circle
+                    cx={node2.x}
+                    cy={node2.y}
+                    r={3.0 * scaleFactor}
+                    fill="#ffffff"
+                  />
+                  <text
+                    x={node2.x}
+                    y={node2.y - 9 * scaleFactor}
+                    textAnchor="middle"
+                    fill="#fef3c7"
+                    stroke="rgba(4, 7, 15, 0.95)"
+                    strokeWidth={3}
+                    paintOrder="stroke"
+                    fontSize={10 * scaleFactor}
+                    fontWeight={700}
+                    letterSpacing="0.02em"
+                  >
+                    {minutesTo12Hour(currentMinutes, true)}
+                  </text>
+                </g>
+
+                {/* Inner Smoked Cockpit Core Disc */}
+                <circle
+                  cx={CX}
+                  cy={CY}
+                  r={R_CORE}
+                  fill="url(#centerCoreGlassGrad)"
+                  stroke="rgba(255, 255, 255, 0.14)"
+                  strokeWidth={1.2}
+                  filter="url(#arcNeonGlow)"
+                />
+                {/* Hairline Dashed Ring */}
+                <circle
+                  cx={CX}
+                  cy={CY}
+                  r={52 * scaleFactor}
+                  fill="none"
+                  stroke="rgba(255, 255, 255, 0.08)"
+                  strokeWidth={0.8}
+                  strokeDasharray="3 4"
+                />
+
+                {/* Crisp Digital Time Readout */}
+                <text
+                  x={CX}
+                  y={CY - 2 * scaleFactor}
+                  textAnchor="middle"
+                  dominantBaseline="middle"
+                  fill="#ffffff"
+                  stroke="rgba(4, 7, 15, 0.95)"
+                  strokeWidth={4.5 * scaleFactor}
+                  paintOrder="stroke"
+                  fontSize={25 * scaleFactor}
+                  fontWeight={800}
+                  letterSpacing="-0.02em"
+                  style={{ fontVariantNumeric: "tabular-nums" }}
+                >
+                  {minutesTo12Hour(currentMinutes, true)}
+                </text>
+                <text
+                  x={CX}
+                  y={CY + 18 * scaleFactor}
+                  textAnchor="middle"
+                  dominantBaseline="middle"
+                  fill="rgba(226, 232, 240, 0.95)"
+                  stroke="rgba(4, 7, 15, 0.95)"
+                  strokeWidth={3 * scaleFactor}
+                  paintOrder="stroke"
+                  fontSize={9 * scaleFactor}
+                  fontWeight={700}
+                  letterSpacing="0.14em"
+                >
+                  24H SOLAR ARC
+                </text>
+              </g>
+            );
+          })()}
 
           {/* ========================================================================= */}
           {/* 5. LUMINOUS CIRCADIAN GRADIENT LIGHT STRIP (TOUCHING INNER RING)          */}
@@ -1053,19 +1245,20 @@ export function CircadianDialStage({
                     )}
                   </g>
 
-                  {/* Wedge Perimeter Stroke with Radiant Outer Glow */}
+                  {/* Wedge Perimeter Stroke with Radiant Outer Glow matching Image 2 */}
                   <path
                     d={wedge.path}
                     fill="none"
                     stroke={strokeColor}
-                    strokeWidth={isHighlighted ? 3.4 : 2.2}
+                    strokeWidth={isHighlighted ? 4.2 : 3.0}
                     strokeLinejoin="round"
+                    strokeLinecap="round"
                     filter={isHighlighted ? "url(#radiantOuterGlow)" : "url(#arcNeonGlow)"}
                     opacity={
                       !matchesTelemetry
                         ? 0.3
                         : activeId && !isHighlighted
-                        ? 0.72
+                        ? 0.74
                         : 0.98
                     }
                   />
@@ -1078,102 +1271,196 @@ export function CircadianDialStage({
           {/* 7. ALL LABELS & CONNECTORS LAYER (STRICTLY ON TOP OF WEDGES FOR Z-INDEX)   */}
           {/* ========================================================================= */}
           {viewMode === "solar" && (
-            <g id="circadian-labels-top-layer" className="pointer-events-none select-none">
-              {wedgeItems.map((item) => {
-                const {
-                  event,
-                  wedge,
-                  startMin,
-                  endMin,
-                  timelapseColor,
-                  labelX,
-                  labelY,
-                  textAnchor,
-                  isRight,
-                  accentColor,
-                } = item;
-                const isSelected = selectedEventId === event.id;
-                const isHovered = hoveredEventId === event.id;
-                const matchesTelemetry =
-                  !highlightedTelemetry ||
-                  event.telemetrySource === highlightedTelemetry;
-                const isHighlighted = isSelected || isHovered;
-                const strokeColor = timelapseColor;
+            <g id="circadian-labels-top-layer" className="select-none">
+              {labelMode === "orbital" ? (
+                /* --------------------------------------------------------------------- */
+                /* IMAGE 2 DIRECT ORBITAL HUD LABELS (PRIMARY DEFAULT VIEW)             */
+                /* --------------------------------------------------------------------- */
+                <g id="orbital-hud-labels">
+                  {wedgeItems.map((item) => {
+                    const {
+                      event,
+                      wedge,
+                      timelapseColor,
+                      accentColor,
+                      orbitalTx,
+                      orbitalTy1,
+                      orbitalTy2,
+                      orbitalAnchorMode,
+                      timeRange12h,
+                    } = item;
+                    const isSelected = selectedEventId === event.id;
+                    const isHovered = hoveredEventId === event.id;
+                    const matchesTelemetry =
+                      !highlightedTelemetry ||
+                      event.telemetrySource === highlightedTelemetry;
+                    const isHighlighted = isSelected || isHovered;
+                    const strokeColor = timelapseColor;
 
-                const elbowX = isRight
-                  ? Math.min(labelX - 10, CX + R_WEDGE_OUTER + 16)
-                  : Math.max(labelX + 10, CX - R_WEDGE_OUTER - 16);
+                    return (
+                      <g
+                        key={`orbital-label-${event.id}`}
+                        className="cursor-pointer transition-opacity duration-200 group"
+                        opacity={!matchesTelemetry ? 0.28 : isHighlighted ? 1 : 0.92}
+                        onClick={() =>
+                          onSelectEvent(selectedEventId === event.id ? null : event.id)
+                        }
+                        onMouseEnter={() => setHoveredEventId(event.id)}
+                        onMouseLeave={() => setHoveredEventId(null)}
+                      >
+                        {/* Outer Wedge Midpoint Luminous Pip */}
+                        <circle
+                          cx={wedge.outerMidPoint.x}
+                          cy={wedge.outerMidPoint.y}
+                          r={isHighlighted ? 5.0 : 3.4}
+                          fill={strokeColor}
+                          filter={isHighlighted ? "url(#radiantOuterGlow)" : "url(#arcNeonGlow)"}
+                        />
+                        <circle
+                          cx={wedge.outerMidPoint.x}
+                          cy={wedge.outerMidPoint.y}
+                          r={isHighlighted ? 2.5 : 1.6}
+                          fill="#ffffff"
+                        />
 
-                const pillWidth = Math.min(310, Math.max(175, event.title.length * 9.0 + 38));
-                const pillHeight = 54;
-                const pillX = isRight ? labelX - 8 : labelX - pillWidth + 8;
-                const pillY = labelY - 27;
+                        {/* Event Title (Bold Crisp Typography, matching Image 2) */}
+                        <text
+                          x={orbitalTx}
+                          y={orbitalTy1}
+                          textAnchor={orbitalAnchorMode}
+                          fill={isHighlighted ? "#ffffff" : "#f8fafc"}
+                          stroke="rgba(4, 7, 15, 0.96)"
+                          strokeWidth={3.8 * scaleFactor}
+                          paintOrder="stroke"
+                          fontSize={13.5 * scaleFactor}
+                          fontWeight={700}
+                          letterSpacing="0.01em"
+                        >
+                          {event.title.length > 25 ? event.title.slice(0, 24) + "…" : event.title}
+                        </text>
 
-                return (
-                  <g
-                    key={`label-${event.id}`}
-                    opacity={!matchesTelemetry ? 0.28 : isHighlighted ? 1 : 0.94}
-                    className="transition-opacity duration-200"
-                  >
-                    {/* Precision Connector Line with Dot */}
-                    <circle
-                      cx={wedge.outerMidPoint.x}
-                      cy={wedge.outerMidPoint.y}
-                      r={isHighlighted ? 4.8 : 3.5}
-                      fill={strokeColor}
-                      filter={isHighlighted ? "url(#arcNeonGlow)" : undefined}
-                    />
-                    <polyline
-                      points={`${wedge.outerMidPoint.x},${wedge.outerMidPoint.y} ${elbowX},${labelY} ${
-                        isRight ? labelX - 8 : labelX + 8
-                      },${labelY}`}
-                      fill="none"
-                      stroke={strokeColor}
-                      strokeWidth={isHighlighted ? 2.6 : 1.8}
-                      strokeOpacity={isHighlighted ? 0.95 : 0.75}
-                    />
+                        {/* 12-Hour Time Window Subtitle (Image 2 style) */}
+                        <text
+                          x={orbitalTx}
+                          y={orbitalTy2}
+                          textAnchor={orbitalAnchorMode}
+                          fill={isHighlighted ? strokeColor : "rgba(203, 213, 225, 0.88)"}
+                          stroke="rgba(4, 7, 15, 0.96)"
+                          strokeWidth={3 * scaleFactor}
+                          paintOrder="stroke"
+                          fontSize={11 * scaleFactor}
+                          fontWeight={600}
+                          letterSpacing="0.02em"
+                          style={{ fontVariantNumeric: "tabular-nums" }}
+                        >
+                          {timeRange12h}
+                        </text>
+                      </g>
+                    );
+                  })}
+                </g>
+              ) : (
+                /* --------------------------------------------------------------------- */
+                /* IMAGE 1 SPLIT COLUMNS RAILS (SECONDARY VIEW VIA TOGGLE)              */
+                /* --------------------------------------------------------------------- */
+                <g id="split-column-labels" className="pointer-events-none">
+                  {wedgeItems.map((item) => {
+                    const {
+                      event,
+                      wedge,
+                      startMin,
+                      endMin,
+                      timelapseColor,
+                      labelX,
+                      labelY,
+                      textAnchor,
+                      isRight,
+                      accentColor,
+                    } = item;
+                    const isSelected = selectedEventId === event.id;
+                    const isHovered = hoveredEventId === event.id;
+                    const matchesTelemetry =
+                      !highlightedTelemetry ||
+                      event.telemetrySource === highlightedTelemetry;
+                    const isHighlighted = isSelected || isHovered;
+                    const strokeColor = timelapseColor;
 
-                    {/* High-Contrast Dark Glass Backdrop Pill */}
-                    <rect
-                      x={pillX}
-                      y={pillY}
-                      width={pillWidth}
-                      height={pillHeight}
-                      rx={10}
-                      fill="rgba(8, 12, 22, 0.94)"
-                      stroke={isHighlighted ? strokeColor : "rgba(255, 255, 255, 0.15)"}
-                      strokeWidth={isHighlighted ? 1.9 : 1.2}
-                      filter="url(#arcNeonGlow)"
-                    />
+                    const elbowX = isRight
+                      ? Math.min(labelX - 10, CX + R_WEDGE_OUTER + 16)
+                      : Math.max(labelX + 10, CX - R_WEDGE_OUTER - 16);
 
-                    {/* Task Title */}
-                    <text
-                      x={isRight ? labelX + 8 : labelX - 8}
-                      y={labelY - 6}
-                      textAnchor={textAnchor}
-                      fill="#f8fafc"
-                      fontSize={14.8}
-                      fontWeight={isHighlighted ? 800 : 700}
-                      letterSpacing="0.01em"
-                    >
-                      {event.title.length > 28 ? event.title.slice(0, 27) + "…" : event.title}
-                    </text>
+                    const pillWidth = Math.min(310, Math.max(175, event.title.length * 9.0 + 38));
+                    const pillHeight = 54;
+                    const pillX = isRight ? labelX - 8 : labelX - pillWidth + 8;
+                    const pillY = labelY - 27;
 
-                    {/* Time Window (24-Hour Military Format) */}
-                    <text
-                      x={isRight ? labelX + 8 : labelX - 8}
-                      y={labelY + 15}
-                      textAnchor={textAnchor}
-                      fill={isHighlighted ? strokeColor : "rgba(148, 163, 184, 0.95)"}
-                      fontSize={12.2}
-                      fontWeight={700}
-                      style={{ fontVariantNumeric: "tabular-nums" }}
-                    >
-                      {minutesToMilitary(startMin)} - {minutesToMilitary(endMin, true)}
-                    </text>
-                  </g>
-                );
-              })}
+                    return (
+                      <g
+                        key={`label-${event.id}`}
+                        opacity={!matchesTelemetry ? 0.28 : isHighlighted ? 1 : 0.94}
+                        className="transition-opacity duration-200"
+                      >
+                        {/* Precision Connector Line with Dot */}
+                        <circle
+                          cx={wedge.outerMidPoint.x}
+                          cy={wedge.outerMidPoint.y}
+                          r={isHighlighted ? 4.8 : 3.5}
+                          fill={strokeColor}
+                          filter={isHighlighted ? "url(#arcNeonGlow)" : undefined}
+                        />
+                        <polyline
+                          points={`${wedge.outerMidPoint.x},${wedge.outerMidPoint.y} ${elbowX},${labelY} ${
+                            isRight ? labelX - 8 : labelX + 8
+                          },${labelY}`}
+                          fill="none"
+                          stroke={strokeColor}
+                          strokeWidth={isHighlighted ? 2.6 : 1.8}
+                          strokeOpacity={isHighlighted ? 0.95 : 0.75}
+                        />
+
+                        {/* High-Contrast Dark Glass Backdrop Pill */}
+                        <rect
+                          x={pillX}
+                          y={pillY}
+                          width={pillWidth}
+                          height={pillHeight}
+                          rx={10}
+                          fill="rgba(8, 12, 22, 0.94)"
+                          stroke={isHighlighted ? strokeColor : "rgba(255, 255, 255, 0.15)"}
+                          strokeWidth={isHighlighted ? 1.9 : 1.2}
+                          filter="url(#arcNeonGlow)"
+                        />
+
+                        {/* Task Title */}
+                        <text
+                          x={isRight ? labelX + 8 : labelX - 8}
+                          y={labelY - 6}
+                          textAnchor={textAnchor}
+                          fill="#f8fafc"
+                          fontSize={14.8}
+                          fontWeight={isHighlighted ? 800 : 700}
+                          letterSpacing="0.01em"
+                        >
+                          {event.title.length > 28 ? event.title.slice(0, 27) + "…" : event.title}
+                        </text>
+
+                        {/* Time Window (24-Hour Military Format) */}
+                        <text
+                          x={isRight ? labelX + 8 : labelX - 8}
+                          y={labelY + 15}
+                          textAnchor={textAnchor}
+                          fill={isHighlighted ? strokeColor : "rgba(148, 163, 184, 0.95)"}
+                          fontSize={12.2}
+                          fontWeight={700}
+                          style={{ fontVariantNumeric: "tabular-nums" }}
+                        >
+                          {minutesToMilitary(startMin)} - {minutesToMilitary(endMin, true)}
+                        </text>
+                      </g>
+                    );
+                  })}
+                </g>
+              )}
             </g>
           )}
 
