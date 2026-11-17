@@ -42,6 +42,7 @@ import {
   Database,
   Settings,
   Compass,
+  GitBranch,
 } from "lucide-react";
 import { useRouter, usePathname } from "next/navigation";
 import { useSession } from "next-auth/react";
@@ -98,6 +99,15 @@ const ALL_MODULE_ITEMS: NavModuleItem[] = [
     route: "/command",
     badge: "5-Tier",
     description: "North Star target cascade, weekly FRAGO & PACE plan",
+  },
+  {
+    id: "ROADMAPS",
+    label: "SYNTHESIS ROADMAP",
+    pillar: "all",
+    icon: <GitBranch size={15} />,
+    route: "/roadmaps",
+    badge: "DAG",
+    description: "Converging multi-branch roadmap, FRAGO & PACE dossiers",
   },
 
   // Health

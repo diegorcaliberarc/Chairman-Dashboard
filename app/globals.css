@@ -415,3 +415,49 @@ body.bg-theme-gradient {
   transform-origin: center;
   animation: solar-node-pulse 2.4s ease-in-out infinite;
 }
+
+/* Anime Manga Dr Stone Animated Synthesis Conduits */
+@keyframes pulseArrowAmber {
+  0%, 100% {
+    stroke-dashoffset: 0;
+    filter: drop-shadow(0 0 6px rgba(245, 158, 11, 0.7));
+  }
+  50% {
+    stroke-dashoffset: -32;
+    filter: drop-shadow(0 0 14px rgba(245, 158, 11, 1));
+  }
+}
+@keyframes pulseArrowCyan {
+  0%, 100% {
+    stroke-dashoffset: 0;
+    filter: drop-shadow(0 0 6px rgba(0, 240, 255, 0.7));
+  }
+  50% {
+    stroke-dashoffset: -32;
+    filter: drop-shadow(0 0 14px rgba(0, 240, 255, 1));
+  }
+}
+.flow-arrow-amber {
+  stroke-dasharray: 12 6;
+  animation: pulseArrowAmber 2.2s linear infinite;
+}
+.flow-arrow-cyan {
+  stroke-dasharray: 12 6;
+  animation: pulseArrowCyan 2.2s linear infinite;
+}
+.glow-cyan {
+  box-shadow: 0 8px 32px -8px rgba(0, 240, 255, 0.4), 0 0 0 1px rgba(0, 240, 255, 0.35);
+}
+.glow-amber {
+  box-shadow: 0 8px 32px -8px rgba(245, 158, 11, 0.45), 0 0 0 1.5px rgba(245, 158, 11, 0.4);
+}
+.glow-goal-burst {
+  box-shadow: 0 0 45px rgba(245, 158, 11, 0.55), 0 0 0 2px rgba(245, 158, 11, 0.6), 0 20px 50px -10px rgba(0, 240, 255, 0.35);
+}
+.comic-junction-pill {
+  box-shadow: 0 0 16px rgba(245, 158, 11, 0.5);
+}
+.blueprint-dots {
+  background-image: radial-gradient(rgba(0, 240, 255, 0.12) 1.2px, transparent 1.2px);
+  background-size: 28px 28px;
+}
