@@ -13,6 +13,7 @@ import {
   Flame,
   Footprints,
   Timer,
+  Mic,
 } from "lucide-react";
 import { DailySitrepLog } from "@/lib/commandTypes";
 
@@ -24,6 +25,7 @@ interface MacroSubheaderProps {
   sitrepHistory: DailySitrepLog[];
   isLoading: boolean;
   onOpenLogMeal: () => void;
+  onOpenVoiceLog?: () => void;
   onQuickAddWater: (deltaOz: number) => void;
   onOpenDebrief: () => void;
   onRefresh: () => void;
@@ -39,6 +41,7 @@ export function MacroSubheader({
   sitrepHistory,
   isLoading,
   onOpenLogMeal,
+  onOpenVoiceLog,
   onQuickAddWater,
   onOpenDebrief,
   onRefresh,
@@ -293,6 +296,16 @@ export function MacroSubheader({
 
         {/* Quick Telemetry Actions */}
         <div className="flex items-center gap-2 font-mono text-xs">
+          <button
+            onClick={onOpenVoiceLog || onOpenLogMeal}
+            type="button"
+            className="flex items-center gap-1.5 px-3 py-1.5 rounded-full font-bold text-xs uppercase active:scale-95 transition border bg-cyan-500/10 hover:bg-cyan-500/20 text-cyan-300 border-cyan-400/40 shadow-sm"
+            title="Voice Log Fuel: Speak what you ate"
+          >
+            <Mic size={13} className="text-cyan-400 animate-pulse" />
+            <span className="hidden sm:inline">Voice Log</span>
+          </button>
+
           <button
             onClick={onOpenLogMeal}
             type="button"

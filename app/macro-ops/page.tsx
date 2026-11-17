@@ -47,6 +47,7 @@ export default function MacroOpsPage() {
   const [selectedDate, setSelectedDate] = useState<string>(getTodayIso());
   const [isDebriefOpen, setIsDebriefOpen] = useState(false);
   const [isMealModalOpen, setIsMealModalOpen] = useState(false);
+  const [autoStartVoice, setAutoStartVoice] = useState(false);
 
   // SITREP Live State
   const [sitrepHistory, setSitrepHistory] = useState<DailySitrepLog[]>([]);
@@ -397,7 +398,14 @@ export default function MacroOpsPage() {
               sitrepStats={sitrepStats}
               sitrepHistory={sitrepHistory}
               isLoading={isSitrepLoading}
-              onOpenLogMeal={() => setIsMealModalOpen(true)}
+              onOpenLogMeal={() => {
+                setAutoStartVoice(false);
+                setIsMealModalOpen(true);
+              }}
+              onOpenVoiceLog={() => {
+                setAutoStartVoice(true);
+                setIsMealModalOpen(true);
+              }}
               onQuickAddWater={handleQuickAddWater}
               onOpenDebrief={() => setIsDebriefOpen(true)}
               onRefresh={() => {
@@ -450,7 +458,14 @@ export default function MacroOpsPage() {
                 <DailyFuelLedgerCard
                   entries={entries}
                   selectedDate={selectedDate}
-                  onOpenAddMeal={() => setIsMealModalOpen(true)}
+                  onOpenAddMeal={() => {
+                    setAutoStartVoice(false);
+                    setIsMealModalOpen(true);
+                  }}
+                  onOpenVoiceMeal={() => {
+                    setAutoStartVoice(true);
+                    setIsMealModalOpen(true);
+                  }}
                   onDeleteEntry={handleDeleteEntry}
                   onConfirmPending={handleConfirmPending}
                   onQuickLogMeal={handleQuickLogMeal}
@@ -577,7 +592,11 @@ export default function MacroOpsPage() {
       {/* QUICK MEAL LOG MODAL */}
       <QuickMealLogModal
         isOpen={isMealModalOpen}
-        onClose={() => setIsMealModalOpen(false)}
+        autoStartVoice={autoStartVoice}
+        onClose={() => {
+          setIsMealModalOpen(false);
+          setAutoStartVoice(false);
+        }}
         selectedDate={selectedDate}
         onSaved={() => {
           loadNutritionData();

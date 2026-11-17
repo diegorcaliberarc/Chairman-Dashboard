@@ -13,6 +13,7 @@ import {
   Moon,
   Check,
   Sparkles,
+  Mic,
 } from "lucide-react";
 import { FoodEntry } from "@/components/FoodFeedCard";
 
@@ -20,6 +21,7 @@ interface DailyFuelLedgerCardProps {
   entries: FoodEntry[];
   selectedDate: string;
   onOpenAddMeal: () => void;
+  onOpenVoiceMeal?: () => void;
   onDeleteEntry?: (id: string) => Promise<void>;
   onConfirmPending?: (entry: any) => Promise<void>;
   onQuickLogMeal?: (meal: {
@@ -36,6 +38,7 @@ export function DailyFuelLedgerCard({
   entries = [],
   selectedDate,
   onOpenAddMeal,
+  onOpenVoiceMeal,
   onDeleteEntry,
   onConfirmPending,
   onQuickLogMeal,
@@ -115,6 +118,17 @@ export function DailyFuelLedgerCard({
         </div>
 
         <div className="flex items-center gap-2">
+          {onOpenVoiceMeal && (
+            <button
+              onClick={onOpenVoiceMeal}
+              className="flex items-center gap-1.5 px-3 py-1 rounded-lg bg-cyan-500/15 hover:bg-cyan-500/25 text-cyan-300 border border-cyan-400/40 text-xs font-mono font-bold uppercase transition active:scale-95 shadow-sm"
+              title="Speak to log meal with voice"
+            >
+              <Mic size={13} className="text-cyan-400 animate-pulse" />
+              <span>Voice</span>
+            </button>
+          )}
+
           <button
             onClick={() => setShowInlineForm(!showInlineForm)}
             className="flex items-center gap-1.5 px-3 py-1 rounded-lg bg-cyan-500/10 hover:bg-cyan-500/20 text-cyan-700 dark:text-cyan-300 border border-cyan-500/30 text-xs font-mono font-bold uppercase transition active:scale-95"

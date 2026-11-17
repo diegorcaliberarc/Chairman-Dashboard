@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useRef, useEffect } from "react";
 import {
   Sparkles,
   Edit3,
@@ -12,6 +12,8 @@ import {
   Dumbbell,
   CheckCircle2,
   Zap,
+  Mic,
+  MicOff,
 } from "lucide-react";
 import { CanonicalFoodImageKey } from "@/lib/foodImages";
 
@@ -91,6 +93,90 @@ export function FoodLoggerCard({ logDate, onEntriesAdded }: FoodLoggerCardProps)
   const [aiInput, setAiInput] = useState("");
   const [isAiLoading, setIsAiLoading] = useState(false);
   const [aiStatusMsg, setAiStatusMsg] = useState<string | null>(null);
+
+  // Speech Recognition state
+  const [isListening, setIsListening] = useState(false);
+  const recognitionRef = useRef<any>(null);
+
+  useEffect(() => {
+    return () => {
+      if (recognitionRef.current) {
+        try {
+          recognitionRef.current.abort();
+        } catch {}
+      }
+    };
+  }, []);
+
+  const toggleListening = () => {
+    if (isListening) {
+      if (recognitionRef.current) {
+        try {
+          recognitionRef.current.stop();
+        } catch {}
+      }
+      setIsListening(false);
+      return;
+    }
+
+    const SpeechRecognition =
+      typeof window !== "undefined"
+        ? (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition
+        : null;
+
+    if (!SpeechRecognition) {
+      setAiStatusMsg("Speech recognition is not supported in this browser. Please type foods.");
+      return;
+    }
+
+    try {
+      if (recognitionRef.current) {
+        try {
+          recognitionRef.current.abort();
+        } catch {}
+      }
+
+      const recognition = new SpeechRecognition();
+      recognition.continuous = true;
+      recognition.interimResults = true;
+      recognition.lang = "en-US";
+
+      recognition.onstart = () => {
+        setIsListening(true);
+        setAiStatusMsg("Listening... speak foods (e.g. '160g chicken breast and a handful of potatoes')");
+      };
+
+      recognition.onresult = (event: any) => {
+        let transcript = "";
+        for (let i = 0; i < event.results.length; i++) {
+          transcript += event.results[i][0].transcript + " ";
+        }
+        const cleaned = transcript.trim();
+        if (cleaned) {
+          setAiInput(cleaned);
+        }
+      };
+
+      recognition.onerror = (e: any) => {
+        console.warn("Speech recognition error:", e);
+        if (e.error === "not-allowed") {
+          setAiStatusMsg("Microphone permission denied. Please allow microphone access.");
+        }
+        setIsListening(false);
+      };
+
+      recognition.onend = () => {
+        setIsListening(false);
+      };
+
+      recognitionRef.current = recognition;
+      recognition.start();
+    } catch (err: any) {
+      console.error(err);
+      setIsListening(false);
+      setAiStatusMsg("Could not activate microphone.");
+    }
+  };
 
   // Manual Tab State
   const [manualName, setManualName] = useState("");
@@ -251,37 +337,75 @@ export function FoodLoggerCard({ logDate, onEntriesAdded }: FoodLoggerCardProps)
               rows={3}
               value={aiInput}
               onChange={(e) => setAiInput(e.target.value)}
-              placeholder="e.g., 157g cooked chicken breast, 80g air-fried russet potato, 300g lettuce, 40oz water..."
-              className="w-full p-4 rounded-2xl bg-[#0A0A0C] border border-[#1E1E24] text-xs sm:text-sm text-zinc-100 placeholder:text-zinc-600 focus:outline-none focus:border-amber-400/50 font-sans resize-none transition-all"
+              placeholder="e.g., 160g cooked chicken breast, handful of potatoes, 1 cup rice, 32oz water..."
+              className="w-full p-4 pr-12 rounded-2xl bg-[#0A0A0C] border border-[#1E1E24] text-xs sm:text-sm text-zinc-100 placeholder:text-zinc-600 focus:outline-none focus:border-cyan-400/50 font-sans resize-none transition-all"
             />
+            <button
+              type="button"
+              onClick={toggleListening}
+              className={`absolute top-3.5 right-3.5 p-2 rounded-xl transition-all ${
+                isListening
+                  ? "bg-cyan-500 text-black shadow-[0_0_12px_#00f0ff] animate-pulse"
+                  : "bg-white/5 text-zinc-400 hover:text-white hover:bg-white/10"
+              }`}
+              title={isListening ? "Stop voice listening" : "Click to speak your food"}
+            >
+              {isListening ? <Mic size={16} className="animate-bounce" /> : <Mic size={16} />}
+            </button>
           </div>
 
-          <div className="flex items-center justify-between">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
             {aiStatusMsg ? (
-              <span className="text-xs font-mono text-emerald-400">{aiStatusMsg}</span>
+              <span className={`text-xs font-mono ${isListening ? "text-cyan-400 font-bold" : "text-emerald-400"}`}>
+                {aiStatusMsg}
+              </span>
             ) : (
               <span className="text-[11px] font-mono text-zinc-500">
-                Gemini extracts exact grams, USDA macros, cholesterol & physical lbs.
+                Speak or type foods — AI extracts exact grams, USDA macros, cholesterol & physical lbs.
               </span>
             )}
 
-            <button
-              type="submit"
-              disabled={isAiLoading || !aiInput.trim()}
-              className="flex items-center gap-2 px-4 py-2 rounded-2xl bg-gradient-to-r from-emerald-500 to-emerald-600 hover:from-emerald-400 hover:to-emerald-500 text-black text-xs font-bold font-mono transition-all disabled:opacity-40 cursor-pointer shadow-md"
-            >
-              {isAiLoading ? (
-                <>
-                  <Loader2 className="w-3.5 h-3.5 animate-spin" />
-                  <span>Parsing...</span>
-                </>
-              ) : (
-                <>
-                  <Send className="w-3.5 h-3.5" />
-                  <span>Log Food</span>
-                </>
-              )}
-            </button>
+            <div className="flex items-center gap-2 self-end sm:self-auto">
+              <button
+                type="button"
+                onClick={toggleListening}
+                className={`flex items-center gap-1.5 px-3 py-2 rounded-2xl border text-xs font-mono font-bold transition-all ${
+                  isListening
+                    ? "bg-cyan-500/20 border-cyan-400 text-cyan-300 animate-pulse"
+                    : "bg-white/[0.04] border-white/10 text-zinc-300 hover:text-white hover:bg-white/10"
+                }`}
+              >
+                {isListening ? (
+                  <>
+                    <MicOff className="w-3.5 h-3.5" />
+                    <span>Listening...</span>
+                  </>
+                ) : (
+                  <>
+                    <Mic className="w-3.5 h-3.5 text-cyan-400" />
+                    <span>Voice Input</span>
+                  </>
+                )}
+              </button>
+
+              <button
+                type="submit"
+                disabled={isAiLoading || !aiInput.trim()}
+                className="flex items-center gap-2 px-4 py-2 rounded-2xl bg-gradient-to-r from-emerald-500 to-emerald-600 hover:from-emerald-400 hover:to-emerald-500 text-black text-xs font-bold font-mono transition-all disabled:opacity-40 cursor-pointer shadow-md"
+              >
+                {isAiLoading ? (
+                  <>
+                    <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                    <span>Parsing...</span>
+                  </>
+                ) : (
+                  <>
+                    <Send className="w-3.5 h-3.5" />
+                    <span>Log Food</span>
+                  </>
+                )}
+              </button>
+            </div>
           </div>
         </form>
       )}

@@ -163,23 +163,22 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ success: true });
     }
 
-    // Action B: Create Single Food Entry (Manual / 1-Tap Staple)
-    if (action === "create_entry") {
-      const {
-        log_date,
-        meal_window,
-        name,
-        quantity_grams,
-        weight_lbs,
-        calories,
-        protein_g,
-        carbs_g,
-        fat_g,
-        cholesterol_mg,
-        water_oz,
-        image_key,
-        is_estimated,
-      } = body;
+    // Action B: Create Single Food Entry (Manual / 1-Tap Staple / Add Entry)
+    if (action === "create_entry" || action === "add_entry") {
+      const entryObj = body.entry || {};
+      const log_date = body.log_date || body.date || entryObj.log_date;
+      const meal_window = body.meal_window || entryObj.meal_window || "unassigned";
+      const name = body.name || entryObj.name || "Quick Food";
+      const quantity_grams = body.quantity_grams ?? entryObj.quantity_grams;
+      const weight_lbs = body.weight_lbs ?? entryObj.weight_lbs;
+      const calories = body.calories ?? entryObj.calories;
+      const protein_g = body.protein_g ?? entryObj.protein_g;
+      const carbs_g = body.carbs_g ?? entryObj.carbs_g;
+      const fat_g = body.fat_g ?? entryObj.fat_g;
+      const cholesterol_mg = body.cholesterol_mg ?? entryObj.cholesterol_mg;
+      const water_oz = body.water_oz ?? entryObj.water_oz;
+      const image_key = body.image_key || entryObj.image_key;
+      const is_estimated = body.is_estimated ?? entryObj.is_estimated;
 
       const date = log_date || getTodayIso();
       const grams = Number(quantity_grams) || 100;
