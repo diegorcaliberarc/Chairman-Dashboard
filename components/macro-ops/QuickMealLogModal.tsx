@@ -117,31 +117,51 @@ export function QuickMealLogModal({
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-md animate-in fade-in duration-200">
-      <div className="w-full max-w-lg bg-surface border border-border rounded-2xl shadow-2xl overflow-hidden flex flex-col">
+      <div
+        className="w-full max-w-lg border rounded-2xl shadow-2xl overflow-hidden flex flex-col transition-all duration-300"
+        style={{
+          backgroundColor: "var(--glass-surface)",
+          backdropFilter: "blur(var(--glass-blur, 26px)) saturate(185%)",
+          WebkitBackdropFilter: "blur(var(--glass-blur, 26px)) saturate(185%)",
+          borderColor: "var(--glass-border)",
+        }}
+      >
         {/* Header */}
-        <div className="flex items-center justify-between px-5 py-4 border-b border-border bg-background">
+        <div
+          className="flex items-center justify-between px-5 py-4 border-b transition-colors"
+          style={{
+            backgroundColor: "var(--glass-surface-elevated)",
+            borderColor: "var(--glass-border)",
+          }}
+        >
           <div className="flex items-center gap-2">
-            <Utensils size={18} className="text-emerald-400" />
-            <h3 className="font-mono font-bold text-sm text-zinc-100 uppercase tracking-wider">
+            <Utensils size={18} className="text-emerald-500 dark:text-emerald-400" />
+            <h3 className="font-mono font-bold text-sm text-zinc-900 dark:text-zinc-100 uppercase tracking-wider">
               Log Nutritional Intake
             </h3>
           </div>
           <button
             onClick={onClose}
-            className="p-1 rounded-lg text-zinc-400 hover:text-white hover:bg-zinc-800 transition"
+            className="p-1 rounded-lg text-zinc-400 hover:text-zinc-900 dark:hover:text-white hover:bg-black/5 dark:hover:bg-white/10 transition"
           >
             <X size={18} />
           </button>
         </div>
 
         {/* Mode Toggle */}
-        <div className="flex border-b border-border bg-background/50 p-2 gap-2 text-xs font-mono">
+        <div
+          className="flex border-b p-2 gap-2 text-xs font-mono transition-colors"
+          style={{
+            backgroundColor: "var(--glass-surface-elevated)",
+            borderColor: "var(--glass-border)",
+          }}
+        >
           <button
             onClick={() => setActiveMode("ai")}
             className={`flex-1 py-2 rounded-xl transition flex items-center justify-center gap-1.5 font-bold ${
               activeMode === "ai"
-                ? "bg-emerald-500/20 text-emerald-300 border border-emerald-500/30"
-                : "text-zinc-400 hover:text-white"
+                ? "bg-emerald-500/20 text-emerald-700 dark:text-emerald-300 border border-emerald-500/30"
+                : "text-zinc-500 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-white"
             }`}
           >
             <Sparkles size={14} />
@@ -151,8 +171,8 @@ export function QuickMealLogModal({
             onClick={() => setActiveMode("manual")}
             className={`flex-1 py-2 rounded-xl transition flex items-center justify-center gap-1.5 font-bold ${
               activeMode === "manual"
-                ? "bg-emerald-500/20 text-emerald-300 border border-emerald-500/30"
-                : "text-zinc-400 hover:text-white"
+                ? "bg-emerald-500/20 text-emerald-700 dark:text-emerald-300 border border-emerald-500/30"
+                : "text-zinc-500 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-white"
             }`}
           >
             <Plus size={14} />
@@ -163,7 +183,7 @@ export function QuickMealLogModal({
         {/* Body */}
         <div className="p-5">
           {error && (
-            <div className="mb-4 p-3 rounded-xl bg-rose-500/10 border border-rose-500/20 text-rose-300 font-mono text-xs">
+            <div className="mb-4 p-3 rounded-xl bg-rose-500/10 border border-rose-500/20 text-rose-600 dark:text-rose-300 font-mono text-xs">
               {error}
             </div>
           )}
@@ -171,7 +191,7 @@ export function QuickMealLogModal({
           {activeMode === "ai" ? (
             <form onSubmit={handleAiParse} className="space-y-4">
               <div>
-                <label className="block font-mono text-xs text-zinc-400 uppercase mb-1.5">
+                <label className="block font-mono text-xs text-zinc-600 dark:text-zinc-400 uppercase mb-1.5">
                   Describe what you ate:
                 </label>
                 <textarea
@@ -179,19 +199,19 @@ export function QuickMealLogModal({
                   onChange={(e) => setNaturalText(e.target.value)}
                   rows={4}
                   placeholder="e.g. 250g grilled wild salmon, 1 cup steamed quinoa, 1 avocado, drizzle olive oil"
-                  className="w-full bg-background border border-border rounded-xl p-3 font-mono text-xs text-zinc-100 placeholder:text-zinc-600 focus:outline-none focus:border-emerald-500/50 resize-none"
+                  className="w-full bg-black/5 dark:bg-white/5 border border-black/10 dark:border-white/10 rounded-xl p-3 font-mono text-xs text-zinc-900 dark:text-zinc-100 placeholder:text-zinc-500 focus:outline-none focus:border-emerald-500/50 resize-none"
                   autoFocus
                 />
               </div>
 
               <div>
-                <label className="block font-mono text-xs text-zinc-400 uppercase mb-1.5">
+                <label className="block font-mono text-xs text-zinc-600 dark:text-zinc-400 uppercase mb-1.5">
                   Meal Window:
                 </label>
                 <select
                   value={mealWindow}
                   onChange={(e) => setMealWindow(e.target.value)}
-                  className="w-full bg-background border border-border rounded-xl p-2.5 font-mono text-xs text-zinc-200 focus:outline-none"
+                  className="w-full bg-black/5 dark:bg-white/5 border border-black/10 dark:border-white/10 rounded-xl p-2.5 font-mono text-xs text-zinc-900 dark:text-zinc-200 focus:outline-none"
                 >
                   <option value="breakfast">Breakfast</option>
                   <option value="lunch">Lunch</option>
@@ -219,7 +239,7 @@ export function QuickMealLogModal({
           ) : (
             <form onSubmit={handleManualSubmit} className="space-y-4">
               <div>
-                <label className="block font-mono text-xs text-zinc-400 uppercase mb-1.5">
+                <label className="block font-mono text-xs text-zinc-600 dark:text-zinc-400 uppercase mb-1.5">
                   Meal Name:
                 </label>
                 <input
@@ -227,14 +247,14 @@ export function QuickMealLogModal({
                   value={name}
                   onChange={(e) => setName(e.target.value)}
                   placeholder="e.g. Steak & Sweet Potato"
-                  className="w-full bg-background border border-border rounded-xl p-2.5 font-mono text-xs text-zinc-100 focus:outline-none focus:border-emerald-500/50"
+                  className="w-full bg-black/5 dark:bg-white/5 border border-black/10 dark:border-white/10 rounded-xl p-2.5 font-mono text-xs text-zinc-900 dark:text-zinc-100 focus:outline-none focus:border-emerald-500/50"
                   autoFocus
                 />
               </div>
 
               <div className="grid grid-cols-2 gap-3">
                 <div>
-                  <label className="block font-mono text-xs text-zinc-400 uppercase mb-1.5">
+                  <label className="block font-mono text-xs text-zinc-600 dark:text-zinc-400 uppercase mb-1.5">
                     Calories (kcal):
                   </label>
                   <input
@@ -242,11 +262,11 @@ export function QuickMealLogModal({
                     value={calories}
                     onChange={(e) => setCalories(e.target.value)}
                     placeholder="650"
-                    className="w-full bg-background border border-border rounded-xl p-2.5 font-mono text-xs text-zinc-100 focus:outline-none"
+                    className="w-full bg-black/5 dark:bg-white/5 border border-black/10 dark:border-white/10 rounded-xl p-2.5 font-mono text-xs text-zinc-900 dark:text-zinc-100 focus:outline-none"
                   />
                 </div>
                 <div>
-                  <label className="block font-mono text-xs text-zinc-400 uppercase mb-1.5">
+                  <label className="block font-mono text-xs text-zinc-600 dark:text-zinc-400 uppercase mb-1.5">
                     Protein (g):
                   </label>
                   <input
@@ -254,14 +274,14 @@ export function QuickMealLogModal({
                     value={proteinG}
                     onChange={(e) => setProteinG(e.target.value)}
                     placeholder="55"
-                    className="w-full bg-background border border-border rounded-xl p-2.5 font-mono text-xs text-zinc-100 focus:outline-none"
+                    className="w-full bg-black/5 dark:bg-white/5 border border-black/10 dark:border-white/10 rounded-xl p-2.5 font-mono text-xs text-zinc-900 dark:text-zinc-100 focus:outline-none"
                   />
                 </div>
               </div>
 
               <div className="grid grid-cols-2 gap-3">
                 <div>
-                  <label className="block font-mono text-xs text-zinc-400 uppercase mb-1.5">
+                  <label className="block font-mono text-xs text-zinc-600 dark:text-zinc-400 uppercase mb-1.5">
                     Carbs (g):
                   </label>
                   <input
@@ -269,11 +289,11 @@ export function QuickMealLogModal({
                     value={carbsG}
                     onChange={(e) => setCarbsG(e.target.value)}
                     placeholder="45"
-                    className="w-full bg-background border border-border rounded-xl p-2.5 font-mono text-xs text-zinc-100 focus:outline-none"
+                    className="w-full bg-black/5 dark:bg-white/5 border border-black/10 dark:border-white/10 rounded-xl p-2.5 font-mono text-xs text-zinc-900 dark:text-zinc-100 focus:outline-none"
                   />
                 </div>
                 <div>
-                  <label className="block font-mono text-xs text-zinc-400 uppercase mb-1.5">
+                  <label className="block font-mono text-xs text-zinc-600 dark:text-zinc-400 uppercase mb-1.5">
                     Fat (g):
                   </label>
                   <input
@@ -281,19 +301,19 @@ export function QuickMealLogModal({
                     value={fatG}
                     onChange={(e) => setFatG(e.target.value)}
                     placeholder="18"
-                    className="w-full bg-background border border-border rounded-xl p-2.5 font-mono text-xs text-zinc-100 focus:outline-none"
+                    className="w-full bg-black/5 dark:bg-white/5 border border-black/10 dark:border-white/10 rounded-xl p-2.5 font-mono text-xs text-zinc-900 dark:text-zinc-100 focus:outline-none"
                   />
                 </div>
               </div>
 
               <div>
-                <label className="block font-mono text-xs text-zinc-400 uppercase mb-1.5">
+                <label className="block font-mono text-xs text-zinc-600 dark:text-zinc-400 uppercase mb-1.5">
                   Meal Window:
                 </label>
                 <select
                   value={mealWindow}
                   onChange={(e) => setMealWindow(e.target.value)}
-                  className="w-full bg-background border border-border rounded-xl p-2.5 font-mono text-xs text-zinc-200 focus:outline-none"
+                  className="w-full bg-black/5 dark:bg-white/5 border border-black/10 dark:border-white/10 rounded-xl p-2.5 font-mono text-xs text-zinc-900 dark:text-zinc-200 focus:outline-none"
                 >
                   <option value="breakfast">Breakfast</option>
                   <option value="lunch">Lunch</option>

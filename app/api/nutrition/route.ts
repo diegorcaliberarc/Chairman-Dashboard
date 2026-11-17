@@ -18,24 +18,58 @@ export async function GET(req: NextRequest) {
     const dateParam = searchParams.get("date") || getTodayIso();
     const range = searchParams.get("range") || "30D";
 
-    // 1. Fetch or initialize today's daily_log
-    let dailyLogs = await pgQuery(
-      `SELECT * FROM daily_logs WHERE log_date = $1::date`,
-      dateParam
-    );
+    let limitDays = 30;
+    if (range === "7D") limitDays = 7;
+    else if (range === "All") limitDays = 120;
 
-    if (!dailyLogs || dailyLogs.length === 0) {
-      await pgExec(
+    // Run primary queries in parallel for instant sub-second response
+    const [dailyLogs, entries, mealPlans, historicalLogs, historicalSums] = await Promise.all([
+      // 1. Fetch or initialize today's daily_log in a single round-trip
+      pgQuery(
         `INSERT INTO daily_logs (log_date, calorie_target, protein_target_g, cholesterol_cap_mg, water_target_oz)
          VALUES ($1::date, 1700, 180, 255, 128)
-         ON CONFLICT (log_date) DO NOTHING;`,
+         ON CONFLICT (log_date) DO UPDATE SET log_date = EXCLUDED.log_date
+         RETURNING *`,
         dateParam
-      );
-      dailyLogs = await pgQuery(
-        `SELECT * FROM daily_logs WHERE log_date = $1::date`,
+      ),
+      // 2. Food entries for this date
+      pgQuery(
+        `SELECT * FROM food_entries WHERE log_date = $1::date ORDER BY logged_at ASC`,
         dateParam
-      );
-    }
+      ),
+      // 3. Active meal plans
+      pgQuery(
+        `SELECT * FROM meal_plans WHERE is_active = true ORDER BY scheduled_time ASC`
+      ),
+      // 4. Historical logs bounded to the requested window (avoid full-table scans)
+      pgQuery(
+        `SELECT 
+           log_date,
+           morning_weight_lbs,
+           steps_count,
+           calorie_target,
+           protein_target_g
+         FROM daily_logs
+         WHERE log_date >= ($1::date - INTERVAL '${limitDays + 7} days')
+         ORDER BY log_date ASC`,
+        dateParam
+      ),
+      // 5. Aggregate calories & protein bounded to the requested window
+      pgQuery(
+        `SELECT 
+           log_date,
+           COALESCE(SUM(calories), 0)::int as total_calories,
+           COALESCE(SUM(protein_g), 0)::float8 as total_protein,
+           COALESCE(SUM(carbs_g), 0)::float8 as total_carbs,
+           COALESCE(SUM(fat_g), 0)::float8 as total_fat,
+           COALESCE(SUM(weight_lbs), 0)::float8 as total_weight_lbs
+         FROM food_entries
+         WHERE log_date >= ($1::date - INTERVAL '${limitDays + 7} days')
+         GROUP BY log_date
+         ORDER BY log_date ASC`,
+        dateParam
+      ),
+    ]);
 
     const dailyLog = dailyLogs[0] || {
       log_date: dateParam,
@@ -46,47 +80,6 @@ export async function GET(req: NextRequest) {
       cholesterol_cap_mg: 255,
       water_target_oz: 128,
     };
-
-    // 2. Fetch food entries for this date
-    const entries = await pgQuery(
-      `SELECT * FROM food_entries WHERE log_date = $1::date ORDER BY logged_at ASC`,
-      dateParam
-    );
-
-    // 3. Fetch active meal plans
-    const mealPlans = await pgQuery(
-      `SELECT * FROM meal_plans WHERE is_active = true ORDER BY scheduled_time ASC`
-    );
-
-    // 4. Fetch trends for Recharts
-    let limitDays = 30;
-    if (range === "7D") limitDays = 7;
-    else if (range === "All") limitDays = 120;
-
-    const historicalLogs = await pgQuery(
-      `SELECT 
-         log_date,
-         morning_weight_lbs,
-         steps_count,
-         calorie_target,
-         protein_target_g
-       FROM daily_logs
-       ORDER BY log_date ASC`
-    );
-
-    // Aggregate daily calories & protein from food_entries
-    const historicalSums = await pgQuery(
-      `SELECT 
-         log_date,
-         COALESCE(SUM(calories), 0)::int as total_calories,
-         COALESCE(SUM(protein_g), 0)::float8 as total_protein,
-         COALESCE(SUM(carbs_g), 0)::float8 as total_carbs,
-         COALESCE(SUM(fat_g), 0)::float8 as total_fat,
-         COALESCE(SUM(weight_lbs), 0)::float8 as total_weight_lbs
-       FROM food_entries
-       GROUP BY log_date
-       ORDER BY log_date ASC`
-    );
 
     const sumsByDate: Record<string, any> = {};
     for (const s of historicalSums) {

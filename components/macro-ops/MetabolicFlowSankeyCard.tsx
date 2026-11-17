@@ -30,62 +30,95 @@ export function MetabolicFlowSankeyCard({
   const hasData = entries.length > 0 || calories > 0;
 
   return (
-    <div className="p-4 rounded-2xl bg-surface/80 border border-border backdrop-blur-xl relative overflow-hidden flex flex-col group shadow-2xl">
+    <div
+      className="p-4 rounded-2xl border transition-all duration-300 relative overflow-hidden flex flex-col group shadow-2xl"
+      style={{
+        backgroundColor: "var(--glass-surface)",
+        backdropFilter: "blur(var(--glass-blur, 26px)) saturate(185%)",
+        WebkitBackdropFilter: "blur(var(--glass-blur, 26px)) saturate(185%)",
+        borderColor: "var(--glass-border)",
+        boxShadow: "inset 0 1px 0 0 var(--glass-specular), var(--glass-shadow)",
+      }}
+    >
       <div className="flex items-center justify-between mb-2">
         <div className="flex items-center gap-2">
-          <GitFork className="w-4 h-4 text-cyan-400 animate-pulse" />
-          <span className="font-mono font-bold text-xs uppercase tracking-wider text-zinc-100">
+          <GitFork className="w-4 h-4 text-cyan-500 dark:text-cyan-400 animate-pulse" />
+          <span className="font-mono font-bold text-xs uppercase tracking-wider text-zinc-900 dark:text-zinc-100">
             Metabolic &amp; Nutrient Flow Spectrum
           </span>
         </div>
-        <div className="flex items-center gap-1.5 bg-background/80 px-2.5 py-0.5 rounded-lg border border-cyan-500/30">
+        <div
+          className="flex items-center gap-1.5 px-2.5 py-0.5 rounded-lg border transition-colors"
+          style={{
+            backgroundColor: "var(--glass-surface-elevated)",
+            borderColor: "rgba(6, 182, 212, 0.4)",
+          }}
+        >
           <span className="w-1.5 h-1.5 rounded-full bg-cyan-400 shadow-[0_0_6px_rgba(6,182,212,0.8)]"></span>
-          <span className="font-mono text-[10px] text-zinc-100 uppercase font-bold tracking-wider">
+          <span className="font-mono text-[10px] text-zinc-800 dark:text-zinc-100 uppercase font-bold tracking-wider">
             {hasData ? `Dynamic Stream // ${calories.toLocaleString()} kcal` : "Standby // Awaiting Input"}
           </span>
         </div>
       </div>
 
       {/* Step ribbon matching reference */}
-      <div className="grid grid-cols-4 gap-1 py-1.5 px-2 bg-background/80 rounded-lg border border-border mb-2 text-[10px] font-mono font-bold uppercase text-center">
-        <div className="text-sky-400 truncate flex items-center justify-center gap-1">
+      <div
+        className="grid grid-cols-4 gap-1 py-1.5 px-2 rounded-lg border mb-2 text-[10px] font-mono font-bold uppercase text-center transition-colors"
+        style={{
+          backgroundColor: "var(--glass-surface-elevated)",
+          borderColor: "var(--glass-border)",
+        }}
+      >
+        <div className="text-sky-600 dark:text-sky-400 truncate flex items-center justify-center gap-1">
           <span className="w-1.5 h-1.5 rounded-full bg-sky-400"></span>
           01. INTAKE SOURCE
         </div>
-        <div className="text-cyan-400 truncate flex items-center justify-center gap-1">
+        <div className="text-cyan-600 dark:text-cyan-400 truncate flex items-center justify-center gap-1">
           <span className="w-1.5 h-1.5 rounded-full bg-cyan-400"></span>
           02. MACRO PARTITION
         </div>
-        <div className="text-amber-400 truncate flex items-center justify-center gap-1">
+        <div className="text-amber-600 dark:text-amber-400 truncate flex items-center justify-center gap-1">
           <span className="w-1.5 h-1.5 rounded-full bg-amber-400"></span>
           03. CIRCADIAN TIMING
         </div>
-        <div className="text-purple-400 truncate flex items-center justify-center gap-1">
+        <div className="text-purple-600 dark:text-purple-400 truncate flex items-center justify-center gap-1">
           <span className="w-1.5 h-1.5 rounded-full bg-purple-400"></span>
           04. PHYSIO RESULT
         </div>
       </div>
 
       {/* SVG Visual Representation of Sankey */}
-      <div className="relative w-full h-[280px] rounded-xl bg-zinc-950 border border-border p-1 overflow-hidden select-none flex items-center justify-center">
+      <div
+        className="relative w-full h-[280px] rounded-xl border p-1 overflow-hidden select-none flex items-center justify-center transition-colors"
+        style={{
+          backgroundColor: "var(--glass-surface-elevated)",
+          borderColor: "var(--glass-border)",
+        }}
+      >
         {!hasData ? (
           /* Clean Zero-Data Standby State */
           <div className="text-center p-6 flex flex-col items-center justify-center gap-2.5 font-mono">
-            <div className="w-12 h-12 rounded-full bg-surface border border-border flex items-center justify-center text-cyan-400 shadow-[0_0_20px_rgba(6,182,212,0.15)]">
+            <div
+              className="w-12 h-12 rounded-full border flex items-center justify-center text-cyan-500 dark:text-cyan-400 shadow-[0_0_20px_rgba(6,182,212,0.15)] transition-colors"
+              style={{
+                backgroundColor: "var(--glass-surface)",
+                borderColor: "var(--glass-border)",
+              }}
+            >
               <Utensils size={20} />
             </div>
             <div>
-              <div className="text-sm font-bold text-zinc-200 uppercase tracking-wider">
+              <div className="text-sm font-bold text-zinc-900 dark:text-zinc-200 uppercase tracking-wider">
                 Metabolic Stream Ready
               </div>
-              <div className="text-xs text-zinc-500 max-w-md mt-1">
+              <div className="text-xs text-zinc-600 dark:text-zinc-400 max-w-md mt-1">
                 Zero fuel logged yet for this cycle. Input your meals in the ledger below to generate live nutrient partition ribbons and bio-energetic flux.
               </div>
             </div>
             {onOpenAddMeal && (
               <button
                 onClick={onOpenAddMeal}
-                className="mt-1 px-3 py-1.5 rounded-lg bg-cyan-500/20 hover:bg-cyan-500/30 border border-cyan-500/40 text-cyan-300 font-bold text-xs uppercase tracking-wider transition active:scale-95"
+                className="mt-1 px-3 py-1.5 rounded-lg bg-cyan-500/20 hover:bg-cyan-500/30 border border-cyan-500/40 text-cyan-700 dark:text-cyan-300 font-bold text-xs uppercase tracking-wider transition active:scale-95"
               >
                 + Log First Meal
               </button>

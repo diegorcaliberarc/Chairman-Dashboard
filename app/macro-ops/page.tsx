@@ -70,45 +70,74 @@ export default function MacroOpsPage() {
   const [entries, setEntries] = useState<FoodEntry[]>([]);
   const [mealPlans, setMealPlans] = useState<MealPlanRecord[]>([]);
 
-  // Load SITREP data
-  const loadSitrepData = useCallback(async () => {
+  // Fast in-memory cache for instant 0ms date switching
+  const cacheRef = React.useRef<Record<string, { sitrep: any; nutrition: any }>>({});
+
+  // Unified fast parallel data loader
+  const loadAllData = useCallback(async (targetDate: string, force = false) => {
+    // If cached, apply instantly without blocking UI
+    const cached = cacheRef.current[targetDate];
+    if (cached && !force) {
+      if (cached.sitrep) {
+        setSitrepHistory(cached.sitrep.history || []);
+        setTodayLog(cached.sitrep.todayLog || null);
+        setTargetWeightLbs(cached.sitrep.targetWeightLbs || 155.0);
+        setSitrepStats(cached.sitrep.stats || {});
+      }
+      if (cached.nutrition) {
+        setDailyLog(cached.nutrition.dailyLog);
+        setEntries(cached.nutrition.entries || []);
+        setMealPlans(cached.nutrition.mealPlans || []);
+      }
+      setIsSitrepLoading(false);
+      return;
+    }
+
     setIsSitrepLoading(true);
     try {
-      const res = await fetch(`/api/sitrep?date=${selectedDate}&limit=60`);
-      if (!res.ok) throw new Error("Failed to load SITREP telemetry");
-      const data = await res.json();
-      if (data.success) {
-        setSitrepHistory(data.history || []);
-        setTodayLog(data.todayLog || null);
-        setTargetWeightLbs(data.targetWeightLbs || 155.0);
-        setSitrepStats(data.stats || {});
+      const [sitrepRes, nutritionRes] = await Promise.all([
+        fetch(`/api/sitrep?date=${targetDate}&limit=30`),
+        fetch(`/api/nutrition?date=${targetDate}&range=7D`),
+      ]);
+
+      let sitrepData = null;
+      let nutritionData = null;
+
+      if (sitrepRes.ok) {
+        sitrepData = await sitrepRes.json();
+        if (sitrepData.success) {
+          setSitrepHistory(sitrepData.history || []);
+          setTodayLog(sitrepData.todayLog || null);
+          setTargetWeightLbs(sitrepData.targetWeightLbs || 155.0);
+          setSitrepStats(sitrepData.stats || {});
+        }
       }
+
+      if (nutritionRes.ok) {
+        nutritionData = await nutritionRes.json();
+        setDailyLog(nutritionData.dailyLog);
+        setEntries(nutritionData.entries || []);
+        setMealPlans(nutritionData.mealPlans || []);
+      }
+
+      // Store in memory cache
+      cacheRef.current[targetDate] = {
+        sitrep: sitrepData,
+        nutrition: nutritionData,
+      };
     } catch (err) {
-      console.error("Error loading SITREP:", err);
+      console.error("Error loading Macro-Ops telemetry:", err);
     } finally {
       setIsSitrepLoading(false);
     }
-  }, [selectedDate]);
+  }, []);
 
-  // Load nutrition data
-  const loadNutritionData = useCallback(async () => {
-    try {
-      const res = await fetch(`/api/nutrition?date=${selectedDate}&range=30D`);
-      if (res.ok) {
-        const data = await res.json();
-        setDailyLog(data.dailyLog);
-        setEntries(data.entries || []);
-        setMealPlans(data.mealPlans || []);
-      }
-    } catch (e) {
-      console.error("Error loading nutrition:", e);
-    }
-  }, [selectedDate]);
+  const loadSitrepData = useCallback(() => loadAllData(selectedDate, true), [loadAllData, selectedDate]);
+  const loadNutritionData = useCallback(() => loadAllData(selectedDate, true), [loadAllData, selectedDate]);
 
   useEffect(() => {
-    loadSitrepData();
-    loadNutritionData();
-  }, [loadSitrepData, loadNutritionData]);
+    loadAllData(selectedDate);
+  }, [loadAllData, selectedDate]);
 
   // Macro Totals calculated from live food entries
   const totals = useMemo(() => {
@@ -275,16 +304,23 @@ export default function MacroOpsPage() {
       title="Orbital Metabolic & Phoenix Bio-Telemetry OS"
       subtitle="Real-Time Nitrogen Saturation, Circadian Glycogen Flux, Kinetic Steps & Cellular Homeostasis"
       accentColor="#06b6d4"
+      fullBleed={true}
       headerActions={
         <div className="flex items-center gap-2">
           {/* Tab Switcher */}
-          <div className="flex items-center p-1 rounded-xl bg-surface border border-border text-xs font-mono">
+          <div
+            className="flex items-center p-1 rounded-xl text-xs font-mono border transition-colors"
+            style={{
+              backgroundColor: "var(--glass-surface-elevated)",
+              borderColor: "var(--glass-border)",
+            }}
+          >
             <button
               onClick={() => setActiveTab("vitality")}
               className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg transition font-bold ${
                 activeTab === "vitality"
-                  ? "bg-cyan-500/20 text-cyan-300 border border-cyan-500/30"
-                  : "text-zinc-400 hover:text-white"
+                  ? "bg-cyan-500/20 text-cyan-600 dark:text-cyan-300 border border-cyan-500/30"
+                  : "text-zinc-600 dark:text-zinc-400 hover:text-zinc-950 dark:hover:text-white"
               }`}
             >
               <Flame size={13} />
@@ -295,8 +331,8 @@ export default function MacroOpsPage() {
               onClick={() => setActiveTab("sitrep")}
               className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg transition font-bold ${
                 activeTab === "sitrep"
-                  ? "bg-amber-500/20 text-amber-300 border border-amber-500/30"
-                  : "text-zinc-400 hover:text-white"
+                  ? "bg-amber-500/20 text-amber-700 dark:text-amber-300 border border-amber-500/30"
+                  : "text-zinc-600 dark:text-zinc-400 hover:text-zinc-950 dark:hover:text-white"
               }`}
             >
               <Activity size={13} />
@@ -307,8 +343,8 @@ export default function MacroOpsPage() {
               onClick={() => setActiveTab("mealplan")}
               className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg transition font-bold ${
                 activeTab === "mealplan"
-                  ? "bg-emerald-500/20 text-emerald-300 border border-emerald-500/30"
-                  : "text-zinc-400 hover:text-white"
+                  ? "bg-emerald-500/20 text-emerald-700 dark:text-emerald-300 border border-emerald-500/30"
+                  : "text-zinc-600 dark:text-zinc-400 hover:text-zinc-950 dark:hover:text-white"
               }`}
             >
               <Utensils size={13} />
@@ -336,11 +372,13 @@ export default function MacroOpsPage() {
 
           {/* Refresh */}
           <button
-            onClick={() => {
-              loadSitrepData();
-              loadNutritionData();
+            onClick={() => loadAllData(selectedDate, true)}
+            className="p-2 rounded-xl border transition-colors"
+            style={{
+              backgroundColor: "var(--glass-surface-elevated)",
+              borderColor: "var(--glass-border)",
+              color: "var(--glass-text-muted)",
             }}
-            className="p-2 rounded-xl bg-surface border border-border text-zinc-400 hover:text-white hover:border-zinc-700 transition"
             title="Refresh Telemetry"
           >
             <RefreshCw size={14} className={isSitrepLoading ? "animate-spin text-cyan-400" : ""} />
@@ -348,7 +386,7 @@ export default function MacroOpsPage() {
         </div>
       }
     >
-      <div className="min-h-screen bg-background text-zinc-100 w-full">
+      <div className="min-h-screen bg-transparent text-[var(--glass-text-primary)] w-full transition-colors duration-300">
         {activeTab === "vitality" ? (
           <div className="space-y-4">
             {/* 1. SUBHEADER: 7-DAY PILL RAIL + COMPACT FASTING PILL + KINETIC STEP ENGINE */}
@@ -433,15 +471,21 @@ export default function MacroOpsPage() {
             />
 
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-              <div className="p-5 rounded-2xl bg-surface border border-border shadow-2xl space-y-3">
-                <div className="flex items-center justify-between border-b border-border pb-3">
+              <div
+                className="p-5 rounded-2xl border shadow-2xl space-y-3 transition-colors"
+                style={{
+                  backgroundColor: "var(--glass-surface)",
+                  borderColor: "var(--glass-border)",
+                }}
+              >
+                <div className="flex items-center justify-between border-b pb-3" style={{ borderColor: "var(--glass-border)" }}>
                   <div className="flex items-center gap-2">
                     <TrendingDown size={16} className="text-amber-400" />
                     <div>
-                      <h4 className="text-xs font-mono font-bold uppercase tracking-wider text-white">
+                      <h4 className="text-xs font-mono font-bold uppercase tracking-wider text-zinc-900 dark:text-white">
                         Weight Trajectory &amp; 7-Day Moving Average
                       </h4>
-                      <p className="text-[11px] text-zinc-400">
+                      <p className="text-[11px] text-zinc-600 dark:text-zinc-400">
                         Daily scale readings vs. trailing 7-day average against the {targetWeightLbs} lbs target line
                       </p>
                     </div>
@@ -450,15 +494,21 @@ export default function MacroOpsPage() {
                 <WeightTrajectoryChart data={sitrepHistory} targetWeightLbs={targetWeightLbs} />
               </div>
 
-              <div className="p-5 rounded-2xl bg-surface border border-border shadow-2xl space-y-3">
-                <div className="flex items-center justify-between border-b border-border pb-3">
+              <div
+                className="p-5 rounded-2xl border shadow-2xl space-y-3 transition-colors"
+                style={{
+                  backgroundColor: "var(--glass-surface)",
+                  borderColor: "var(--glass-border)",
+                }}
+              >
+                <div className="flex items-center justify-between border-b pb-3" style={{ borderColor: "var(--glass-border)" }}>
                   <div className="flex items-center gap-2">
                     <BarChart3 size={16} className="text-rose-400" />
                     <div>
-                      <h4 className="text-xs font-mono font-bold uppercase tracking-wider text-white">
+                      <h4 className="text-xs font-mono font-bold uppercase tracking-wider text-zinc-900 dark:text-white">
                         Caloric Energy Balance &amp; Deficit
                       </h4>
-                      <p className="text-[11px] text-zinc-400">
+                      <p className="text-[11px] text-zinc-600 dark:text-zinc-400">
                         Intake vs. expenditure with daily net deficit margin (target &ge; 350 kcal)
                       </p>
                     </div>
@@ -468,15 +518,21 @@ export default function MacroOpsPage() {
               </div>
             </div>
 
-            <div className="p-5 rounded-2xl bg-surface border border-border shadow-2xl space-y-3">
-              <div className="flex items-center justify-between border-b border-border pb-3">
+            <div
+              className="p-5 rounded-2xl border shadow-2xl space-y-3 transition-colors"
+              style={{
+                backgroundColor: "var(--glass-surface)",
+                borderColor: "var(--glass-border)",
+              }}
+            >
+              <div className="flex items-center justify-between border-b pb-3" style={{ borderColor: "var(--glass-border)" }}>
                 <div className="flex items-center gap-2">
                   <Activity size={16} className="text-cyan-400" />
                   <div>
-                    <h4 className="text-xs font-mono font-bold uppercase tracking-wider text-white">
+                    <h4 className="text-xs font-mono font-bold uppercase tracking-wider text-zinc-900 dark:text-white">
                       Physical Activity &amp; Protein Consistency
                     </h4>
-                    <p className="text-[11px] text-zinc-400">
+                    <p className="text-[11px] text-zinc-600 dark:text-zinc-400">
                       Step volume (miles) and protein intake against the 10,000 steps and 160g thresholds
                     </p>
                   </div>
@@ -485,7 +541,13 @@ export default function MacroOpsPage() {
               <MacroStepConsistencyChart data={sitrepHistory} />
             </div>
 
-            <div className="p-5 rounded-2xl bg-surface border border-border shadow-2xl">
+            <div
+              className="p-5 rounded-2xl border shadow-2xl transition-colors"
+              style={{
+                backgroundColor: "var(--glass-surface)",
+                borderColor: "var(--glass-border)",
+              }}
+            >
               <SitrepHistoryTable
                 data={sitrepHistory}
                 onRefresh={loadSitrepData}

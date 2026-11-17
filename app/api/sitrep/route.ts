@@ -32,19 +32,27 @@ export async function GET(req: NextRequest) {
     const dateParam = searchParams.get("date") || new Date().toISOString().slice(0, 10);
     const limitParam = parseInt(searchParams.get("limit") || "60", 10);
 
-    // Fetch history
-    const historyRows = await pgQuery<any>(
-      `SELECT id, user_id, log_date, morning_weight_lbs, moving_avg_7d_lbs,
-              total_steps, miles, calories_eaten, kcal_burned, kcal_deficit,
-              protein_g, water_oz, sleep_hours, recovery_score, lift_completed,
-              cardio_completed, fasting_hours, sitrep_grade, notes, created_at, updated_at
-       FROM public.daily_sitrep_logs
-       WHERE user_id = $1::uuid
-       ORDER BY log_date DESC
-       LIMIT $2`,
-      userId,
-      limitParam
-    );
+    // Fetch history & target weight concurrently for sub-second performance
+    const [historyRows, targetRows] = await Promise.all([
+      pgQuery<any>(
+        `SELECT id, user_id, log_date, morning_weight_lbs, moving_avg_7d_lbs,
+                total_steps, miles, calories_eaten, kcal_burned, kcal_deficit,
+                protein_g, water_oz, sleep_hours, recovery_score, lift_completed,
+                cardio_completed, fasting_hours, sitrep_grade, notes, created_at, updated_at
+         FROM public.daily_sitrep_logs
+         WHERE user_id = $1::uuid
+         ORDER BY log_date DESC
+         LIMIT $2`,
+        userId,
+        limitParam
+      ),
+      pgQuery<any>(
+        `SELECT target_metric_value FROM public.command_north_stars
+         WHERE user_id = $1::uuid AND domain = 'health'
+         LIMIT 1`,
+        userId
+      ),
+    ]);
 
     const history: DailySitrepLog[] = historyRows.map((r) => ({
       id: r.id,
@@ -72,14 +80,6 @@ export async function GET(req: NextRequest) {
 
     // Find requested day or most recent log
     const todayLog = history.find((h) => h.log_date === dateParam) || null;
-
-    // Fetch target weight from command_north_stars (Health domain)
-    const targetRows = await pgQuery<any>(
-      `SELECT target_metric_value FROM public.command_north_stars
-       WHERE user_id = $1::uuid AND domain = 'health'
-       LIMIT 1`,
-      userId
-    );
     const targetWeightLbs = targetRows.length > 0 ? Number(targetRows[0].target_metric_value) : 155.0;
 
     // Compute KPI stats

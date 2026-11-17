@@ -95,12 +95,21 @@ export function DailyFuelLedgerCard({
   };
 
   return (
-    <div className="p-4 sm:p-5 rounded-2xl bg-surface/80 border border-border backdrop-blur-xl relative overflow-hidden flex flex-col group shadow-2xl">
+    <div
+      className="p-4 sm:p-5 rounded-2xl border transition-all duration-300 relative overflow-hidden flex flex-col group shadow-2xl"
+      style={{
+        backgroundColor: "var(--glass-surface)",
+        backdropFilter: "blur(var(--glass-blur, 26px)) saturate(185%)",
+        WebkitBackdropFilter: "blur(var(--glass-blur, 26px)) saturate(185%)",
+        borderColor: "var(--glass-border)",
+        boxShadow: "inset 0 1px 0 0 var(--glass-specular), var(--glass-shadow)",
+      }}
+    >
       {/* Header */}
-      <div className="flex items-center justify-between pb-3 mb-3 border-b border-border">
+      <div className="flex items-center justify-between pb-3 mb-3 border-b" style={{ borderColor: "var(--glass-border)" }}>
         <div className="flex items-center gap-2">
-          <Utensils className="w-4 h-4 text-cyan-400" />
-          <span className="font-mono font-bold text-xs uppercase tracking-wider text-zinc-100">
+          <Utensils className="w-4 h-4 text-cyan-500 dark:text-cyan-400" />
+          <span className="font-mono font-bold text-xs uppercase tracking-wider text-zinc-900 dark:text-zinc-100">
             Daily Fuel Ledger // Ingestion Registry
           </span>
         </div>
@@ -108,7 +117,7 @@ export function DailyFuelLedgerCard({
         <div className="flex items-center gap-2">
           <button
             onClick={() => setShowInlineForm(!showInlineForm)}
-            className="flex items-center gap-1.5 px-3 py-1 rounded-lg bg-cyan-500/10 hover:bg-cyan-500/20 text-cyan-300 border border-cyan-500/30 text-xs font-mono font-bold uppercase transition active:scale-95"
+            className="flex items-center gap-1.5 px-3 py-1 rounded-lg bg-cyan-500/10 hover:bg-cyan-500/20 text-cyan-700 dark:text-cyan-300 border border-cyan-500/30 text-xs font-mono font-bold uppercase transition active:scale-95"
           >
             <Plus size={13} />
             <span>{showInlineForm ? "Close Input" : "Quick Input"}</span>
@@ -128,10 +137,14 @@ export function DailyFuelLedgerCard({
       {showInlineForm && (
         <form
           onSubmit={handleInlineSubmit}
-          className="mb-4 p-3 rounded-xl bg-background/90 border border-cyan-500/30 font-mono text-xs space-y-3"
+          className="mb-4 p-3 rounded-xl border font-mono text-xs space-y-3 transition-colors"
+          style={{
+            backgroundColor: "var(--glass-surface-elevated)",
+            borderColor: "rgba(6, 182, 212, 0.4)",
+          }}
         >
           <div className="flex items-center justify-between">
-            <span className="font-bold text-cyan-400 uppercase text-[11px]">
+            <span className="font-bold text-cyan-600 dark:text-cyan-400 uppercase text-[11px]">
               Direct Fuel Entry // {selectedDate}
             </span>
             <span className="text-[10px] text-zinc-500">Auto-saves to database</span>
@@ -139,70 +152,70 @@ export function DailyFuelLedgerCard({
 
           <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-6 gap-2">
             <div className="md:col-span-2">
-              <label className="block text-[10px] text-zinc-400 mb-0.5">Meal / Food Name</label>
+              <label className="block text-[10px] text-zinc-600 dark:text-zinc-400 mb-0.5">Meal / Food Name</label>
               <input
                 type="text"
                 placeholder="e.g. Ribeye Steak & Sweet Potato"
                 value={mealName}
                 onChange={(e) => setMealName(e.target.value)}
                 required
-                className="w-full bg-surface border border-border rounded-lg px-2.5 py-1.5 text-zinc-100 placeholder-zinc-500 focus:outline-none focus:border-cyan-400"
+                className="w-full bg-black/5 dark:bg-white/5 border border-black/10 dark:border-white/10 rounded-lg px-2.5 py-1.5 text-zinc-900 dark:text-zinc-100 placeholder-zinc-500 focus:outline-none focus:border-cyan-400"
               />
             </div>
 
             <div>
-              <label className="block text-[10px] text-zinc-400 mb-0.5">Calories (kcal)</label>
+              <label className="block text-[10px] text-zinc-600 dark:text-zinc-400 mb-0.5">Calories (kcal)</label>
               <input
                 type="number"
                 placeholder="550"
                 value={calories}
                 onChange={(e) => setCalories(e.target.value)}
                 required
-                className="w-full bg-surface border border-border rounded-lg px-2.5 py-1.5 text-zinc-100 placeholder-zinc-500 focus:outline-none focus:border-cyan-400"
+                className="w-full bg-black/5 dark:bg-white/5 border border-black/10 dark:border-white/10 rounded-lg px-2.5 py-1.5 text-zinc-900 dark:text-zinc-100 placeholder-zinc-500 focus:outline-none focus:border-cyan-400"
               />
             </div>
 
             <div>
-              <label className="block text-[10px] text-cyan-400 mb-0.5">Protein (g)</label>
+              <label className="block text-[10px] text-cyan-600 dark:text-cyan-400 mb-0.5">Protein (g)</label>
               <input
                 type="number"
                 placeholder="45"
                 value={protein}
                 onChange={(e) => setProtein(e.target.value)}
-                className="w-full bg-surface border border-border rounded-lg px-2.5 py-1.5 text-zinc-100 placeholder-zinc-500 focus:outline-none focus:border-cyan-400"
+                className="w-full bg-black/5 dark:bg-white/5 border border-black/10 dark:border-white/10 rounded-lg px-2.5 py-1.5 text-zinc-900 dark:text-zinc-100 placeholder-zinc-500 focus:outline-none focus:border-cyan-400"
               />
             </div>
 
             <div>
-              <label className="block text-[10px] text-rose-400 mb-0.5">Carbs (g)</label>
+              <label className="block text-[10px] text-rose-600 dark:text-rose-400 mb-0.5">Carbs (g)</label>
               <input
                 type="number"
                 placeholder="30"
                 value={carbs}
                 onChange={(e) => setCarbs(e.target.value)}
-                className="w-full bg-surface border border-border rounded-lg px-2.5 py-1.5 text-zinc-100 placeholder-zinc-500 focus:outline-none focus:border-rose-400"
+                className="w-full bg-black/5 dark:bg-white/5 border border-black/10 dark:border-white/10 rounded-lg px-2.5 py-1.5 text-zinc-900 dark:text-zinc-100 placeholder-zinc-500 focus:outline-none focus:border-rose-400"
               />
             </div>
 
             <div>
-              <label className="block text-[10px] text-purple-400 mb-0.5">Fat (g)</label>
+              <label className="block text-[10px] text-purple-600 dark:text-purple-400 mb-0.5">Fat (g)</label>
               <input
                 type="number"
                 placeholder="18"
                 value={fat}
                 onChange={(e) => setFat(e.target.value)}
-                className="w-full bg-surface border border-border rounded-lg px-2.5 py-1.5 text-zinc-100 placeholder-zinc-500 focus:outline-none focus:border-purple-400"
+                className="w-full bg-black/5 dark:bg-white/5 border border-black/10 dark:border-white/10 rounded-lg px-2.5 py-1.5 text-zinc-900 dark:text-zinc-100 placeholder-zinc-500 focus:outline-none focus:border-purple-400"
               />
             </div>
           </div>
 
           <div className="flex items-center justify-between pt-1">
             <div className="flex items-center gap-2">
-              <label className="text-[10px] text-zinc-400">Window:</label>
+              <label className="text-[10px] text-zinc-600 dark:text-zinc-400">Window:</label>
               <select
                 value={mealWindow}
                 onChange={(e) => setMealWindow(e.target.value)}
-                className="bg-surface border border-border rounded-lg px-2 py-1 text-xs text-zinc-200 focus:outline-none focus:border-cyan-400"
+                className="bg-black/5 dark:bg-white/5 border border-black/10 dark:border-white/10 rounded-lg px-2 py-1 text-xs text-zinc-900 dark:text-zinc-200 focus:outline-none focus:border-cyan-400"
               >
                 <option value="breakfast">Breakfast</option>
                 <option value="lunch">Lunch</option>
@@ -226,14 +239,26 @@ export function DailyFuelLedgerCard({
       {/* Entries List */}
       <div className="flex flex-col gap-2 font-mono">
         {entries.length === 0 ? (
-          <div className="p-8 text-center rounded-xl bg-background/60 border border-border/80 flex flex-col items-center justify-center gap-2">
-            <div className="w-10 h-10 rounded-full bg-surface border border-border flex items-center justify-center text-zinc-500">
+          <div
+            className="p-8 text-center rounded-xl border flex flex-col items-center justify-center gap-2 transition-colors"
+            style={{
+              backgroundColor: "var(--glass-surface-elevated)",
+              borderColor: "var(--glass-border)",
+            }}
+          >
+            <div
+              className="w-10 h-10 rounded-full border flex items-center justify-center text-zinc-500"
+              style={{
+                backgroundColor: "var(--glass-surface)",
+                borderColor: "var(--glass-border)",
+              }}
+            >
               <Utensils size={18} />
             </div>
-            <div className="text-xs font-bold text-zinc-300 uppercase tracking-wider">
+            <div className="text-xs font-bold text-zinc-800 dark:text-zinc-300 uppercase tracking-wider">
               No Fuel Entries Logged For {selectedDate}
             </div>
-            <p className="text-[11px] text-zinc-500 max-w-sm">
+            <p className="text-[11px] text-zinc-500 dark:text-zinc-400 max-w-sm">
               Telemetry is in idle state with zero calories recorded. Click &ldquo;Quick Input&rdquo; above to record your first meal.
             </p>
           </div>
@@ -241,22 +266,39 @@ export function DailyFuelLedgerCard({
           entries.map((item) => (
             <div
               key={item.id}
-              className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 p-3 rounded-xl bg-background/80 border border-border hover:border-cyan-500/40 transition group"
+              className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 p-3 rounded-xl border hover:border-cyan-500/40 transition group"
+              style={{
+                backgroundColor: "var(--glass-surface-elevated)",
+                borderColor: "var(--glass-border)",
+              }}
             >
               <div className="flex items-center gap-3">
-                <div className="w-8 h-8 rounded-lg bg-surface border border-border flex items-center justify-center flex-shrink-0">
+                <div
+                  className="w-8 h-8 rounded-lg border flex items-center justify-center flex-shrink-0"
+                  style={{
+                    backgroundColor: "var(--glass-surface)",
+                    borderColor: "var(--glass-border)",
+                  }}
+                >
                   {getMealIcon(item.meal_window)}
                 </div>
 
                 <div>
                   <div className="flex items-center gap-2">
-                    <span className="font-bold text-xs text-zinc-100">{item.name}</span>
-                    <span className="px-1.5 py-0.5 rounded text-[9px] font-bold uppercase bg-surface text-zinc-400 border border-border">
+                    <span className="font-bold text-xs text-zinc-900 dark:text-zinc-100">{item.name}</span>
+                    <span
+                      className="px-1.5 py-0.5 rounded text-[9px] font-bold uppercase border"
+                      style={{
+                        backgroundColor: "var(--glass-surface)",
+                        borderColor: "var(--glass-border)",
+                        color: "var(--glass-text-muted)",
+                      }}
+                    >
                       {item.meal_window || "Meal"}
                     </span>
                   </div>
                   {item.raw_input && (
-                    <div className="text-[10px] text-zinc-500 mt-0.5 line-clamp-1">
+                    <div className="text-[10px] text-zinc-500 dark:text-zinc-400 mt-0.5 line-clamp-1">
                       {item.raw_input}
                     </div>
                   )}
@@ -266,16 +308,22 @@ export function DailyFuelLedgerCard({
               <div className="flex items-center gap-3 justify-between sm:justify-end">
                 {/* Macro Chips */}
                 <div className="flex items-center gap-1.5 text-[10px]">
-                  <span className="px-2 py-0.5 rounded bg-surface border border-border font-bold text-zinc-100">
+                  <span
+                    className="px-2 py-0.5 rounded border font-bold text-zinc-900 dark:text-zinc-100"
+                    style={{
+                      backgroundColor: "var(--glass-surface)",
+                      borderColor: "var(--glass-border)",
+                    }}
+                  >
                     {item.calories} <span className="text-zinc-500 font-normal">kcal</span>
                   </span>
-                  <span className="px-1.5 py-0.5 rounded bg-cyan-500/10 border border-cyan-500/20 text-cyan-400 font-bold">
+                  <span className="px-1.5 py-0.5 rounded bg-cyan-500/10 border border-cyan-500/20 text-cyan-600 dark:text-cyan-400 font-bold">
                     P: {item.protein_g}g
                   </span>
-                  <span className="px-1.5 py-0.5 rounded bg-rose-500/10 border border-rose-500/20 text-rose-400 font-bold">
+                  <span className="px-1.5 py-0.5 rounded bg-rose-500/10 border border-rose-500/20 text-rose-600 dark:text-rose-400 font-bold">
                     C: {item.carbs_g}g
                   </span>
-                  <span className="px-1.5 py-0.5 rounded bg-purple-500/10 border border-purple-500/20 text-purple-400 font-bold">
+                  <span className="px-1.5 py-0.5 rounded bg-purple-500/10 border border-purple-500/20 text-purple-600 dark:text-purple-400 font-bold">
                     F: {item.fat_g}g
                   </span>
                 </div>
@@ -284,7 +332,7 @@ export function DailyFuelLedgerCard({
                 {onDeleteEntry && (
                   <button
                     onClick={() => onDeleteEntry(item.id)}
-                    className="p-1 rounded text-zinc-500 hover:text-rose-400 transition"
+                    className="p-1 rounded text-zinc-400 hover:text-rose-500 transition"
                     title="Delete Entry"
                   >
                     <Trash2 size={13} />

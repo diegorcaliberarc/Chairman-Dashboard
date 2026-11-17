@@ -65,15 +65,24 @@ export function PolarAdherenceWheelCard({
   const rFats = Math.min(100, fatScore * 10);
 
   return (
-    <div className="p-4 rounded-2xl bg-surface/80 border border-border backdrop-blur-xl flex flex-col relative group shadow-2xl">
+    <div
+      className="p-4 rounded-2xl border transition-all duration-300 flex flex-col relative group shadow-2xl"
+      style={{
+        backgroundColor: "var(--glass-surface)",
+        backdropFilter: "blur(var(--glass-blur, 26px)) saturate(185%)",
+        WebkitBackdropFilter: "blur(var(--glass-blur, 26px)) saturate(185%)",
+        borderColor: "var(--glass-border)",
+        boxShadow: "inset 0 1px 0 0 var(--glass-specular), var(--glass-shadow)",
+      }}
+    >
       <div className="flex items-center justify-between mb-2">
         <div className="flex items-center gap-2">
-          <PieChart className="w-4 h-4 text-cyan-400" />
-          <span className="font-mono font-bold text-xs uppercase tracking-wider text-zinc-100">
+          <PieChart className="w-4 h-4 text-cyan-500 dark:text-cyan-400" />
+          <span className="font-mono font-bold text-xs uppercase tracking-wider text-zinc-900 dark:text-zinc-100">
             Target Adherence &amp; Metabolic Score
           </span>
         </div>
-        <span className="px-2 py-0.5 rounded-md bg-cyan-500/10 border border-cyan-500/25 text-cyan-400 font-mono text-[10px] font-bold uppercase tracking-wider">
+        <span className="px-2 py-0.5 rounded-md bg-cyan-500/10 border border-cyan-500/25 text-cyan-600 dark:text-cyan-400 font-mono text-[10px] font-bold uppercase tracking-wider">
           Scale 1-10
         </span>
       </div>
@@ -93,15 +102,15 @@ export function PolarAdherenceWheelCard({
           </defs>
 
           {/* Concentric Scale Rings */}
-          <circle cx="0" cy="0" r="20" fill="transparent" stroke="rgba(255, 255, 255, 0.08)" strokeDasharray="2 2" strokeWidth="1" />
-          <circle cx="0" cy="0" r="40" fill="transparent" stroke="rgba(255, 255, 255, 0.08)" strokeDasharray="2 2" strokeWidth="1" />
-          <circle cx="0" cy="0" r="60" fill="transparent" stroke="rgba(255, 255, 255, 0.08)" strokeDasharray="2 2" strokeWidth="1" />
-          <circle cx="0" cy="0" r="80" fill="transparent" stroke="rgba(255, 255, 255, 0.15)" strokeWidth="1.2" />
-          <circle cx="0" cy="0" r="100" fill="transparent" stroke="rgba(255, 255, 255, 0.22)" strokeWidth="1.5" />
+          <circle cx="0" cy="0" r="20" fill="transparent" stroke="currentColor" className="text-zinc-400/25 dark:text-white/10" strokeDasharray="2 2" strokeWidth="1" />
+          <circle cx="0" cy="0" r="40" fill="transparent" stroke="currentColor" className="text-zinc-400/25 dark:text-white/10" strokeDasharray="2 2" strokeWidth="1" />
+          <circle cx="0" cy="0" r="60" fill="transparent" stroke="currentColor" className="text-zinc-400/25 dark:text-white/10" strokeDasharray="2 2" strokeWidth="1" />
+          <circle cx="0" cy="0" r="80" fill="transparent" stroke="currentColor" className="text-zinc-400/35 dark:text-white/20" strokeWidth="1.2" />
+          <circle cx="0" cy="0" r="100" fill="transparent" stroke="currentColor" className="text-zinc-400/50 dark:text-white/30" strokeWidth="1.5" />
 
           {/* Radiating Axes (4 Quadrants) */}
-          <line x1="-105" y1="0" x2="105" y2="0" stroke="rgba(255, 255, 255, 0.15)" strokeWidth="1.2" />
-          <line x1="0" y1="-105" x2="0" y2="105" stroke="rgba(255, 255, 255, 0.15)" strokeWidth="1.2" />
+          <line x1="-105" y1="0" x2="105" y2="0" stroke="currentColor" className="text-zinc-400/35 dark:text-white/20" strokeWidth="1.2" />
+          <line x1="0" y1="-105" x2="0" y2="105" stroke="currentColor" className="text-zinc-400/35 dark:text-white/20" strokeWidth="1.2" />
 
           {/* Quadrant 1: Water (Score 0-10 -> Ice Blue / Sky) */}
           {rWater > 0 && (
@@ -154,61 +163,91 @@ export function PolarAdherenceWheelCard({
           )}
 
           {/* Center Hub */}
-          <circle cx="0" cy="0" r="18" fill="#070a14" stroke="rgba(255, 255, 255, 0.25)" strokeWidth="1.5" />
+          <circle cx="0" cy="0" r="18" fill="currentColor" className="text-zinc-100 dark:text-[#070a14]" stroke="currentColor" strokeWidth="1.5" />
         </svg>
 
         {/* Center Badge Floating */}
         <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none select-none">
-          <div className="px-2 py-0.5 rounded-full bg-zinc-950/90 border border-white/20 shadow-lg text-center backdrop-blur-md">
-            <span className="font-mono text-xs font-black text-cyan-400">
+          <div
+            className="px-2 py-0.5 rounded-full border shadow-lg text-center backdrop-blur-md"
+            style={{
+              backgroundColor: "var(--glass-surface-elevated)",
+              borderColor: "var(--glass-border)",
+            }}
+          >
+            <span className="font-mono text-xs font-black text-cyan-600 dark:text-cyan-400">
               {aggregateScore > 0 ? `${aggregateScore}` : "0.0"}
             </span>
-            <span className="font-mono text-[8px] text-zinc-400 block -mt-0.5">SCORE</span>
+            <span className="font-mono text-[8px] text-zinc-500 dark:text-zinc-400 block -mt-0.5">SCORE</span>
           </div>
         </div>
       </div>
 
       {/* Score Legend / Quadrants Status */}
-      <div className="grid grid-cols-2 gap-2 text-xs font-mono border-t border-border pt-3">
+      <div className="grid grid-cols-2 gap-2 text-xs font-mono border-t pt-3" style={{ borderColor: "var(--glass-border)" }}>
         {/* Water */}
-        <div className="flex items-center justify-between p-1.5 rounded-lg bg-background/80 border border-sky-500/20">
+        <div
+          className="flex items-center justify-between p-1.5 rounded-lg border transition-colors"
+          style={{
+            backgroundColor: "var(--glass-surface-elevated)",
+            borderColor: "var(--glass-border)",
+          }}
+        >
           <div className="flex items-center gap-1.5">
             <span className="w-2 h-2 rounded-full bg-sky-400" />
-            <span className="text-zinc-300 font-semibold text-[11px]">Water</span>
+            <span className="text-zinc-800 dark:text-zinc-200 font-semibold text-[11px]">Water</span>
           </div>
-          <span className="font-bold text-sky-400">{hydrationScore}/10</span>
+          <span className="font-bold text-sky-600 dark:text-sky-400">{hydrationScore}/10</span>
         </div>
 
         {/* Protein */}
-        <div className="flex items-center justify-between p-1.5 rounded-lg bg-background/80 border border-cyan-500/20">
+        <div
+          className="flex items-center justify-between p-1.5 rounded-lg border transition-colors"
+          style={{
+            backgroundColor: "var(--glass-surface-elevated)",
+            borderColor: "var(--glass-border)",
+          }}
+        >
           <div className="flex items-center gap-1.5">
             <span className="w-2 h-2 rounded-full bg-cyan-400" />
-            <span className="text-zinc-300 font-semibold text-[11px]">Protein</span>
+            <span className="text-zinc-800 dark:text-zinc-200 font-semibold text-[11px]">Protein</span>
           </div>
-          <span className="font-bold text-cyan-400">{proteinScore}/10</span>
+          <span className="font-bold text-cyan-600 dark:text-cyan-400">{proteinScore}/10</span>
         </div>
 
         {/* Carbs */}
-        <div className="flex items-center justify-between p-1.5 rounded-lg bg-background/80 border border-rose-500/20">
+        <div
+          className="flex items-center justify-between p-1.5 rounded-lg border transition-colors"
+          style={{
+            backgroundColor: "var(--glass-surface-elevated)",
+            borderColor: "var(--glass-border)",
+          }}
+        >
           <div className="flex items-center gap-1.5">
             <span className="w-2 h-2 rounded-full bg-rose-400" />
-            <span className="text-zinc-300 font-semibold text-[11px]">Carbs</span>
+            <span className="text-zinc-800 dark:text-zinc-200 font-semibold text-[11px]">Carbs</span>
           </div>
-          <span className="font-bold text-rose-400">{carbScore}/10</span>
+          <span className="font-bold text-rose-600 dark:text-rose-400">{carbScore}/10</span>
         </div>
 
         {/* Lipids */}
-        <div className="flex items-center justify-between p-1.5 rounded-lg bg-background/80 border border-purple-500/20">
+        <div
+          className="flex items-center justify-between p-1.5 rounded-lg border transition-colors"
+          style={{
+            backgroundColor: "var(--glass-surface-elevated)",
+            borderColor: "var(--glass-border)",
+          }}
+        >
           <div className="flex items-center gap-1.5">
             <span className="w-2 h-2 rounded-full bg-purple-400" />
-            <span className="text-zinc-300 font-semibold text-[11px]">Lipids</span>
+            <span className="text-zinc-800 dark:text-zinc-200 font-semibold text-[11px]">Lipids</span>
           </div>
-          <span className="font-bold text-purple-400">{fatScore}/10</span>
+          <span className="font-bold text-purple-600 dark:text-purple-400">{fatScore}/10</span>
         </div>
       </div>
 
-      <div className="mt-2 text-center text-[10px] font-mono text-zinc-400">
-        Aggregate Telemetry Adherence: <span className="text-cyan-400 font-bold">{adherencePct}%</span>
+      <div className="mt-2 text-center text-[10px] font-mono text-zinc-500 dark:text-zinc-400">
+        Aggregate Telemetry Adherence: <span className="text-cyan-600 dark:text-cyan-400 font-bold">{adherencePct}%</span>
       </div>
     </div>
   );
