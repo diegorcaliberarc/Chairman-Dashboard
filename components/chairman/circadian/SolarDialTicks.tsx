@@ -27,10 +27,10 @@ export function SolarDialTicks({
   showCardinalLabels = true,
 }: SolarDialTicksProps) {
   const cardinalAnchors = [
-    { mins: 720, label: "12:00 PM", dx: 0, dy: 24 * scaleFactor },
-    { mins: 1080, label: "6:00 PM", dx: -36 * scaleFactor, dy: 4 },
-    { mins: 0, label: "12:00 AM", dx: 0, dy: -16 * scaleFactor },
-    { mins: 360, label: "6:00 AM", dx: 36 * scaleFactor, dy: 4 },
+    { mins: 720, label: "1200", dx: 0, dy: 24 * scaleFactor },
+    { mins: 1080, label: "1800", dx: -30 * scaleFactor, dy: 4 },
+    { mins: 0, label: "0000 / 2400", dx: 0, dy: -16 * scaleFactor },
+    { mins: 360, label: "0600", dx: 30 * scaleFactor, dy: 4 },
   ];
 
   return (

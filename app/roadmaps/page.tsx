@@ -246,9 +246,9 @@ export default function SynthesisRoadmapPage() {
   return (
     <ExecutiveModuleShell
       moduleId="ROADMAPS"
-      eyebrow="Tactical Execution Engine"
-      title="Synthesis Roadmap DAG"
-      subtitle="Multi-Branch Converging Directed Acyclic Graph & Mission Dossiers"
+      eyebrow="Operations & Planning"
+      title="Strategic Roadmap"
+      subtitle="Multi-branch planning, milestone dependencies, and execution briefs"
       accentColor="#00f0ff"
       fullBleed={true}
     >

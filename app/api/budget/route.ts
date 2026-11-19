@@ -133,7 +133,7 @@ async function ensureBudgetSchema() {
 }
 
 async function seedBudgetIfEmpty(userId: string, year: number) {
-  // Ensure 12 budget_months exist
+  // Zero-Dummy-Data Policy: Initialize 12 blank $0 budget_months rows only; never seed fake entries or mock dollar figures.
   const mCount = await pgQuery<{ cnt: number }>(
     `SELECT COUNT(*)::int AS cnt FROM budget_months WHERE user_id = $1 AND budget_year = $2`,
     userId,
@@ -142,106 +142,21 @@ async function seedBudgetIfEmpty(userId: string, year: number) {
 
   if ((mCount[0]?.cnt ?? 0) < 12) {
     for (let m = 1; m <= 12; m++) {
-      const seasonalIncome = m >= 10 ? 9600 : m >= 6 ? 9000 : 8600;
-      const seasonalCap = m === 4 || m === 12 ? 4600 : 4100;
-      const seasonalSavings = m >= 10 ? 3000 : 2500;
       await pgExec(
         `INSERT INTO budget_months (user_id, budget_year, budget_month, income_target, expense_cap, savings_target, notes)
-         VALUES ($1, $2, $3, $4, $5, $6, $7)
+         VALUES ($1, $2, $3, 0, 0, 0, '')
          ON CONFLICT (user_id, budget_year, budget_month) DO NOTHING`,
         userId,
         year,
-        m,
-        seasonalIncome,
-        seasonalCap,
-        seasonalSavings,
-        `${MONTH_FULL[m - 1]} connected shift + retainer + life-ops operating plan.`
+        m
       );
     }
   }
 
-  // Ensure baseline recurring ledger entries exist for the year
-  const eCount = await pgQuery<{ cnt: number }>(
-    `SELECT COUNT(*)::int AS cnt FROM budget_entries WHERE user_id = $1 AND budget_year = $2`,
-    userId,
-    year
-  );
-
-  if ((eCount[0]?.cnt ?? 0) === 0) {
-    for (let m = 1; m <= 12; m++) {
-      const mPad = String(m).padStart(2, "0");
-      const baseEntries = [
-        {
-          date: `${year}-${mPad}-01`,
-          type: "income",
-          category: "SaaS MRR",
-          label: "SaaS Subscriptions & Automation Micro-Tools",
-          planned: 1450,
-          actual: 1450 + (m % 3) * 120,
-          source: "manual",
-        },
-        {
-          date: `${year}-${mPad}-02`,
-          type: "expense",
-          category: "Housing & Utilities",
-          label: "Mortgage / Studio Overhead & Fiber Utilities",
-          planned: 2150,
-          actual: 2150,
-          source: "life_ops",
-        },
-        {
-          date: `${year}-${mPad}-08`,
-          type: "expense",
-          category: "Nutrition & Health",
-          label: "High-Protein Groceries, Electrolytes & Gym",
-          planned: 780,
-          actual: 745 + (m % 4) * 25,
-          source: "life_ops",
-        },
-        {
-          date: `${year}-${mPad}-14`,
-          type: "expense",
-          category: "Cloud & AI Stack",
-          label: "Supabase Pro, Vercel, AI Model Tokens & Infra",
-          planned: 310,
-          actual: 295 + (m % 2) * 20,
-          source: "manual",
-        },
-        {
-          date: `${year}-${mPad}-25`,
-          type: "savings",
-          category: "Treasury & ETF",
-          label: "Automated S&P 500 ETF + High-Yield Cash Reserve",
-          planned: 2500,
-          actual: m <= new Date().getMonth() + 1 ? 2600 : 2500,
-          source: "manual",
-        },
-      ];
-
-      for (const item of baseEntries) {
-        await pgExec(
-          `INSERT INTO budget_entries
-           (user_id, budget_year, budget_month, entry_date, entry_type, category, label, planned_amount, actual_amount, linked_source)
-           VALUES ($1, $2, $3, $4::date, $5, $6, $7, $8, $9, $10)`,
-          userId,
-          year,
-          m,
-          item.date,
-          item.type,
-          item.category,
-          item.label,
-          item.planned,
-          item.actual,
-          item.source
-        );
-      }
-    }
-  }
-
-  // Ensure work_shift_configs has a default row
+  // Ensure work_shift_configs has a blank zero-initialized row
   await pgExec(
     `INSERT INTO work_shift_configs (user_id, role_label, pay_per_shift, hourly_rate, hours_per_shift, total_scheduled_days, shifts_per_week)
-     VALUES ($1, 'Primary Operations & Engineering Shift', 320.00, 40.00, 8.00, 22, 5.00)
+     VALUES ($1, 'Primary Shift', 0.00, 0.00, 8.00, 0, 0.00)
      ON CONFLICT (user_id) DO NOTHING`,
     userId
   );

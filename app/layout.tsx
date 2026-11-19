@@ -1,6 +1,7 @@
 import type { Metadata, Viewport } from "next";
 import "./globals.css";
 import { Providers } from "./providers";
+import { GlassThemeController } from "@/components/GlassThemeController";
 import { ChairmanCopilotHUD } from "@/components/chairman/copilot/ChairmanCopilotHUD";
 import { DittoGengarPals } from "@/components/chairman/pixel-pals/DittoGengarPals";
 
@@ -71,8 +72,9 @@ export default function RootLayout({
         <link rel="apple-touch-icon" href="/icons/apple-touch-icon.png" />
         <link rel="apple-touch-icon" sizes="180x180" href="/icons/apple-touch-icon.png" />
       </head>
-      <body className="min-h-screen bg-[#ffffff] text-[#000000] font-sans font-normal antialiased overscroll-none selection:bg-[#4984fd]/20 selection:text-[#000000]">
+      <body className="min-h-screen antialiased overscroll-none selection:bg-[#4984fd]/20">
         <Providers>
+          <GlassThemeController />
           {children}
           <DittoGengarPals />
           <ChairmanCopilotHUD />

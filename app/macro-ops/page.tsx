@@ -386,9 +386,9 @@ export default function MacroOpsPage() {
   return (
     <ExecutiveModuleShell
       moduleId="MACRO_OPS"
-      eyebrow="ORBITAL METABOLIC // PHOENIX EXECUTIVE TELEMETRY HUD"
-      title="Orbital Metabolic & Phoenix Bio-Telemetry OS"
-      subtitle="Real-Time Nitrogen Saturation, Circadian Glycogen Flux, Kinetic Steps & Cellular Homeostasis"
+      eyebrow="Health & Nutrition"
+      title="Nutrition & Hydration"
+      subtitle="Daily macros, voice food logging, fasting rhythm, and water intake"
       accentColor="#06b6d4"
       fullBleed={true}
       headerActions={

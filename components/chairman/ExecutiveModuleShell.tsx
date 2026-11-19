@@ -36,7 +36,10 @@ export function ExecutiveModuleShell({
   const [deepWork, setDeepWork] = useState(false);
 
   return (
-    <div className="executive-glass-shell min-h-screen bg-[#ffffff] text-[#000000] font-sans font-normal flex flex-row overflow-x-hidden transition-colors duration-300">
+    <div
+      className="executive-glass-shell min-h-screen bg-transparent font-sans font-normal flex flex-row overflow-x-hidden transition-colors duration-300"
+      style={{ color: "var(--glass-text-primary, var(--text-ink))" }}
+    >
       <Sidebar
         activeTab={activeTab}
         setActiveTab={setActiveTab}
@@ -54,15 +57,15 @@ export function ExecutiveModuleShell({
         tasksLoading={false}
       />
 
-      <div className="flex-1 min-w-0 flex flex-col min-h-screen bg-[#ffffff] relative pt-14 lg:pt-0 transition-all duration-300">
-        {/* Floating Atmospheric Light-First Top Bar */}
+      <div className="flex-1 min-w-0 flex flex-col min-h-screen bg-transparent relative pt-14 lg:pt-0 transition-all duration-300">
+        {/* Floating Theme-Adaptive Top Bar */}
         <header
-          className="px-4 sm:px-8 py-4 flex flex-wrap items-center justify-between gap-4 sticky top-14 lg:top-0 z-30 border-b border-[#d1d6e0] transition-all duration-300"
+          className="px-4 sm:px-8 py-4 flex flex-wrap items-center justify-between gap-4 sticky top-14 lg:top-0 z-30 border-b transition-all duration-300"
           style={{
-            background:
-              "linear-gradient(180deg, rgba(221, 232, 252, 0.55) 0%, rgba(255, 255, 255, 0.88) 100%)",
-            backdropFilter: "blur(20px) saturate(160%)",
-            WebkitBackdropFilter: "blur(20px) saturate(160%)",
+            backgroundColor: "var(--glass-surface)",
+            borderColor: "var(--glass-border)",
+            backdropFilter: "blur(var(--glass-blur, 20px)) saturate(165%)",
+            WebkitBackdropFilter: "blur(var(--glass-blur, 20px)) saturate(165%)",
           }}
         >
           <div className="min-w-0">
@@ -70,17 +73,30 @@ export function ExecutiveModuleShell({
               <span
                 className="w-2 h-2 rounded-full shrink-0"
                 style={{
-                  backgroundColor: accentColor === "#f59e0b" ? "#4984fd" : accentColor,
+                  backgroundColor: accentColor === "#f59e0b" ? "var(--color-primary, #4984fd)" : accentColor,
                 }}
               />
-              <span className="px-2 py-0.5 rounded-[6px] bg-[#dde2ee] text-[#263043] text-[12px] font-medium tracking-[-0.13px]">
+              <span
+                className="px-2 py-0.5 rounded-[6px] text-[12px] font-medium tracking-[-0.13px] border"
+                style={{
+                  backgroundColor: "var(--glass-surface-elevated)",
+                  borderColor: "var(--glass-border)",
+                  color: "var(--glass-text-muted)",
+                }}
+              >
                 {eyebrow}
               </span>
-              <h1 className="text-[19px] sm:text-[22px] font-medium tracking-[-0.38px] leading-[1.3] text-[#000000] truncate">
+              <h1
+                className="text-[19px] sm:text-[22px] font-medium tracking-[-0.38px] leading-[1.3] truncate"
+                style={{ color: "var(--glass-text-primary)" }}
+              >
                 {title}
               </h1>
             </div>
-            <p className="text-[13px] font-normal leading-[1.6] text-[#6b7280] mt-0.5">
+            <p
+              className="text-[13px] font-normal leading-[1.6] mt-0.5"
+              style={{ color: "var(--glass-text-muted)" }}
+            >
               {subtitle}
             </p>
           </div>
@@ -90,11 +106,12 @@ export function ExecutiveModuleShell({
             <button
               type="button"
               onClick={() => setIsAppearanceOpen(true)}
-              className="cluely-pill px-3.5 py-1.5 text-[13px] font-medium tracking-[-0.13px] text-[#374151] hover:text-[#000000] hover:border-[#4984fd]/50 flex items-center gap-1.5 transition-all"
-              title="Appearance & Studio Preferences"
+              className="liquid-glass-pill px-3.5 py-1.5 text-[13px] font-medium tracking-[-0.13px] flex items-center gap-1.5 transition-all"
+              style={{ color: "var(--glass-text-primary)" }}
+              title="Open Liquid Glass & Chromatic Studio"
             >
-              <Palette size={14} className="text-[#4984fd]" />
-              <span className="hidden sm:inline">Studio</span>
+              <Palette size={14} style={{ color: "var(--theme-grad-start, #4984fd)" }} />
+              <span className="hidden sm:inline">Glass Studio</span>
             </button>
           </div>
         </header>
@@ -102,8 +119,8 @@ export function ExecutiveModuleShell({
         <main
           className={
             fullBleed
-              ? "flex-1 relative min-h-0 bg-[#ffffff]"
-              : "flex-1 px-4 sm:px-8 py-8 max-w-[1440px] w-full mx-auto space-y-8 pb-20 bg-[#ffffff]"
+              ? "flex-1 relative min-h-0 bg-transparent"
+              : "flex-1 px-4 sm:px-8 py-8 max-w-[1440px] w-full mx-auto space-y-8 pb-20 bg-transparent"
           }
         >
           {children}

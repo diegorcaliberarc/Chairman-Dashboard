@@ -848,9 +848,9 @@ export default function TitanWorkoutsPage() {
   return (
     <ExecutiveModuleShell
       moduleId="WORKOUTS"
-      eyebrow="Hypertrophy & Strength"
-      title="Titan Bodybuilding Engine"
-      subtitle="Clean Progressive Overload, Set Telemetry & Integrated Rest Timers"
+      eyebrow="Health & Performance"
+      title="Strength & Training"
+      subtitle="Progressive overload, voice set logging, and integrated rest timers"
       accentColor="#f59e0b"
     >
       <div className="min-h-screen bg-[#070A12] text-white flex flex-col selection:bg-amber-500 selection:text-black">

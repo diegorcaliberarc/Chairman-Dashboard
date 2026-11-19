@@ -111,7 +111,7 @@ export function GlassThemeController() {
   }, []);
 
   const isSpatial = activePreset === "aura-spatial";
-  const showAmbientBackground = (activePreset === "eco-glass" || ambientBgEnabled);
+  const showAmbientBackground = activePreset === "eco-glass" && ambientBgEnabled;
 
   return (
     <div

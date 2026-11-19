@@ -22,7 +22,12 @@ export type ScenarioId =
   | "sinatra"
   | "mango"
   | "foot_rub"
-  | "walking_dogs";
+  | "walking_dogs"
+  | "gym_pump"
+  | "espresso_focus"
+  | "stargaze"
+  | "zen_garden"
+  | "cyber_arcade";
 
 export type DockPosition = "bottom-left" | "bottom-center" | "top-center";
 
@@ -102,6 +107,51 @@ const SCENARIOS: ScenarioMeta[] = [
     announcement: "Nova, Astro & Comet Walk!",
     lyricOrBubble: "good pups! 🐾♥",
     accentColor: "#38bdf8",
+  },
+  {
+    id: "gym_pump",
+    label: "Iron Gym Pump",
+    shortTag: "Gym Pump",
+    emoji: "🏋️⚡",
+    announcement: "PR Day Power Set!",
+    lyricOrBubble: "lightweight!! 💪⚡",
+    accentColor: "#4984fd",
+  },
+  {
+    id: "espresso_focus",
+    label: "Espresso Café Focus",
+    shortTag: "Café Brew",
+    emoji: "☕✨",
+    announcement: "Deep Work Espresso!",
+    lyricOrBubble: "sip & ship~ ☕",
+    accentColor: "#d97706",
+  },
+  {
+    id: "stargaze",
+    label: "Midnight Stargaze",
+    shortTag: "Stargaze",
+    emoji: "🌙🌌",
+    announcement: "Rooftop Stargazing",
+    lyricOrBubble: "look at Orion~ 🌙",
+    accentColor: "#818cf8",
+  },
+  {
+    id: "zen_garden",
+    label: "Zen Matcha Garden",
+    shortTag: "Zen Tea",
+    emoji: "🍵🍃",
+    announcement: "Calm Recovery Ritual",
+    lyricOrBubble: "breathe in~ 🍃",
+    accentColor: "#10b981",
+  },
+  {
+    id: "cyber_arcade",
+    label: "Retro Arcade Co-Op",
+    shortTag: "Arcade",
+    emoji: "🕹️💙",
+    announcement: "Player 1 & Player 2!",
+    lyricOrBubble: "high score!! 🕹️",
+    accentColor: "#06b6d4",
   },
 ];
 
@@ -1027,9 +1077,15 @@ export function DittoGengarPals() {
             }
           }}
           title={`Expand His, Hers & Ours Pixel Pals (${currentMeta.label}) • Drag anywhere to move`}
-          className="pointer-events-auto cursor-grab active:cursor-grabbing group flex items-center gap-2 w-[160px] h-[38px] px-3 rounded-full bg-[#090a10]/92 backdrop-blur-xl border border-purple-500/35 shadow-[0_8px_28px_rgba(0,0,0,0.65),0_0_16px_rgba(168,85,247,0.22)] hover:border-pink-400/60 transition-all"
+          className="pointer-events-auto cursor-grab active:cursor-grabbing group flex items-center gap-2 w-[164px] h-[38px] px-3 rounded-[110px] backdrop-blur-xl border transition-all"
+          style={{
+            backgroundColor: "var(--glass-surface-elevated)",
+            borderColor: "var(--glass-border)",
+            boxShadow: "var(--glass-shadow)",
+            color: "var(--glass-text-primary)",
+          }}
         >
-          <GripVertical className="w-3 h-3 text-purple-400/50 -ml-1" />
+          <GripVertical className="w-3 h-3 opacity-50 -ml-1" />
           <span
             className="transition-transform duration-200"
             style={{ transform: isEvenFrame ? "translateY(-1px)" : "translateY(1px)" }}
@@ -1037,8 +1093,8 @@ export function DittoGengarPals() {
             <PixelSprite rows={MINI_GENGAR_ICON} pixelSize={2.2} />
           </span>
 
-          <span className="flex items-center gap-1 text-[10px] font-mono font-semibold tracking-tight text-pink-200">
-            <Heart className="w-3 h-3 text-pink-400 fill-pink-400 animate-pulse" />
+          <span className="flex items-center gap-1 text-[10px] font-medium tracking-tight">
+            <Heart className="w-3 h-3 text-pink-500 fill-pink-500 animate-pulse" />
             <span>{bondPercent}%</span>
           </span>
 
@@ -1049,7 +1105,7 @@ export function DittoGengarPals() {
             <PixelSprite rows={MINI_DITTO_ICON} pixelSize={2.2} />
           </span>
 
-          <ChevronUp className="w-3.5 h-3.5 ml-auto text-slate-400 group-hover:text-white transition-colors" />
+          <ChevronUp className="w-3.5 h-3.5 ml-auto opacity-60 group-hover:opacity-100 transition-opacity" />
         </button>
       </div>
     );
@@ -1089,40 +1145,50 @@ export function DittoGengarPals() {
         ))}
       </div>
 
-      {/* Scenario Picker Popover */}
+      {/* Scenario Picker Popover (Theme-Adaptive, 10 Variations) */}
       {pickerOpen && (
         <div
           className={`pointer-events-auto absolute left-0 ${
             popoverOpensDown ? "top-full mt-2" : "bottom-full mb-2"
-          } w-[310px] rounded-2xl bg-[#0b0c14]/95 backdrop-blur-xl border border-white/12 shadow-[0_16px_40px_rgba(0,0,0,0.75)] p-2.5 z-30`}
+          } w-[310px] rounded-2xl backdrop-blur-xl border p-2.5 z-30 transition-colors`}
+          style={{
+            backgroundColor: "var(--glass-surface-elevated)",
+            borderColor: "var(--glass-border)",
+            boxShadow: "var(--glass-shadow)",
+            color: "var(--glass-text-primary)",
+          }}
         >
-          <div className="flex items-center justify-between px-1.5 pb-2 mb-1.5 border-b border-white/10">
+          <div
+            className="flex items-center justify-between px-1.5 pb-2 mb-1.5 border-b"
+            style={{ borderColor: "var(--glass-border)" }}
+          >
             <div className="flex items-center gap-1.5">
-              <Sparkles className="w-3.5 h-3.5 text-pink-400" />
-              <span className="text-[11px] font-semibold tracking-wide text-slate-100">
-                HIS • HERS • OURS SCENARIOS
+              <Sparkles className="w-3.5 h-3.5 text-[#4984fd]" />
+              <span className="text-[11px] font-medium tracking-wide">
+                GENGAR &amp; DITTO • 10 VARIATIONS
               </span>
             </div>
-            <span className="text-[10px] font-mono text-purple-300/90">
+            <span className="text-[10px] opacity-75">
               Pets: {bondClicks} ♥
             </span>
           </div>
 
-          <div className="grid grid-cols-2 gap-1.5">
+          <div className="grid grid-cols-2 gap-1.5 max-h-[220px] overflow-y-auto pr-0.5">
             <button
               type="button"
               onClick={() => handleSelectScenario("auto")}
-              className={`col-span-2 flex items-center justify-between px-2.5 py-1.5 rounded-xl text-left text-[11px] transition-all border ${
-                mode === "auto"
-                  ? "bg-gradient-to-r from-purple-600/30 to-pink-500/25 border-pink-400/50 text-white"
-                  : "bg-white/[0.03] border-white/5 text-slate-300 hover:bg-white/[0.08]"
-              }`}
+              className="col-span-2 flex items-center justify-between px-2.5 py-1.5 rounded-xl text-left text-[11px] transition-all border"
+              style={{
+                backgroundColor: mode === "auto" ? "rgba(73, 132, 253, 0.16)" : "var(--glass-surface)",
+                borderColor: mode === "auto" ? "rgba(73, 132, 253, 0.5)" : "var(--glass-border)",
+                color: "var(--glass-text-primary)",
+              }}
             >
               <span className="flex items-center gap-1.5 font-medium">
-                <Shuffle className="w-3 h-3 text-pink-400" />
+                <Shuffle className="w-3 h-3 text-[#4984fd]" />
                 Auto Surprise Rotation
               </span>
-              <span className="text-[10px] font-mono text-pink-200/90">
+              <span className="text-[10px] opacity-75">
                 {mode === "auto" ? `next ${countdown}s` : "45s"}
               </span>
             </button>
@@ -1135,13 +1201,18 @@ export function DittoGengarPals() {
                   key={sc.id}
                   type="button"
                   onClick={() => handleSelectScenario(sc.id)}
-                  className={`flex items-center gap-1.5 px-2 py-1.5 rounded-xl text-left text-[11px] transition-all border ${
-                    isPinned
-                      ? "bg-purple-500/25 border-purple-400/60 text-white"
+                  className="flex items-center gap-1.5 px-2 py-1.5 rounded-xl text-left text-[11px] transition-all border"
+                  style={{
+                    backgroundColor: isPinned
+                      ? "rgba(73, 132, 253, 0.18)"
                       : isShowing
-                      ? "bg-white/[0.08] border-white/20 text-slate-100"
-                      : "bg-white/[0.03] border-white/5 text-slate-300 hover:bg-white/[0.08]"
-                  }`}
+                      ? "rgba(73, 132, 253, 0.08)"
+                      : "var(--glass-surface)",
+                    borderColor: isPinned
+                      ? "rgba(73, 132, 253, 0.55)"
+                      : "var(--glass-border)",
+                    color: "var(--glass-text-primary)",
+                  }}
                 >
                   <span className="text-xs leading-none">{sc.emoji}</span>
                   <span className="truncate font-medium">{sc.shortTag}</span>
@@ -1150,23 +1221,36 @@ export function DittoGengarPals() {
             })}
           </div>
 
-          <div className="mt-2 pt-1.5 border-t border-white/10 flex items-center justify-between px-1 text-[10px] text-slate-400">
+          <div
+            className="mt-2 pt-1.5 border-t flex items-center justify-between px-1 text-[10px]"
+            style={{
+              borderColor: "var(--glass-border)",
+              color: "var(--glass-text-muted)",
+            }}
+          >
             <span>Dock: {positionLabel}</span>
             <span>Tap Gengar or Ditto to pet ♥</span>
           </div>
         </div>
       )}
 
-      {/* Main Compact Glassmorphic Pixel Terrarium (~310px x 116px) */}
-      <div className="pointer-events-auto relative w-[310px] h-[116px] rounded-2xl bg-[#090a12]/90 backdrop-blur-xl border border-purple-400/25 shadow-[0_12px_36px_rgba(0,0,0,0.72),0_0_24px_rgba(139,92,246,0.16)] overflow-hidden flex flex-col justify-between">
-        {/* Starlight Night Sky Pixel Dots */}
-        <div className="pointer-events-none absolute inset-0 opacity-65">
-          <div className="absolute top-7 left-5 w-[2px] h-[2px] bg-purple-300" />
-          <div className="absolute top-9 left-16 w-[2px] h-[2px] bg-pink-200 animate-pulse" />
-          <div className="absolute top-6 left-36 w-[2px] h-[2px] bg-amber-200" />
-          <div className="absolute top-10 right-20 w-[2px] h-[2px] bg-sky-200 animate-pulse" />
-          <div className="absolute top-7 right-8 w-[2px] h-[2px] bg-pink-300" />
-        </div>
+      {/* Main Compact Theme-Adaptive Glassmorphic Pixel Terrarium (~310px x 116px) */}
+      <div
+        className="pointer-events-auto relative w-[310px] h-[116px] rounded-2xl backdrop-blur-xl border overflow-hidden flex flex-col justify-between transition-colors duration-300"
+        style={{
+          backgroundColor: "var(--glass-surface-elevated)",
+          borderColor: "var(--glass-border)",
+          boxShadow: "var(--glass-shadow)",
+          color: "var(--glass-text-primary)",
+        }}
+      >
+        {/* Subtle Atmospheric Accent Wash per Variation */}
+        <div
+          className="pointer-events-none absolute inset-0 opacity-35 transition-all duration-500"
+          style={{
+            background: `radial-gradient(ellipse 80% 70% at 50% 85%, ${currentMeta.accentColor}44, transparent 72%)`,
+          }}
+        />
 
         {/* Frank Sinatra Warm Golden Jazz-Club Spotlight Cone */}
         {activeScenario === "sinatra" && (
@@ -1179,7 +1263,7 @@ export function DittoGengarPals() {
           />
         )}
 
-        {/* Unified 32px Top Header Bar: HIS & HERS • GENGAR & DITTO */}
+        {/* Unified 32px Top Header Bar: Theme-Adaptive */}
         <div
           data-drag-handle="true"
           onPointerDown={handleDragPointerDown}
@@ -1187,13 +1271,20 @@ export function DittoGengarPals() {
           onPointerUp={handleDragPointerUp}
           onPointerCancel={handleDragPointerUp}
           title="Click and drag to move companion anywhere on screen"
-          className="relative z-30 h-8 flex items-center justify-between px-2.5 bg-black/60 border-b border-white/10 cursor-grab active:cursor-grabbing select-none"
+          className="relative z-30 h-8 flex items-center justify-between px-2.5 border-b cursor-grab active:cursor-grabbing select-none transition-colors"
+          style={{
+            backgroundColor: "var(--glass-surface)",
+            borderColor: "var(--glass-border)",
+          }}
         >
           {/* Left Title + Drag Handle */}
           <div className="flex items-center gap-1.5 pointer-events-none min-w-0">
-            <GripVertical className="w-3.5 h-3.5 text-purple-400 shrink-0" />
-            <span className="text-[9.5px] font-mono font-bold tracking-wider bg-gradient-to-r from-purple-300 via-pink-200 to-pink-300 bg-clip-text text-transparent truncate">
-              HIS & HERS • GENGAR & DITTO
+            <GripVertical className="w-3.5 h-3.5 text-[#4984fd] shrink-0" />
+            <span
+              className="text-[9.5px] font-medium tracking-wider truncate"
+              style={{ color: "var(--glass-text-primary)" }}
+            >
+              HIS &amp; HERS • GENGAR &amp; DITTO
             </span>
           </div>
 
@@ -1206,25 +1297,33 @@ export function DittoGengarPals() {
                 e.stopPropagation();
                 setPickerOpen((o) => !o);
               }}
-              title="Choose Scenario or Toggle Auto Surprise"
-              className="flex items-center gap-1 px-1.5 py-0.5 rounded-full bg-white/[0.06] hover:bg-white/[0.12] border border-white/10 text-[9px] font-mono text-zinc-300 transition-colors"
+              title="Choose from 10 Variations or Toggle Auto Surprise"
+              className="flex items-center gap-1 px-1.5 py-0.5 rounded-[110px] border text-[9px] font-medium transition-colors"
+              style={{
+                backgroundColor: "var(--glass-surface-elevated)",
+                borderColor: "var(--glass-border)",
+                color: "var(--glass-text-primary)",
+              }}
             >
-              <span className="w-1.5 h-1.5 rounded-full bg-pink-400 shadow-[0_0_6px_#f472b6]" />
-              <span className="truncate max-w-[50px]">{currentMeta.shortTag}</span>
+              <span
+                className="w-1.5 h-1.5 rounded-full"
+                style={{ backgroundColor: currentMeta.accentColor }}
+              />
+              <span className="truncate max-w-[52px]">{currentMeta.shortTag}</span>
               {pickerOpen ? (
-                <ChevronDown className="w-2.5 h-2.5 text-slate-300" />
+                <ChevronDown className="w-2.5 h-2.5 opacity-70" />
               ) : (
-                <ChevronUp className="w-2.5 h-2.5 text-slate-300" />
+                <ChevronUp className="w-2.5 h-2.5 opacity-70" />
               )}
             </button>
 
             {/* Live Sync Bond Meter */}
             <span
               title={`His & Hers Bond Sync (${bondClicks} pets)`}
-              className="flex items-center gap-0.5 px-1.5 py-0.5 rounded-full bg-pink-500/12 border border-pink-400/25 text-[9px] font-mono font-semibold text-pink-200"
+              className="flex items-center gap-0.5 px-1.5 py-0.5 rounded-[110px] bg-pink-500/15 border border-pink-400/30 text-[9px] font-medium text-pink-500"
             >
               <span>{bondPercent}%</span>
-              <span className="text-pink-400">♥</span>
+              <span>♥</span>
             </span>
 
             {/* Surprise Me! Trigger */}
@@ -1640,6 +1739,86 @@ export function DittoGengarPals() {
                   </div>
                 </div>
               </div>
+            </div>
+          )}
+
+          {/* SCENARIOS 6–10: GYM PUMP, ESPRESSO FOCUS, STARGAZE, ZEN GARDEN, CYBER ARCADE */}
+          {(activeScenario === "gym_pump" ||
+            activeScenario === "espresso_focus" ||
+            activeScenario === "stargaze" ||
+            activeScenario === "zen_garden" ||
+            activeScenario === "cyber_arcade") && (
+            <div className="relative z-10 w-full flex items-end justify-center gap-6 px-4 pb-0.5">
+              {/* Gengar animated with variation-specific energy */}
+              <button
+                type="button"
+                onClick={() => handlePetCompanion("gengar")}
+                title={`Pet Gengar (${currentMeta.label})`}
+                className="relative cursor-pointer focus:outline-none transition-transform duration-300"
+                style={{
+                  transform:
+                    activeScenario === "gym_pump"
+                      ? isEvenFrame
+                        ? "translateY(-5px) scale(1.04)"
+                        : "translateY(0px) scale(0.98)"
+                      : isEvenFrame
+                      ? "translateY(-2px)"
+                      : "translateY(1px)",
+                }}
+              >
+                <PixelSprite
+                  rows={
+                    activeScenario === "gym_pump" || activeScenario === "cyber_arcade"
+                      ? isEvenFrame
+                        ? GENGAR_HAPPY_HOP
+                        : GENGAR_IDLE_A
+                      : activeScenario === "espresso_focus"
+                      ? isEvenFrame
+                        ? GENGAR_SINATRA_A
+                        : GENGAR_SINATRA_B
+                      : isEvenFrame
+                      ? GENGAR_IDLE_A
+                      : GENGAR_WALK_A
+                  }
+                  pixelSize={2.45}
+                />
+              </button>
+
+              {/* Center Variation Prop Badge */}
+              <div className="flex flex-col items-center justify-center pb-2 select-none">
+                <span
+                  className={`text-lg leading-none ${
+                    isEvenFrame ? "-translate-y-0.5" : "translate-y-0.5"
+                  } transition-transform duration-300`}
+                >
+                  {currentMeta.emoji}
+                </span>
+                <span
+                  className="text-[8px] font-medium uppercase tracking-wider mt-1 px-1.5 py-0.5 rounded-[4px]"
+                  style={{
+                    backgroundColor: `${currentMeta.accentColor}22`,
+                    color: currentMeta.accentColor,
+                  }}
+                >
+                  {currentMeta.shortTag}
+                </span>
+              </div>
+
+              {/* Ditto animated alongside Gengar */}
+              <button
+                type="button"
+                onClick={() => handlePetCompanion("ditto")}
+                title={`Pet Ditto (${currentMeta.label})`}
+                className="relative cursor-pointer focus:outline-none transition-transform duration-300"
+                style={{
+                  transform: !isEvenFrame ? "translateY(-3px) scale(1.03)" : "translateY(0px)",
+                }}
+              >
+                <PixelSprite
+                  rows={isEvenFrame ? DITTO_STARRY : DITTO_IDLE_A}
+                  pixelSize={2.35}
+                />
+              </button>
             </div>
           )}
 

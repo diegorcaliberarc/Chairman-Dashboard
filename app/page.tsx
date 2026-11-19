@@ -69,19 +69,31 @@ export default function ChairmanCockpitPage() {
   const [newTaskInput, setNewTaskInput] = useState("");
   const [taskFilter, setTaskFilter] = useState<"all" | "active" | "completed">("all");
 
-  // Health Vitals (Steps, Sleep, Exercise)
-  const stepsCurrent = 8542;
+  // Health Vitals (Zero dummy data — hydrated live from /api/sitrep)
+  const [stepsCurrent, setStepsCurrent] = useState<number>(0);
   const stepsGoal = 10000;
-  const stepsMiles = 4.2;
-  const stepsKcal = 420;
+  const [stepsMiles, setStepsMiles] = useState<number>(0);
+  const [stepsKcal, setStepsKcal] = useState<number>(0);
+  const [sleepHours, setSleepHours] = useState<string>("0h");
+  const [sleepQuality, setSleepQuality] = useState<number>(0);
+  const [exerciseCompleted, setExerciseCompleted] = useState<boolean>(false);
 
-  const sleepHours = "7h 48m";
-  const sleepQuality = 92;
-  const sleepWakeTime = "6:45 AM";
-
-  const exerciseMinutes = 62;
-  const exerciseStreakDays = 5;
-  const exerciseRoutine = "Push Day Hypertrophy";
+  useEffect(() => {
+    const todayIso = new Date().toISOString().slice(0, 10);
+    fetch(`/api/sitrep?date=${todayIso}&limit=7`)
+      .then((r) => (r.ok ? r.json() : null))
+      .then((data) => {
+        const log = data?.todayLog;
+        if (!log) return;
+        setStepsCurrent(Number(log.total_steps || 0));
+        setStepsMiles(Number(log.miles || 0));
+        setStepsKcal(Number(log.kcal_burned || 0));
+        if (log.sleep_hours != null) setSleepHours(`${log.sleep_hours}h`);
+        if (log.recovery_score != null) setSleepQuality(Number(log.recovery_score));
+        setExerciseCompleted(Boolean(log.lift_completed || log.cardio_completed));
+      })
+      .catch(() => {});
+  }, []);
 
   // Clock Ticker
   useEffect(() => {
@@ -477,47 +489,51 @@ export default function ChairmanCockpitPage() {
                   </div>
 
                   <span className="px-3 py-1 rounded-[110px] bg-[#dde2ee] text-[#263043] text-[12px] font-medium">
-                    Optimal
+                    {sleepQuality > 0 ? "Synced" : "Pending"}
                   </span>
                 </div>
 
                 <div className="pt-4 border-t border-[#d1d6e0] flex items-center justify-between text-[13px] text-[#6b7280] tabular-nums">
-                  <span>Awake at {sleepWakeTime}</span>
-                  <span>1h 45m deep sleep</span>
+                  <span>{sleepQuality > 0 ? `Recovery ${sleepQuality}%` : "Awaiting sleep log"}</span>
+                  <Link href="/macro-ops" className="text-[#4984fd] hover:underline font-medium">
+                    Log sleep
+                  </Link>
                 </div>
               </div>
 
               {/* VITAL 3: EXERCISE */}
               <div className="cluely-card p-6 flex flex-col justify-between gap-6">
                 <div className="flex items-center justify-between">
-                  <span className="cluely-chip">Training &amp; Hypertrophy</span>
+                  <span className="cluely-chip">Strength &amp; Training</span>
                   <Dumbbell className="w-4 h-4 text-[#4984fd]" />
                 </div>
 
                 <div className="flex items-center justify-between gap-4">
                   <div>
                     <div className="text-[36px] font-medium tracking-[-0.8px] leading-none tabular-nums text-[#000000]">
-                      {exerciseMinutes}{" "}
-                      <span className="text-[16px] text-[#6b7280] font-normal">min</span>
+                      {exerciseCompleted ? "Done" : "0"}{" "}
+                      <span className="text-[16px] text-[#6b7280] font-normal">
+                        {exerciseCompleted ? "today" : "sessions"}
+                      </span>
                     </div>
                     <div className="text-[13px] text-[#6b7280] mt-2">
-                      {exerciseRoutine}
+                      {exerciseCompleted ? "Training completed today" : "No workout logged today"}
                     </div>
                   </div>
 
                   <span className="inline-flex items-center gap-1 px-3 py-1 rounded-[110px] bg-[#dde2ee] text-[#263043] text-[12px] font-medium tabular-nums">
                     <Flame className="w-3.5 h-3.5 text-[#4984fd]" />
-                    <span>{exerciseStreakDays}d streak</span>
+                    <span>{exerciseCompleted ? "Active" : "Ready"}</span>
                   </span>
                 </div>
 
                 <div className="pt-4 border-t border-[#d1d6e0] flex items-center justify-between text-[13px]">
-                  <span className="text-[#6b7280] tabular-nums">14 sets completed</span>
+                  <span className="text-[#6b7280] tabular-nums">Live training log</span>
                   <Link
                     href="/workouts"
                     className="text-[#4984fd] hover:underline font-medium inline-flex items-center gap-1"
                   >
-                    <span>Open workouts</span>
+                    <span>Open training</span>
                     <ArrowUpRight className="w-3.5 h-3.5" />
                   </Link>
                 </div>
@@ -527,48 +543,36 @@ export default function ChairmanCockpitPage() {
         </section>
 
         {/* ==================================================================
-         * 3. SPACIOUS WHITE 2-COLUMN SPLIT: WORKOUT ENGINE + SOLAR & GCAL
+         * 3. SPACIOUS WHITE 2-COLUMN SPLIT: TRAINING + SOLAR & GCAL
          * ================================================================ */}
         <section className="w-full bg-[#ffffff] py-16">
           <div className="max-w-6xl mx-auto px-6 grid grid-cols-1 lg:grid-cols-12 gap-8">
-            {/* Left 7-Col: Titan Workout Launcher */}
+            {/* Left 7-Col: Strength & Training Launcher */}
             <div className="lg:col-span-7 cluely-card p-7 flex flex-col justify-between gap-6">
               <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
                 <div className="space-y-1">
-                  <span className="cluely-chip">Active Split</span>
+                  <span className="cluely-chip">Health &amp; Performance</span>
                   <h2 className="cluely-h2 text-[#000000] pt-1">
-                    Titan Bodybuilding Engine
+                    Strength &amp; Training
                   </h2>
                   <p className="text-[14px] text-[#6b7280]">
-                    Push Day (Chest / Shoulders / Triceps) · Target Volume ~16,000 lbs
+                    Progressive overload logs, voice set capture, and integrated rest timers.
                   </p>
                 </div>
 
                 <Link href="/workouts" className="cluely-cta shrink-0">
-                  <span>Launch tracker</span>
+                  <span>Start session</span>
                   <ArrowUpRight className="w-4 h-4" />
                 </Link>
               </div>
 
-              {/* 2x2 Clean Exercise Grid */}
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                {[
-                  { label: "Exercise 01", name: "Incline DB Press", spec: "4 × 10 · 90 lbs" },
-                  { label: "Exercise 02", name: "Barbell Bench Press", spec: "4 × 6 · 225 lbs" },
-                  { label: "Exercise 03", name: "Lateral Raises", spec: "4 × 15 · 35 lbs" },
-                  { label: "Exercise 04", name: "Rope Pushdowns", spec: "3 × 12 · 75 lbs" },
-                ].map((ex) => (
-                  <div
-                    key={ex.label}
-                    className="p-4 rounded-[12px] bg-[#f9fafb] border border-[#d1d6e0] space-y-1"
-                  >
-                    <div className="text-[12px] text-[#6b7280]">{ex.label}</div>
-                    <div className="cluely-subhead text-[#000000]">{ex.name}</div>
-                    <div className="text-[13px] font-medium text-[#4984fd] tabular-nums">
-                      {ex.spec}
-                    </div>
-                  </div>
-                ))}
+              <div className="p-6 rounded-[12px] bg-[#f9fafb] border border-[#d1d6e0] text-center space-y-2">
+                <p className="text-[14px] font-medium text-[#000000]">
+                  No active sets logged yet today
+                </p>
+                <p className="text-[13px] text-[#6b7280]">
+                  Open Strength &amp; Training to start a session or dictate sets by voice.
+                </p>
               </div>
             </div>
 

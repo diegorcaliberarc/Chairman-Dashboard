@@ -90,197 +90,150 @@ interface NavModuleItem {
 }
 
 const ALL_MODULE_ITEMS: NavModuleItem[] = [
-  // Command & Strategy
+  // Operations & Planning Hub (Consolidated: Command, PMS, Roadmap, Topology, Vault, Horizon, Life Ops, Academy)
   {
     id: "COMMAND",
-    label: "COMMAND CENTER",
+    label: "Operations & Strategy",
     pillar: "all",
-    icon: <Compass size={15} />,
+    icon: <Compass size={14} />,
     route: "/command",
-    badge: "5-Tier",
-    description: "North Star target cascade, weekly FRAGO & PACE plan",
-  },
-  {
-    id: "ROADMAPS",
-    label: "SYNTHESIS ROADMAP",
-    pillar: "all",
-    icon: <GitBranch size={15} />,
-    route: "/roadmaps",
-    badge: "DAG",
-    description: "Converging multi-branch roadmap, FRAGO & PACE dossiers",
-  },
-
-  // Health
-  {
-    id: "WORKOUTS",
-    label: "TITAN WORKOUTS",
-    pillar: "health",
-    icon: <Dumbbell size={15} />,
-    route: "/workouts",
-    badge: "Gym",
-    description: "Bodybuilding logger, sets, rest timer & 1RM",
-  },
-  {
-    id: "CALENDAR_HABITS",
-    label: "CIRCADIAN SOLAR ARC",
-    pillar: "health",
-    icon: <CalendarRange size={15} />,
-    route: "/calendar",
-    badge: "24H",
-    description: "24-Hour solar calendar & time-lapse wheel",
-  },
-  {
-    id: "MACRO_OPS",
-    label: "MACRO OPS",
-    pillar: "health",
-    icon: <Utensils size={15} />,
-    route: "/macro-ops",
-    badge: "Nutrition",
-    description: "Portion weighing & metabolic curves",
-  },
-
-  // Wealth
-  {
-    id: "CALIBER_ARC",
-    label: "CALIBER ARC",
-    pillar: "wealth",
-    icon: <TrendingUp size={15} />,
-    route: "/caliber-arc",
-    badge: "Futures",
-    description: "Futures trading cockpit & execution review",
-  },
-  {
-    id: "BUDGET",
-    label: "12M BUDGET LEDGER",
-    pillar: "wealth",
-    icon: <Wallet size={15} />,
-    route: "/budget",
-    badge: "$",
-    description: "Connected 12-month budget & shift pay",
-  },
-  {
-    id: "MARKETING_AGENT",
-    label: "TREND SCRUBBER",
-    pillar: "wealth",
-    icon: <Radar size={15} />,
-    route: "/marketing-agent",
-    badge: "AI",
-    description: "Viral marketing & gaming ideas",
-  },
-  {
-    id: "EDUCATION",
-    label: "EDUCATION ACADEMY",
-    pillar: "wealth",
-    icon: <GraduationCap size={15} />,
-    route: "/education",
-    badge: "XP",
-    description: "Systems Architecture master blueprint",
+    badge: "Hub",
+    description: "Goals, priorities, vault, horizon & academy",
   },
   {
     id: "PMS",
-    label: "SOVEREIGN PMS",
-    pillar: "wealth",
-    icon: <KanbanSquare size={15} />,
+    label: "Project Management",
+    pillar: "all",
+    icon: <KanbanSquare size={14} />,
     route: "/pms",
-    description: "ClickUp PMS & sprint velocity",
+    description: "Projects, tasks & sprint execution",
+  },
+  {
+    id: "ROADMAPS",
+    label: "Strategic Roadmap",
+    pillar: "all",
+    icon: <GitBranch size={14} />,
+    route: "/roadmaps",
+    badge: "Plan",
+    description: "Multi-branch goals & milestone dependencies",
+  },
+  {
+    id: "ORG_CHART",
+    label: "Architecture Map",
+    pillar: "all",
+    icon: <Network size={14} />,
+    route: "/org-chart",
+    description: "System topology & visual diagrams",
   },
 
-  // Relationships
+  // Health Hub (Workouts + Nutrition + Circadian Solar)
+  {
+    id: "WORKOUTS",
+    label: "Strength & Training",
+    pillar: "health",
+    icon: <Dumbbell size={14} />,
+    route: "/workouts",
+    badge: "Gym",
+    description: "Progressive overload, sets & rest timers",
+  },
+  {
+    id: "MACRO_OPS",
+    label: "Nutrition & Hydration",
+    pillar: "health",
+    icon: <Utensils size={14} />,
+    route: "/macro-ops",
+    badge: "Fuel",
+    description: "Voice food log, macros & water intake",
+  },
+  {
+    id: "CALENDAR_HABITS",
+    label: "Circadian Solar",
+    pillar: "health",
+    icon: <CalendarRange size={14} />,
+    route: "/calendar",
+    badge: "24H",
+    description: "24-hour rhythm & synced calendar",
+  },
+
+  // Wealth Hub (Budget + Caliber Arc)
+  {
+    id: "BUDGET",
+    label: "Budget & Shift Ledger",
+    pillar: "wealth",
+    icon: <Wallet size={14} />,
+    route: "/budget",
+    badge: "$",
+    description: "12-month cashflow & shift tracking",
+  },
+  {
+    id: "CALIBER_ARC",
+    label: "Caliber Arc",
+    pillar: "wealth",
+    icon: <TrendingUp size={14} />,
+    route: "/caliber-arc",
+    badge: "Markets",
+    description: "Trading journal & execution review",
+  },
+
+  // Relationships (Decoupled from Operations)
   {
     id: "PODS",
-    label: "HIS & HERS PODS",
+    label: "His & Hers Pods",
     pillar: "relationships",
-    icon: <Users size={15} />,
+    icon: <Users size={14} />,
     route: "/pods",
     badge: "Shared",
     description: "Shared goals, bucket list & connection",
   },
   {
     id: "MINDSET",
-    label: "MINDSET COUNSEL",
+    label: "Mindset & Clarity",
     pillar: "relationships",
-    icon: <Flame size={15} />,
+    icon: <Flame size={14} />,
     route: "/mindset",
     badge: "⌘⇧M",
-    description: "Cognitive frame & anchor counsel",
+    description: "Cognitive framing & daily reflection",
   },
 
-  // Fam
+  // Family
   {
     id: "FAMILY_HUB",
-    label: "5-WHEEL FAMILY HUB",
+    label: "Family Hub",
     pillar: "fam",
-    icon: <Dog size={15} />,
+    icon: <Dog size={14} />,
     route: "/family-hub",
-    badge: "Dogs",
-    description: "Nova, Astro & Comet recovery telemetry",
-  },
-  {
-    id: "LIFE_OPS",
-    label: "LIFE OPS & FLEET",
-    pillar: "fam",
-    icon: <Wrench size={15} />,
-    route: "/life-ops",
-    description: "Maintenance protocols & home logistics",
+    badge: "Pack",
+    description: "Household & pack care schedules",
   },
 
-  // Happiness / Joy
+  // Joy
   {
     id: "MASTER",
-    label: "MASTER COCKPIT",
+    label: "Home Overview",
     pillar: "happiness",
-    icon: <LayoutDashboard size={15} />,
+    icon: <LayoutDashboard size={14} />,
     route: "/",
-    description: "Centralized one-pager command view",
+    description: "Daily focus & calm overview",
   },
   {
-    id: "HORIZON",
-    label: "HORIZON & ZOOM",
+    id: "MARKETING_AGENT",
+    label: "Trend Intelligence",
     pillar: "happiness",
-    icon: <Sunrise size={15} />,
-    route: "/horizon",
-    description: "Strategic time horizons & vision zoom",
+    icon: <Radar size={14} />,
+    route: "/marketing-agent",
+    badge: "Research",
+    description: "Market signals & creative insights",
   },
-  {
-    id: "VAULT",
-    label: "NEURAL VAULT",
-    pillar: "happiness",
-    icon: <Network size={15} />,
-    route: "/vault",
-    description: "Second brain knowledge graph",
-  },
-  {
-    id: "EPISTEMIC",
-    label: "EPISTEMIC MATRIX",
-    pillar: "happiness",
-    icon: <ShieldAlert size={15} />,
-    route: "/epistemic",
-    description: "Risk mitigation & anti-fragility",
-  },
-  {
-    id: "INTEGRATIONS",
-    label: "MCP & CONSOLE",
-    pillar: "happiness",
-    icon: <PlugZap size={15} />,
-    route: "/integrations",
-    description: "Tools, connections & credentials",
-  },
-  {
-    id: "ORG_CHART",
-    label: "TOPOLOGY MAP",
-    pillar: "happiness",
-    icon: <Network size={15} />,
-    route: "/org-chart",
-    description: "System architecture node tree",
-  },
-  {
-    id: "RESOURCES",
-    label: "RESOURCES & SOPS",
-    pillar: "happiness",
-    icon: <Database size={15} />,
-    route: "/resources",
-    description: "Architecture matrix & operational SOPs",
-  },
+];
+
+const SETTINGS_NAV_ITEMS = [
+  { label: "Epistemic Matrix", route: "/epistemic", icon: <ShieldAlert size={13} /> },
+  { label: "Integrations & Console", route: "/integrations", icon: <PlugZap size={13} /> },
+  { label: "Resources & Guides", route: "/resources", icon: <Database size={13} /> },
+  { label: "Knowledge Vault", route: "/vault", icon: <Archive size={13} /> },
+  { label: "Horizon & Zoom", route: "/horizon", icon: <Sunrise size={13} /> },
+  { label: "Life Operations", route: "/life-ops", icon: <Wrench size={13} /> },
+  { label: "Learning Academy", route: "/education", icon: <GraduationCap size={13} /> },
 ];
 
 const PILLARS_CONFIG: Array<{
@@ -293,16 +246,16 @@ const PILLARS_CONFIG: Array<{
 }> = [
   {
     id: "all",
-    label: "All Pillars",
-    shortLabel: "ALL",
+    label: "All Spheres",
+    shortLabel: "All",
     icon: <Layers size={13} />,
-    color: "var(--theme-grad-start)",
+    color: "var(--theme-grad-start, #4984fd)",
     count: ALL_MODULE_ITEMS.length,
   },
   {
     id: "health",
     label: "Health",
-    shortLabel: "HEALTH",
+    shortLabel: "Health",
     icon: <Activity size={13} />,
     color: "#10B981",
     count: ALL_MODULE_ITEMS.filter((i) => i.pillar === "health").length,
@@ -310,7 +263,7 @@ const PILLARS_CONFIG: Array<{
   {
     id: "wealth",
     label: "Wealth",
-    shortLabel: "WEALTH",
+    shortLabel: "Wealth",
     icon: <CircleDollarSign size={13} />,
     color: "#F59E0B",
     count: ALL_MODULE_ITEMS.filter((i) => i.pillar === "wealth").length,
@@ -318,25 +271,25 @@ const PILLARS_CONFIG: Array<{
   {
     id: "relationships",
     label: "Relationships",
-    shortLabel: "RELATE",
+    shortLabel: "Relationships",
     icon: <Users size={13} />,
-    color: "#60A5FA",
+    color: "#4984fd",
     count: ALL_MODULE_ITEMS.filter((i) => i.pillar === "relationships").length,
   },
   {
     id: "fam",
-    label: "Family & Pack",
-    shortLabel: "FAM",
+    label: "Family",
+    shortLabel: "Family",
     icon: <Dog size={13} />,
     color: "#EC4899",
     count: ALL_MODULE_ITEMS.filter((i) => i.pillar === "fam").length,
   },
   {
     id: "happiness",
-    label: "Happiness & Joy",
-    shortLabel: "JOY",
+    label: "Joy",
+    shortLabel: "Joy",
     icon: <Sparkles size={13} />,
-    color: "#A855F7",
+    color: "#8B5CF6",
     count: ALL_MODULE_ITEMS.filter((i) => i.pillar === "happiness").length,
   },
 ];
@@ -371,6 +324,7 @@ export function Sidebar({
   tasksLoading = false,
 }: SidebarProps) {
   const [accountModalOpen, setAccountModalOpen] = useState(false);
+  const [settingsMenuOpen, setSettingsMenuOpen] = useState(false);
   const [novaOpen, setNovaOpen] = useState(false);
   const router = useRouter();
   const pathname = usePathname();
@@ -504,22 +458,29 @@ export function Sidebar({
         />
       )}
 
-      {/* Main Dual-Column Sidebar: Slide-over Drawer on Mobile, Relative Flex Rail on Desktop */}
+      {/* Main Dual-Column Sidebar: Slide-over Drawer on Mobile, Compact Theme-Adaptive Rail on Desktop */}
       <aside
-        className={`fixed lg:relative left-0 top-0 h-screen shrink-0 flex flex-row bg-[#f9fafb] border-r border-[#d1d6e0] text-[#000000] z-50 lg:z-30 transition-all duration-300 ${
+        className={`fixed lg:relative left-0 top-0 h-screen shrink-0 flex flex-row border-r z-50 lg:z-30 transition-all duration-300 backdrop-blur-xl ${
           mobileMenuOpen ? "translate-x-0" : "-translate-x-full lg:translate-x-0"
         }`}
         style={{
-          boxShadow: "12px 0 32px -16px rgba(148, 172, 243, 0.28)",
+          backgroundColor: "var(--glass-surface-elevated)",
+          borderColor: "var(--glass-border)",
+          color: "var(--glass-text-primary)",
+          boxShadow: "var(--glass-shadow)",
         }}
       >
         {/* ====================================================================
-         * COLUMN 1: LIFE PILLARS SELECTOR (Health, Wealth, Relate, Fam, Joy & All)
+         * COLUMN 1: LIFE SPHERES (Compact Width)
          * ================================================================== */}
         <div
-          className={`h-full flex flex-col border-r border-[#d1d6e0] bg-[#f9fafb] transition-all duration-300 ${
-            col1Collapsed ? "w-16" : "w-44"
+          className={`h-full flex flex-col border-r transition-all duration-300 ${
+            col1Collapsed ? "w-14" : "w-36"
           }`}
+          style={{
+            backgroundColor: "var(--glass-surface)",
+            borderColor: "var(--glass-border)",
+          }}
         >
           {/* Brand Header & Col 1 Collapse Toggle */}
           <div className="px-3 py-3.5 border-b border-zinc-200/50 dark:border-white/10 flex items-center justify-between gap-1">
@@ -618,11 +579,11 @@ export function Sidebar({
         </div>
 
         {/* ====================================================================
-         * COLUMN 2: PILLAR MODULES & SYSTEMS (Lines up items for selected pillar)
+         * COLUMN 2: PILLAR MODULES & SYSTEMS (Compact Width)
          * ================================================================== */}
         <div
-          className={`h-full flex flex-col transition-all duration-300 ${
-            col2Collapsed ? "w-14" : "w-60"
+          className={`h-full flex flex-col relative transition-all duration-300 ${
+            col2Collapsed ? "w-14" : "w-52"
           }`}
         >
           {/* Brand / Header & Col 2 Toggle */}
@@ -763,13 +724,70 @@ export function Sidebar({
               )}
             </button>
 
-            {/* Actions: Settings Gear (32px × 32px) + Calendar + Palette */}
+            {/* Settings & System Modules Popover */}
+            {settingsMenuOpen && (
+              <div
+                className="absolute bottom-16 left-2 right-2 rounded-xl border p-2 z-50 space-y-1 backdrop-blur-xl"
+                style={{
+                  backgroundColor: "var(--glass-surface-elevated)",
+                  borderColor: "var(--glass-border)",
+                  boxShadow: "var(--glass-shadow)",
+                  color: "var(--glass-text-primary)",
+                }}
+              >
+                <div
+                  className="px-2 py-1 text-[10px] font-medium uppercase tracking-wider border-b mb-1"
+                  style={{
+                    borderColor: "var(--glass-border)",
+                    color: "var(--glass-text-muted)",
+                  }}
+                >
+                  Settings &amp; System Tools
+                </div>
+                {SETTINGS_NAV_ITEMS.map((item) => (
+                  <button
+                    key={item.route}
+                    type="button"
+                    onClick={() => {
+                      setSettingsMenuOpen(false);
+                      router.push(item.route);
+                    }}
+                    className="w-full flex items-center gap-2 px-2 py-1.5 rounded-lg text-[12px] font-medium text-left hover:bg-[#4984fd]/10 transition-colors"
+                    style={{ color: "var(--glass-text-primary)" }}
+                  >
+                    <span className="text-[#4984fd]">{item.icon}</span>
+                    <span className="truncate">{item.label}</span>
+                  </button>
+                ))}
+                <button
+                  type="button"
+                  onClick={() => {
+                    setSettingsMenuOpen(false);
+                    setAccountModalOpen(true);
+                  }}
+                  className="w-full flex items-center gap-2 px-2 py-1.5 rounded-lg text-[12px] font-medium text-left border-t mt-1 pt-2 hover:bg-[#4984fd]/10 transition-colors"
+                  style={{
+                    borderColor: "var(--glass-border)",
+                    color: "var(--glass-text-primary)",
+                  }}
+                >
+                  <User size={13} className="text-[#4984fd]" />
+                  <span>Account &amp; Profile</span>
+                </button>
+              </div>
+            )}
+
+            {/* Actions: Settings Gear + Calendar + Palette */}
             <div className="flex items-center gap-1 shrink-0">
               <button
                 type="button"
-                onClick={() => setAccountModalOpen(true)}
-                className="w-8 h-8 rounded-xl flex items-center justify-center text-zinc-400 hover:text-white hover:bg-white/10 border border-transparent hover:border-white/10 transition-all"
-                title="Execution & Account Settings"
+                onClick={() => setSettingsMenuOpen((p) => !p)}
+                className="w-8 h-8 rounded-xl flex items-center justify-center border border-transparent hover:border-[#4984fd]/30 transition-all"
+                style={{
+                  color: settingsMenuOpen ? "#4984fd" : "var(--glass-text-muted)",
+                  backgroundColor: settingsMenuOpen ? "rgba(73, 132, 253, 0.12)" : "transparent",
+                }}
+                title="Settings, Epistemic Matrix, Integrations & Resources"
               >
                 <Settings size={15} />
               </button>

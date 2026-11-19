@@ -132,18 +132,19 @@
 }
 
 html {
-  background-color: var(--bg-canvas);
-  color: var(--text-ink);
+  background-color: var(--glass-bg-base, var(--bg-canvas));
+  color: var(--glass-text-primary, var(--text-ink));
   font-family: var(--font-sans);
   scroll-behavior: smooth;
+  transition: background-color 0.3s ease, color 0.25s ease;
 }
 
 body,
 body.bg-theme-gradient {
-  background-color: var(--bg-canvas) !important;
+  background-color: transparent !important;
   background-image: none !important;
-  color: var(--text-ink);
-  font-family: var(--font-sans);
+  color: var(--glass-text-primary, var(--text-ink));
+  font-family: var(--font-letters, var(--font-sans));
   font-weight: 400;
   font-size: var(--app-font-size, 16px);
   -webkit-font-smoothing: antialiased;
@@ -420,36 +421,73 @@ b,
   box-shadow: 0 6px 18px -6px rgba(148, 172, 243, 0.28);
 }
 
-/* Global Light-First Harmonizer for Sub-Pages inside ExecutiveModuleShell */
-.light .executive-glass-shell main [class*="bg-[#0"],
-.light .executive-glass-shell main [class*="bg-[#1"],
-.light .executive-glass-shell main [class*="bg-zinc-900"],
-.light .executive-glass-shell main [class*="bg-slate-900"] {
-  background-color: #ffffff !important;
-  border-color: #d1d6e0 !important;
-  box-shadow: var(--shadow-card);
+/* Global Theme-Synchronized Harmonizer for ALL Sub-Pages inside ExecutiveModuleShell */
+.executive-glass-shell {
+  background-color: transparent;
+  color: var(--glass-text-primary, var(--text-ink));
 }
 
-.light .executive-glass-shell main [class*="bg-white/[0.0"] {
-  background-color: #f9fafb;
-  border-color: #d1d6e0;
+.executive-glass-shell main [class*="bg-[#0"],
+.executive-glass-shell main [class*="bg-[#1"],
+.executive-glass-shell main [class*="bg-zinc-9"],
+.executive-glass-shell main [class*="bg-slate-9"],
+.executive-glass-shell main [class*="bg-black"] {
+  background-color: var(--glass-surface) !important;
+  backdrop-filter: blur(var(--glass-blur, 20px)) saturate(170%);
+  -webkit-backdrop-filter: blur(var(--glass-blur, 20px)) saturate(170%);
+  border-color: var(--glass-border) !important;
+  box-shadow: var(--glass-shadow);
+}
+
+.light .executive-glass-shell main [class*="bg-white/[0.0"],
+.light .executive-glass-shell main [class*="bg-zinc-800"],
+.light .executive-glass-shell main [class*="bg-slate-800"] {
+  background-color: var(--glass-surface-elevated) !important;
+  border-color: var(--glass-border) !important;
 }
 
 .light .executive-glass-shell main .text-zinc-100,
 .light .executive-glass-shell main .text-zinc-200,
+.light .executive-glass-shell main .text-slate-100,
+.light .executive-glass-shell main .text-slate-200,
 .light .executive-glass-shell main .text-white {
-  color: #000000;
+  color: var(--glass-text-primary, #000000) !important;
 }
 
-.light .executive-glass-shell main .text-zinc-300 {
-  color: #374151;
+.light .executive-glass-shell main .text-zinc-300,
+.light .executive-glass-shell main .text-slate-300 {
+  color: #1f2937 !important;
 }
 
-.light .executive-glass-shell main .text-zinc-400 {
-  color: #6b7280;
+.light .executive-glass-shell main .text-zinc-400,
+.light .executive-glass-shell main .text-zinc-500,
+.light .executive-glass-shell main .text-slate-400 {
+  color: #4b5563 !important;
 }
 
-/* Preserve light text inside intentionally dark indigo sections */
+/* Ensure crisp contrast inside dark themes */
+.dark .executive-glass-shell main .text-zinc-900,
+.dark .executive-glass-shell main .text-slate-900,
+.dark .executive-glass-shell main .text-[#000000] {
+  color: var(--glass-text-primary, #edeef2) !important;
+}
+
+.dark .executive-glass-shell main [class*="bg-[#ffffff"],
+.dark .executive-glass-shell main [class*="bg-white"] {
+  background-color: var(--glass-surface) !important;
+  border-color: var(--glass-border) !important;
+}
+
+.dark .cluely-card,
+.dark .cluely-mockup-card {
+  background-color: var(--glass-surface);
+  border-color: var(--glass-border);
+  color: var(--glass-text-primary);
+}
+
+/* Preserve light text inside intentionally dark indigo sections or primary CTA buttons */
+.cluely-cta,
+.cluely-cta *,
 .cluely-dark-section,
 .cluely-dark-section .text-white,
 .cluely-dark-section .text-zinc-100 {

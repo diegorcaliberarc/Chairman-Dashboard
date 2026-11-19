@@ -59,12 +59,12 @@ export default function ConnectedBudgetPage() {
   const [months, setMonths] = useState<ConnectedMonthRollupDTO[]>([]);
   const [entries, setEntries] = useState<BudgetEntryDTO[]>([]);
   const [shiftConfig, setShiftConfig] = useState<WorkShiftConfigDTO>({
-    roleLabel: "Primary Operations & Engineering Shift",
-    payPerShift: 320,
-    hourlyRate: 40,
+    roleLabel: "Primary Shift",
+    payPerShift: 0,
+    hourlyRate: 0,
     hoursPerShift: 8,
-    totalScheduledDays: 22,
-    shiftsPerWeek: 5,
+    totalScheduledDays: 0,
+    shiftsPerWeek: 0,
   });
   const [annualTotals, setAnnualTotals] = useState({
     anticipatedIncome: 0,
@@ -82,10 +82,10 @@ export default function ConnectedBudgetPage() {
     totalAppointments: 0,
   });
 
-  // Target editor state for selectedMonth
-  const [targetIncome, setTargetIncome] = useState<string>("8600");
-  const [targetExpenseCap, setTargetExpenseCap] = useState<string>("4200");
-  const [targetSavings, setTargetSavings] = useState<string>("2500");
+  // Target editor state for selectedMonth (Zero dummy defaults)
+  const [targetIncome, setTargetIncome] = useState<string>("0");
+  const [targetExpenseCap, setTargetExpenseCap] = useState<string>("0");
+  const [targetSavings, setTargetSavings] = useState<string>("0");
   const [targetNotes, setTargetNotes] = useState<string>("");
   const [savedToast, setSavedToast] = useState<string | null>(null);
 
@@ -248,9 +248,9 @@ export default function ConnectedBudgetPage() {
   return (
     <ExecutiveModuleShell
       moduleId="BUDGET"
-      eyebrow="Capital & Cashflow Telemetry"
-      title="12-Month Connected Budget & Shift Ledger"
-      subtitle="Synchronized annual budget powered by Calendar Work Shifts, Anticipated vs. Actual Appointment Pay & Daily Spend"
+      eyebrow="Wealth & Cashflow"
+      title="Budget & Shift Ledger"
+      subtitle="12-month cashflow, shift income, savings targets, and daily spend"
       accentColor="#10b981"
       headerActions={
         <>

@@ -5,7 +5,7 @@ import {
   buildTimelapseProgressArcs,
   getCircadianPhase,
   getTimelapseColorAtMinutes,
-  minutesTo12Hour,
+  minutesToMilitary,
   minutesToAngleRad,
   polarToCartesian,
   timeToCartesian,
@@ -157,29 +157,43 @@ export function RealtimeSolarBeacon({
           textAnchor="middle"
           fill="#fef3c7"
           fontSize={9.5 * scaleFactor}
-          fontWeight={700}
+          fontWeight={500}
           style={{ fontVariantNumeric: "tabular-nums" }}
         >
-          {minutesTo12Hour(currentMinutes, true)}
+          {minutesToMilitary(currentMinutes).replace(":", "")}
         </text>
       </g>
 
-      {/* Center Phase Readout */}
+      {/* Center 24-Hour Military Time & Phase Readout */}
       <g className="pointer-events-none">
-        <circle cx={cx} cy={cy} r={3} fill="#ffffff" opacity="0.85" />
         <text
           x={cx}
-          y={cy + 52 * scaleFactor}
+          y={cy + 6 * scaleFactor}
           textAnchor="middle"
           fill="#ffffff"
           stroke="rgba(5, 8, 18, 0.8)"
-          strokeWidth="3"
+          strokeWidth="3.5"
           paintOrder="stroke"
-          fontSize={9.5 * scaleFactor}
-          fontWeight={700}
-          letterSpacing="0.14em"
+          fontSize={24 * scaleFactor}
+          fontWeight={500}
+          letterSpacing="0.06em"
+          style={{ fontVariantNumeric: "tabular-nums" }}
         >
-          {currentPhase.name}
+          {minutesToMilitary(currentMinutes).replace(":", "")}
+        </text>
+        <text
+          x={cx}
+          y={cy + 26 * scaleFactor}
+          textAnchor="middle"
+          fill="#cbd5e1"
+          stroke="rgba(5, 8, 18, 0.8)"
+          strokeWidth="2.5"
+          paintOrder="stroke"
+          fontSize={8.5 * scaleFactor}
+          fontWeight={500}
+          letterSpacing="0.16em"
+        >
+          24H SOLAR ARC · {currentPhase.name}
         </text>
       </g>
     </g>

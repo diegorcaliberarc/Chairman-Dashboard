@@ -51,43 +51,9 @@ interface GamingTelemetry {
 }
 
 const DEFAULT_GAMING_TELEMETRY: GamingTelemetry = {
-  topFormats: [
-    {
-      name: "100-Hour Permadeath / High-Stakes Cinema",
-      velocity: "+385% 7d",
-      avgRetention30s: "74%",
-      bestPlatform: "YouTube Long-Form",
-    },
-    {
-      name: "Proximity-Voice Co-Op Horror Chaos Cuts",
-      velocity: "+340% 7d",
-      avgRetention30s: "81%",
-      bestPlatform: "TikTok / Shorts",
-    },
-    {
-      name: "Split-Screen Frame-Data & Patch Mythbusting",
-      velocity: "+275% 7d",
-      avgRetention30s: "69%",
-      bestPlatform: "YouTube / Twitch",
-    },
-    {
-      name: "Zero-Budget Indie Devlog 'Viewer Breaks My Game'",
-      velocity: "+230% 7d",
-      avgRetention30s: "66%",
-      bestPlatform: "YouTube / Reddit",
-    },
-  ],
-  packagingFormulas: [
-    "2-Element High-Contrast Thumbnail + Stakes HUD Badge + ≤44 Char Curiosity Title",
-    "0–2.6s Climax Cold-Open → 1-Sentence Rule Stake → Audio Riser Hard-Cut",
-    "Color-Coded Spatial Subtitles + Seamless End-to-Frame-1 Audio Loop",
-  ],
-  creatorArchetypes: [
-    { archetype: "The Obsessive Challenger", exampleHook: "I survived 100 days with 1 HP..." },
-    { archetype: "The Systems Scientist", exampleHook: "We tested 10,000 frames of the new meta..." },
-    { archetype: "The Squad Chaos Director", exampleHook: "Proximity voice cut off right as..." },
-    { archetype: "The Transparent Builder", exampleHook: "48 hours to fix my indie game's worst review..." },
-  ],
+  topFormats: [],
+  packagingFormulas: [],
+  creatorArchetypes: [],
 };
 
 const QUICK_PRESET_CHIPS: {
@@ -312,9 +278,9 @@ export default function MarketingAgentPage() {
   return (
     <ExecutiveModuleShell
       moduleId="MARKETING_AGENT"
-      eyebrow="Autonomous Signal Scrubber"
-      title="Marketing & Gaming Trend Intelligence Agent"
-      subtitle="Scrubs the internet for high-converting marketing ideas, viral hooks, and breakout gaming video trends"
+      eyebrow="Market Research"
+      title="Trend Intelligence"
+      subtitle="Curated market signals, creative hooks, and breakout content insights"
       accentColor="#ec4899"
       headerActions={
         <div className="flex items-center gap-2 text-xs font-mono">

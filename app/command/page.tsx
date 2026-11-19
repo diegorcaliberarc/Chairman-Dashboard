@@ -52,12 +52,15 @@ export default function CommandPage() {
   const [driftWarnings, setDriftWarnings] = useState<DriftWarning[]>([]);
   const [isLoading, setIsLoading] = useState(true);
 
-  // Load Command Engine Data
+  // Load Command Engine Data in parallel for fast navigation
   const loadCommandData = useCallback(async () => {
     setIsLoading(true);
     try {
-      // 1. Fetch Command Swimlane Data
-      const cmdRes = await fetch(`/api/command?weekStart=${weekStartDate}`);
+      const [cmdRes, scRes] = await Promise.all([
+        fetch(`/api/command?weekStart=${weekStartDate}`),
+        fetch(`/api/scorecard`),
+      ]);
+
       if (cmdRes.ok) {
         const cmdData = await cmdRes.json();
         if (cmdData.success) {
@@ -67,8 +70,6 @@ export default function CommandPage() {
         }
       }
 
-      // 2. Fetch Scorecards & Drift Warnings
-      const scRes = await fetch(`/api/scorecard`);
       if (scRes.ok) {
         const scData = await scRes.json();
         if (scData.success) {
@@ -77,7 +78,7 @@ export default function CommandPage() {
         }
       }
     } catch (err) {
-      console.error("Error loading Command Center data:", err);
+      console.error("Error loading Operations & Strategy data:", err);
     } finally {
       setIsLoading(false);
     }
@@ -183,9 +184,9 @@ export default function CommandPage() {
   return (
     <ExecutiveModuleShell
       moduleId="COMMAND"
-      eyebrow="Target Cascade & Strategic Execution"
-      title="Command Center & Domain Scorecard"
-      subtitle="Top-Down Target Cascade, Connected Phases of Transition, 5-Paragraph FRAGO & PACE Plan"
+      eyebrow="Operations & Planning"
+      title="Operations & Strategy"
+      subtitle="Annual goals, weekly priorities, domain scorecard, and reviews"
       accentColor="#f59e0b"
       headerActions={
         <div className="flex items-center gap-2">

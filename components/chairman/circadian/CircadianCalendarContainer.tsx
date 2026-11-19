@@ -11,6 +11,7 @@ import {
   getDurationMinutes,
   getTimelapseColorAtMinutes,
   minutesTo12Hour,
+  minutesToMilitary,
   polarToCartesian,
 } from "@/lib/circadianMath";
 import { SolarDialCanvas } from "./SolarDialCanvas";
@@ -67,7 +68,7 @@ export function CircadianCalendarContainer({
   const [isDraggingTime, setIsDraggingTime] = useState(false);
 
   const VB_W = 1000;
-  const VB_H = 760;
+  const VB_H = 820;
   const CX = VB_W / 2;
   const CY = VB_H / 2;
 
@@ -281,7 +282,7 @@ export function CircadianCalendarContainer({
   }, [viewMode, quadrantAssignments, selectedItem, activeId, VB_W, VB_H]);
 
   return (
-    <div className="relative w-full flex items-center justify-center select-none">
+    <div className="relative w-full py-2 flex items-center justify-center select-none overflow-hidden">
       <SolarDialCanvas
         vbWidth={VB_W}
         vbHeight={VB_H}
@@ -355,8 +356,8 @@ export function CircadianCalendarContainer({
           onClick={onResetLive}
           className="absolute top-2 left-1/2 -translate-x-1/2 z-30 flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-amber-500/20 hover:bg-amber-500/30 border border-amber-400/50 text-amber-200 text-[11px] font-semibold tracking-wider uppercase backdrop-blur-md shadow-lg transition-all"
         >
-          <Radio size={12} className="animate-pulse text-amber-400" />
-          Time-Lapse Scrub: {minutesTo12Hour(currentMinutes)} · Snap to Live
+          <Radio size={12} className="animate-pulse text-[#4984fd]" />
+          Time-Lapse Scrub: {minutesToMilitary(currentMinutes).replace(":", "")} · Snap to Live
         </button>
       )}
 
