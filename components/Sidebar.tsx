@@ -525,24 +525,17 @@ export function Sidebar({
                   key={p.id}
                   type="button"
                   onClick={() => handleSelectPillar(p.id)}
-                  className={`flex items-center justify-between gap-2.5 px-2.5 py-2.5 rounded-xl text-left transition-all ${
-                    isSelected
-                      ? "bg-white dark:bg-white/10 border shadow-sm text-zinc-900 dark:text-white"
-                      : "text-zinc-500 dark:text-zinc-400 hover:bg-zinc-100/80 dark:hover:bg-white/5 border border-transparent"
-                  }`}
-                  style={
-                    isSelected
-                      ? {
-                          borderColor: `${p.color}55`,
-                          backgroundColor: `${p.color}15`,
-                        }
-                      : undefined
-                  }
+                  className="flex items-center justify-between gap-2 px-2 py-2 rounded-xl text-left transition-all border"
+                  style={{
+                    borderColor: isSelected ? "rgba(73, 132, 253, 0.45)" : "transparent",
+                    backgroundColor: isSelected ? "rgba(73, 132, 253, 0.12)" : "transparent",
+                    color: isSelected ? "var(--glass-text-primary)" : "var(--glass-text-muted)",
+                  }}
                   title={`${p.label} (${p.count} modules)`}
                 >
-                  <div className="flex items-center gap-2.5 min-w-0">
+                  <div className="flex items-center gap-2 min-w-0">
                     <span
-                      className="shrink-0 p-1.5 rounded-lg border"
+                      className="shrink-0 p-1 rounded-lg border"
                       style={{
                         color: p.color,
                         borderColor: `${p.color}35`,
@@ -553,9 +546,10 @@ export function Sidebar({
                     </span>
                     {!col1Collapsed && (
                       <span
-                        className={`text-xs font-semibold truncate ${
-                          isSelected ? "font-bold text-zinc-900 dark:text-white" : ""
-                        }`}
+                        className="text-[11.5px] font-medium truncate"
+                        style={{
+                          color: isSelected ? "var(--glass-text-primary)" : "var(--glass-text-muted)",
+                        }}
                       >
                         {p.shortLabel}
                       </span>
@@ -645,42 +639,35 @@ export function Sidebar({
                       router.push(item.route);
                     }
                   }}
-                  className={`flex items-center justify-between gap-2 w-full px-2.5 py-2 rounded-xl text-left transition-all ${
-                    isActive
-                      ? "bg-white/80 dark:bg-white/10 border shadow-sm"
-                      : "text-zinc-600 dark:text-zinc-400 hover:bg-zinc-100/80 dark:hover:bg-white/5 border border-transparent"
-                  }`}
-                  style={
-                    isActive
-                      ? {
-                          borderColor: `${currentPillarMeta.color}55`,
-                        }
-                      : undefined
-                  }
+                  className="flex items-center justify-between gap-2 w-full px-2.5 py-2 rounded-xl text-left transition-all border"
+                  style={{
+                    borderColor: isActive ? "rgba(73, 132, 253, 0.48)" : "transparent",
+                    backgroundColor: isActive ? "rgba(73, 132, 253, 0.12)" : "transparent",
+                    color: isActive ? "var(--glass-text-primary)" : "var(--glass-text-muted)",
+                  }}
                   title={item.label}
                 >
-                  <div className="flex items-center gap-2.5 min-w-0">
+                  <div className="flex items-center gap-2 min-w-0">
                     <span
-                      className={`shrink-0 ${
-                        isActive
-                          ? "text-themeAccent font-bold"
-                          : "text-zinc-500 dark:text-zinc-400"
-                      }`}
+                      className="shrink-0"
+                      style={{
+                        color: isActive ? "var(--theme-grad-start, #4984fd)" : "var(--glass-text-muted)",
+                      }}
                     >
                       {item.icon}
                     </span>
                     {!col2Collapsed && (
                       <div className="min-w-0 truncate">
                         <div
-                          className={`text-[11px] truncate tracking-wider ${
-                            isActive
-                              ? "font-bold text-zinc-900 dark:text-white"
-                              : "font-semibold"
-                          }`}
+                          className="text-[11.5px] font-medium truncate"
+                          style={{ color: "var(--glass-text-primary)" }}
                         >
                           {item.label}
                         </div>
-                        <div className="text-[9px] text-zinc-400 dark:text-zinc-500 truncate">
+                        <div
+                          className="text-[9.5px] truncate"
+                          style={{ color: "var(--glass-text-muted)" }}
+                        >
                           {item.description}
                         </div>
                       </div>

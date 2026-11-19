@@ -281,7 +281,7 @@ export function CircadianDialStage({
         }
       }
 
-      const timeRange12h = `${minutesTo12Hour(item.startMin, true)} – ${minutesTo12Hour(item.endMin, true)}`;
+      const timeRange12h = `${minutesToMilitary(item.startMin).replace(":", "")} – ${minutesToMilitary(item.endMin, true).replace(":", "")}`;
 
       return {
         ...item,
@@ -819,18 +819,22 @@ export function CircadianDialStage({
               updateScrubFromPointer(e.clientX, e.clientY);
             }}
           >
-            {/* Base Dark Midnight Rim */}
-            <circle cx={CX} cy={CY} r={R_SKY} fill="#050814" />
-
-            {/* Authentic Reference Dial from Mockup (Sky, Sunset, Dawn, Night City Lights) */}
-            <image
-              href="/circadian/reference_dial_celestial_v6.png?v=6.0.0"
-              x={CX - R_SKY}
-              y={CY - R_SKY}
-              width={R_SKY * 2}
-              height={R_SKY * 2}
-              preserveAspectRatio="xMidYMid meet"
-            />
+            {/* Mathematically Centered Day-to-Night Celestial Sky Sphere (Zero Offset / Zero Baked Text) */}
+            <circle cx={CX} cy={CY} r={R_SKY} fill="#081226" />
+            <circle cx={CX} cy={CY - R_SKY * 0.42} r={R_SKY * 0.85} fill="#38bdf8" opacity="0.58" />
+            <circle cx={CX - R_SKY * 0.52} cy={CY + R_SKY * 0.04} r={R_SKY * 0.62} fill="#fbbf24" opacity="0.34" />
+            <circle cx={CX + R_SKY * 0.54} cy={CY + R_SKY * 0.08} r={R_SKY * 0.65} fill="#f97316" opacity="0.46" />
+            <circle cx={CX} cy={CY + R_SKY * 0.58} r={R_SKY * 0.78} fill="#0b0f29" opacity="0.92" />
+            <circle cx={CX} cy={CY} r={R_SKY} fill="url(#skyAtmosphereDepth)" />
+            {/* Crisp Midnight Starfield Dots in Lower Hemisphere */}
+            <g fill="#ffffff" opacity="0.72" className="pointer-events-none">
+              <circle cx={CX - 62} cy={CY + 78} r="1.1" />
+              <circle cx={CX - 28} cy={CY + 112} r="1.4" />
+              <circle cx={CX + 18} cy={CY + 124} r="1.0" />
+              <circle cx={CX + 58} cy={CY + 94} r="1.3" />
+              <circle cx={CX + 92} cy={CY + 62} r="1.0" />
+              <circle cx={CX - 88} cy={CY + 52} r="1.2" />
+            </g>
 
             {/* Crisp Outer Rim Border */}
             <circle
@@ -838,77 +842,77 @@ export function CircadianDialStage({
               cy={CY}
               r={R_SKY}
               fill="none"
-              stroke="rgba(255, 255, 255, 0.22)"
-              strokeWidth="1.2"
+              stroke="rgba(255, 255, 255, 0.28)"
+              strokeWidth="1.4"
             />
           </g>
 
           {/* ========================================================================= */}
-          {/* 3. CARDINAL CLOCK HOUR MARKERS (MATCHING IMAGE 2 AESTHETIC)               */}
+          {/* 3. CARDINAL 24-HOUR MILITARY CLOCK MARKERS (0000 - 2400)                  */}
           {/* ========================================================================= */}
           <g id="dial-clock-cardinal-markers" className="pointer-events-none select-none font-sans">
-            {/* Top: 12:00 PM (Solar Apex High Noon) */}
+            {/* Top: 1200 (Solar Noon Apex) */}
             <text
               x={CX}
-              y={CY - R_SKY + 22 * scaleFactor}
+              y={CY - R_SKY + 24 * scaleFactor}
               textAnchor="middle"
               fill="#ffffff"
-              stroke="rgba(8, 11, 20, 0.95)"
+              stroke="rgba(8, 11, 20, 0.92)"
               strokeWidth="3.2"
               paintOrder="stroke"
               fontSize={13 * scaleFactor}
-              fontWeight={800}
-              letterSpacing="0.03em"
+              fontWeight={500}
+              letterSpacing="0.06em"
             >
-              12:00 PM
+              1200
             </text>
 
-            {/* Left: - 6:00 AM (Western Sunrise Dawn) */}
+            {/* Left: 0600 (Dawn) */}
             <text
-              x={CX - R_SKY + 34 * scaleFactor}
+              x={CX - R_SKY + 30 * scaleFactor}
               y={CY + 4.5 * scaleFactor}
               textAnchor="middle"
               fill="#fef3c7"
-              stroke="rgba(8, 11, 20, 0.95)"
+              stroke="rgba(8, 11, 20, 0.92)"
               strokeWidth="3.2"
               paintOrder="stroke"
-              fontSize={12 * scaleFactor}
-              fontWeight={800}
-              letterSpacing="0.03em"
+              fontSize={12.5 * scaleFactor}
+              fontWeight={500}
+              letterSpacing="0.06em"
             >
-              - 6:00 AM
+              0600
             </text>
 
-            {/* Right: 6:00 PM - (Sunset Dusk) */}
+            {/* Right: 1800 (Dusk) */}
             <text
-              x={CX + R_SKY - 34 * scaleFactor}
+              x={CX + R_SKY - 30 * scaleFactor}
               y={CY + 4.5 * scaleFactor}
               textAnchor="middle"
               fill="#fef3c7"
-              stroke="rgba(8, 11, 20, 0.95)"
+              stroke="rgba(8, 11, 20, 0.92)"
               strokeWidth="3.2"
               paintOrder="stroke"
-              fontSize={12 * scaleFactor}
-              fontWeight={800}
-              letterSpacing="0.03em"
+              fontSize={12.5 * scaleFactor}
+              fontWeight={500}
+              letterSpacing="0.06em"
             >
-              6:00 PM -
+              1800
             </text>
 
-            {/* Bottom: 12:00 AM (Midnight Nadir) */}
+            {/* Bottom: 0000 / 2400 (Midnight Nadir) */}
             <text
               x={CX}
-              y={CY + R_SKY - 12 * scaleFactor}
+              y={CY + R_SKY - 14 * scaleFactor}
               textAnchor="middle"
-              fill="#cbd5e1"
-              stroke="rgba(8, 11, 20, 0.96)"
+              fill="#e2e8f0"
+              stroke="rgba(8, 11, 20, 0.95)"
               strokeWidth="3.2"
               paintOrder="stroke"
-              fontSize={11.5 * scaleFactor}
-              fontWeight={800}
-              letterSpacing="0.03em"
+              fontSize={12 * scaleFactor}
+              fontWeight={500}
+              letterSpacing="0.06em"
             >
-              12:00 AM
+              0000 / 2400
             </text>
 
             {/* 24-Hour Precision Hour Ticks Around Rim */}
@@ -1020,7 +1024,7 @@ export function CircadianDialStage({
                     fontWeight={700}
                     letterSpacing="0.02em"
                   >
-                    {minutesTo12Hour(currentMinutes, true)}
+                    {minutesToMilitary(currentMinutes).replace(":", "")}
                   </text>
                 </g>
 
@@ -1048,10 +1052,10 @@ export function CircadianDialStage({
                     strokeWidth={3}
                     paintOrder="stroke"
                     fontSize={10 * scaleFactor}
-                    fontWeight={700}
-                    letterSpacing="0.02em"
+                    fontWeight={500}
+                    letterSpacing="0.04em"
                   >
-                    {minutesTo12Hour(currentMinutes, true)}
+                    {minutesToMilitary((currentMinutes + 720) % 1440).replace(":", "")}
                   </text>
                 </g>
 
@@ -1076,7 +1080,7 @@ export function CircadianDialStage({
                   strokeDasharray="3 4"
                 />
 
-                {/* Crisp Digital Time Readout */}
+                {/* Crisp Digital 24-Hour Military Time Readout */}
                 <text
                   x={CX}
                   y={CY - 2 * scaleFactor}
@@ -1087,11 +1091,11 @@ export function CircadianDialStage({
                   strokeWidth={4.5 * scaleFactor}
                   paintOrder="stroke"
                   fontSize={25 * scaleFactor}
-                  fontWeight={800}
-                  letterSpacing="-0.02em"
+                  fontWeight={500}
+                  letterSpacing="0.04em"
                   style={{ fontVariantNumeric: "tabular-nums" }}
                 >
-                  {minutesTo12Hour(currentMinutes, true)}
+                  {minutesToMilitary(currentMinutes).replace(":", "")}
                 </text>
                 <text
                   x={CX}

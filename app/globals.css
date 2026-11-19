@@ -427,23 +427,34 @@ b,
   color: var(--glass-text-primary, var(--text-ink));
 }
 
-.executive-glass-shell main [class*="bg-[#0"],
-.executive-glass-shell main [class*="bg-[#1"],
-.executive-glass-shell main [class*="bg-zinc-9"],
-.executive-glass-shell main [class*="bg-slate-9"],
-.executive-glass-shell main [class*="bg-black"] {
-  background-color: var(--glass-surface) !important;
-  backdrop-filter: blur(var(--glass-blur, 20px)) saturate(170%);
-  -webkit-backdrop-filter: blur(var(--glass-blur, 20px)) saturate(170%);
-  border-color: var(--glass-border) !important;
-  box-shadow: var(--glass-shadow);
-}
-
+.light .executive-glass-shell main [class*="bg-[#0"],
+.light .executive-glass-shell main [class*="bg-[#1"],
+.light .executive-glass-shell main [class*="bg-zinc-9"],
+.light .executive-glass-shell main [class*="bg-slate-9"],
+.light .executive-glass-shell main [class*="bg-neutral-9"],
+.light .executive-glass-shell main [class*="bg-black"],
 .light .executive-glass-shell main [class*="bg-white/[0.0"],
 .light .executive-glass-shell main [class*="bg-zinc-800"],
 .light .executive-glass-shell main [class*="bg-slate-800"] {
-  background-color: var(--glass-surface-elevated) !important;
+  background-color: rgba(255, 255, 255, 0.92) !important;
+  background-image: none !important;
+  backdrop-filter: blur(18px) saturate(160%);
+  -webkit-backdrop-filter: blur(18px) saturate(160%);
+  border-color: #d1d6e0 !important;
+  box-shadow: var(--shadow-card);
+}
+
+.dark .executive-glass-shell main [class*="bg-[#0"],
+.dark .executive-glass-shell main [class*="bg-[#1"],
+.dark .executive-glass-shell main [class*="bg-zinc-9"],
+.dark .executive-glass-shell main [class*="bg-slate-9"],
+.dark .executive-glass-shell main [class*="bg-neutral-9"],
+.dark .executive-glass-shell main [class*="bg-black"] {
+  background-color: var(--glass-surface) !important;
+  backdrop-filter: blur(var(--glass-blur, 22px)) saturate(175%);
+  -webkit-backdrop-filter: blur(var(--glass-blur, 22px)) saturate(175%);
   border-color: var(--glass-border) !important;
+  box-shadow: var(--glass-shadow);
 }
 
 .light .executive-glass-shell main .text-zinc-100,
@@ -451,7 +462,7 @@ b,
 .light .executive-glass-shell main .text-slate-100,
 .light .executive-glass-shell main .text-slate-200,
 .light .executive-glass-shell main .text-white {
-  color: var(--glass-text-primary, #000000) !important;
+  color: #000000 !important;
 }
 
 .light .executive-glass-shell main .text-zinc-300,
