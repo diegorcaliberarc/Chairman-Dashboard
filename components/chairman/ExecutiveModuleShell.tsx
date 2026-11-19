@@ -4,6 +4,7 @@ import React, { useState } from "react";
 import { useSession, signIn, signOut } from "next-auth/react";
 import { Palette } from "lucide-react";
 import { Sidebar } from "@/components/Sidebar";
+import { CluelyFooter } from "@/components/chairman/CluelyFooter";
 
 interface ExecutiveModuleShellProps {
   moduleId: string;
@@ -21,7 +22,7 @@ export function ExecutiveModuleShell({
   eyebrow,
   title,
   subtitle,
-  accentColor = "#f59e0b",
+  accentColor = "#4984fd",
   headerActions,
   children,
   fullBleed = false,
@@ -35,7 +36,7 @@ export function ExecutiveModuleShell({
   const [deepWork, setDeepWork] = useState(false);
 
   return (
-    <div className="executive-glass-shell min-h-screen bg-transparent text-zinc-900 dark:text-zinc-50 flex flex-row overflow-x-hidden transition-colors duration-300">
+    <div className="executive-glass-shell min-h-screen bg-[#ffffff] text-[#000000] font-sans font-normal flex flex-row overflow-x-hidden transition-colors duration-300">
       <Sidebar
         activeTab={activeTab}
         setActiveTab={setActiveTab}
@@ -53,42 +54,33 @@ export function ExecutiveModuleShell({
         tasksLoading={false}
       />
 
-      <div className="flex-1 min-w-0 flex flex-col min-h-screen bg-transparent relative pt-14 lg:pt-0 transition-all duration-300">
+      <div className="flex-1 min-w-0 flex flex-col min-h-screen bg-[#ffffff] relative pt-14 lg:pt-0 transition-all duration-300">
+        {/* Floating Atmospheric Light-First Top Bar */}
         <header
-          className="px-4 sm:px-6 pt-4 pb-3.5 flex flex-wrap items-center justify-between gap-4 sticky top-14 lg:top-0 z-30 transition-all duration-300"
+          className="px-4 sm:px-8 py-4 flex flex-wrap items-center justify-between gap-4 sticky top-14 lg:top-0 z-30 border-b border-[#d1d6e0] transition-all duration-300"
           style={{
-            backgroundColor: "var(--glass-surface)",
-            backdropFilter: "blur(var(--glass-blur, 26px)) saturate(185%)",
-            WebkitBackdropFilter: "blur(var(--glass-blur, 26px)) saturate(185%)",
-            borderBottom: "1px solid var(--glass-border)",
-            boxShadow:
-              "inset 0 1px 0 0 var(--glass-specular), 0 10px 32px -14px rgba(0, 0, 0, 0.16)",
+            background:
+              "linear-gradient(180deg, rgba(221, 232, 252, 0.55) 0%, rgba(255, 255, 255, 0.88) 100%)",
+            backdropFilter: "blur(20px) saturate(160%)",
+            WebkitBackdropFilter: "blur(20px) saturate(160%)",
           }}
         >
-          <div>
+          <div className="min-w-0">
             <div className="flex items-center gap-2.5 flex-wrap">
               <span
-                className="w-2 h-2 rounded-full animate-pulse shrink-0"
+                className="w-2 h-2 rounded-full shrink-0"
                 style={{
-                  backgroundColor: accentColor,
-                  boxShadow: `0 0 10px ${accentColor}88`,
+                  backgroundColor: accentColor === "#f59e0b" ? "#4984fd" : accentColor,
                 }}
               />
-              <span
-                className="px-2.5 py-0.5 rounded-full text-[9.5px] font-bold tracking-[0.16em] uppercase border"
-                style={{
-                  color: accentColor,
-                  borderColor: `${accentColor}4D`,
-                  backgroundColor: `${accentColor}16`,
-                }}
-              >
+              <span className="px-2 py-0.5 rounded-[6px] bg-[#dde2ee] text-[#263043] text-[12px] font-medium tracking-[-0.13px]">
                 {eyebrow}
               </span>
-              <h1 className="text-sm md:text-base font-bold tracking-[0.14em] uppercase text-zinc-900 dark:text-zinc-100">
+              <h1 className="text-[19px] sm:text-[22px] font-medium tracking-[-0.38px] leading-[1.3] text-[#000000] truncate">
                 {title}
               </h1>
             </div>
-            <p className="text-[11px] text-zinc-600 dark:text-zinc-400 mt-0.5">
+            <p className="text-[13px] font-normal leading-[1.6] text-[#6b7280] mt-0.5">
               {subtitle}
             </p>
           </div>
@@ -98,14 +90,11 @@ export function ExecutiveModuleShell({
             <button
               type="button"
               onClick={() => setIsAppearanceOpen(true)}
-              className="liquid-glass-pill px-2.5 py-1.5 rounded-xl text-[10.5px] font-semibold text-zinc-700 dark:text-zinc-200 hover:text-zinc-950 dark:hover:text-white flex items-center gap-1.5 transition-all"
-              title="Open Liquid Glass & 360° Gradient Studio"
+              className="cluely-pill px-3.5 py-1.5 text-[13px] font-medium tracking-[-0.13px] text-[#374151] hover:text-[#000000] hover:border-[#4984fd]/50 flex items-center gap-1.5 transition-all"
+              title="Appearance & Studio Preferences"
             >
-              <Palette
-                size={13}
-                style={{ color: "var(--theme-grad-start)" }}
-              />
-              <span className="hidden sm:inline">Glass Studio</span>
+              <Palette size={14} className="text-[#4984fd]" />
+              <span className="hidden sm:inline">Studio</span>
             </button>
           </div>
         </header>
@@ -113,12 +102,15 @@ export function ExecutiveModuleShell({
         <main
           className={
             fullBleed
-              ? "flex-1 relative min-h-0"
-              : "flex-1 p-6 max-w-[1600px] w-full mx-auto space-y-6 pb-24"
+              ? "flex-1 relative min-h-0 bg-[#ffffff]"
+              : "flex-1 px-4 sm:px-8 py-8 max-w-[1440px] w-full mx-auto space-y-8 pb-20 bg-[#ffffff]"
           }
         >
           {children}
         </main>
+
+        {/* Always-Light Cluely Footer (#f9fafb, #6b7280) */}
+        <CluelyFooter />
       </div>
     </div>
   );

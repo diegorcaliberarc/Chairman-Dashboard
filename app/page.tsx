@@ -5,33 +5,29 @@ import { useSession, signIn, signOut } from "next-auth/react";
 import Link from "next/link";
 import { Sidebar } from "@/components/Sidebar";
 import { AppearanceSettings } from "@/components/AppearanceSettings";
+import { CluelyFooter } from "@/components/chairman/CluelyFooter";
 import {
-  CalendarRange,
   Dumbbell,
   CheckCircle2,
   Circle,
   Plus,
   Trash2,
-  ExternalLink,
   Flame,
   Moon,
   Footprints,
-  Activity,
-  Timer,
   Sun,
-  Palette,
-  Sparkles,
-  Zap,
   ArrowUpRight,
   RefreshCw,
   Calendar,
-  Clock,
   ShieldCheck,
+  Mic,
+  GitBranch,
+  Compass,
+  Utensils,
+  TrendingUp,
+  Users,
+  Lock,
 } from "lucide-react";
-
-/* ============================================================================
- * TYPES
- * ========================================================================== */
 
 interface CalendarEvent {
   id: string;
@@ -48,13 +44,6 @@ interface FocusTask {
   priority: "high" | "normal" | "low";
   timeEstimate?: string;
 }
-
-// Zero Dummy Data: Hydrate Focus Tasks from Supabase / empty state
-const INITIAL_TASKS: FocusTask[] = [];
-
-/* ============================================================================
- * MAIN EXECUTIVE DASHBOARD COCKPIT
- * ========================================================================== */
 
 export default function ChairmanCockpitPage() {
   const { data: session } = useSession();
@@ -75,19 +64,19 @@ export default function ChairmanCockpitPage() {
   const [calLoading, setCalLoading] = useState(false);
   const [calError, setCalError] = useState<string | null>(null);
 
-  // Daily Focus Tasks
+  // Daily Focus Tasks (Zero dummy data)
   const [tasks, setTasks] = useState<FocusTask[]>([]);
   const [newTaskInput, setNewTaskInput] = useState("");
   const [taskFilter, setTaskFilter] = useState<"all" | "active" | "completed">("all");
 
-  // Health Vitals (Strictly Steps, Sleep, Exercise)
+  // Health Vitals (Steps, Sleep, Exercise)
   const stepsCurrent = 8542;
   const stepsGoal = 10000;
   const stepsMiles = 4.2;
   const stepsKcal = 420;
 
   const sleepHours = "7h 48m";
-  const sleepQuality = 92; // 92%
+  const sleepQuality = 92;
   const sleepWakeTime = "6:45 AM";
 
   const exerciseMinutes = 62;
@@ -115,9 +104,9 @@ export default function ChairmanCockpitPage() {
         })
       );
       const hour = now.getHours();
-      if (hour < 12) setGreeting("Good Morning");
-      else if (hour < 18) setGreeting("Good Afternoon");
-      else setGreeting("Good Evening");
+      if (hour < 12) setGreeting("Good morning");
+      else if (hour < 18) setGreeting("Good afternoon");
+      else setGreeting("Good evening");
     };
     updateTime();
     const interval = setInterval(updateTime, 1000);
@@ -131,9 +120,7 @@ export default function ChairmanCockpitPage() {
     setCalError(null);
     try {
       const res = await fetch("/api/calendar");
-      if (!res.ok) {
-        throw new Error("Unable to sync Google Calendar");
-      }
+      if (!res.ok) throw new Error("Unable to sync Google Calendar");
       const data = await res.json();
       if (Array.isArray(data.items)) {
         setCalendarEvents(data.items.slice(0, 5));
@@ -181,10 +168,11 @@ export default function ChairmanCockpitPage() {
   }, [tasks, taskFilter]);
 
   const completedCount = tasks.filter((t) => t.completed).length;
+  const firstName = user?.name?.split(" ")[0] || "Diego";
 
   return (
-    <div className="executive-glass-shell min-h-screen bg-transparent text-zinc-900 dark:text-zinc-50 flex flex-row overflow-x-hidden transition-colors duration-300">
-      {/* Sidebar Navigation */}
+    <div className="min-h-screen bg-[#ffffff] text-[#000000] font-sans font-normal flex flex-row overflow-x-hidden">
+      {/* Persistent Collapsible Sidebar */}
       <Sidebar
         activeTab={activeTab}
         setActiveTab={setActiveTab}
@@ -202,437 +190,443 @@ export default function ChairmanCockpitPage() {
         tasksLoading={false}
       />
 
-      {/* Main Spacious Eco Cockpit Content */}
-      <main className="flex-1 min-w-0 min-h-screen bg-transparent relative pt-14 lg:pt-0 transition-all duration-300">
-        <div className="p-4 sm:p-6 lg:p-10 max-w-7xl mx-auto space-y-8">
-          {/* ==================================================================
-           * 1. TOP HEADER & GREETING (Inspired by Laid-back Eco Home Vibes)
-           * ================================================================ */}
-          <div className="flex flex-col md:flex-row md:items-end justify-between gap-4 pt-2">
-            <div>
-              <div className="flex items-center gap-2 mb-1.5">
-                <span className="w-2 h-2 rounded-full bg-emerald-400 shadow-[0_0_8px_#34d399]" />
-                <span className="text-[11px] font-bold tracking-widest text-emerald-400 uppercase">
-                  Pristine Executive Cockpit
-                </span>
-              </div>
-              <h1 className="text-3xl sm:text-4xl lg:text-5xl font-extrabold tracking-tight text-zinc-900 dark:text-zinc-100">
-                {greeting}, {user?.name?.split(" ")[0] || "Diego"}!
-              </h1>
-              <p className="text-sm text-zinc-600 dark:text-zinc-400 mt-1.5 font-medium flex items-center gap-2">
-                <span>{currentDate}</span>
-                <span className="text-zinc-500">•</span>
-                <span className="tabular-nums text-zinc-300 font-semibold">{currentTime}</span>
-              </p>
-            </div>
-
-            {/* Quick Action Capsules */}
-            <div className="flex items-center gap-2.5 flex-wrap">
-              {/* Google Calendar Sync Pill */}
-              <button
-                type="button"
-                onClick={() => (calConnected ? fetchCalendar() : signIn("google"))}
-                className="eco-glass-pill px-4 py-2 rounded-full flex items-center gap-2 text-xs font-semibold hover:border-amber-400/50 transition-all cursor-pointer"
-                title={calConnected ? "Sync Google Calendar" : "Connect Google Calendar"}
-              >
-                <span
-                  className={`w-2 h-2 rounded-full ${
-                    calConnected ? "bg-emerald-400 shadow-[0_0_8px_#34d399]" : "bg-amber-400 animate-pulse"
-                  }`}
-                />
-                <span className="text-zinc-200">
-                  {calConnected ? "Google Calendar Connected" : "Connect Google Calendar"}
-                </span>
-                <RefreshCw className={`w-3 h-3 text-zinc-400 ${calLoading ? "animate-spin" : ""}`} />
-              </button>
-            </div>
-          </div>
-
-          {/* ==================================================================
-           * 2. HEALTH VITALS: STRICTLY STEPS, SLEEP & EXERCISE ONLY
-           * ================================================================== */}
-          <div>
-            <div className="flex items-center justify-between mb-3 px-1">
-              <div className="flex items-center gap-2">
-                <Activity className="w-4 h-4 text-emerald-400" />
-                <h2 className="text-sm font-bold tracking-wider uppercase text-zinc-300">
-                  Daily Physiological Vitals
-                </h2>
-              </div>
-              <span className="text-xs text-zinc-500 font-mono">
-                Optimal Recovery Zone
+      {/* Main Content Flow */}
+      <div className="flex-1 min-w-0 flex flex-col min-h-screen bg-[#ffffff] pt-14 lg:pt-0">
+        {/* ==================================================================
+         * 1. ATMOSPHERIC HERO + TRANSPARENT FLOATING TOP NAVIGATION
+         * ================================================================ */}
+        <section className="cluely-hero-bg relative w-full pb-20 lg:pb-28">
+          {/* Transparent Floating Top Bar */}
+          <nav className="max-w-6xl mx-auto px-6 pt-6 pb-4 flex items-center justify-between gap-4">
+            {/* Left Wordmark */}
+            <div className="flex items-center gap-2.5">
+              <span className="w-2.5 h-2.5 rounded-full bg-[#4984fd]" />
+              <span className="cluely-nav-text text-[#000000]">
+                Chairman
               </span>
             </div>
 
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-              {/* VITAL 1: STEPS */}
-              <div className="eco-glass-card p-6 rounded-3xl flex flex-col justify-between relative overflow-hidden group">
-                <div className="flex items-center justify-between text-zinc-400 text-xs">
-                  <span className="font-semibold text-emerald-400 uppercase tracking-wider text-[10px]">
-                    Movement & Cadence
-                  </span>
-                  <Footprints className="w-4 h-4 text-emerald-400" />
-                </div>
+            {/* Centered Navigation Links */}
+            <div className="hidden md:flex items-center gap-7 text-[#374151]">
+              <Link href="/command" className="cluely-nav-text hover:text-[#000000] transition-colors">
+                Command
+              </Link>
+              <Link href="/macro-ops" className="cluely-nav-text hover:text-[#000000] transition-colors">
+                Macro Ops
+              </Link>
+              <Link href="/workouts" className="cluely-nav-text hover:text-[#000000] transition-colors">
+                Workouts
+              </Link>
+              <Link href="/calendar" className="cluely-nav-text hover:text-[#000000] transition-colors">
+                Solar Arc
+              </Link>
+              <Link href="/roadmaps" className="cluely-nav-text hover:text-[#000000] transition-colors">
+                Roadmaps
+              </Link>
+            </div>
 
-                <div className="my-5 flex items-center justify-between">
-                  <div>
-                    <div className="text-3xl sm:text-4xl font-bold tabular-nums text-white tracking-tight">
-                      {stepsCurrent.toLocaleString()}
-                    </div>
-                    <div className="text-xs text-zinc-400 mt-1">
-                      Goal: {stepsGoal.toLocaleString()} steps ({Math.round((stepsCurrent / stepsGoal) * 100)}%)
-                    </div>
-                  </div>
+            {/* Right CTA */}
+            <div className="flex items-center gap-3">
+              <button
+                type="button"
+                onClick={() => (calConnected ? fetchCalendar() : signIn("google"))}
+                className="hidden sm:inline-flex cluely-pill px-3.5 py-1.5 items-center gap-2 text-[13px] font-medium text-[#263043] hover:text-[#000000] transition-colors"
+              >
+                <span
+                  className={`w-2 h-2 rounded-full ${
+                    calConnected ? "bg-[#4984fd]" : "bg-[#8c929d]"
+                  }`}
+                />
+                <span>{calConnected ? "Calendar synced" : "Sync calendar"}</span>
+                <RefreshCw className={`w-3 h-3 text-[#6b7280] ${calLoading ? "animate-spin" : ""}`} />
+              </button>
 
-                  {/* Circular Radial Gauge */}
-                  <div className="relative w-14 h-14 flex items-center justify-center">
-                    <svg className="w-14 h-14 -rotate-90" viewBox="0 0 36 36">
-                      <path
-                        className="text-white/10"
-                        strokeWidth="3.5"
-                        stroke="currentColor"
-                        fill="none"
-                        d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831"
-                      />
-                      <path
-                        className="text-emerald-400"
-                        strokeDasharray={`${(stepsCurrent / stepsGoal) * 100}, 100`}
-                        strokeWidth="3.5"
-                        strokeLinecap="round"
-                        stroke="currentColor"
-                        fill="none"
-                        d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831"
-                      />
-                    </svg>
-                    <span className="absolute text-[11px] font-semibold tabular-nums text-emerald-300">
-                      {Math.round((stepsCurrent / stepsGoal) * 100)}%
-                    </span>
-                  </div>
-                </div>
+              <Link href="/command" className="cluely-cta text-[14px] px-4 py-2">
+                <span>Open Command</span>
+              </Link>
+            </div>
+          </nav>
 
-                <div className="pt-3 border-t border-white/5 flex items-center justify-between text-xs text-zinc-400 tabular-nums">
-                  <span>{stepsMiles} Miles Walked</span>
-                  <span>{stepsKcal} kcal Burned</span>
-                </div>
-              </div>
+          {/* Centered Hero Column */}
+          <div className="max-w-4xl mx-auto px-6 pt-12 sm:pt-16 pb-12 text-center space-y-6">
+            {/* Live Time Pill Badge (110px radius) */}
+            <div className="inline-flex items-center gap-2.5 cluely-pill px-4 py-1.5 text-[13px] font-medium text-[#263043]">
+              <span className="w-2 h-2 rounded-full bg-[#4984fd]" />
+              <span>{currentDate || "Executive Telemetry"}</span>
+              {currentTime && (
+                <>
+                  <span className="text-[#8c929d]">·</span>
+                  <span className="tabular-nums text-[#000000]">{currentTime}</span>
+                </>
+              )}
+            </div>
 
-              {/* VITAL 2: SLEEP */}
-              <div className="eco-glass-card p-6 rounded-3xl flex flex-col justify-between relative overflow-hidden group">
-                <div className="flex items-center justify-between text-zinc-400 text-xs">
-                  <span className="font-semibold text-indigo-400 uppercase tracking-wider text-[10px]">
-                    Sleep Architecture
-                  </span>
-                  <Moon className="w-4 h-4 text-indigo-400" />
-                </div>
+            {/* Strictly EB Garamond 500 Hero Display H1 */}
+            <h1 className="cluely-hero-h1 text-[48px] sm:text-[64px] lg:text-[80px] text-[#000000]">
+              {greeting}, {firstName}.
+            </h1>
 
-                <div className="my-5 flex items-center justify-between">
-                  <div>
-                    <div className="text-3xl sm:text-4xl font-bold tabular-nums text-white tracking-tight">
-                      {sleepHours}
-                    </div>
-                    <div className="text-xs text-zinc-400 mt-1">
-                      Sleep Score: {sleepQuality}% • High Recovery
-                    </div>
-                  </div>
+            <p className="max-w-xl mx-auto text-[18px] sm:text-[19px] font-normal leading-[1.5] tracking-[-0.2px] text-[#374151]">
+              One calm operating surface for physiological vitals, daily focus, circadian rhythm, and strategic execution.
+            </p>
 
-                  <div className="px-3 py-1.5 rounded-2xl bg-indigo-500/10 border border-indigo-500/25 text-indigo-300 text-xs font-semibold">
-                    Optimal
-                  </div>
-                </div>
-
-                <div className="pt-3 border-t border-white/5 flex items-center justify-between text-xs text-zinc-400 tabular-nums">
-                  <span>Awake at {sleepWakeTime}</span>
-                  <span>1h 45m Deep Sleep</span>
-                </div>
-              </div>
-
-              {/* VITAL 3: EXERCISE */}
-              <div className="eco-glass-card p-6 rounded-3xl flex flex-col justify-between relative overflow-hidden group">
-                <div className="flex items-center justify-between text-zinc-400 text-xs">
-                  <span className="font-semibold text-amber-400 uppercase tracking-wider text-[10px]">
-                    Training & Hypertrophy
-                  </span>
-                  <Dumbbell className="w-4 h-4 text-amber-400" />
-                </div>
-
-                <div className="my-5 flex items-center justify-between">
-                  <div>
-                    <div className="text-3xl sm:text-4xl font-bold tabular-nums text-white tracking-tight">
-                      {exerciseMinutes} <span className="text-base text-zinc-400 font-normal">min</span>
-                    </div>
-                    <div className="text-xs text-zinc-400 mt-1">
-                      {exerciseRoutine}
-                    </div>
-                  </div>
-
-                  <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-2xl bg-amber-500/10 border border-amber-500/25 text-amber-300 text-xs font-semibold tabular-nums">
-                    <Flame className="w-3.5 h-3.5 text-amber-400 fill-amber-400" />
-                    <span>{exerciseStreakDays}d Streak</span>
-                  </div>
-                </div>
-
-                <div className="pt-3 border-t border-white/5 flex items-center justify-between text-xs">
-                  <span className="text-zinc-400 tabular-nums">14 Sets Completed</span>
-                  <Link
-                    href="/workouts"
-                    className="text-amber-400 hover:text-amber-300 font-semibold flex items-center gap-0.5"
-                  >
-                    <span>Open Workouts</span>
-                    <ArrowUpRight className="w-3 h-3" />
-                  </Link>
-                </div>
-              </div>
+            {/* Primary CTA + Secondary Action */}
+            <div className="flex flex-wrap items-center justify-center gap-3 pt-2">
+              <Link href="/macro-ops" className="cluely-cta">
+                <span>Log Fuel &amp; Hydration</span>
+                <ArrowUpRight className="w-4 h-4" />
+              </Link>
+              <Link href="/roadmaps" className="cluely-btn-secondary">
+                <span>Synthesis Roadmap</span>
+              </Link>
             </div>
           </div>
 
-          {/* ==================================================================
-           * 3. MAIN COCKPIT GRID: WORKOUT ENGINE HERO & CIRCADIAN CALENDAR
-           * ================================================================== */}
-          <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
-            {/* LEFT 7-COL: TODAY'S BODYBUILDING WORKOUT LAUNCHER */}
-            <div className="lg:col-span-7 space-y-6">
-              <div className="eco-glass-card p-6 sm:p-7 rounded-3xl space-y-5 border border-amber-400/20 shadow-[0_12px_40px_rgba(245,158,11,0.08)]">
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-3">
-                    <div className="p-2.5 rounded-2xl bg-amber-500/20 text-amber-400 border border-amber-500/30">
-                      <Dumbbell className="w-5 h-5" />
+          {/* Glassy Product-Mockup Card Underneath (Atmospheric Blue Glow) */}
+          <div className="max-w-4xl mx-auto px-6">
+            <div className="cluely-mockup-card p-6 sm:p-8 space-y-6">
+              {/* Mockup Header */}
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-5 border-b border-[#d1d6e0]">
+                <div className="flex items-center gap-2.5">
+                  <CheckCircle2 className="w-5 h-5 text-[#4984fd]" />
+                  <div>
+                    <div className="cluely-subhead text-[#000000]">
+                      Executive Daily Focus
                     </div>
-                    <div>
-                      <h3 className="text-base sm:text-lg font-bold text-zinc-100">
-                        Titan Bodybuilding & Workout Engine
-                      </h3>
-                      <p className="text-xs text-zinc-400">
-                        Dedicated strength tracker, progressive overload sets, rest timer & 1RM
-                      </p>
-                    </div>
-                  </div>
-
-                  <Link
-                    href="/workouts"
-                    className="hidden sm:flex items-center gap-1.5 px-4 py-2 rounded-full bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-400 hover:to-amber-500 text-black text-xs font-bold shadow-lg transition-all"
-                  >
-                    <span>Launch Workout Tracker</span>
-                    <ArrowUpRight className="w-3.5 h-3.5" />
-                  </Link>
-                </div>
-
-                {/* Workout Preview Routine */}
-                <div className="p-4 rounded-2xl bg-white/[0.03] border border-white/5 space-y-3">
-                  <div className="flex items-center justify-between text-xs">
-                    <span className="font-bold text-zinc-200">
-                      Active Split: Push Day (Chest / Shoulders / Triceps)
-                    </span>
-                    <span className="font-mono text-amber-300">
-                      Target Volume: ~16,000 lbs
-                    </span>
-                  </div>
-
-                  <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 text-xs font-mono">
-                    <div className="p-2.5 rounded-xl bg-white/[0.02] border border-white/5">
-                      <div className="text-[10px] text-zinc-500 uppercase">Exercise 1</div>
-                      <div className="font-bold text-zinc-200 truncate">Incline DB Press</div>
-                      <div className="text-amber-400/90 text-[11px]">4 × 10 (90 lbs)</div>
-                    </div>
-                    <div className="p-2.5 rounded-xl bg-white/[0.02] border border-white/5">
-                      <div className="text-[10px] text-zinc-500 uppercase">Exercise 2</div>
-                      <div className="font-bold text-zinc-200 truncate">Bench Press</div>
-                      <div className="text-amber-400/90 text-[11px]">4 × 6 (225 lbs)</div>
-                    </div>
-                    <div className="p-2.5 rounded-xl bg-white/[0.02] border border-white/5">
-                      <div className="text-[10px] text-zinc-500 uppercase">Exercise 3</div>
-                      <div className="font-bold text-zinc-200 truncate">Lateral Raises</div>
-                      <div className="text-amber-400/90 text-[11px]">4 × 15 (35 lbs)</div>
-                    </div>
-                    <div className="p-2.5 rounded-xl bg-white/[0.02] border border-white/5">
-                      <div className="text-[10px] text-zinc-500 uppercase">Exercise 4</div>
-                      <div className="font-bold text-zinc-200 truncate">Rope Pushdowns</div>
-                      <div className="text-amber-400/90 text-[11px]">3 × 12 (75 lbs)</div>
-                    </div>
+                    <p className="text-[13px] text-[#6b7280]">
+                      Capture high-leverage objectives directly into today&apos;s execution queue.
+                    </p>
                   </div>
                 </div>
 
-                <div className="flex sm:hidden">
-                  <Link
-                    href="/workouts"
-                    className="w-full flex items-center justify-center gap-1.5 px-4 py-2.5 rounded-full bg-gradient-to-r from-amber-500 to-amber-600 text-black text-xs font-bold"
-                  >
-                    <span>Launch Workout Tracker</span>
-                    <ArrowUpRight className="w-3.5 h-3.5" />
-                  </Link>
+                {/* Pill Filter Bar (110px) */}
+                <div className="inline-flex items-center gap-1 p-1 rounded-[110px] bg-[#dde2ee]/70 border border-[#d1d6e0]">
+                  {(["all", "active", "completed"] as const).map((f) => (
+                    <button
+                      key={f}
+                      type="button"
+                      onClick={() => setTaskFilter(f)}
+                      className={`px-3.5 py-1 rounded-[110px] text-[13px] font-medium capitalize transition-all ${
+                        taskFilter === f
+                          ? "bg-[#ffffff] text-[#000000] shadow-sm"
+                          : "text-[#5e616e] hover:text-[#000000]"
+                      }`}
+                    >
+                      {f}
+                    </button>
+                  ))}
                 </div>
               </div>
 
-              {/* EXECUTIVE DAILY FOCUS TASK CHECKLIST */}
-              <div className="eco-glass-card p-6 sm:p-7 rounded-3xl space-y-4">
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-2">
-                    <CheckCircle2 className="w-4 h-4 text-emerald-400" />
-                    <h3 className="text-base font-bold text-zinc-100">
-                      Executive Daily Focus
-                    </h3>
-                  </div>
+              {/* Strictly Square 0px Input Form */}
+              <form onSubmit={handleAddTask} className="flex flex-col sm:flex-row gap-3">
+                <input
+                  type="text"
+                  placeholder="Add an executive objective for today (press Enter)..."
+                  value={newTaskInput}
+                  onChange={(e) => setNewTaskInput(e.target.value)}
+                  className="cluely-input flex-1"
+                />
+                <button type="submit" className="cluely-cta shrink-0">
+                  <Plus className="w-4 h-4" />
+                  <span>Add objective</span>
+                </button>
+              </form>
 
-                  {/* Filter Pills */}
-                  <div className="flex items-center gap-1 bg-white/[0.04] p-1 rounded-xl border border-white/5 text-[11px]">
-                    {(["all", "active", "completed"] as const).map((f) => (
-                      <button
-                        key={f}
-                        type="button"
-                        onClick={() => setTaskFilter(f)}
-                        className={`px-2.5 py-0.5 rounded-lg capitalize transition-colors ${
-                          taskFilter === f
-                            ? "bg-white/10 text-white font-semibold"
-                            : "text-zinc-400 hover:text-white"
-                        }`}
-                      >
-                        {f}
-                      </button>
-                    ))}
-                  </div>
-                </div>
-
-                {/* Add New Task Input */}
-                <form onSubmit={handleAddTask} className="flex gap-2">
-                  <input
-                    type="text"
-                    placeholder="Add an executive objective for today (press Enter)..."
-                    value={newTaskInput}
-                    onChange={(e) => setNewTaskInput(e.target.value)}
-                    className="flex-1 px-4 py-2.5 rounded-2xl bg-white/[0.04] border border-white/10 text-xs text-zinc-100 placeholder:text-zinc-500 focus:outline-none focus:border-amber-400/50"
-                  />
-                  <button
-                    type="submit"
-                    className="px-4 py-2.5 rounded-2xl bg-white/10 hover:bg-white/20 text-xs font-semibold text-zinc-100 transition-colors flex items-center gap-1"
-                  >
-                    <Plus className="w-3.5 h-3.5" />
-                    <span>Add</span>
-                  </button>
-                </form>
-
-                {/* Tasks List */}
-                <div className="space-y-2 pt-1">
+              {/* Tasks List */}
+              {filteredTasks.length > 0 ? (
+                <div className="divide-y divide-[#d1d6e0] border-t border-b border-[#d1d6e0]">
                   {filteredTasks.map((t) => (
                     <div
                       key={t.id}
-                      className={`flex items-center justify-between p-3.5 rounded-2xl border transition-all ${
-                        t.completed
-                          ? "bg-white/[0.01] border-white/5 opacity-60"
-                          : "bg-white/[0.03] border-white/10 hover:border-white/20"
-                      }`}
+                      className="py-3.5 flex items-center justify-between gap-4 transition-colors"
                     >
-                      <div className="flex items-center gap-3">
+                      <div className="flex items-center gap-3 min-w-0">
                         <button
                           type="button"
                           onClick={() => handleToggleTask(t.id)}
-                          className="focus:outline-none cursor-pointer"
+                          className="shrink-0 text-[#4984fd] focus:outline-none"
                         >
                           {t.completed ? (
-                            <CheckCircle2 className="w-4 h-4 text-emerald-400" />
+                            <CheckCircle2 className="w-5 h-5 text-[#4984fd]" />
                           ) : (
-                            <Circle className="w-4 h-4 text-zinc-500 hover:text-amber-400" />
+                            <Circle className="w-5 h-5 text-[#8c929d] hover:text-[#4984fd] transition-colors" />
                           )}
                         </button>
                         <span
-                          className={`text-xs font-medium ${
-                            t.completed
-                              ? "line-through text-zinc-500"
-                              : "text-zinc-200"
+                          className={`text-[15px] font-normal truncate ${
+                            t.completed ? "line-through text-[#8c929d]" : "text-[#000000]"
                           }`}
                         >
                           {t.title}
                         </span>
                       </div>
 
-                      <div className="flex items-center gap-2">
+                      <div className="flex items-center gap-3 shrink-0">
                         {t.timeEstimate && (
-                          <span className="text-[10px] font-mono text-zinc-500">
-                            {t.timeEstimate}
-                          </span>
+                          <span className="cluely-chip">{t.timeEstimate}</span>
                         )}
                         <button
                           type="button"
                           onClick={() => handleDeleteTask(t.id)}
                           title="Delete task"
-                          className="text-zinc-600 hover:text-red-400 p-1 transition-colors"
+                          className="text-[#8c929d] hover:text-[#000000] p-1 transition-colors"
                         >
-                          <Trash2 className="w-3 h-3" />
+                          <Trash2 className="w-4 h-4" />
                         </button>
                       </div>
                     </div>
                   ))}
                 </div>
+              ) : (
+                <div className="py-8 text-center bg-[#f9fafb] border border-[#d1d6e0] rounded-[12px]">
+                  <p className="text-[14px] text-[#6b7280]">
+                    Your queue is clear. Add an objective above to begin today&apos;s sprint.
+                  </p>
+                </div>
+              )}
 
-                <div className="text-[11px] text-zinc-500 text-right font-mono">
-                  {completedCount} of {tasks.length} tasks completed
+              <div className="flex items-center justify-between text-[13px] text-[#6b7280]">
+                <span>{completedCount} of {tasks.length} objectives completed</span>
+                {calError && <span className="text-[#374151]">{calError}</span>}
+              </div>
+            </div>
+          </div>
+        </section>
+
+        {/* ==================================================================
+         * 2. SPACIOUS WHITE SECTION: 3-COLUMN PHYSIOLOGICAL VITALS
+         * ================================================================ */}
+        <section className="w-full bg-[#ffffff] py-20 border-t border-[#d1d6e0]/60">
+          <div className="max-w-6xl mx-auto px-6 space-y-10">
+            <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-4">
+              <div className="space-y-2">
+                <span className="cluely-chip">Physiological Telemetry</span>
+                <h2 className="cluely-h2 text-[#000000]">
+                  Daily physiological vitals
+                </h2>
+              </div>
+              <p className="text-[14px] text-[#6b7280] max-w-sm">
+                Movement cadence, restorative sleep architecture, and active hypertrophy volume in one clean view.
+              </p>
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+              {/* VITAL 1: STEPS */}
+              <div className="cluely-card p-6 flex flex-col justify-between gap-6">
+                <div className="flex items-center justify-between">
+                  <span className="cluely-chip">Movement &amp; Cadence</span>
+                  <Footprints className="w-4 h-4 text-[#4984fd]" />
+                </div>
+
+                <div className="flex items-center justify-between gap-4">
+                  <div>
+                    <div className="text-[36px] font-medium tracking-[-0.8px] leading-none tabular-nums text-[#000000]">
+                      {stepsCurrent.toLocaleString()}
+                    </div>
+                    <div className="text-[13px] text-[#6b7280] mt-2">
+                      Goal: {stepsGoal.toLocaleString()} steps ({Math.round((stepsCurrent / stepsGoal) * 100)}%)
+                    </div>
+                  </div>
+
+                  {/* Minimal Blue Progress Ring */}
+                  <div className="relative w-14 h-14 flex items-center justify-center shrink-0">
+                    <svg className="w-14 h-14 -rotate-90" viewBox="0 0 36 36">
+                      <path
+                        stroke="#dde2ee"
+                        strokeWidth="3"
+                        fill="none"
+                        d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831"
+                      />
+                      <path
+                        stroke="#4984fd"
+                        strokeDasharray={`${(stepsCurrent / stepsGoal) * 100}, 100`}
+                        strokeWidth="3"
+                        strokeLinecap="round"
+                        fill="none"
+                        d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831"
+                      />
+                    </svg>
+                    <span className="absolute text-[12px] font-medium tabular-nums text-[#000000]">
+                      {Math.round((stepsCurrent / stepsGoal) * 100)}%
+                    </span>
+                  </div>
+                </div>
+
+                <div className="pt-4 border-t border-[#d1d6e0] flex items-center justify-between text-[13px] text-[#6b7280] tabular-nums">
+                  <span>{stepsMiles} miles walked</span>
+                  <span>{stepsKcal} kcal burned</span>
+                </div>
+              </div>
+
+              {/* VITAL 2: SLEEP */}
+              <div className="cluely-card p-6 flex flex-col justify-between gap-6">
+                <div className="flex items-center justify-between">
+                  <span className="cluely-chip">Sleep Architecture</span>
+                  <Moon className="w-4 h-4 text-[#4984fd]" />
+                </div>
+
+                <div className="flex items-center justify-between gap-4">
+                  <div>
+                    <div className="text-[36px] font-medium tracking-[-0.8px] leading-none tabular-nums text-[#000000]">
+                      {sleepHours}
+                    </div>
+                    <div className="text-[13px] text-[#6b7280] mt-2">
+                      Sleep score: {sleepQuality}% · High recovery
+                    </div>
+                  </div>
+
+                  <span className="px-3 py-1 rounded-[110px] bg-[#dde2ee] text-[#263043] text-[12px] font-medium">
+                    Optimal
+                  </span>
+                </div>
+
+                <div className="pt-4 border-t border-[#d1d6e0] flex items-center justify-between text-[13px] text-[#6b7280] tabular-nums">
+                  <span>Awake at {sleepWakeTime}</span>
+                  <span>1h 45m deep sleep</span>
+                </div>
+              </div>
+
+              {/* VITAL 3: EXERCISE */}
+              <div className="cluely-card p-6 flex flex-col justify-between gap-6">
+                <div className="flex items-center justify-between">
+                  <span className="cluely-chip">Training &amp; Hypertrophy</span>
+                  <Dumbbell className="w-4 h-4 text-[#4984fd]" />
+                </div>
+
+                <div className="flex items-center justify-between gap-4">
+                  <div>
+                    <div className="text-[36px] font-medium tracking-[-0.8px] leading-none tabular-nums text-[#000000]">
+                      {exerciseMinutes}{" "}
+                      <span className="text-[16px] text-[#6b7280] font-normal">min</span>
+                    </div>
+                    <div className="text-[13px] text-[#6b7280] mt-2">
+                      {exerciseRoutine}
+                    </div>
+                  </div>
+
+                  <span className="inline-flex items-center gap-1 px-3 py-1 rounded-[110px] bg-[#dde2ee] text-[#263043] text-[12px] font-medium tabular-nums">
+                    <Flame className="w-3.5 h-3.5 text-[#4984fd]" />
+                    <span>{exerciseStreakDays}d streak</span>
+                  </span>
+                </div>
+
+                <div className="pt-4 border-t border-[#d1d6e0] flex items-center justify-between text-[13px]">
+                  <span className="text-[#6b7280] tabular-nums">14 sets completed</span>
+                  <Link
+                    href="/workouts"
+                    className="text-[#4984fd] hover:underline font-medium inline-flex items-center gap-1"
+                  >
+                    <span>Open workouts</span>
+                    <ArrowUpRight className="w-3.5 h-3.5" />
+                  </Link>
                 </div>
               </div>
             </div>
+          </div>
+        </section>
 
-            {/* RIGHT 5-COL: CIRCADIAN SOLAR WHEEL PREVIEW & GOOGLE CALENDAR AGENDA */}
-            <div className="lg:col-span-5 space-y-6">
-              {/* CIRCADIAN SOLAR ARC PREVIEW CARD */}
-              <div className="eco-glass-card p-6 rounded-3xl space-y-4">
+        {/* ==================================================================
+         * 3. SPACIOUS WHITE 2-COLUMN SPLIT: WORKOUT ENGINE + SOLAR & GCAL
+         * ================================================================ */}
+        <section className="w-full bg-[#ffffff] py-16">
+          <div className="max-w-6xl mx-auto px-6 grid grid-cols-1 lg:grid-cols-12 gap-8">
+            {/* Left 7-Col: Titan Workout Launcher */}
+            <div className="lg:col-span-7 cluely-card p-7 flex flex-col justify-between gap-6">
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                <div className="space-y-1">
+                  <span className="cluely-chip">Active Split</span>
+                  <h2 className="cluely-h2 text-[#000000] pt-1">
+                    Titan Bodybuilding Engine
+                  </h2>
+                  <p className="text-[14px] text-[#6b7280]">
+                    Push Day (Chest / Shoulders / Triceps) · Target Volume ~16,000 lbs
+                  </p>
+                </div>
+
+                <Link href="/workouts" className="cluely-cta shrink-0">
+                  <span>Launch tracker</span>
+                  <ArrowUpRight className="w-4 h-4" />
+                </Link>
+              </div>
+
+              {/* 2x2 Clean Exercise Grid */}
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                {[
+                  { label: "Exercise 01", name: "Incline DB Press", spec: "4 × 10 · 90 lbs" },
+                  { label: "Exercise 02", name: "Barbell Bench Press", spec: "4 × 6 · 225 lbs" },
+                  { label: "Exercise 03", name: "Lateral Raises", spec: "4 × 15 · 35 lbs" },
+                  { label: "Exercise 04", name: "Rope Pushdowns", spec: "3 × 12 · 75 lbs" },
+                ].map((ex) => (
+                  <div
+                    key={ex.label}
+                    className="p-4 rounded-[12px] bg-[#f9fafb] border border-[#d1d6e0] space-y-1"
+                  >
+                    <div className="text-[12px] text-[#6b7280]">{ex.label}</div>
+                    <div className="cluely-subhead text-[#000000]">{ex.name}</div>
+                    <div className="text-[13px] font-medium text-[#4984fd] tabular-nums">
+                      {ex.spec}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            {/* Right 5-Col: Circadian Solar Arc + Google Calendar Agenda */}
+            <div className="lg:col-span-5 flex flex-col gap-6">
+              {/* Circadian Solar Arc Card */}
+              <div className="cluely-card p-6 space-y-4">
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-2">
-                    <Sun className="w-4 h-4 text-amber-400" />
-                    <h3 className="text-sm font-bold text-zinc-100 tracking-wide">
-                      Circadian Solar Arc
-                    </h3>
+                    <Sun className="w-4 h-4 text-[#4984fd]" />
+                    <h3 className="cluely-subhead text-[#000000]">Circadian Solar Arc</h3>
                   </div>
-
                   <Link
                     href="/calendar"
-                    className="text-xs text-amber-400 hover:text-amber-300 font-semibold flex items-center gap-0.5"
+                    className="text-[13px] font-medium text-[#4984fd] hover:underline inline-flex items-center gap-0.5"
                   >
-                    <span>Full 24H Wheel</span>
-                    <ArrowUpRight className="w-3 h-3" />
+                    <span>24H wheel</span>
+                    <ArrowUpRight className="w-3.5 h-3.5" />
                   </Link>
                 </div>
 
-                {/* Solar Dial Mini Preview */}
-                <div className="p-4 rounded-2xl bg-gradient-to-b from-blue-900/20 via-amber-900/10 to-indigo-950/30 border border-white/5 flex items-center justify-between">
+                <div className="p-4 rounded-[12px] bg-[#dde2ee]/55 border border-[#d1d6e0] flex items-center justify-between gap-4">
                   <div>
-                    <div className="text-xs text-amber-300 font-bold uppercase tracking-wider">
-                      Solar Phase
+                    <div className="text-[12px] font-medium text-[#4984fd]">Solar Phase</div>
+                    <div className="text-[17px] font-medium tracking-[-0.3px] text-[#000000] mt-0.5">
+                      Solar Zenith · Peak Focus
                     </div>
-                    <div className="text-base font-extrabold text-zinc-100 mt-0.5">
-                      Solar Zenith • Peak Focus
-                    </div>
-                    <div className="text-[11px] text-zinc-400 font-mono mt-1">
-                      Sunrise: 6:42 AM • Sunset: 6:18 PM
+                    <div className="text-[12px] text-[#6b7280] mt-1 tabular-nums">
+                      Sunrise 6:42 AM · Sunset 6:18 PM
                     </div>
                   </div>
-
-                  <div className="w-14 h-14 rounded-full bg-amber-400/10 border border-amber-400/30 flex items-center justify-center shadow-[0_0_24px_rgba(245,158,11,0.25)]">
-                    <Sun className="w-7 h-7 text-amber-400 animate-spin-slow" />
+                  <div className="w-12 h-12 rounded-full bg-[#ffffff] border border-[#d1d6e0] flex items-center justify-center shrink-0">
+                    <Sun className="w-5 h-5 text-[#4984fd]" />
                   </div>
                 </div>
               </div>
 
-              {/* GOOGLE CALENDAR AGENDA FEED */}
-              <div className="eco-glass-card p-6 rounded-3xl space-y-4">
+              {/* Upcoming Appointments Feed */}
+              <div className="cluely-card p-6 flex-1 flex flex-col justify-between space-y-4">
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-2">
-                    <Calendar className="w-4 h-4 text-blue-400" />
-                    <h3 className="text-sm font-bold text-zinc-100 tracking-wide">
-                      Upcoming Appointments
-                    </h3>
+                    <Calendar className="w-4 h-4 text-[#4984fd]" />
+                    <h3 className="cluely-subhead text-[#000000]">Upcoming Appointments</h3>
                   </div>
-
                   {calConnected ? (
                     <button
                       type="button"
                       onClick={fetchCalendar}
-                      className="text-[11px] font-mono text-zinc-400 hover:text-white flex items-center gap-1"
+                      className="text-[13px] text-[#6b7280] hover:text-[#000000] inline-flex items-center gap-1"
                     >
-                      <RefreshCw className={`w-3 h-3 ${calLoading ? "animate-spin" : ""}`} />
+                      <RefreshCw className={`w-3.5 h-3.5 ${calLoading ? "animate-spin" : ""}`} />
                       <span>Sync</span>
                     </button>
                   ) : (
                     <button
                       type="button"
                       onClick={() => signIn("google")}
-                      className="text-[11px] font-semibold text-blue-400 hover:text-blue-300"
+                      className="text-[13px] font-medium text-[#4984fd] hover:underline"
                     >
                       Connect GCal
                     </button>
@@ -640,7 +634,7 @@ export default function ChairmanCockpitPage() {
                 </div>
 
                 {calConnected && calendarEvents.length > 0 ? (
-                  <div className="space-y-2.5">
+                  <div className="divide-y divide-[#d1d6e0]">
                     {calendarEvents.map((evt) => {
                       const startTime = evt.start?.dateTime
                         ? new Date(evt.start.dateTime).toLocaleTimeString("en-US", {
@@ -649,36 +643,33 @@ export default function ChairmanCockpitPage() {
                           })
                         : "All Day";
                       return (
-                        <div
-                          key={evt.id}
-                          className="p-3 rounded-2xl bg-white/[0.03] border border-white/5 flex items-center justify-between"
-                        >
-                          <div>
-                            <span className="text-xs font-bold text-zinc-200 block">
+                        <div key={evt.id} className="py-3 flex items-center justify-between gap-3">
+                          <div className="min-w-0">
+                            <span className="text-[14px] font-medium text-[#000000] block truncate">
                               {evt.summary || "Untitled Event"}
                             </span>
-                            <span className="text-[10px] text-zinc-400 font-mono">
+                            <span className="text-[12px] text-[#6b7280] tabular-nums">
                               {startTime}
                             </span>
                           </div>
-                          <span className="w-2 h-2 rounded-full bg-blue-400" />
+                          <span className="w-2 h-2 rounded-full bg-[#4984fd] shrink-0" />
                         </div>
                       );
                     })}
                   </div>
                 ) : calConnected ? (
-                  <div className="p-6 text-center text-xs text-zinc-500 font-mono">
-                    No scheduled calendar appointments today. Enjoy deep work!
+                  <div className="py-6 text-center text-[13px] text-[#6b7280]">
+                    No scheduled appointments today. Enjoy uninterrupted deep work.
                   </div>
                 ) : (
-                  <div className="p-6 text-center rounded-2xl bg-white/[0.02] border border-white/5 space-y-2">
-                    <p className="text-xs text-zinc-400">
-                      Connect your Google Calendar to stream real-time appointments onto your solar dashboard.
+                  <div className="p-5 text-center rounded-[12px] bg-[#f9fafb] border border-[#d1d6e0] space-y-3">
+                    <p className="text-[13px] text-[#6b7280]">
+                      Connect Google Calendar to stream live appointments directly onto your circadian timeline.
                     </p>
                     <button
                       type="button"
                       onClick={() => signIn("google")}
-                      className="px-4 py-1.5 rounded-full bg-blue-500 hover:bg-blue-400 text-white text-xs font-semibold shadow-md transition-all cursor-pointer"
+                      className="cluely-cta text-[14px] px-4 py-2"
                     >
                       Connect Google Calendar
                     </button>
@@ -687,10 +678,161 @@ export default function ChairmanCockpitPage() {
               </div>
             </div>
           </div>
-        </div>
-      </main>
+        </section>
 
-      {/* Appearance & Themes Modal */}
+        {/* ==================================================================
+         * 4. SINGLE DARK INDIGO GLASSMORPHIC HIGHLIGHT SECTION (TRUST/CONTROL)
+         * ================================================================ */}
+        <section className="w-full bg-[#ffffff] py-12 px-6">
+          <div className="max-w-6xl mx-auto cluely-dark-section p-8 sm:p-12 lg:p-14 space-y-10">
+            <div className="max-w-2xl space-y-3">
+              <span className="inline-flex items-center gap-2 px-3 py-1 rounded-[110px] bg-white/10 border border-white/15 text-[12px] font-medium text-[#edeef2]">
+                <ShieldCheck className="w-3.5 h-3.5 text-[#4984fd]" />
+                <span>Sovereign Architecture &amp; Control</span>
+              </span>
+              <h2 className="cluely-h2 text-[#edeef2] sm:text-[34px]">
+                Built for calm authority, zero noise, and live telemetry.
+              </h2>
+              <p className="text-[15px] leading-[1.6] text-[#b2b3ba]">
+                Every module writes directly to your authenticated PostgreSQL database with real-time voice capture and zero placeholder data.
+              </p>
+            </div>
+
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5">
+              {[
+                {
+                  icon: <Mic className="w-5 h-5 text-[#4984fd]" />,
+                  title: "Voice-First Logging",
+                  desc: "Dictate meals, hydration, and sets naturally—parsed into structured macros instantly.",
+                },
+                {
+                  icon: <GitBranch className="w-5 h-5 text-[#4984fd]" />,
+                  title: "Synthesis Roadmaps",
+                  desc: "Converging multi-branch DAGs with Done-For-You, Done-With-You, and DIY co-pilot modes.",
+                },
+                {
+                  icon: <Lock className="w-5 h-5 text-[#4984fd]" />,
+                  title: "Zero Dummy Data",
+                  desc: "Clean empty-state vessels and strict live Supabase / Postgres persistence across every route.",
+                },
+                {
+                  icon: <Compass className="w-5 h-5 text-[#4984fd]" />,
+                  title: "Circadian Alignment",
+                  desc: "24-hour solar arc wheel synced directly with your Google Calendar and fasting windows.",
+                },
+              ].map((item) => (
+                <div key={item.title} className="cluely-dark-glass-card p-6 space-y-3">
+                  <div className="w-9 h-9 rounded-[10px] bg-white/10 border border-white/10 flex items-center justify-center">
+                    {item.icon}
+                  </div>
+                  <h3 className="cluely-subhead text-[#edeef2]">{item.title}</h3>
+                  <p className="text-[13px] leading-[1.6] text-[#b2b3ba]">{item.desc}</p>
+                </div>
+              ))}
+            </div>
+          </div>
+        </section>
+
+        {/* ==================================================================
+         * 5. SPACIOUS WHITE 4-COLUMN LIFE PILLARS GRID
+         * ================================================================ */}
+        <section className="w-full bg-[#ffffff] py-20">
+          <div className="max-w-6xl mx-auto px-6 space-y-10">
+            <div className="space-y-2 max-w-xl">
+              <span className="cluely-chip">Executive Spheres</span>
+              <h2 className="cluely-h2 text-[#000000]">
+                Navigate every pillar in one click
+              </h2>
+            </div>
+
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5">
+              {[
+                {
+                  pillar: "Health",
+                  title: "Macro Ops & Water",
+                  desc: "Voice food logger, USDA macro curves, and Gengar incremental hydration vessel.",
+                  href: "/macro-ops",
+                  icon: <Utensils className="w-4 h-4 text-[#4984fd]" />,
+                },
+                {
+                  pillar: "Wealth",
+                  title: "Caliber Arc & Budget",
+                  desc: "Futures execution telemetry, 12-month cashflow ledger, and wealth tracking.",
+                  href: "/caliber-arc",
+                  icon: <TrendingUp className="w-4 h-4 text-[#4984fd]" />,
+                },
+                {
+                  pillar: "Relate & Family",
+                  title: "Family Hub & Pods",
+                  desc: "Shared household accountability, His & Hers dual wheels, and pet care schedules.",
+                  href: "/family-hub",
+                  icon: <Users className="w-4 h-4 text-[#4984fd]" />,
+                },
+                {
+                  pillar: "Strategy",
+                  title: "Command & Topology",
+                  desc: "North Star target cascades, FRAGO / PACE dossiers, and Mermaid architecture maps.",
+                  href: "/command",
+                  icon: <Compass className="w-4 h-4 text-[#4984fd]" />,
+                },
+              ].map((card) => (
+                <Link
+                  key={card.title}
+                  href={card.href}
+                  className="cluely-card p-6 flex flex-col justify-between gap-5 group"
+                >
+                  <div className="space-y-3">
+                    <div className="flex items-center justify-between">
+                      <span className="cluely-chip">{card.pillar}</span>
+                      {card.icon}
+                    </div>
+                    <h3 className="cluely-subhead text-[#000000] group-hover:text-[#4984fd] transition-colors">
+                      {card.title}
+                    </h3>
+                    <p className="text-[13px] leading-[1.6] text-[#6b7280]">
+                      {card.desc}
+                    </p>
+                  </div>
+                  <span className="text-[13px] font-medium text-[#4984fd] inline-flex items-center gap-1">
+                    <span>Open module</span>
+                    <ArrowUpRight className="w-3.5 h-3.5" />
+                  </span>
+                </Link>
+              ))}
+            </div>
+          </div>
+        </section>
+
+        {/* ==================================================================
+         * 6. PRE-FOOTER CLOUD CTA BAND (#f9fafb)
+         * ================================================================ */}
+        <section className="cluely-cloud-band w-full py-20 border-t border-[#d1d6e0]">
+          <div className="max-w-3xl mx-auto px-6 text-center space-y-5">
+            <h2 className="cluely-h2 text-[#000000] sm:text-[36px]">
+              Ready to synthesize your next milestone?
+            </h2>
+            <p className="text-[15px] leading-[1.6] text-[#5e616e] max-w-lg mx-auto">
+              Switch between Master, Health, Wealth, and Custom Projects in the converging Synthesis Roadmap.
+            </p>
+            <div className="pt-2 flex flex-wrap items-center justify-center gap-3">
+              <Link href="/roadmaps" className="cluely-cta">
+                <span>Launch Synthesis Roadmap</span>
+                <ArrowUpRight className="w-4 h-4" />
+              </Link>
+              <Link href="/org-chart" className="cluely-btn-secondary">
+                <span>View Topology Map</span>
+              </Link>
+            </div>
+          </div>
+        </section>
+
+        {/* ==================================================================
+         * 7. ALWAYS-LIGHT CLUELY FOOTER (#f9fafb, #6b7280)
+         * ================================================================ */}
+        <CluelyFooter />
+      </div>
+
+      {/* Appearance & Studio Modal */}
       {isAppearanceOpen && (
         <AppearanceSettings onClose={() => setIsAppearanceOpen(false)} />
       )}

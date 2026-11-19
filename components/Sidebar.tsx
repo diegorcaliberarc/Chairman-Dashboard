@@ -475,23 +475,23 @@ export function Sidebar({
   return (
     <>
       {/* Mobile Top Navigation Bar (iPhone & Android Viewports) */}
-      <div className="lg:hidden fixed top-0 left-0 right-0 h-14 bg-[#070911]/90 backdrop-blur-xl border-b border-white/10 z-40 flex items-center justify-between px-4 text-white">
+      <div className="lg:hidden fixed top-0 left-0 right-0 h-14 bg-[#ffffff]/90 backdrop-blur-xl border-b border-[#d1d6e0] z-40 flex items-center justify-between px-4 text-[#000000]">
         <button
           type="button"
           onClick={() => setMobileMenuOpen((p) => !p)}
-          className="p-2 rounded-xl bg-white/[0.06] hover:bg-white/10 text-zinc-200 transition-colors flex items-center gap-2"
+          className="p-2 rounded-[12px] bg-[#f9fafb] hover:bg-[#dde2ee]/60 border border-[#d1d6e0] text-[#000000] transition-colors flex items-center gap-2"
           aria-label="Toggle Navigation Menu"
         >
-          {mobileMenuOpen ? <X size={20} /> : <Menu size={20} />}
-          <span className="text-xs font-bold tracking-wider uppercase text-zinc-300">
+          {mobileMenuOpen ? <X size={18} /> : <Menu size={18} />}
+          <span className="text-[13px] font-medium tracking-[-0.13px] text-[#000000]">
             {currentPillarMeta.label}
           </span>
         </button>
 
         <div className="flex items-center gap-2">
-          <div className="w-2 h-2 rounded-full animate-pulse" style={{ backgroundColor: "#0969DA" }} />
-          <span className="text-xs font-bold tracking-[0.16em] uppercase text-zinc-100">
-            PRISTINE DESIGNS
+          <div className="w-2 h-2 rounded-full bg-[#4984fd]" />
+          <span className="text-[14px] font-medium tracking-[-0.13px] text-[#000000]">
+            Chairman Dashboard
           </span>
         </div>
       </div>
@@ -499,25 +499,27 @@ export function Sidebar({
       {/* Mobile Backdrop Overlay */}
       {mobileMenuOpen && (
         <div
-          className="lg:hidden fixed inset-0 bg-black/75 backdrop-blur-sm z-40 transition-opacity animate-in fade-in duration-200"
+          className="lg:hidden fixed inset-0 bg-[#1c1d22]/40 backdrop-blur-sm z-40 transition-opacity animate-in fade-in duration-200"
           onClick={() => setMobileMenuOpen(false)}
         />
       )}
 
       {/* Main Dual-Column Sidebar: Slide-over Drawer on Mobile, Relative Flex Rail on Desktop */}
       <aside
-        className={`fixed lg:relative left-0 top-0 h-screen shrink-0 flex flex-row liquid-glass-panel bg-white/95 dark:bg-[#07090e]/95 backdrop-blur-2xl border-r border-zinc-200/60 dark:border-white/[0.12] z-50 lg:z-30 transition-all duration-300 shadow-2xl ${
+        className={`fixed lg:relative left-0 top-0 h-screen shrink-0 flex flex-row bg-[#f9fafb] border-r border-[#d1d6e0] text-[#000000] z-50 lg:z-30 transition-all duration-300 ${
           mobileMenuOpen ? "translate-x-0" : "-translate-x-full lg:translate-x-0"
         }`}
+        style={{
+          boxShadow: "12px 0 32px -16px rgba(148, 172, 243, 0.28)",
+        }}
       >
         {/* ====================================================================
          * COLUMN 1: LIFE PILLARS SELECTOR (Health, Wealth, Relate, Fam, Joy & All)
          * ================================================================== */}
         <div
-          className={`h-full flex flex-col border-r border-zinc-200/50 dark:border-white/10 transition-all duration-300 ${
+          className={`h-full flex flex-col border-r border-[#d1d6e0] bg-[#f9fafb] transition-all duration-300 ${
             col1Collapsed ? "w-16" : "w-44"
           }`}
-          style={{ backgroundColor: "rgba(0,0,0,0.06)" }}
         >
           {/* Brand Header & Col 1 Collapse Toggle */}
           <div className="px-3 py-3.5 border-b border-zinc-200/50 dark:border-white/10 flex items-center justify-between gap-1">
