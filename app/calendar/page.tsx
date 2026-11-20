@@ -83,6 +83,7 @@ import { WeeklyRadialView } from "@/components/temporal/WeeklyRadialView";
 import { MonthlyRadialView } from "@/components/temporal/MonthlyRadialView";
 import { YearlyRadialView } from "@/components/temporal/YearlyRadialView";
 import { GeospatialTacticalMap } from "@/components/temporal/GeospatialTacticalMap";
+import { CalendarEngineHeader } from "@features/calendar";
 
 interface DbTaskLite {
   id: string;
@@ -164,14 +165,12 @@ export default function UnifiedMasterCalendarPage() {
   const [isMiniDrawerOpen, setIsMiniDrawerOpen] = useState(true);
   const [showViewDropdown, setShowViewDropdown] = useState(false);
 
-  // Date & Real-Time Solar Orbit states
-  const [selectedDate, setSelectedDate] = useState<string>(() =>
-    toLocalDateInputValue(new Date())
+  // Date & Real-Time Solar Orbit states (SSR-deterministic initializers hydrated on mount)
+  const [selectedDate, setSelectedDate] = useState<string>("2026-01-01");
+  const [currentDateObj, setCurrentDateObj] = useState<Date>(
+    () => new Date(2026, 0, 1, 12, 0, 0)
   );
-  const [currentDateObj, setCurrentDateObj] = useState<Date>(new Date());
-  const [liveMinutes, setLiveMinutes] = useState<number>(() =>
-    dateToMinutes(new Date(), true)
-  );
+  const [liveMinutes, setLiveMinutes] = useState<number>(720);
   const [scrubbedMinutes, setScrubbedMinutes] = useState<number | null>(null);
   const [viewMode, setViewMode] = useState<"solar" | "quadrants">("solar");
 
@@ -179,29 +178,11 @@ export default function UnifiedMasterCalendarPage() {
   const [activeHorizon, setActiveHorizon] = useState<HorizonLevel>("DAY");
   const [dayMode, setDayMode] = useState<DayMode>("SOLAR_WHEEL");
   const [selectedYear, setSelectedYear] = useState<number>(2026);
-  const [activeMonthIndex, setActiveMonthIndex] = useState<number>(10); // Nov (0-indexed)
+  const [activeMonthIndex, setActiveMonthIndex] = useState<number>(0);
 
-  // Circadian events, Chairman tasks, KPIs & Modal state (Instant Hydration)
-  const [events, setEvents] = useState<CircadianEventDTO[]>(() => {
-    if (typeof window !== "undefined") {
-      try {
-        const todayStr = toLocalDateInputValue(new Date());
-        if (circadianEventsCache.has(todayStr)) {
-          return circadianEventsCache.get(todayStr)!;
-        }
-        const cached = sessionStorage.getItem(`circadian_events_${todayStr}`);
-        if (cached) {
-          const parsed = JSON.parse(cached);
-          if (Array.isArray(parsed) && parsed.length > 0) {
-            circadianEventsCache.set(todayStr, parsed);
-            return parsed;
-          }
-        }
-      } catch {}
-    }
-    return [];
-  });
-  const [loadingEvents, setLoadingEvents] = useState<boolean>(() => events.length === 0);
+  // Circadian events, Chairman tasks, KPIs & Modal state
+  const [events, setEvents] = useState<CircadianEventDTO[]>([]);
+  const [loadingEvents, setLoadingEvents] = useState<boolean>(true);
   const [selectedEventId, setSelectedEventId] = useState<string | null>(null);
   const [modalOpen, setModalOpen] = useState<boolean>(false);
   const [editingEvent, setEditingEvent] = useState<CircadianEventDTO | null>(null);
@@ -281,8 +262,25 @@ export default function UnifiedMasterCalendarPage() {
   const [radarLayers, setRadarLayers] = useState<CircadianRadarLayerDTO[]>([]);
   const [activeRadarTypes, setActiveRadarTypes] = useState<RadarLayerKey[]>([]);
 
-  // Real-Time Solar Beacon ticker
+  // Real-Time Solar Beacon ticker & SSR-safe client clock hydration
   useEffect(() => {
+    const now = new Date();
+    const todayStr = toLocalDateInputValue(now);
+    setCurrentDateObj(now);
+    setSelectedDate(todayStr);
+    setSelectedYear(now.getFullYear());
+    setActiveMonthIndex(now.getMonth());
+
+    try {
+      const cached = circadianEventsCache.get(todayStr) ||
+        JSON.parse(sessionStorage.getItem(`circadian_events_${todayStr}`) || "null");
+      if (Array.isArray(cached) && cached.length > 0) {
+        circadianEventsCache.set(todayStr, cached);
+        setEvents(cached);
+        setLoadingEvents(false);
+      }
+    } catch {}
+
     const tick = () => setLiveMinutes(dateToMinutes(new Date(), true));
     tick();
     const timer = setInterval(tick, 5000);
@@ -789,6 +787,19 @@ export default function UnifiedMasterCalendarPage() {
     (t) => t.parentId && t.status !== "DONE" && t.status !== "ARCHIVED"
   ).length;
 
+  const syncDateFromObj = useCallback((next: Date) => {
+    setCurrentDateObj(next);
+    setSelectedDate(toLocalDateInputValue(next));
+  }, []);
+
+  const syncDateFromIso = useCallback((iso: string) => {
+    setSelectedDate(iso);
+    const [y, m, d] = iso.split("-").map(Number);
+    if (y && m && d) {
+      setCurrentDateObj(new Date(y, m - 1, d, 12, 0, 0));
+    }
+  }, []);
+
   // Steppers for Google Engine
   const handlePrevDate = () => {
     const next = new Date(currentDateObj);
@@ -797,7 +808,7 @@ export default function UnifiedMasterCalendarPage() {
     else if (googleViewMode === "month") next.setMonth(next.getMonth() - 1);
     else if (googleViewMode === "year") next.setFullYear(next.getFullYear() - 1);
     else next.setDate(next.getDate() - 7);
-    setCurrentDateObj(next);
+    syncDateFromObj(next);
   };
 
   const handleNextDate = () => {
@@ -807,7 +818,7 @@ export default function UnifiedMasterCalendarPage() {
     else if (googleViewMode === "month") next.setMonth(next.getMonth() + 1);
     else if (googleViewMode === "year") next.setFullYear(next.getFullYear() + 1);
     else next.setDate(next.getDate() + 7);
-    setCurrentDateObj(next);
+    syncDateFromObj(next);
   };
 
   const googleDateLabel = useMemo(() => {
@@ -843,7 +854,7 @@ export default function UnifiedMasterCalendarPage() {
   const renderOpsDeck = () => (
     <CalendarOpsCommandDeck
       selectedDate={selectedDate}
-      onSelectDate={(d) => setSelectedDate(d)}
+      onSelectDate={(d) => syncDateFromIso(d)}
       events={events}
       selectedEventId={selectedEventId}
       onSelectEvent={setSelectedEventId}
@@ -956,243 +967,34 @@ export default function UnifiedMasterCalendarPage() {
         style={{ backgroundColor: "var(--glass-bg-base, #ffffff)" }}
       >
         {/* TOP TOOLBAR: Unified Engine Controls */}
-        <header
-          className="h-14 px-5 border-b flex items-center justify-between z-20 sticky top-0 backdrop-blur-xl transition-colors"
-          style={{
-            backgroundColor: "var(--glass-surface)",
-            borderColor: "var(--glass-border)",
+        <CalendarEngineHeader
+          engineMode={engineMode}
+          onSelectEngineMode={setEngineMode}
+          selectedDate={selectedDate}
+          googleDateLabel={googleDateLabel}
+          googleViewMode={googleViewMode}
+          onSelectGoogleViewMode={setGoogleViewMode}
+          onToggleMiniDrawer={() => setIsMiniDrawerOpen((prev) => !prev)}
+          onToday={() => syncDateFromObj(new Date())}
+          onPrevDate={handlePrevDate}
+          onNextDate={handleNextDate}
+          activeHorizon={activeHorizon}
+          onSelectHorizon={setActiveHorizon}
+          dayMode={dayMode}
+          onSelectDayMode={setDayMode}
+          onAddSolarBlock={() => {
+            setEditingEvent(null);
+            setModalOpen(true);
           }}
-        >
-          {/* Left: Engine Mode Segmented Pill */}
-          <div className="flex items-center gap-3">
-            <div
-              className="flex items-center border rounded-xl p-1"
-              style={{
-                backgroundColor: "var(--glass-surface-elevated)",
-                borderColor: "var(--glass-border)",
-              }}
-            >
-              <button
-                data-testid="calendar-engine-solar"
-                onClick={() => setEngineMode("solar")}
-                className={`flex items-center gap-2 px-3 py-1.5 rounded-lg text-xs font-medium transition ${
-                  engineMode === "solar"
-                    ? "bg-amber-500/20 text-amber-600 dark:text-amber-300 border border-amber-500/40 shadow-sm"
-                    : "opacity-70 hover:opacity-100"
-                }`}
-              >
-                <Orbit className="w-3.5 h-3.5 text-amber-500" />
-                <span>Circadian Solar Arc</span>
-              </button>
-
-              <button
-                data-testid="calendar-engine-google"
-                onClick={() => setEngineMode("google")}
-                className={`flex items-center gap-2 px-3 py-1.5 rounded-lg text-xs font-medium transition ${
-                  engineMode === "google"
-                    ? "bg-[#4984fd]/20 text-[#4984fd] border border-[#4984fd]/40 shadow-sm"
-                    : "opacity-70 hover:opacity-100"
-                }`}
-              >
-                <CalendarIcon className="w-3.5 h-3.5 text-[#4984fd]" />
-                <span>Google Calendar Grid</span>
-              </button>
-            </div>
-
-            {/* In Google Mode: Drawer toggle, Today button & Date stepper */}
-            {engineMode === "google" && (
-              <div className="flex items-center gap-2">
-                <button
-                  onClick={() => setIsMiniDrawerOpen((prev) => !prev)}
-                  title="Toggle Mini-Month Sidebar"
-                  className="p-1.5 rounded-lg text-zinc-400 hover:text-white hover:bg-[#1E2230] transition"
-                >
-                  <Menu className="w-4 h-4" />
-                </button>
-
-                <button
-                  onClick={() => setCurrentDateObj(new Date())}
-                  className="px-3 py-1 rounded-lg border border-[#262B3D] text-xs font-semibold text-zinc-200 hover:text-white hover:bg-[#1C2030] transition"
-                >
-                  Today
-                </button>
-
-                <div className="flex items-center gap-0.5">
-                  <button
-                    onClick={handlePrevDate}
-                    className="p-1 rounded-lg text-zinc-400 hover:text-white hover:bg-[#1E2230] transition"
-                  >
-                    <ChevronLeft className="w-4 h-4" />
-                  </button>
-                  <button
-                    onClick={handleNextDate}
-                    className="p-1 rounded-lg text-zinc-400 hover:text-white hover:bg-[#1E2230] transition"
-                  >
-                    <ChevronRight className="w-4 h-4" />
-                  </button>
-                </div>
-
-                <span className="text-sm font-bold text-white tracking-tight ml-1">
-                  {googleDateLabel}
-                </span>
-              </div>
-            )}
-          </div>
-
-          {/* Right Controls: Horizon Buttons or Google View Dropdown */}
-          <div className="flex items-center gap-3">
-            {engineMode === "solar" ? (
-              /* Circadian Solar Horizon Navigation Control */
-              <div className="flex items-center gap-3">
-                <HorizonNavigationControl
-                  activeHorizon={activeHorizon}
-                  onSelectHorizon={setActiveHorizon}
-                  dayMode={dayMode}
-                  onSelectDayMode={setDayMode}
-                />
-
-                <button
-                  onClick={() => {
-                    setEditingEvent(null);
-                    setModalOpen(true);
-                  }}
-                  className="flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl bg-gradient-to-r from-amber-400 to-orange-500 text-black text-xs font-bold tracking-wider uppercase shadow-[0_0_20px_rgba(251,191,36,0.28)] hover:brightness-110 transition-all"
-                >
-                  <Plus className="w-3.5 h-3.5 stroke-[2.5]" />
-                  <span>Add Block</span>
-                </button>
-              </div>
-            ) : (
-              /* Google Calendar Mode Controls */
-              <div className="flex items-center gap-3">
-                {/* Sync Badge */}
-                <button
-                  onClick={handleTriggerSync}
-                  disabled={isSyncingGCal}
-                  className="flex items-center gap-2 px-3 py-1.5 rounded-xl bg-[#141724] border border-[#222738] hover:border-blue-500/50 text-xs transition"
-                  title="Click to trigger instant Google Calendar sync"
-                >
-                  <RefreshCw
-                    className={`w-3.5 h-3.5 text-blue-400 ${
-                      isSyncingGCal ? "animate-spin" : ""
-                    }`}
-                  />
-                  <span className="text-[11px] font-medium text-zinc-300">
-                    {isSyncingGCal ? "Syncing..." : "Synced with Google Calendar"}
-                  </span>
-                </button>
-
-                {/* 5-Mode View Switcher Dropdown */}
-                <div className="relative">
-                  <button
-                    onClick={() => setShowViewDropdown((prev) => !prev)}
-                    className="flex items-center gap-2 px-3 py-1.5 rounded-xl bg-[#141724] border border-[#222738] text-xs font-semibold text-zinc-200 hover:text-white transition shadow-sm"
-                  >
-                    <span className="capitalize">
-                      {googleViewMode === "four_day"
-                        ? "4 Days (X)"
-                        : `${googleViewMode} (${googleViewMode.charAt(0).toUpperCase()})`}
-                    </span>
-                    <ChevronDown className="w-3.5 h-3.5 text-zinc-400" />
-                  </button>
-
-                  {showViewDropdown && (
-                    <div className="absolute right-0 top-10 w-44 bg-[#141724] border border-[#282E42] rounded-xl shadow-2xl py-1.5 z-50 text-xs text-zinc-200">
-                      <button
-                        onClick={() => {
-                          setGoogleViewMode("day");
-                          setShowViewDropdown(false);
-                        }}
-                        className={`w-full px-3 py-2 text-left hover:bg-[#202538] flex items-center justify-between ${
-                          googleViewMode === "day" ? "text-blue-400 font-semibold" : ""
-                        }`}
-                      >
-                        <span>Day</span>
-                        <kbd className="px-1.5 py-0.5 rounded bg-[#0D0F17] text-[10px] text-zinc-400">
-                          D
-                        </kbd>
-                      </button>
-
-                      <button
-                        onClick={() => {
-                          setGoogleViewMode("four_day");
-                          setShowViewDropdown(false);
-                        }}
-                        className={`w-full px-3 py-2 text-left hover:bg-[#202538] flex items-center justify-between ${
-                          googleViewMode === "four_day" ? "text-blue-400 font-semibold" : ""
-                        }`}
-                      >
-                        <span>4 Days</span>
-                        <kbd className="px-1.5 py-0.5 rounded bg-[#0D0F17] text-[10px] text-zinc-400">
-                          X
-                        </kbd>
-                      </button>
-
-                      <button
-                        onClick={() => {
-                          setGoogleViewMode("month");
-                          setShowViewDropdown(false);
-                        }}
-                        className={`w-full px-3 py-2 text-left hover:bg-[#202538] flex items-center justify-between ${
-                          googleViewMode === "month" ? "text-blue-400 font-semibold" : ""
-                        }`}
-                      >
-                        <span>Month</span>
-                        <kbd className="px-1.5 py-0.5 rounded bg-[#0D0F17] text-[10px] text-zinc-400">
-                          M
-                        </kbd>
-                      </button>
-
-                      <button
-                        onClick={() => {
-                          setGoogleViewMode("year");
-                          setShowViewDropdown(false);
-                        }}
-                        className={`w-full px-3 py-2 text-left hover:bg-[#202538] flex items-center justify-between ${
-                          googleViewMode === "year" ? "text-blue-400 font-semibold" : ""
-                        }`}
-                      >
-                        <span>Year</span>
-                        <kbd className="px-1.5 py-0.5 rounded bg-[#0D0F17] text-[10px] text-zinc-400">
-                          Y
-                        </kbd>
-                      </button>
-
-                      <button
-                        onClick={() => {
-                          setGoogleViewMode("schedule");
-                          setShowViewDropdown(false);
-                        }}
-                        className={`w-full px-3 py-2 text-left hover:bg-[#202538] flex items-center justify-between ${
-                          googleViewMode === "schedule" ? "text-blue-400 font-semibold" : ""
-                        }`}
-                      >
-                        <span>Schedule</span>
-                        <kbd className="px-1.5 py-0.5 rounded bg-[#0D0F17] text-[10px] text-zinc-400">
-                          A
-                        </kbd>
-                      </button>
-                    </div>
-                  )}
-                </div>
-
-                {/* + Create Button */}
-                <button
-                  onClick={() => {
-                    setEditorInitialDate(selectedDate);
-                    setEditorInitialTime("09:00");
-                    setFullEditorEvent(null);
-                    setIsFullEditorOpen(true);
-                  }}
-                  className="flex items-center gap-1.5 px-3.5 py-1.5 bg-blue-600 hover:bg-blue-500 text-white rounded-xl text-xs font-semibold shadow-lg shadow-blue-500/20 transition"
-                >
-                  <Plus className="w-4 h-4" />
-                  <span>Create</span>
-                </button>
-              </div>
-            )}
-          </div>
-        </header>
+          onCreateGoogleEvent={() => {
+            setEditorInitialDate(selectedDate);
+            setEditorInitialTime("09:00");
+            setFullEditorEvent(null);
+            setIsFullEditorOpen(true);
+          }}
+          isSyncingGCal={isSyncingGCal}
+          onTriggerSync={handleTriggerSync}
+        />
 
         {/* WORKSPACE ENGINE BODY */}
         <div className="flex-1 min-w-0 overflow-y-auto overflow-x-hidden">
@@ -1477,7 +1279,7 @@ export default function UnifiedMasterCalendarPage() {
               >
                 <MiniMonthCalendar
                   currentDate={currentDateObj}
-                  onSelectDate={(d) => setCurrentDateObj(d)}
+                  onSelectDate={(d) => syncDateFromObj(d)}
                   visibleCalendars={visibleCalendars}
                   onToggleCalendar={(key) =>
                     setVisibleCalendars((prev) => ({
@@ -1495,7 +1297,7 @@ export default function UnifiedMasterCalendarPage() {
                     currentDate={currentDateObj}
                     events={filteredCalendarEventItems}
                     onSelectDate={(dStr) => {
-                      setCurrentDateObj(new Date(dStr + "T12:00:00Z"));
+                      syncDateFromIso(dStr);
                       setGoogleViewMode("day");
                     }}
                     onSelectEvent={(ev) => setQuickPopoverEvent(ev)}

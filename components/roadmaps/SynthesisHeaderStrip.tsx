@@ -81,7 +81,7 @@ export function SynthesisHeaderStrip({
 
   return (
     <section
-      className="w-full px-4 sm:px-6 py-2.5 backdrop-blur-xl border-b flex items-center justify-between gap-3 flex-wrap sticky top-0 z-30 transition-colors"
+      className="w-full px-4 sm:px-6 py-2.5 backdrop-blur-xl border-b flex items-center justify-between gap-3 flex-wrap sticky top-0 z-40 transition-colors"
       style={{
         backgroundColor: "var(--glass-surface)",
         borderColor: "var(--glass-border)",
@@ -178,7 +178,7 @@ export function SynthesisHeaderStrip({
 
           {auditOpen && (
             <div
-              className="absolute right-0 top-10 w-72 rounded-2xl border shadow-2xl p-3.5 z-50 space-y-3"
+              className="absolute left-0 top-10 w-72 rounded-2xl border shadow-2xl p-3.5 z-50 space-y-3"
               style={{
                 backgroundColor: "var(--glass-surface)",
                 borderColor: "var(--glass-border)",

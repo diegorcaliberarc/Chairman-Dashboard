@@ -2,20 +2,8 @@
 
 import React, { useState } from "react";
 import { DagNode, GoalClimax, ChecklistItem } from "@/lib/synthesisRoadmapTypes";
-import {
-  X,
-  CheckCircle2,
-  AlertTriangle,
-  ShieldCheck,
-  Calendar,
-  Layers,
-  Send,
-  Plus,
-  Trash2,
-  Clock,
-  Sparkles,
-  ExternalLink,
-} from "lucide-react";
+import { ShieldCheck, X } from "lucide-react";
+import { DossierSyncFooter } from "./DossierSyncFooter";
 
 interface TacticalDossierModalProps {
   isOpen: boolean;
@@ -37,15 +25,11 @@ export function TacticalDossierModal({
   onVerifyStep,
 }: TacticalDossierModalProps) {
   const [newCheckInput, setNewCheckInput] = useState("");
-  const [isSyncingPms, setIsSyncingPms] = useState(false);
-  const [isSyncingCalendar, setIsSyncingCalendar] = useState(false);
-  const [syncStatusMsg, setSyncStatusMsg] = useState<string | null>(null);
 
-  if (!isOpen) return null;
+  if (!isOpen || (!node && !goalNode)) return null;
 
   const isGoal = !node && !!goalNode;
-
-  const title = isGoal ? goalNode?.title : node?.title;
+  const title = (isGoal ? goalNode?.title : node?.title) || "Tactical Node";
   const tierLabel = isGoal
     ? "TIER 3 // GOAL CLIMAX"
     : `TIER ${node?.tier ?? 0} // ${
@@ -93,7 +77,7 @@ export function TacticalDossierModal({
 
   const checks: ChecklistItem[] = isGoal
     ? [
-        { id: "g_c1", label: "100 Billion % compliance verified", completed: true },
+        { id: "g_c1", label: "Compliance & telemetry verified", completed: true },
         { id: "g_c2", label: "Cross-domain life synergy active", completed: true },
         { id: "g_c3", label: "Weekly progress snapshot archived", completed: false },
       ]
@@ -102,69 +86,8 @@ export function TacticalDossierModal({
   const handleAddCheckSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (!newCheckInput.trim()) return;
-    if (onAddCheck) {
-      onAddCheck(newCheckInput.trim());
-      setNewCheckInput("");
-    }
-  };
-
-  // Sync to Sovereign PMS
-  const handleSyncToPms = async () => {
-    setIsSyncingPms(true);
-    setSyncStatusMsg(null);
-    try {
-      const res = await fetch("/api/roadmaps/synthesize", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          action: "sync_pms",
-          nodeTitle: title,
-          checks,
-          domain: node?.domain || "all",
-        }),
-      });
-      const data = await res.json();
-      if (data.success) {
-        setSyncStatusMsg(data.message || "Synced subtasks to Sovereign PMS!");
-      } else {
-        setSyncStatusMsg("Failed to sync to PMS");
-      }
-    } catch (e) {
-      setSyncStatusMsg("Error connecting to PMS API");
-    } finally {
-      setIsSyncingPms(false);
-      setTimeout(() => setSyncStatusMsg(null), 4000);
-    }
-  };
-
-  // Schedule on Circadian Solar Arc Calendar
-  const handleScheduleCalendar = async () => {
-    setIsSyncingCalendar(true);
-    setSyncStatusMsg(null);
-    try {
-      const res = await fetch("/api/roadmaps/synthesize", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          action: "sync_calendar",
-          nodeTitle: title,
-          fragoWindow: frago.window,
-          nodeImage: node?.image,
-          domain: node?.domain || "engineering",
-        }),
-      });
-      const data = await res.json();
-      if (data.success) {
-        setSyncStatusMsg(data.message || "Scheduled on Circadian Arc!");
-      } else {
-        setSyncStatusMsg("Failed to schedule on Calendar");
-      }
-    } catch (e) {
-      setSyncStatusMsg("Error connecting to Calendar API");
-    } finally {
-      setIsSyncingCalendar(false);
-      setTimeout(() => setSyncStatusMsg(null), 4000);
-    }
+    onAddCheck?.(newCheckInput.trim());
+    setNewCheckInput("");
   };
 
   const completedCount = checks.filter((c) => c.completed).length;
@@ -181,7 +104,6 @@ export function TacticalDossierModal({
         onClick={(e) => e.stopPropagation()}
         className="w-full max-w-2xl bg-[#0D1220]/95 border-2 border-cyan-400/50 rounded-3xl p-6 shadow-2xl glow-cyan flex flex-col gap-4 relative max-h-[92vh] overflow-y-auto"
       >
-        {/* Header */}
         <div className="flex items-start justify-between gap-4 border-b border-white/10 pb-3">
           <div className="flex items-center gap-3">
             <div className="w-12 h-12 rounded-2xl bg-gradient-to-tr from-cyan-400 to-indigo-500 p-0.5 shadow-lg shadow-cyan-400/30 flex items-center justify-center shrink-0">
@@ -198,11 +120,17 @@ export function TacticalDossierModal({
                   {statusText}
                 </span>
               </div>
-              <h3 className="text-base sm:text-lg font-black text-white">{title}</h3>
+              <h3
+                data-testid="pardo-fmea-dossier-title"
+                className="text-base sm:text-lg font-black text-white"
+              >
+                {title}
+              </h3>
             </div>
           </div>
 
           <button
+            type="button"
             data-testid="pardo-fmea-close-btn"
             aria-label="Close Tactical Dossier"
             onClick={onClose}
@@ -212,14 +140,6 @@ export function TacticalDossierModal({
           </button>
         </div>
 
-        {/* Sync notification toast */}
-        {syncStatusMsg && (
-          <div className="px-4 py-2 rounded-xl bg-cyan-500/20 border border-cyan-400/40 text-cyan-300 text-xs font-mono flex items-center justify-between animate-fadeIn">
-            <span>{syncStatusMsg}</span>
-          </div>
-        )}
-
-        {/* FRAGO (Fragmentary Tactical Directive) */}
         <div className="bg-[#05070E]/80 p-3.5 rounded-2xl border border-white/5 flex flex-col gap-2">
           <div className="text-[10px] font-black uppercase tracking-wider text-amber-400 font-mono flex items-center gap-1.5">
             <span>⭐</span> FRAGO: OPERATIONAL DIRECTIVE
@@ -240,7 +160,6 @@ export function TacticalDossierModal({
           </div>
         </div>
 
-        {/* PACE Fallback Plan Matrix */}
         <div className="flex flex-col gap-1.5">
           <div className="text-[10px] font-black uppercase tracking-wider text-cyan-400 font-mono flex items-center gap-1.5">
             <ShieldCheck size={13} /> PACE CONTINGENCY FALLBACK PROTOCOL
@@ -271,7 +190,6 @@ export function TacticalDossierModal({
           </div>
         </div>
 
-        {/* Resource Readiness Audit: HAVE vs NEED vs BLOCKED */}
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-2 text-xs">
           <div className="p-2.5 rounded-xl bg-emerald-500/10 border border-emerald-500/20">
             <span className="text-[10px] font-bold text-emerald-400 font-mono block">
@@ -293,7 +211,6 @@ export function TacticalDossierModal({
           </div>
         </div>
 
-        {/* Actionable Interactive Subtasks & Drills */}
         <div className="flex flex-col gap-2">
           <div className="text-[10px] font-black uppercase tracking-wider text-zinc-400 font-mono flex items-center justify-between">
             <span>ACTIONABLE EXECUTION DRILLS</span>
@@ -325,10 +242,10 @@ export function TacticalDossierModal({
             ))}
           </div>
 
-          {/* Add custom drill input */}
           <form onSubmit={handleAddCheckSubmit} className="flex items-center gap-2 mt-1">
             <input
               type="text"
+              data-testid="pardo-fmea-add-drill-input"
               value={newCheckInput}
               onChange={(e) => setNewCheckInput(e.target.value)}
               placeholder="+ Add drill or task..."
@@ -336,6 +253,7 @@ export function TacticalDossierModal({
             />
             <button
               type="submit"
+              data-testid="pardo-fmea-add-drill-btn"
               disabled={!newCheckInput.trim()}
               className="px-3 py-1.5 rounded-xl bg-white/10 hover:bg-white/20 text-white font-bold text-xs disabled:opacity-40 transition"
             >
@@ -344,53 +262,15 @@ export function TacticalDossierModal({
           </form>
         </div>
 
-        {/* Live Ecosystem Sync Actions */}
-        <div className="flex items-center justify-between gap-2 pt-2 border-t border-white/10 flex-wrap">
-          <div className="flex items-center gap-2">
-            <button
-              type="button"
-              onClick={handleSyncToPms}
-              disabled={isSyncingPms}
-              className="px-3.5 py-1.5 rounded-xl bg-indigo-500/20 hover:bg-indigo-500/30 border border-indigo-400/40 text-indigo-300 font-bold text-xs flex items-center gap-1.5 transition disabled:opacity-50"
-              title="Export subtasks directly to Sovereign PMS database table"
-            >
-              <ExternalLink size={12} />
-              <span>{isSyncingPms ? "Syncing..." : "Sync to Sovereign PMS"}</span>
-            </button>
-
-            <button
-              type="button"
-              onClick={handleScheduleCalendar}
-              disabled={isSyncingCalendar}
-              className="px-3.5 py-1.5 rounded-xl bg-cyan-500/20 hover:bg-cyan-500/30 border border-cyan-400/40 text-cyan-300 font-bold text-xs flex items-center gap-1.5 transition disabled:opacity-50"
-              title="Schedule execution window on 24H Circadian Solar Arc Calendar"
-            >
-              <Calendar size={12} />
-              <span>{isSyncingCalendar ? "Scheduling..." : "Schedule on Solar Arc"}</span>
-            </button>
-          </div>
-
-          <div className="flex items-center gap-2">
-            <button
-              type="button"
-              onClick={onClose}
-              className="px-4 py-1.5 rounded-xl bg-white/10 hover:bg-white/20 text-zinc-300 font-semibold text-xs transition"
-            >
-              Close
-            </button>
-            <button
-              type="button"
-              onClick={() => {
-                if (onVerifyStep) onVerifyStep();
-                onClose();
-              }}
-              className="px-4 py-1.5 rounded-xl bg-gradient-to-r from-emerald-500 to-cyan-500 text-black font-extrabold text-xs uppercase tracking-wider shadow-lg shadow-emerald-500/20 hover:brightness-110 active:scale-95 transition flex items-center gap-1.5"
-            >
-              <CheckCircle2 size={13} />
-              <span>Verify Step (100%)</span>
-            </button>
-          </div>
-        </div>
+        <DossierSyncFooter
+          title={title}
+          checks={checks}
+          domain={node?.domain || "all"}
+          fragoWindow={frago.window}
+          nodeImage={node?.image}
+          onClose={onClose}
+          onVerifyStep={onVerifyStep}
+        />
       </div>
     </div>
   );

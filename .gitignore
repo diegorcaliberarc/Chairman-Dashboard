@@ -13,3 +13,9 @@ out/
 # OS noise
 .DS_Store
 Thumbs.db
+
+# Playwright & test runner artifacts
+playwright-report/
+test-results/
+.pytest_cache/
+tsconfig.tsbuildinfo

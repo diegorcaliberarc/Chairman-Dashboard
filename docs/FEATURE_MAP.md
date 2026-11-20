@@ -45,20 +45,20 @@
 
 ### 2.4 `/roadmaps` — Strategic Roadmap (DAG Graph & 5-Tier Execution Pyramid)
 - **Entry Point:** `app/roadmaps/page.tsx`
-- **Feature Barrel & Components:** `features/strategic-roadmap/index.ts` → `components/roadmaps/SynthesisHeaderStrip.tsx`, `CoPilotModeBar.tsx`, `DagCanvasView.tsx`, `ExecutionPyramidView.tsx`, `MobileDagAccordion.tsx`, `TacticalDossierModal.tsx`, `DoneWithYouModal.tsx`, `ManualNodeBuilderModal.tsx`
-- **Types & Data:** `lib/synthesisRoadmapTypes.ts`, `lib/defaultStrategicTrees.ts`, `lib/roadmapVisuals.ts`
-- **APIs:** `GET /api/roadmaps`, `POST /api/roadmaps/synthesize`
+- **Feature Barrel, State Machine & Components:** `features/strategic-roadmap/index.ts` → `features/strategic-roadmap/state/roadmapMachineReducer.ts` (`INV-1` non-orphaned drawer, `INV-2` single-flight synthesis, `INV-3` exclusive modal union), `features/strategic-roadmap/hooks/useRoadmapMachine.ts`, `features/strategic-roadmap/components/BackwardChainTracePanel.tsx`, `components/roadmaps/SynthesisHeaderStrip.tsx`, `CoPilotModeBar.tsx`, `DagCanvasView.tsx` (`hooks/useDagCanvasDragAndArrows.ts`, `DagTierColumn.tsx`, `DagGoalApexCard.tsx`), `ExecutionPyramidView.tsx` (`EditorialPyramidSilhouettes.tsx`), `MobileDagAccordion.tsx`, `TacticalDossierModal.tsx` (`DossierSyncFooter.tsx`), `DoneWithYouModal.tsx`, `ManualNodeBuilderModal.tsx`
+- **Services, Types & Data:** `services/roadmapClientService.ts`, `lib/synthesisRoadmapTypes.ts`, `lib/defaultStrategicTrees.ts`, `lib/roadmapVisuals.ts`
+- **APIs & Property Specs:** `GET /api/roadmaps`, `POST /api/roadmaps/synthesize` · Property Specs: `tests/properties/roadmaps.bombadil.ts`, `tests/properties/ui-invariants.spec.ts`
 - **Deterministic Selectors:**
-  - Shell: `[data-testid="module-shell-ROADMAPS"]`
+  - Shell & Root Telemetry: `[data-testid="module-shell-ROADMAPS"]`, `[data-testid="roadmap-workspace-root"]` (`data-view-mode`, `data-async-phase`), `[data-testid="roadmap-feedback-toast"]`, `[data-testid="roadmap-toast-dismiss"]`
   - Domain Menu: `[data-testid="roadmap-domain-selector"]` → `[data-testid="roadmap-domain-option-{master|dogs|health|wealth|family|happiness|custom}"]`
   - Audit & PACE Popover: `[data-testid="roadmap-audit-pace-trigger"]` → `[data-testid="roadmap-pace-btn-{P|A|C|E}"]`
   - **Exclusive View Toggle:** `[data-testid="roadmap-view-toggle-dag"]` | `[data-testid="roadmap-view-toggle-pyramid"]`
   - Backward Chaining Trace: `[data-testid="roadmap-backward-chain-btn"]` → `[data-testid="roadmap-backward-chain-panel"]`, `[data-testid="roadmap-backward-chain-close-btn"]`
   - Synthesize Trigger: `[data-testid="roadmap-synthesize-dag-btn"]`
-  - 3-Way Co-Pilot Bar: `[data-testid="copilot-mode-dfy"]`, `[data-testid="copilot-mode-dwy"]`, `[data-testid="copilot-mode-diy"]`, `[data-testid="copilot-goal-input"]`, `[data-testid="copilot-voice-mic-btn"]`, `[data-testid="copilot-generate-dag-btn"]`
-  - Draggable Miro-Style DAG Canvas: `[data-testid="dag-canvas-view"]`, `[data-testid="dag-node-{id}"]`, `[data-testid="dag-node-goal"]`
+  - 3-Way Co-Pilot Bar: `[data-testid="copilot-mode-dfy"]`, `[data-testid="copilot-mode-dwy"]`, `[data-testid="copilot-mode-diy"]`, `[data-testid="copilot-goal-input"]`, `[data-testid="copilot-voice-mic-btn"]`, `[data-testid="copilot-generate-dag-btn"]`, `[data-testid="copilot-dwy-launch-btn"]`, `[data-testid="copilot-diy-open-btn"]`
+  - Draggable Miro-Style DAG Canvas: `[data-testid="dag-canvas-view"]`, `[data-testid="dag-node-{id}"]`, `[data-testid="dag-node-goal"]`, `[data-testid="dag-reset-layout-btn"]`
   - 5-Tier Execution Pyramid: `[data-testid="execution-pyramid-view"]`, `[data-testid="pyramid-level-1"]` .. `[data-testid="pyramid-level-5"]`, `[data-testid="pyramid-panel-{id}"]`, `[data-testid="pyramid-panel-goal"]`
-  - PARDO & FMEA Tactical Dossier Drawer: `[data-testid="pardo-fmea-dossier-drawer"]` (`role="dialog"`), `[data-testid="pardo-fmea-close-btn"]`
+  - PARDO & FMEA Tactical Dossier Drawer: `[data-testid="pardo-fmea-dossier-drawer"]` (`role="dialog"`), `[data-testid="pardo-fmea-dossier-title"]`, `[data-testid="pardo-fmea-close-btn"]`, `[data-testid="pardo-fmea-add-drill-input"]`, `[data-testid="pardo-fmea-add-drill-btn"]`, `[data-testid="pardo-fmea-sync-pms-btn"]`, `[data-testid="pardo-fmea-sync-calendar-btn"]`, `[data-testid="pardo-fmea-verify-step-btn"]`
 
 ### 2.5 `/org-chart` — Architecture Map (Master Planning & Miro Whiteboard)
 - **Entry Point:** `app/org-chart/page.tsx`
@@ -94,9 +94,9 @@
 
 ### 3.3 `/calendar` — Circadian Solar & Unified Google Calendar
 - **Entry Point:** `app/calendar/page.tsx`
-- **Feature Barrel & Components:** `features/solar-wheel/index.ts` → `components/circadian/CircadianDialStage.tsx` (2400 military dial), `CalendarOpsCommandDeck.tsx`, `CircadianEventModal.tsx`, `components/temporal/*` (`WeeklyRadialView`, `MonthlyRadialView`, `YearlyRadialView`, `GeospatialTacticalMap`), `components/calendar/*` (`MonthView`, `WeekView`, `DayView`, `FourDayView`, `YearView`, `ScheduleView`)
-- **APIs:** `/api/circadian`, `/api/circadian/radar`, `/api/calendar-ops`, `/api/calendar-events`, `/api/calendar/google-sync`
-- **Deterministic Selectors:** `[data-testid="calendar-engine-solar"]`, `[data-testid="calendar-engine-google"]`
+- **Feature Barrels & Components:** `features/calendar/index.ts` (`CalendarEngineHeader.tsx`), `features/solar-wheel/index.ts` → `components/circadian/CircadianDialStage.tsx` (2400 military dial), `CalendarOpsCommandDeck.tsx`, `CircadianEventModal.tsx`, `components/temporal/*` (`WeeklyRadialView`, `MonthlyRadialView`, `YearlyRadialView`, `GeospatialTacticalMap`), `components/calendar/*` (`MonthView`, `WeekView`, `DayView`, `FourDayView`, `YearView`, `ScheduleView`)
+- **APIs & Property Specs:** `/api/circadian`, `/api/circadian/radar`, `/api/calendar-ops`, `/api/calendar-events`, `/api/calendar/google-sync` · Property Specs: `tests/properties/calendar.bombadil.ts`, `tests/properties/ui-invariants.spec.ts`
+- **Deterministic Selectors:** `[data-testid="calendar-engine-solar"]`, `[data-testid="calendar-engine-google"]`, `[data-testid="calendar-active-date"]` (`data-active-date="YYYY-MM-DD"`), `[data-testid="calendar-today-btn"]`, `[data-testid="calendar-prev-btn"]`, `[data-testid="calendar-next-btn"]`, `[data-testid="calendar-add-solar-block-btn"]`, `[data-testid="calendar-sync-gcal-btn"]`, `[data-testid="calendar-google-view-dropdown"]`, `[data-testid="calendar-google-view-{day|four_day|month|year|schedule}"]`, `[data-testid="calendar-create-google-event-btn"]`
 
 ### 3.4 `/mindset` — Mindset & Clarity (Commander's Counsel)
 - **Entry Point:** `app/mindset/page.tsx` | **API:** `GET/POST /api/mindset` | **Selector:** `[data-testid="module-shell-MINDSET"]`
@@ -142,7 +142,7 @@
 | `/integrations` | `app/integrations/page.tsx` | MCP / API / Webhook console · `/api/integrations` | `[data-testid="module-shell-INTEGRATIONS"]` |
 | `/resources` | `app/resources/page.tsx` | Reference guides & SOP index | `[data-testid="module-shell-RESOURCES"]` |
 | `/vault` | `app/vault/page.tsx` | Second-brain Knowledge Vault · `/api/vault` | `[data-testid="module-shell-VAULT"]` |
-| `/kpis` | `app/kpis/page.tsx` | Executive KPI Scorecard · `/api/kpi-scorecard`, `/api/metrics` | `/kpis` |
+| `/kpis` | `app/kpis/page.tsx` | `features/kpi-scorecard/index.ts` (`ScorecardHeroBanner`, `ScorecardMatrixTable`, `SectorPhysicsCard`, `SparklineSvg`, `useKpiScorecard`, `personalSectorPhysics`, `executiveSectorPhysics`) · `services/kpiClientService.ts` · `/api/kpi-scorecard`, `/api/metrics` | `[data-testid="kpi-scorecard-root"]`, `[data-testid="kpi-view-{matrix|cards|both}"]`, `[data-testid="kpi-log-checkin-btn"]`, `[data-testid="kpi-checkin-form"]`, `[data-testid="kpi-sector-filter-{all|wealth|health|relate|joy}"]`, `[data-testid="kpi-rag-filter-{all|green|yellow|red}"]`, `[data-testid="kpi-search-input"]`, `[data-testid="kpi-sector-card-{wealth|health|relate|joy}"]`, `[data-testid="kpi-sector-flip-btn-{id}"]`, `[data-testid="kpi-sector-confirm-btn-{id}"]` |
 | `/admin` | `app/admin/page.tsx` | System administration | `/admin` |
 | `/auth/signin` | `app/auth/signin/page.tsx` | Google OAuth / NextAuth sign-in · `/api/auth/[...nextauth]` | `/auth/signin` |
 | `/overview` | `app/overview/page.tsx` | Redirect alias to `/` | `/` |

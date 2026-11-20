@@ -1,4 +1,4 @@
-name: CI — Verify All
+name: CI — Verify All & Property Fuzzing
 
 on:
   push:
@@ -12,9 +12,9 @@ concurrency:
 
 jobs:
   verify:
-    name: Typecheck, Lint & Production Build
+    name: Typecheck, Lint, Production Build & UI Property Fuzzing
     runs-on: ubuntu-latest
-    timeout-minutes: 15
+    timeout-minutes: 20
 
     env:
       DATABASE_URL: "postgresql://postgres:postgres@localhost:5432/chairman_ci?schema=public"
@@ -37,5 +37,14 @@ jobs:
       - name: Generate Prisma Client
         run: npx prisma generate
 
-      - name: Run Deterministic Verification Gate (tsc + eslint + next build)
+      - name: Gate 1 — Strict Modern Layer Lint (Zero Warnings, Zero Escape Hatches)
+        run: npm run lint:strict
+
+      - name: Gate 1 — Deterministic Static & Build Gate (tsc + eslint + next build)
         run: npm run verify:all
+
+      - name: Install Playwright Headless Chromium
+        run: npx playwright install --with-deps chromium
+
+      - name: Gate 2 — Property-Based UI Invariant Fuzzing (/roadmaps & /calendar)
+        run: npm run test:properties

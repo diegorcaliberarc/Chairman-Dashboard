@@ -143,6 +143,8 @@ export function CoPilotModeBar({
               AI asks clarifying questions & builds side-by-side with you
             </span>
             <button
+              type="button"
+              data-testid="copilot-dwy-launch-btn"
               onClick={() => onStartDwyInterview(goalInput)}
               className="px-4 py-2 rounded-xl bg-gradient-to-r from-amber-400 to-yellow-400 hover:brightness-110 text-black font-extrabold text-xs uppercase tracking-wider flex items-center gap-1.5 shadow-md shadow-amber-400/30 transition"
             >
@@ -158,6 +160,8 @@ export function CoPilotModeBar({
               Pure manual node construction • Zero AI interference
             </span>
             <button
+              type="button"
+              data-testid="copilot-diy-open-btn"
               onClick={onOpenManualBuilder}
               className="px-4 py-2 rounded-xl bg-white/10 hover:bg-white/20 border border-white/20 text-white font-extrabold text-xs uppercase tracking-wider flex items-center gap-1.5 transition"
             >

@@ -12,8 +12,8 @@ const compat = new FlatCompat({
 });
 
 /**
- * Custom inline ESLint plugin banning low-value conversational / prompt-history
- * AI narration comments while allowing JSDoc (`/** ... * /`) and technical notes.
+ * Custom Chairman Dashboard AST plugin enforcing zero-slop comments and
+ * zero lint/compiler suppression escape hatches in modern architecture layers.
  */
 const chairmanEngineeringPlugin = {
   rules: {
@@ -37,9 +37,7 @@ const chairmanEngineeringPlugin = {
         return {
           Program() {
             const sourceCode = context.sourceCode || context.getSourceCode();
-            const comments = sourceCode.getAllComments();
-            for (const comment of comments) {
-              // Always allow JSDoc blocks (`/** ... */`)
+            for (const comment of sourceCode.getAllComments()) {
               if (comment.type === "Block" && comment.value.startsWith("*")) {
                 continue;
               }
@@ -48,7 +46,7 @@ const chairmanEngineeringPlugin = {
                   context.report({
                     loc: comment.loc,
                     message:
-                      "Avoid narrated prompt-history comments. Explain non-obvious domain/algorithmic why, or use JSDoc.",
+                      "Narrated prompt-history comment forbidden. Remediation: delete conversational history and use JSDoc (/** ... */) only for non-obvious domain math or invariants.",
                   });
                   break;
                 }
@@ -58,12 +56,58 @@ const chairmanEngineeringPlugin = {
         };
       },
     },
+
+    "no-suppression-escapes": {
+      meta: {
+        type: "problem",
+        docs: {
+          description:
+            "Ban inline eslint-disable, @ts-ignore, and @ts-nocheck escape hatches; require root architectural or type fixes.",
+        },
+        schema: [],
+      },
+      create(context) {
+        const SUPPRESSION_PATTERN =
+          /(?:^\s*eslint-disable(?:-next-line|-line)?\b|@ts-ignore\b|@ts-nocheck\b)/;
+        return {
+          Program() {
+            const sourceCode = context.sourceCode || context.getSourceCode();
+            for (const comment of sourceCode.getAllComments()) {
+              if (SUPPRESSION_PATTERN.test(comment.value)) {
+                context.report({
+                  loc: comment.loc,
+                  message:
+                    "Inline suppression escape hatch forbidden (eslint-disable / @ts-ignore / @ts-nocheck). Remediation: resolve the underlying TypeScript contract, barrel boundary, or 350-line module split at its root cause.",
+                });
+              }
+            }
+          },
+        };
+      },
+    },
   },
 };
 
+const IMPERATIVE_TIMER_SELECTORS = [
+  {
+    selector:
+      "CallExpression[callee.name=/^(setTimeout|setInterval|requestAnimationFrame)$/]",
+    message:
+      "Imperative timer API forbidden here. Remediation: use CSS transitions/onAnimationEnd for transient UI feedback, useLayoutEffect + ResizeObserver for DOM measurements, or encapsulate legitimate polling inside a dedicated hook in lib/hooks/.",
+  },
+  {
+    selector:
+      "CallExpression[callee.object.name='window'][callee.property.name=/^(setTimeout|setInterval|requestAnimationFrame)$/]",
+    message:
+      "Imperative window timer API forbidden here. Remediation: use declarative CSS animations/transitions, reducer state transitions, or a dedicated hook in lib/hooks/.",
+  },
+];
+
 /**
- * Pre-existing files >350 lines grandfathered on a "warn" ratchet so `npm run verify:all`
- * passes on day 1 while strictly blocking ANY new or <=350-line file from exceeding 350 lines.
+ * Legacy Debt Ratchet Allowlist (72 grandfathered files; down from 77 in v1 after pulling
+ * app/kpis/page.tsx, app/roadmaps/page.tsx, DagCanvasView.tsx, ExecutionPyramidView.tsx,
+ * and TacticalDossierModal.tsx). Whenever touching any file below, extract subcomponents/hooks
+ * <350 lines and remove the refactored file from this list.
  */
 const LEGACY_OVERSIZED_ALLOWLIST = [
   "app/page.tsx",
@@ -77,7 +121,6 @@ const LEGACY_OVERSIZED_ALLOWLIST = [
   "app/family-hub/page.tsx",
   "app/horizon/page.tsx",
   "app/integrations/page.tsx",
-  "app/kpis/page.tsx",
   "app/life-ops/page.tsx",
   "app/macro-ops/page.tsx",
   "app/marketing-agent/page.tsx",
@@ -85,7 +128,6 @@ const LEGACY_OVERSIZED_ALLOWLIST = [
   "app/org-chart/page.tsx",
   "app/pms/page.tsx",
   "app/resources/page.tsx",
-  "app/roadmaps/page.tsx",
   "app/skills/page.tsx",
   "app/vault/page.tsx",
   "app/workouts/page.tsx",
@@ -129,9 +171,6 @@ const LEGACY_OVERSIZED_ALLOWLIST = [
   "components/mission/MissionFlowNavigatorModal.tsx",
   "components/pms/PmsHierarchySidebar.tsx",
   "components/pms/TaskDetailModal.tsx",
-  "components/roadmaps/DagCanvasView.tsx",
-  "components/roadmaps/ExecutionPyramidView.tsx",
-  "components/roadmaps/TacticalDossierModal.tsx",
   "components/temporal/GeospatialTacticalMap.tsx",
   "components/temporal/YearlyRadialView.tsx",
   "components/topology/topologyTemplates.ts",
@@ -156,6 +195,8 @@ const config = [
       "supabase/**",
       "scripts/**",
       "tests/**",
+      "playwright-report/**",
+      "test-results/**",
       "*.js",
       "next-env.d.ts",
     ],
@@ -163,7 +204,6 @@ const config = [
 
   ...compat.extends("next/core-web-vitals"),
 
-  // Global Architectural, Complexity & Comment Guardrails
   {
     files: ["**/*.ts", "**/*.tsx"],
     languageOptions: {
@@ -181,37 +221,18 @@ const config = [
     settings: {
       "boundaries/include": ["features/**/*", "shared/**/*", "services/**/*", "lib/**/*"],
       "boundaries/elements": [
-        {
-          type: "feature",
-          pattern: "features/*/**",
-          capture: ["featureName"],
-        },
-        {
-          type: "feature-barrel",
-          pattern: "features/*/index.ts",
-          capture: ["featureName"],
-        },
-        {
-          type: "shared",
-          pattern: "shared/**/*",
-        },
-        {
-          type: "services",
-          pattern: "services/**/*",
-        },
-        {
-          type: "lib",
-          pattern: "lib/**/*",
-        },
+        { type: "feature", pattern: "features/*/**", capture: ["featureName"] },
+        { type: "feature-barrel", pattern: "features/*/index.ts", capture: ["featureName"] },
+        { type: "shared", pattern: "shared/**/*" },
+        { type: "services", pattern: "services/**/*" },
+        { type: "lib", pattern: "lib/**/*" },
       ],
     },
     rules: {
-      // Relax legacy Next/React stylistic warnings that don't affect runtime safety
       "react/no-unescaped-entities": "off",
       "@next/next/no-img-element": "off",
       "react-hooks/exhaustive-deps": "warn",
 
-      // 1. Hard 350-line cap on all new files & modular components
       "max-lines": [
         "error",
         {
@@ -221,10 +242,8 @@ const config = [
         },
       ],
 
-      // 2. Ban narrated AI prompt-history comments
       "chairman/no-narrated-comments": "error",
 
-      // 3. Feature Co-Location & Barrel Isolation via eslint-plugin-boundaries
       "boundaries/element-types": [
         "error",
         {
@@ -232,22 +251,20 @@ const config = [
           rules: [
             {
               from: ["feature"],
-              disallow: [
-                ["feature", { featureName: "!${from.featureName}" }],
-              ],
+              disallow: [["feature", { featureName: "!${from.featureName}" }]],
               message:
-                "Features cannot import internal files of sibling features. Import from the sibling's public index.ts barrel (@features/<name>) instead.",
+                "Cross-Feature Internal Import Forbidden: features/${from.featureName} cannot import internal files of a sibling feature. Remediation: export the needed symbol from features/<sibling>/index.ts and import via '@features/<sibling>'.",
             },
             {
               from: ["shared"],
               disallow: ["feature", "feature-barrel"],
-              message: "Shared modules must remain domain-agnostic and cannot depend on feature modules.",
+              message:
+                "Shared Layer Purity Violation: shared/** primitives must remain domain-agnostic and cannot depend on features/**. Remediation: pass domain data via props/callbacks or move the component into features/<slug>/components/.",
             },
           ],
         },
       ],
 
-      // Forbid deep path imports into feature internals from anywhere outside that feature
       "no-restricted-imports": [
         "error",
         {
@@ -255,7 +272,7 @@ const config = [
             {
               group: ["@features/*/*", "@/features/*/*"],
               message:
-                "Import features exclusively through their public index.ts barrel (e.g. '@features/strategic-roadmap'), never deep internal files.",
+                "Deep Feature Import Forbidden: never import internal paths under features/<slug>/*. Remediation: export the public contract from 'features/<slug>/index.ts' and import from '@features/<slug>'.",
             },
           ],
         },
@@ -263,7 +280,7 @@ const config = [
     },
   },
 
-  // Data-Layer Isolation: UI Components & Client Pages cannot import Prisma, Supabase, or API Route modules
+  // Data-Layer Isolation: UI Components & Client Pages cannot import Prisma, Supabase, or API Routes
   {
     files: [
       "components/**/*.ts",
@@ -280,34 +297,34 @@ const config = [
             {
               name: "@prisma/client",
               message:
-                "Data-Layer Isolation: UI components/pages cannot import '@prisma/client'. Route queries through services/, Server Actions, or /api/*.",
+                "Data-Layer Isolation Violation: UI components/pages cannot import '@prisma/client'. Remediation: move database queries into 'services/<domain>Service.ts' and call via a Server Component, Server Action, or '/api/*' endpoint.",
             },
             {
               name: "@/lib/prisma",
               message:
-                "Data-Layer Isolation: UI components/pages cannot import '@/lib/prisma' directly.",
+                "Data-Layer Isolation Violation: UI components/pages cannot import '@/lib/prisma'. Remediation: create a server function in 'services/<domain>Service.ts' and invoke via Server Component or '/api/*'.",
             },
             {
               name: "@/lib/livingOsDb",
               message:
-                "Data-Layer Isolation: UI components/pages cannot import raw DB helpers '@/lib/livingOsDb'.",
+                "Data-Layer Isolation Violation: UI components/pages cannot import raw SQL helper '@/lib/livingOsDb'. Remediation: wrap SQL queries inside 'services/<domain>Service.ts' or an 'app/api/*/route.ts' handler.",
             },
             {
               name: "@supabase/supabase-js",
               message:
-                "Data-Layer Isolation: UI components/pages cannot instantiate or import raw Supabase DB clients directly.",
+                "Data-Layer Isolation Violation: UI components/pages cannot instantiate raw Supabase clients. Remediation: move storage/DB logic into 'services/<domain>StorageService.ts' or '/api/*'.",
             },
           ],
           patterns: [
             {
               group: ["@features/*/*", "@/features/*/*"],
               message:
-                "Import features exclusively through their public index.ts barrel ('@features/<name>').",
+                "Deep Feature Import Forbidden: import exclusively from the public barrel '@features/<slug>' ('features/<slug>/index.ts').",
             },
             {
               group: ["@/app/api/**", "../api/**", "../../api/**"],
               message:
-                "Data-Layer Isolation: Client/UI files cannot import server API route modules. Move shared DTO types to lib/ or features/<name>/.",
+                "Server Route Leak Forbidden: UI files cannot import 'app/api/**' route handlers. Remediation: move shared DTO interfaces to 'lib/<domain>Types.ts' or 'features/<slug>/types.ts'.",
             },
           ],
         },
@@ -315,22 +332,35 @@ const config = [
     },
   },
 
-  // Strict React Anti-Pattern Guard in new `features/**` modules: error on raw fetch() inside useEffect
+  // Zero-Escape-Hatch & Anti-Footgun Tier for Modern Architecture (`features/**`, `shared/**`, `services/**`)
   {
-    files: ["features/**/*.ts", "features/**/*.tsx"],
+    files: [
+      "features/**/*.ts",
+      "features/**/*.tsx",
+      "shared/**/*.ts",
+      "shared/**/*.tsx",
+      "services/**/*.ts",
+      "services/**/*.tsx",
+    ],
+    linterOptions: {
+      noInlineConfig: true,
+      reportUnusedDisableDirectives: "error",
+    },
     rules: {
+      "chairman/no-suppression-escapes": "error",
       "no-restricted-syntax": [
         "error",
         {
           selector: "CallExpression[callee.name='useEffect'] CallExpression[callee.name='fetch']",
           message:
-            "Avoid raw fetch() chains inside useEffect. Use Server Components, dedicated data hooks/SWR, or explicit event handlers.",
+            "Raw fetch() inside useEffect is forbidden in features/shared/services. Remediation: extract network I/O into 'services/<domain>ClientService.ts' and orchestrate via a dedicated hook in 'features/<slug>/hooks/' or a Server Component.",
         },
+        ...IMPERATIVE_TIMER_SELECTORS,
       ],
     },
   },
 
-  // Legacy `app/**` & `components/**` raw useEffect fetch warning
+  // Legacy `app/**` & `components/**` warning ratchet for raw useEffect fetch & imperative timers
   {
     files: ["app/**/page.tsx", "components/**/*.tsx"],
     rules: {
@@ -339,13 +369,14 @@ const config = [
         {
           selector: "CallExpression[callee.name='useEffect'] CallExpression[callee.name='fetch']",
           message:
-            "Prefer Server Components, dedicated service hooks, or explicit event handlers over raw fetch() inside useEffect.",
+            "Legacy Warning: avoid raw fetch() inside useEffect. Extract typed fetch helpers to 'services/<domain>ClientService.ts' and state hooks to 'features/<slug>/hooks/'.",
         },
+        ...IMPERATIVE_TIMER_SELECTORS,
       ],
     },
   },
 
-  // Legacy Debt Ratchet Override: warn on pre-existing >350-line files; error on any new file
+  // Legacy Debt Ratchet Override: warn on remaining grandfathered >350-line files; error on all others
   {
     files: LEGACY_OVERSIZED_ALLOWLIST,
     rules: {
