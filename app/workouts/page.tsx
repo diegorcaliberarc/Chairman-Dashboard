@@ -2,14 +2,13 @@
 
 import React, { useState, useEffect, useMemo, useCallback, useRef } from "react";
 import { ExecutiveModuleShell } from "@/components/chairman/ExecutiveModuleShell";
-import { TitanWorkoutHeader } from "@/components/titan/TitanWorkoutHeader";
 import { WorkoutConsistencyHeatmap } from "@/components/titan/WorkoutConsistencyHeatmap";
 import { WeeklyRoutineRoadmap, WEEKLY_ROUTINES } from "@/components/titan/WeeklyRoutineRoadmap";
 import { TitanKpiScorecard } from "@/components/titan/TitanKpiScorecard";
 import { ExerciseDeck, SessionExercise, ExerciseSetItem } from "@/components/titan/ExerciseDeck";
 import { BiometricSilhouetteHUD, BiometricDimensions } from "@/components/titan/BiometricSilhouetteHUD";
 import { AiVoiceLoggerDock } from "@/components/titan/AiVoiceLoggerDock";
-import { Sparkles, RefreshCw, Plus, CheckCircle2 } from "lucide-react";
+import { Timer, RotateCcw, BarChart3, LayoutDashboard, Calendar as CalendarIcon, Flame } from "lucide-react";
 
 /* ============================================================================
  * ZERO-DATA DEFAULT TEMPLATES
@@ -253,6 +252,9 @@ function getTodayIso(): string {
 }
 
 export default function TitanWorkoutsPage() {
+  // 0. View Mode: Dashboard vs Trends & Charts
+  const [activeTab, setActiveTab] = useState<"dashboard" | "trends">("dashboard");
+
   // 1. Navigation & Day selection
   const [selectedDayIndex, setSelectedDayIndex] = useState<number>(() => {
     const day = new Date().getDay(); // 0 is Sun, 1 is Mon
@@ -845,6 +847,24 @@ export default function TitanWorkoutsPage() {
 
   const currentRoutine = WEEKLY_ROUTINES[selectedDayIndex] || WEEKLY_ROUTINES[0];
 
+  const formatRestTime = (totalSecs: number) => {
+    const m = Math.floor(totalSecs / 60);
+    const s = totalSecs % 60;
+    return `${m}:${s < 10 ? "0" : ""}${s}`;
+  };
+
+  // Sorted daily log entries for Trends & Charts tab
+  const loggedHistoryEntries = useMemo(() => {
+    return Object.entries(completedDates)
+      .map(([date, info]) => ({ date, ...info }))
+      .sort((a, b) => b.date.localeCompare(a.date));
+  }, [completedDates]);
+
+  const maxLoggedVol = useMemo(
+    () => Math.max(1, ...loggedHistoryEntries.map((e) => e.volumeLbs)),
+    [loggedHistoryEntries]
+  );
+
   return (
     <ExecutiveModuleShell
       moduleId="WORKOUTS"
@@ -852,84 +872,107 @@ export default function TitanWorkoutsPage() {
       title="Strength & Training"
       subtitle="Progressive overload, voice set logging, and integrated rest timers"
       accentColor="#f59e0b"
-    >
-      <div className="min-h-screen bg-[#070A12] text-white flex flex-col selection:bg-amber-500 selection:text-black">
-        {/* 1. Header with Rest Timer, Voice Trigger & Glass Studio */}
-        <TitanWorkoutHeader
-          currentDate={currentDateFormatted}
-          onPrevDate={handlePrevDate}
-          onNextDate={handleNextDate}
-          activeRoutineName={`${currentRoutine.dayShort} • ${currentRoutine.splitTitle}`}
-          isListening={isListening}
-          onToggleVoice={handleToggleVoice}
-          restSeconds={restSeconds}
-          isRestActive={isRestActive}
-          onStartRest={(secs) => {
-            if (secs) setRestSeconds(secs);
-            setIsRestActive(true);
-          }}
-          onPauseRest={() => setIsRestActive(false)}
-          onResetRest={() => {
-            setIsRestActive(false);
-            setRestSeconds(90);
-          }}
-          onToggleGlassStudio={() => {
-            if (typeof window !== "undefined") {
-              window.dispatchEvent(new CustomEvent("toggle-glass-studio"));
-            }
-          }}
-        />
-
-        {/* 2. Main Body Container */}
-        <main className="flex-1 w-full max-w-[1720px] mx-auto p-4 sm:p-6 lg:p-8 space-y-6 pb-40">
-          {/* Consistency Heatmap Matrix (12 months x 7 days) */}
-          <WorkoutConsistencyHeatmap
-            completedDates={completedDates}
-            currentDate={currentDateIso}
-          />
-
-          {/* Weekly Routine Roadmap (MON - SUN) */}
-          <WeeklyRoutineRoadmap
-            selectedDayIndex={selectedDayIndex}
-            onSelectDay={(idx) => setSelectedDayIndex(idx)}
-            todayIndex={new Date().getDay() === 0 ? 6 : new Date().getDay() - 1}
-          />
-
-          {/* KPI Scorecard Strip: Volume, Sets, Tonnage, Stimulus */}
-          <TitanKpiScorecard
-            sessionVolumeLbs={kpiStats.sessionVolumeLbs}
-            completedSets={kpiStats.completedSets}
-            totalSets={kpiStats.totalSets}
-            weeklyTonnageLbs={kpiStats.weeklyTonnageLbs}
-            hypertrophyScore={kpiStats.hypertrophyScore}
-          />
-
-          {/* 12-Column Responsive Layout: Exercise Deck (8 cols) + Biometric Silhouette HUD (4 cols) */}
-          <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
-            {/* Left 8 Cols: Exercise Cards & Set Logging Table */}
-            <div className="lg:col-span-8 space-y-6">
-              <ExerciseDeck
-                exercises={currentExercises}
-                onUpdateSet={handleUpdateSet}
-                onToggleSetComplete={handleToggleSetComplete}
-                onAddSet={handleAddSet}
-                onRemoveSet={handleRemoveSet}
-                onAddExercise={handleAddExercise}
-              />
-            </div>
-
-            {/* Right 4 Cols: Frontal Biometric Silhouette Dimension Scanner */}
-            <div className="lg:col-span-4 space-y-6 lg:sticky lg:top-24">
-              <BiometricSilhouetteHUD
-                measurements={measurements}
-                onUpdateMeasurement={handleUpdateMeasurement}
-                onQuickNaturalInput={handleQuickNaturalInput}
-              />
-            </div>
+      headerActions={
+        <div className="flex flex-wrap items-center gap-2">
+          {/* Dashboard / Trends & Charts Tab Toggle */}
+          <div
+            className="flex items-center p-1 rounded-xl text-xs font-mono border"
+            style={{
+              backgroundColor: "var(--glass-surface-elevated)",
+              borderColor: "var(--glass-border)",
+            }}
+          >
+            <button
+              onClick={() => setActiveTab("dashboard")}
+              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg transition font-medium ${
+                activeTab === "dashboard"
+                  ? "bg-amber-500/20 text-amber-600 dark:text-amber-300 border border-amber-500/30"
+                  : "text-zinc-500 hover:text-zinc-900 dark:hover:text-white"
+              }`}
+            >
+              <LayoutDashboard size={13} />
+              <span>Dashboard</span>
+            </button>
+            <button
+              onClick={() => setActiveTab("trends")}
+              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg transition font-medium ${
+                activeTab === "trends"
+                  ? "bg-amber-500/20 text-amber-600 dark:text-amber-300 border border-amber-500/30"
+                  : "text-zinc-500 hover:text-zinc-900 dark:hover:text-white"
+              }`}
+            >
+              <BarChart3 size={13} />
+              <span>Trends &amp; Charts</span>
+            </button>
           </div>
-        </main>
 
-        {/* 3. Sticky Bottom AI Voice Logger & Manual Rapid Dock */}
+          {/* Compact Date & Split Navigator */}
+          <div
+            className="flex items-center rounded-xl border px-2 py-1 text-xs font-mono"
+            style={{
+              backgroundColor: "var(--glass-surface-elevated)",
+              borderColor: "var(--glass-border)",
+              color: "var(--glass-text-primary)",
+            }}
+          >
+            <button
+              onClick={handlePrevDate}
+              className="px-1.5 py-0.5 rounded hover:bg-black/5 dark:hover:bg-white/10 transition"
+              title="Previous Day"
+            >
+              ‹
+            </button>
+            <span className="mx-1.5 flex items-center gap-1.5 text-[11px] font-medium">
+              <CalendarIcon size={12} className="text-amber-500" />
+              <span>{currentDateFormatted} · {currentRoutine.dayShort}</span>
+            </span>
+            <button
+              onClick={handleNextDate}
+              className="px-1.5 py-0.5 rounded hover:bg-black/5 dark:hover:bg-white/10 transition"
+              title="Next Day"
+            >
+              ›
+            </button>
+          </div>
+
+          {/* Compact Rest Timer Pill */}
+          <div className="flex items-center gap-2 bg-amber-500/10 border border-amber-500/35 text-amber-600 dark:text-amber-300 px-3 py-1.5 rounded-xl text-xs font-mono">
+            <Timer size={13} className={isRestActive ? "animate-spin text-amber-500" : ""} />
+            <span>{formatRestTime(restSeconds)}</span>
+            {isRestActive ? (
+              <button
+                onClick={() => setIsRestActive(false)}
+                className="bg-amber-500/20 hover:bg-amber-500/30 text-[10px] px-2 py-0.5 rounded transition"
+              >
+                Pause
+              </button>
+            ) : (
+              <button
+                onClick={() => {
+                  setRestSeconds(90);
+                  setIsRestActive(true);
+                }}
+                className="bg-amber-500 text-zinc-950 font-medium text-[10px] px-2 py-0.5 rounded hover:bg-amber-400 transition"
+              >
+                Start
+              </button>
+            )}
+            <button
+              onClick={() => {
+                setIsRestActive(false);
+                setRestSeconds(90);
+              }}
+              className="opacity-70 hover:opacity-100 transition"
+              title="Reset Rest Timer"
+            >
+              <RotateCcw size={12} />
+            </button>
+          </div>
+        </div>
+      }
+    >
+      <div className="w-full space-y-6 pb-16">
+        {/* 1. AI Real-Time Voice Logger & Manual Rapid Dock — Moved to TOP */}
         <AiVoiceLoggerDock
           exercises={currentExercises}
           isListening={isListening}
@@ -938,6 +981,170 @@ export default function TitanWorkoutsPage() {
           onManualLogSet={handleManualLogSet}
           lastFeedbackMessage={lastFeedbackMessage}
         />
+
+        {activeTab === "dashboard" ? (
+          <>
+            {/* 2. Consistency Heatmap Matrix (Full 52 weeks Jan–Dec) */}
+            <WorkoutConsistencyHeatmap
+              completedDates={completedDates}
+              currentDate={currentDateIso}
+            />
+
+            {/* 3. Weekly Routine Roadmap (MON - SUN) */}
+            <WeeklyRoutineRoadmap
+              selectedDayIndex={selectedDayIndex}
+              onSelectDay={(idx) => setSelectedDayIndex(idx)}
+              todayIndex={new Date().getDay() === 0 ? 6 : new Date().getDay() - 1}
+            />
+
+            {/* 4. KPI Scorecard Strip: Volume, Sets, Tonnage, Stimulus */}
+            <TitanKpiScorecard
+              sessionVolumeLbs={kpiStats.sessionVolumeLbs}
+              completedSets={kpiStats.completedSets}
+              totalSets={kpiStats.totalSets}
+              weeklyTonnageLbs={kpiStats.weeklyTonnageLbs}
+              hypertrophyScore={kpiStats.hypertrophyScore}
+            />
+
+            {/* 5. 12-Column Responsive Layout: Exercise Deck (8 cols) + Biometric Silhouette HUD (4 cols) */}
+            <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
+              <div className="lg:col-span-8 space-y-6">
+                <ExerciseDeck
+                  exercises={currentExercises}
+                  onUpdateSet={handleUpdateSet}
+                  onToggleSetComplete={handleToggleSetComplete}
+                  onAddSet={handleAddSet}
+                  onRemoveSet={handleRemoveSet}
+                  onAddExercise={handleAddExercise}
+                />
+              </div>
+
+              <div className="lg:col-span-4 space-y-6 lg:sticky lg:top-24">
+                <BiometricSilhouetteHUD
+                  measurements={measurements}
+                  onUpdateMeasurement={handleUpdateMeasurement}
+                  onQuickNaturalInput={handleQuickNaturalInput}
+                />
+              </div>
+            </div>
+          </>
+        ) : (
+          /* TRENDS & CHARTS + DAILY LOGGED UPDATES TAB */
+          <div className="space-y-6">
+            <WorkoutConsistencyHeatmap
+              completedDates={completedDates}
+              currentDate={currentDateIso}
+            />
+
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+              {/* Volume Progression Bar Chart */}
+              <div
+                className="rounded-2xl border p-5 space-y-4"
+                style={{
+                  backgroundColor: "var(--glass-surface)",
+                  borderColor: "var(--glass-border)",
+                }}
+              >
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    <BarChart3 size={16} className="text-amber-500" />
+                    <h3 className="text-sm font-medium" style={{ color: "var(--glass-text-primary)" }}>
+                      Session Volume Progression (lbs)
+                    </h3>
+                  </div>
+                  <span className="text-xs font-mono" style={{ color: "var(--glass-text-muted)" }}>
+                    {loggedHistoryEntries.length} logged days
+                  </span>
+                </div>
+
+                {loggedHistoryEntries.length === 0 ? (
+                  <div
+                    className="py-12 text-center text-xs font-mono rounded-xl border border-dashed"
+                    style={{
+                      borderColor: "var(--glass-border)",
+                      color: "var(--glass-text-muted)",
+                    }}
+                  >
+                    No sets logged yet. Speak or log your first set above to populate your volume chart.
+                  </div>
+                ) : (
+                  <div className="space-y-2.5">
+                    {loggedHistoryEntries.slice(0, 14).map((entry) => {
+                      const pct = Math.max(8, Math.round((entry.volumeLbs / maxLoggedVol) * 100));
+                      return (
+                        <div key={entry.date} className="space-y-1">
+                          <div className="flex items-center justify-between text-xs font-mono">
+                            <span style={{ color: "var(--glass-text-primary)" }}>{entry.date}</span>
+                            <span className="text-amber-500">
+                              {entry.volumeLbs.toLocaleString()} lbs · {entry.sets} sets
+                            </span>
+                          </div>
+                          <div className="h-2 rounded-full bg-black/10 dark:bg-white/10 overflow-hidden">
+                            <div
+                              className="h-full rounded-full bg-gradient-to-r from-amber-500 to-emerald-400 transition-all duration-500"
+                              style={{ width: `${pct}%` }}
+                            />
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                )}
+              </div>
+
+              {/* Daily Logged Updates Feed */}
+              <div
+                className="rounded-2xl border p-5 space-y-4"
+                style={{
+                  backgroundColor: "var(--glass-surface)",
+                  borderColor: "var(--glass-border)",
+                }}
+              >
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    <Flame size={16} className="text-emerald-500" />
+                    <h3 className="text-sm font-medium" style={{ color: "var(--glass-text-primary)" }}>
+                      Daily Logged Updates
+                    </h3>
+                  </div>
+                  <span className="text-xs font-mono text-emerald-500">
+                    Today: {kpiStats.completedSets} sets · {kpiStats.sessionVolumeLbs.toLocaleString()} lbs
+                  </span>
+                </div>
+
+                {loggedHistoryEntries.length === 0 ? (
+                  <div
+                    className="py-12 text-center text-xs font-mono rounded-xl border border-dashed"
+                    style={{
+                      borderColor: "var(--glass-border)",
+                      color: "var(--glass-text-muted)",
+                    }}
+                  >
+                    Your daily training log updates will appear here automatically as you complete sets.
+                  </div>
+                ) : (
+                  <div className="divide-y" style={{ borderColor: "var(--glass-border)" }}>
+                    {loggedHistoryEntries.map((entry) => (
+                      <div key={entry.date} className="py-2.5 flex items-center justify-between text-xs font-mono">
+                        <div>
+                          <div className="font-medium" style={{ color: "var(--glass-text-primary)" }}>
+                            {entry.date}
+                          </div>
+                          <div className="text-[11px]" style={{ color: "var(--glass-text-muted)" }}>
+                            Completed {entry.sets} working set{entry.sets === 1 ? "" : "s"}
+                          </div>
+                        </div>
+                        <span className="px-2.5 py-1 rounded-lg bg-emerald-500/10 text-emerald-500 border border-emerald-500/20">
+                          {entry.volumeLbs.toLocaleString()} lbs
+                        </span>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+            </div>
+          </div>
+        )}
       </div>
     </ExecutiveModuleShell>
   );

@@ -919,7 +919,13 @@ export default function UnifiedMasterCalendarPage() {
   );
 
   return (
-    <div className="flex h-screen w-screen overflow-hidden bg-[#090A0F] font-sans text-zinc-100 select-none">
+    <div
+      className="flex min-h-screen w-full overflow-x-clip font-sans select-none transition-colors duration-300"
+      style={{
+        backgroundColor: "var(--glass-bg-base, #ffffff)",
+        color: "var(--glass-text-primary, #111827)",
+      }}
+    >
       {/* Chairman Dashboard Sidebar */}
       <Sidebar
         activeTab="CALENDAR_HABITS"
@@ -945,33 +951,48 @@ export default function UnifiedMasterCalendarPage() {
       />
 
       {/* Main Calendar View Area */}
-      <div className="flex-1 flex flex-col h-full bg-[#0D0F17] overflow-hidden">
+      <div
+        className="flex-1 flex flex-col min-h-screen min-w-0 transition-colors"
+        style={{ backgroundColor: "var(--glass-bg-base, #ffffff)" }}
+      >
         {/* TOP TOOLBAR: Unified Engine Controls */}
-        <header className="h-14 px-5 border-b border-[#1E222D] flex items-center justify-between bg-[#11131C] z-20">
+        <header
+          className="h-14 px-5 border-b flex items-center justify-between z-20 sticky top-0 backdrop-blur-xl transition-colors"
+          style={{
+            backgroundColor: "var(--glass-surface)",
+            borderColor: "var(--glass-border)",
+          }}
+        >
           {/* Left: Engine Mode Segmented Pill */}
           <div className="flex items-center gap-3">
-            <div className="flex items-center bg-[#090A0F] border border-[#222738] rounded-xl p-1 shadow-inner">
+            <div
+              className="flex items-center border rounded-xl p-1"
+              style={{
+                backgroundColor: "var(--glass-surface-elevated)",
+                borderColor: "var(--glass-border)",
+              }}
+            >
               <button
                 onClick={() => setEngineMode("solar")}
-                className={`flex items-center gap-2 px-3 py-1.5 rounded-lg text-xs font-semibold transition ${
+                className={`flex items-center gap-2 px-3 py-1.5 rounded-lg text-xs font-medium transition ${
                   engineMode === "solar"
-                    ? "bg-gradient-to-r from-amber-500/20 to-orange-500/20 text-amber-300 border border-amber-500/40 shadow-sm"
-                    : "text-zinc-400 hover:text-zinc-200"
+                    ? "bg-amber-500/20 text-amber-600 dark:text-amber-300 border border-amber-500/40 shadow-sm"
+                    : "opacity-70 hover:opacity-100"
                 }`}
               >
-                <Orbit className="w-3.5 h-3.5 text-amber-400" />
+                <Orbit className="w-3.5 h-3.5 text-amber-500" />
                 <span>Circadian Solar Arc</span>
               </button>
 
               <button
                 onClick={() => setEngineMode("google")}
-                className={`flex items-center gap-2 px-3 py-1.5 rounded-lg text-xs font-semibold transition ${
+                className={`flex items-center gap-2 px-3 py-1.5 rounded-lg text-xs font-medium transition ${
                   engineMode === "google"
-                    ? "bg-blue-600/25 text-blue-300 border border-blue-500/40 shadow-sm"
-                    : "text-zinc-400 hover:text-zinc-200"
+                    ? "bg-[#4984fd]/20 text-[#4984fd] border border-[#4984fd]/40 shadow-sm"
+                    : "opacity-70 hover:opacity-100"
                 }`}
               >
-                <CalendarIcon className="w-3.5 h-3.5 text-blue-400" />
+                <CalendarIcon className="w-3.5 h-3.5 text-[#4984fd]" />
                 <span>Google Calendar Grid</span>
               </button>
             </div>

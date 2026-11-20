@@ -596,7 +596,9 @@ export function Sidebar({
                     e.preventDefault();
                     handleDropOnPillar(p.id);
                   }}
-                  className="w-full py-2 px-1 rounded-xl flex flex-col items-center justify-center gap-1 transition-all border"
+                  className={`w-full py-2 px-1 rounded-xl flex flex-col items-center justify-center gap-1 transition-all border ${
+                    isSelected ? "sidebar-active-pulse" : ""
+                  }`}
                   style={{
                     borderColor: isDropHover
                       ? "#4984fd"
@@ -702,7 +704,9 @@ export function Sidebar({
                       router.push(item.route);
                     }
                   }}
-                  className="flex items-center justify-between gap-2 w-full px-2.5 py-2 rounded-xl text-left transition-all border cursor-grab active:cursor-grabbing"
+                  className={`flex items-center justify-between gap-2 w-full px-2.5 py-2 rounded-xl text-left transition-all border cursor-grab active:cursor-grabbing ${
+                    isActive ? "sidebar-active-pulse" : ""
+                  }`}
                   style={{
                     borderColor: isActive ? "rgba(73, 132, 253, 0.48)" : "transparent",
                     backgroundColor: isActive ? "rgba(73, 132, 253, 0.12)" : "transparent",
@@ -751,31 +755,31 @@ export function Sidebar({
           {/* Bottom Footer User Profile & Execution Settings */}
           <div className="mt-auto p-2.5 border-t border-zinc-200/50 dark:border-white/10 bg-zinc-50/50 dark:bg-white/5 flex items-center justify-between gap-1.5 h-14">
             <button
-              onClick={() => setAccountModalOpen(true)}
-              className="flex items-center gap-2 flex-1 min-w-0 p-1 rounded-xl hover:bg-zinc-200/50 dark:hover:bg-white/10 transition-colors text-left"
-              title="Execution & Account Settings"
+              type="button"
+              onClick={() => setSettingsMenuOpen((p) => !p)}
+              className="relative flex items-center justify-center p-0.5 rounded-full hover:ring-2 hover:ring-[#4984fd]/50 transition-all shrink-0"
+              title="Account, Settings & Google Calendar"
             >
               {effectiveUser?.image ? (
-                <img src={effectiveUser.image} alt="User" className="w-8 h-8 rounded-xl object-cover ring-1 ring-[#0969DA]/40 shrink-0" />
+                <img
+                  src={effectiveUser.image}
+                  alt="User"
+                  className="w-8 h-8 rounded-full object-cover ring-1 ring-[#4984fd]/50 shrink-0"
+                />
               ) : (
-                <div className="w-8 h-8 rounded-xl bg-[#0969DA]/20 border border-[#0969DA]/40 flex items-center justify-center text-[#58A6FF] text-xs font-bold shrink-0">
+                <div className="w-8 h-8 rounded-full bg-[#4984fd]/20 border border-[#4984fd]/40 flex items-center justify-center text-[#4984fd] text-xs font-medium shrink-0">
                   {(effectiveUser?.name ?? "D")[0].toUpperCase()}
                 </div>
               )}
-              {!col2Collapsed && (
-                <div className="flex-1 min-w-0">
-                  <div className="text-xs font-bold text-zinc-900 dark:text-white truncate">
-                    {effectiveUser?.name?.split(" ")[0] ?? "Diego"}
-                  </div>
-                  <div className="text-[9.5px] text-zinc-500 dark:text-zinc-400 truncate flex items-center gap-1">
-                    <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
-                    <span>{effectiveCalConnected ? "Google Connected" : "Online"}</span>
-                  </div>
-                </div>
-              )}
+              <span
+                className={`absolute -bottom-0.5 -right-0.5 w-2.5 h-2.5 rounded-full border-2 ${
+                  effectiveCalConnected ? "bg-emerald-400" : "bg-amber-400"
+                }`}
+                style={{ borderColor: "var(--glass-surface-elevated)" }}
+              />
             </button>
 
-            {/* Settings & System Modules Popover */}
+            {/* Unified Account, Google Calendar & Settings Popover */}
             {settingsMenuOpen && (
               <div
                 className="absolute bottom-16 left-2 right-2 rounded-xl border p-2 z-50 space-y-1 backdrop-blur-xl"
@@ -787,14 +791,43 @@ export function Sidebar({
                 }}
               >
                 <div
-                  className="px-2 py-1 text-[10px] font-medium uppercase tracking-wider border-b mb-1"
+                  className="px-2 py-1.5 text-[10px] font-medium uppercase tracking-wider border-b mb-1 flex items-center justify-between"
                   style={{
                     borderColor: "var(--glass-border)",
                     color: "var(--glass-text-muted)",
                   }}
                 >
-                  Settings &amp; System Tools
+                  <span>Settings &amp; Connections</span>
+                  <button
+                    type="button"
+                    onClick={() => setSettingsMenuOpen(false)}
+                    className="opacity-70 hover:opacity-100"
+                  >
+                    <X size={12} />
+                  </button>
                 </div>
+
+                {/* Merged Google Calendar Live Connection */}
+                <button
+                  type="button"
+                  onClick={() => {
+                    setSettingsMenuOpen(false);
+                    onCalToggle();
+                  }}
+                  className="w-full flex items-center justify-between gap-2 px-2 py-1.5 rounded-lg text-[12px] font-medium text-left hover:bg-[#4984fd]/10 transition-colors"
+                  style={{ color: "var(--glass-text-primary)" }}
+                >
+                  <span className="flex items-center gap-2">
+                    <CalendarDays size={13} className="text-[#4984fd]" />
+                    <span>{effectiveCalConnected ? "Google Calendar Live" : "Connect Google Calendar"}</span>
+                  </span>
+                  <span
+                    className={`w-2 h-2 rounded-full ${
+                      effectiveCalConnected ? "bg-emerald-400" : "bg-amber-400"
+                    }`}
+                  />
+                </button>
+
                 {SETTINGS_NAV_ITEMS.map((item) => (
                   <button
                     key={item.route}
@@ -810,6 +843,7 @@ export function Sidebar({
                     <span className="truncate">{item.label}</span>
                   </button>
                 ))}
+
                 <button
                   type="button"
                   onClick={() => {
@@ -828,39 +862,16 @@ export function Sidebar({
               </div>
             )}
 
-            {/* Actions: Settings Gear + Calendar + Palette */}
+            {/* Single Global Theme & Appearance Trigger (ONLY place to change theme) */}
             <div className="flex items-center gap-1 shrink-0">
               <button
                 type="button"
-                onClick={() => setSettingsMenuOpen((p) => !p)}
-                className="w-8 h-8 rounded-xl flex items-center justify-center border border-transparent hover:border-[#4984fd]/30 transition-all"
-                style={{
-                  color: settingsMenuOpen ? "#4984fd" : "var(--glass-text-muted)",
-                  backgroundColor: settingsMenuOpen ? "rgba(73, 132, 253, 0.12)" : "transparent",
-                }}
-                title="Settings, Epistemic Matrix, Integrations & Resources"
-              >
-                <Settings size={15} />
-              </button>
-
-              <button
-                onClick={onCalToggle}
-                className={`w-8 h-8 rounded-xl flex items-center justify-center transition-colors ${
-                  effectiveCalConnected
-                    ? "text-[#58A6FF] bg-[#0969DA]/15 border border-[#0969DA]/30"
-                    : "text-zinc-500 hover:text-zinc-900 dark:hover:text-white hover:bg-zinc-200/50 dark:hover:bg-white/10"
-                }`}
-                title={effectiveCalConnected ? "Google Calendar Live" : "Connect Google Calendar"}
-              >
-                <CalendarDays size={15} />
-              </button>
-
-              <button
                 onClick={() => setIsAppearanceOpen(true)}
-                className="w-8 h-8 rounded-xl flex items-center justify-center text-zinc-500 hover:text-zinc-900 dark:hover:text-white hover:bg-zinc-200/50 dark:hover:bg-white/10 transition-colors"
+                className="w-8 h-8 rounded-xl flex items-center justify-center border border-transparent hover:border-[#4984fd]/40 hover:bg-[#4984fd]/10 transition-all"
+                style={{ color: "var(--glass-text-primary)" }}
                 title="Appearance, Fonts & Themes"
               >
-                <Palette size={15} />
+                <Palette size={15} className="text-[#4984fd]" />
               </button>
             </div>
           </div>

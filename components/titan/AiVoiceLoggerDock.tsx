@@ -63,37 +63,49 @@ export function AiVoiceLoggerDock({
   };
 
   return (
-    <footer className="sticky bottom-0 bg-[#0A0D18]/95 backdrop-blur-xl border-t border-white/10 px-4 sm:px-8 py-3.5 mt-auto z-40 shadow-[0_-15px_40px_rgba(0,0,0,0.8)] select-none">
-      <div className="max-w-[1900px] mx-auto flex flex-col md:flex-row items-center justify-between gap-4">
+    <section
+      className="rounded-2xl border backdrop-blur-xl px-4 sm:px-6 py-4 shadow-lg select-none transition-colors"
+      style={{
+        backgroundColor: "var(--glass-surface)",
+        borderColor: "var(--glass-border)",
+      }}
+    >
+      <div className="w-full flex flex-col xl:flex-row items-center justify-between gap-4">
         {/* Left: AI Voice Live Status Pill */}
         <div className="flex items-center gap-3 shrink-0">
           <div
             onClick={onToggleVoice}
-            className={`w-9 h-9 rounded-xl flex items-center justify-center cursor-pointer transition-all ${
+            className={`w-10 h-10 rounded-xl flex items-center justify-center cursor-pointer transition-all ${
               isListening
-                ? "bg-cyan-500/20 border border-cyan-400 text-cyan-300 shadow-[0_0_15px_#00f0ff]"
-                : "bg-white/[0.04] border border-white/10 text-zinc-400 hover:text-white"
+                ? "bg-cyan-500/20 border border-cyan-400 text-cyan-400 shadow-[0_0_15px_#00f0ff]"
+                : "bg-amber-500/10 border border-amber-500/30 text-amber-500 hover:bg-amber-500/20"
             }`}
           >
-            {isListening ? <Mic size={18} className="animate-pulse" /> : <MicOff size={16} />}
+            {isListening ? <Mic size={18} className="animate-pulse" /> : <Mic size={16} />}
           </div>
           <div>
             <div className="flex items-center gap-2">
-              <span className="text-xs font-mono font-bold text-white tracking-wide">
+              <span
+                className="text-xs font-mono font-medium tracking-wide"
+                style={{ color: "var(--glass-text-primary)" }}
+              >
                 AI Real-Time Voice Logger
               </span>
               <span
-                className={`text-[9px] font-mono px-2 py-0.5 rounded-full uppercase font-bold border ${
+                className={`text-[9px] font-mono px-2 py-0.5 rounded-full uppercase font-medium border ${
                   isListening
-                    ? "bg-cyan-500/20 border-cyan-400/40 text-cyan-300 animate-pulse"
-                    : "bg-white/5 border-white/10 text-zinc-400"
+                    ? "bg-cyan-500/20 border-cyan-400/40 text-cyan-400 animate-pulse"
+                    : "bg-black/5 dark:bg-white/5 border-black/10 dark:border-white/10 text-zinc-500"
                 }`}
               >
                 {isListening ? "● Listening" : "Standby"}
               </span>
             </div>
-            <p className="text-[11px] font-mono text-zinc-400 truncate max-w-[280px]">
-              {lastFeedbackMessage || '"Say: Incline Barbell 225 lbs for 8 reps at RPE 9"'}
+            <p
+              className="text-[11px] font-mono truncate max-w-[300px]"
+              style={{ color: "var(--glass-text-muted)" }}
+            >
+              {lastFeedbackMessage || '"Say: Incline Smith 225 lbs for 8 reps at RPE 9"'}
             </p>
           </div>
         </div>
@@ -194,6 +206,6 @@ export function AiVoiceLoggerDock({
           </button>
         </div>
       </div>
-    </footer>
+    </section>
   );
 }

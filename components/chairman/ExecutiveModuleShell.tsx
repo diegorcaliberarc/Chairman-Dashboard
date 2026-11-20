@@ -36,7 +36,7 @@ export function ExecutiveModuleShell({
 
   return (
     <div
-      className="executive-glass-shell min-h-screen bg-transparent font-sans font-normal flex flex-row overflow-x-hidden transition-colors duration-300"
+      className="executive-glass-shell min-h-screen bg-transparent font-sans font-normal flex flex-row overflow-x-clip transition-colors duration-300"
       style={{ color: "var(--glass-text-primary, var(--text-ink))" }}
     >
       <Sidebar
@@ -100,19 +100,11 @@ export function ExecutiveModuleShell({
             </p>
           </div>
 
-          <div className="flex flex-wrap items-center gap-2.5">
-            {headerActions}
-            <button
-              type="button"
-              onClick={() => setIsAppearanceOpen(true)}
-              className="liquid-glass-pill px-3.5 py-1.5 text-[13px] font-medium tracking-[-0.13px] flex items-center gap-1.5 transition-all"
-              style={{ color: "var(--glass-text-primary)" }}
-              title="Open Liquid Glass & Chromatic Studio"
-            >
-              <Palette size={14} style={{ color: "var(--theme-grad-start, #4984fd)" }} />
-              <span className="hidden sm:inline">Glass Studio</span>
-            </button>
-          </div>
+          {headerActions && (
+            <div className="flex flex-wrap items-center gap-2.5">
+              {headerActions}
+            </div>
+          )}
         </header>
 
         <main

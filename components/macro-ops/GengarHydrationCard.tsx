@@ -22,6 +22,22 @@ export function GengarHydrationCard({
   const [isUpdating, setIsUpdating] = useState(false);
   const [customValue, setCustomValue] = useState("");
   const [unitMode, setUnitMode] = useState<"oz" | "ml">("oz");
+  const [isDancing, setIsDancing] = useState(false);
+  const [splashLabel, setSplashLabel] = useState<string | null>(null);
+  const danceTimerRef = React.useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  const triggerGengarDance = (label: string) => {
+    setIsDancing(false);
+    setSplashLabel(label);
+    if (danceTimerRef.current) clearTimeout(danceTimerRef.current);
+    requestAnimationFrame(() => {
+      setIsDancing(true);
+    });
+    danceTimerRef.current = setTimeout(() => {
+      setIsDancing(false);
+      setSplashLabel(null);
+    }, 1050);
+  };
 
   // Target: 3.8L (~128.5 oz)
   const targetLiters = 3.8;
@@ -46,12 +62,16 @@ export function GengarHydrationCard({
   // Add water in Milliliters
   const handleAddMl = async (ml: number) => {
     const deltaOz = +(ml / 29.5735).toFixed(1);
-    await handleAddOz(deltaOz);
+    triggerGengarDance(`+${ml}ml`);
+    await handleAddOz(deltaOz, true);
   };
 
   // Add water in Ounces
-  const handleAddOz = async (deltaOz: number) => {
+  const handleAddOz = async (deltaOz: number, alreadyDanced = false) => {
     if (!onQuickAddWater && !onSetWater) return;
+    if (!alreadyDanced && deltaOz > 0) {
+      triggerGengarDance(`+${deltaOz}oz`);
+    }
     setIsUpdating(true);
     try {
       if (onQuickAddWater) {
@@ -125,10 +145,13 @@ export function GengarHydrationCard({
             <Droplet className="w-3.5 h-3.5 fill-cyan-400/20" />
           </div>
           <div>
-            <h3 className="font-mono font-bold text-xs uppercase tracking-wider text-zinc-100 flex items-center gap-2">
+            <h3
+              className="font-mono font-medium text-xs uppercase tracking-wider flex items-center gap-2"
+              style={{ color: "var(--glass-text-primary)" }}
+            >
               <span>Water Intake</span>
               {isFull && (
-                <span className="text-[9px] px-1.5 py-0.2 rounded-full bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 font-bold uppercase animate-pulse">
+                <span className="text-[9px] px-1.5 py-0.2 rounded-full bg-emerald-500/20 text-emerald-500 border border-emerald-500/30 font-medium uppercase animate-pulse">
                   Target Hit!
                 </span>
               )}
@@ -169,10 +192,19 @@ export function GengarHydrationCard({
               : "border-cyan-500/40 bg-purple-950/20 shadow-[0_0_16px_rgba(56,189,248,0.25)]"
           }`}
         >
+          {/* Floating Hydration Splash Bubble when Gengar dances */}
+          {splashLabel && (
+            <span className="absolute top-1 left-1/2 -translate-x-1/2 z-30 px-1.5 py-0.5 rounded-full bg-cyan-400 text-zinc-950 font-mono text-[9px] font-medium shadow-md animate-bounce pointer-events-none">
+              {splashLabel}
+            </span>
+          )}
+
           {/* Custom SVG Gengar Hydro-Vessel */}
           <svg
             viewBox="0 0 120 120"
-            className="w-full h-full p-1 select-none transition-transform hover:scale-105"
+            className={`w-full h-full p-1 select-none transition-transform hover:scale-105 ${
+              isDancing ? "animate-gengar-dance" : ""
+            }`}
           >
             <defs>
               {/* Gengar Body Outline Silhouette ClipPath */}
@@ -297,11 +329,14 @@ export function GengarHydrationCard({
         <div className="flex-1 flex flex-col justify-center gap-1 font-mono">
           <div>
             <div className="flex items-baseline gap-1.5">
-              <span className="font-bold text-2xl text-zinc-100 tracking-tight">
+              <span
+                className="font-medium text-2xl tracking-tight"
+                style={{ color: "var(--glass-text-primary)" }}
+              >
                 {currentLiters}
               </span>
-              <span className="text-base font-bold text-cyan-400">/ {targetLiters} L</span>
-              <span className="text-xs text-zinc-400 ml-1">
+              <span className="text-base font-medium text-cyan-500">/ {targetLiters} L</span>
+              <span className="text-xs ml-1" style={{ color: "var(--glass-text-muted)" }}>
                 ({currentOz > 0 ? `${currentOz.toFixed(0)} oz` : "0 oz"})
               </span>
             </div>
@@ -344,15 +379,14 @@ export function GengarHydrationCard({
         </div>
       </div>
 
-      {/* ── 1-TAP INCREMENT LOGGING BUTTONS ── */}
+      {/* ── 1-TAP INCREMENT LOGGING BUTTONS (Non-blocking rapid tap!) ── */}
       <div className="grid grid-cols-4 gap-1.5 mt-1 font-mono">
         <button
           onClick={() => handleAddMl(250)}
-          disabled={isUpdating}
-          className="flex items-center justify-center gap-1 py-1.5 px-1 rounded-xl border text-[10px] font-bold uppercase transition active:scale-95 disabled:opacity-50 text-cyan-300 hover:bg-cyan-500/10"
+          className="flex items-center justify-center gap-1 py-1.5 px-1 rounded-xl border text-[10px] font-medium uppercase transition active:scale-95 text-cyan-500 hover:bg-cyan-500/15"
           style={{
-            backgroundColor: "var(--glass-surface-elevated, #13182b)",
-            borderColor: "rgba(6, 182, 212, 0.3)",
+            backgroundColor: "var(--glass-surface-elevated)",
+            borderColor: "rgba(6, 182, 212, 0.35)",
           }}
           title="Add 1 Glass (250 ml / ~8.5 oz)"
         >
@@ -362,11 +396,10 @@ export function GengarHydrationCard({
 
         <button
           onClick={() => handleAddMl(500)}
-          disabled={isUpdating}
-          className="flex items-center justify-center gap-1 py-1.5 px-1 rounded-xl border text-[10px] font-bold uppercase transition active:scale-95 disabled:opacity-50 text-cyan-300 hover:bg-cyan-500/10"
+          className="flex items-center justify-center gap-1 py-1.5 px-1 rounded-xl border text-[10px] font-medium uppercase transition active:scale-95 text-cyan-500 hover:bg-cyan-500/15"
           style={{
-            backgroundColor: "var(--glass-surface-elevated, #13182b)",
-            borderColor: "rgba(6, 182, 212, 0.3)",
+            backgroundColor: "var(--glass-surface-elevated)",
+            borderColor: "rgba(6, 182, 212, 0.35)",
           }}
           title="Add Standard Flask (500 ml / ~16.9 oz)"
         >
@@ -376,11 +409,10 @@ export function GengarHydrationCard({
 
         <button
           onClick={() => handleAddMl(1000)}
-          disabled={isUpdating}
-          className="flex items-center justify-center gap-1 py-1.5 px-1 rounded-xl border text-[10px] font-bold uppercase transition active:scale-95 disabled:opacity-50 text-cyan-300 hover:bg-cyan-500/10"
+          className="flex items-center justify-center gap-1 py-1.5 px-1 rounded-xl border text-[10px] font-medium uppercase transition active:scale-95 text-cyan-500 hover:bg-cyan-500/15"
           style={{
-            backgroundColor: "var(--glass-surface-elevated, #13182b)",
-            borderColor: "rgba(6, 182, 212, 0.3)",
+            backgroundColor: "var(--glass-surface-elevated)",
+            borderColor: "rgba(6, 182, 212, 0.35)",
           }}
           title="Add 1 Liter Hydro (1,000 ml / ~33.8 oz)"
         >
@@ -390,11 +422,10 @@ export function GengarHydrationCard({
 
         <button
           onClick={() => handleAddOz(32)}
-          disabled={isUpdating}
-          className="flex items-center justify-center gap-1 py-1.5 px-1 rounded-xl border text-[10px] font-bold uppercase transition active:scale-95 disabled:opacity-50 text-cyan-300 hover:bg-cyan-500/10"
+          className="flex items-center justify-center gap-1 py-1.5 px-1 rounded-xl border text-[10px] font-medium uppercase transition active:scale-95 text-cyan-500 hover:bg-cyan-500/15"
           style={{
-            backgroundColor: "var(--glass-surface-elevated, #13182b)",
-            borderColor: "rgba(6, 182, 212, 0.3)",
+            backgroundColor: "var(--glass-surface-elevated)",
+            borderColor: "rgba(6, 182, 212, 0.35)",
           }}
           title="Add 32 oz Hydro Flask"
         >

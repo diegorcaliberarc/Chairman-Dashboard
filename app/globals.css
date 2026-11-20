@@ -526,6 +526,31 @@ b,
 .glass-aura-drift-slow { animation: glass-orb-float 22s ease-in-out infinite; }
 .glass-aura-drift-reverse { animation: glass-orb-float 28s ease-in-out infinite reverse; }
 
+@keyframes sidebar-active-wave {
+  0%, 100% {
+    box-shadow: 0 0 0 1px rgba(73, 132, 253, 0.42), 0 0 12px rgba(73, 132, 253, 0.14);
+  }
+  50% {
+    box-shadow: 0 0 0 1.5px rgba(73, 132, 253, 0.72), 0 0 20px rgba(73, 132, 253, 0.28);
+  }
+}
+
+.sidebar-active-pulse {
+  animation: sidebar-active-wave 2.6s ease-in-out infinite;
+}
+
+@keyframes gengar-happy-dance {
+  0%, 100% { transform: translateY(0) rotate(0deg) scale(1); }
+  20% { transform: translateY(-7px) rotate(-6deg) scale(1.06); }
+  45% { transform: translateY(-2px) rotate(6deg) scale(1.04); }
+  70% { transform: translateY(-6px) rotate(-4deg) scale(1.06); }
+  85% { transform: translateY(0) rotate(3deg) scale(1.02); }
+}
+
+.animate-gengar-dance {
+  animation: gengar-happy-dance 0.65s ease-in-out 2;
+}
+
 @keyframes pulse-glow {
   0%, 100% { opacity: 1; }
   50% { opacity: 0.5; }

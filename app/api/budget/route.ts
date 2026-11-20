@@ -580,6 +580,99 @@ export async function POST(req: NextRequest) {
         body.id,
         userId
       );
+    } else if (action === "purge_year") {
+      // Wipe all previously seeded/dummy data for this year cleanly back to $0
+      await pgExec(
+        `DELETE FROM budget_entries WHERE user_id = $1 AND budget_year = $2`,
+        userId,
+        year
+      );
+      await pgExec(
+        `DELETE FROM work_shift_logs WHERE user_id = $1 AND EXTRACT(YEAR FROM work_date)::int = $2`,
+        userId,
+        year
+      );
+      await pgExec(
+        `UPDATE budget_months
+         SET income_target = 0, expense_cap = 0, savings_target = 0, notes = '', updated_at = NOW()
+         WHERE user_id = $1 AND budget_year = $2`,
+        userId,
+        year
+      );
+      await pgExec(
+        `UPDATE work_shift_configs
+         SET pay_per_shift = 0, hourly_rate = 0, total_scheduled_days = 0, shifts_per_week = 0, updated_at = NOW()
+         WHERE user_id = $1`,
+        userId
+      );
+    } else if (action === "generate_recurring_shifts") {
+      const roleLabel = String(body.roleLabel || "Primary Shift").slice(0, 80);
+      const hourlyRate = Math.max(0, Number(body.hourlyRate || 0));
+      const hoursPerShift = Math.max(1, Number(body.hoursPerShift || 8));
+      const payPerShift = +(hourlyRate * hoursPerShift).toFixed(2);
+      const daysOfWeek: number[] = Array.isArray(body.daysOfWeek) ? body.daysOfWeek.map(Number) : [1, 2, 3, 4];
+      const weeksCount = Math.max(1, Math.min(52, Number(body.weeksCount || 4)));
+      const startTime = String(body.startTime || "19:00").slice(0, 5);
+      const endTime = String(body.endTime || "06:00").slice(0, 5);
+      const syncToCalendar = body.syncToCalendar !== false;
+
+      // Save work_shift_configs
+      await pgExec(
+        `INSERT INTO work_shift_configs (user_id, role_label, pay_per_shift, hourly_rate, hours_per_shift, total_scheduled_days, shifts_per_week, updated_at)
+         VALUES ($1, $2, $3, $4, $5, $6, $7, NOW())
+         ON CONFLICT (user_id) DO UPDATE SET
+           role_label = EXCLUDED.role_label,
+           pay_per_shift = EXCLUDED.pay_per_shift,
+           hourly_rate = EXCLUDED.hourly_rate,
+           hours_per_shift = EXCLUDED.hours_per_shift,
+           total_scheduled_days = EXCLUDED.total_scheduled_days,
+           shifts_per_week = EXCLUDED.shifts_per_week,
+           updated_at = NOW()`,
+        userId,
+        roleLabel,
+        payPerShift,
+        hourlyRate,
+        hoursPerShift,
+        daysOfWeek.length * weeksCount,
+        daysOfWeek.length
+      );
+
+      // Generate recurring shift dates starting from today
+      const startDate = new Date();
+      for (let offset = 0; offset < weeksCount * 7; offset++) {
+        const d = new Date(startDate);
+        d.setDate(startDate.getDate() + offset);
+        if (d.getFullYear() !== year) continue;
+        if (!daysOfWeek.includes(d.getDay())) continue;
+
+        const iso = d.toISOString().slice(0, 10);
+        await pgExec(
+          `INSERT INTO work_shift_logs (user_id, work_date, shifts_count, pay_rate_override, anticipated_pay, actual_pay, daily_expense, status, notes)
+           VALUES ($1, $2::date, 1, $3, $4, $4, 0, 'scheduled', $5)
+           ON CONFLICT (user_id, work_date) DO UPDATE SET
+             anticipated_pay = EXCLUDED.anticipated_pay,
+             actual_pay = EXCLUDED.actual_pay,
+             notes = EXCLUDED.notes`,
+          userId,
+          iso,
+          payPerShift,
+          payPerShift,
+          `${roleLabel} (${startTime}–${endTime})`
+        );
+
+        if (syncToCalendar) {
+          await pgExec(
+            `INSERT INTO yearly_appointments (user_id, title, category, appointment_date, start_time, end_time, accent_color, anticipated_pay, actual_pay, notes)
+             VALUES ($1, $2, 'work', $3::date, $4, $5, '#10b981', $6, $6, 'Auto-generated from Workdays & Shift Calculator')`,
+            userId,
+            `${roleLabel} Shift`,
+            iso,
+            startTime,
+            endTime,
+            payPerShift
+          );
+        }
+      }
     }
 
     const payload = await buildConnectedBudgetYear(userId, year);

@@ -18,6 +18,10 @@ import {
   TrendingDown,
   TrendingUp,
   Wallet,
+  Building2,
+  FileSpreadsheet,
+  Clock,
+  ShieldCheck,
 } from "lucide-react";
 import { ExecutiveModuleShell } from "@/components/chairman/ExecutiveModuleShell";
 import {
@@ -103,6 +107,149 @@ export default function ConnectedBudgetPage() {
   const [editingEntryId, setEditingEntryId] = useState<string | null>(null);
   const [editPlannedVal, setEditPlannedVal] = useState<string>("");
   const [editActualVal, setEditActualVal] = useState<string>("");
+
+  // Active Financial View Tab
+  const [financeTab, setFinanceTab] = useState<
+    "overview" | "income_statement" | "cash_flow" | "balance_sheet" | "workdays" | "plaid"
+  >("overview");
+
+  // Workdays & Recurring Shift Pay Calculator state
+  const [shiftRole, setShiftRole] = useState<string>("Night Shift RN / Operations");
+  const [shiftHourly, setShiftHourly] = useState<string>("45");
+  const [shiftStart, setShiftStart] = useState<string>("19:00");
+  const [shiftEnd, setShiftEnd] = useState<string>("06:00");
+  const [shiftHours, setShiftHours] = useState<string>("11");
+  const [shiftDays, setShiftDays] = useState<number[]>([1, 2, 3, 4]); // Mon-Thu
+  const [shiftWeeks, setShiftWeeks] = useState<string>("4");
+  const [syncShiftsToCal, setSyncShiftsToCal] = useState<boolean>(true);
+  const [isGeneratingShifts, setIsGeneratingShifts] = useState<boolean>(false);
+
+  // Plaid Bank Sync state
+  const [plaidConfigured, setPlaidConfigured] = useState<boolean>(false);
+  const [plaidEnv, setPlaidEnv] = useState<string>("sandbox");
+  const [plaidAccounts, setPlaidAccounts] = useState<any[]>([]);
+  const [plaidMessage, setPlaidMessage] = useState<string | null>(null);
+  const [bankInst, setBankInst] = useState<string>("");
+  const [bankAccName, setBankAccName] = useState<string>("");
+  const [bankAccType, setBankAccType] = useState<string>("depository");
+  const [bankBalance, setBankBalance] = useState<string>("");
+
+  const loadPlaidAccounts = useCallback(async () => {
+    try {
+      const res = await fetch("/api/plaid");
+      if (res.ok) {
+        const data = await res.json();
+        setPlaidConfigured(Boolean(data.configured));
+        setPlaidEnv(data.environment || "sandbox");
+        setPlaidAccounts(Array.isArray(data.accounts) ? data.accounts : []);
+      }
+    } catch {}
+  }, []);
+
+  useEffect(() => {
+    loadPlaidAccounts();
+  }, [loadPlaidAccounts]);
+
+  const handlePurgeYearToZero = async () => {
+    if (
+      !confirm(
+        `Reset all ${selectedYear} budget entries, shift logs, and targets to $0? This clears any previously seeded dummy data.`
+      )
+    ) {
+      return;
+    }
+    const ok = await postBudgetAction({ action: "purge_year" });
+    if (ok) {
+      setSavedToast(`Cleared ${selectedYear} budget & shift data cleanly to $0.`);
+      setTimeout(() => setSavedToast(null), 4000);
+    }
+  };
+
+  const handleGenerateRecurringShifts = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (shiftDays.length === 0) return;
+    setIsGeneratingShifts(true);
+    try {
+      const ok = await postBudgetAction({
+        action: "generate_recurring_shifts",
+        roleLabel: shiftRole,
+        hourlyRate: Number(shiftHourly) || 0,
+        hoursPerShift: Number(shiftHours) || 8,
+        startTime: shiftStart,
+        endTime: shiftEnd,
+        daysOfWeek: shiftDays,
+        weeksCount: Number(shiftWeeks) || 4,
+        syncToCalendar: syncShiftsToCal,
+      });
+      if (ok) {
+        setSavedToast(
+          `Generated ${shiftDays.length * (Number(shiftWeeks) || 4)} shifts (${shiftStart}–${shiftEnd}) and synced pay${syncShiftsToCal ? " + Calendar" : ""}!`
+        );
+        setTimeout(() => setSavedToast(null), 4500);
+      }
+    } finally {
+      setIsGeneratingShifts(false);
+    }
+  };
+
+  const handleConnectPlaid = async () => {
+    setPlaidMessage(null);
+    const res = await fetch("/api/plaid", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ action: "create_link_token" }),
+    });
+    const data = await res.json();
+    if (data.linkToken) {
+      setPlaidMessage(`Plaid Link token created (${plaidEnv}). Ready to launch Plaid Link flow.`);
+    } else {
+      setPlaidMessage(
+        data.error ||
+          "Add PLAID_CLIENT_ID and PLAID_SECRET to your environment variables to enable live Plaid Link."
+      );
+    }
+  };
+
+  const handleAddManualBankAccount = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!bankInst.trim() || !bankAccName.trim()) return;
+    const res = await fetch("/api/plaid", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        action: "add_account",
+        institutionName: bankInst.trim(),
+        accountName: bankAccName.trim(),
+        accountType: bankAccType,
+        currentBalance: Number(bankBalance) || 0,
+      }),
+    });
+    if (res.ok) {
+      setBankInst("");
+      setBankAccName("");
+      setBankBalance("");
+      await loadPlaidAccounts();
+      setSavedToast("Account added to Balance Sheet & Banking Ledger.");
+      setTimeout(() => setSavedToast(null), 3000);
+    }
+  };
+
+  const totalAssets = useMemo(
+    () =>
+      plaidAccounts
+        .filter((a) => a.accountType !== "credit" && a.accountType !== "loan")
+        .reduce((s, a) => s + Number(a.currentBalance || 0), 0) +
+      Math.max(0, annualTotals.totalSavings),
+    [plaidAccounts, annualTotals.totalSavings]
+  );
+
+  const totalLiabilities = useMemo(
+    () =>
+      plaidAccounts
+        .filter((a) => a.accountType === "credit" || a.accountType === "loan")
+        .reduce((s, a) => s + Math.abs(Number(a.currentBalance || 0)), 0),
+    [plaidAccounts]
+  );
 
   const applyBudgetPayload = useCallback((data: any) => {
     if (Array.isArray(data.months)) setMonths(data.months);
@@ -274,9 +421,19 @@ export default function ConnectedBudgetPage() {
 
           <button
             type="button"
+            onClick={handlePurgeYearToZero}
+            className="flex items-center gap-1.5 px-3 py-2 rounded-xl bg-rose-500/10 hover:bg-rose-500/20 border border-rose-500/30 text-xs font-medium text-rose-400 transition-all"
+            title="Clear all previously seeded dummy data for this year back to $0"
+          >
+            <Trash2 size={13} />
+            Reset to $0
+          </button>
+
+          <button
+            type="button"
             onClick={() => fetchBudgetYear(selectedYear, true)}
             disabled={syncing}
-            className="flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-white/[0.07] hover:bg-white/12 border border-white/10 text-xs font-semibold text-zinc-100 transition-all"
+            className="flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-white/[0.07] hover:bg-white/12 border border-white/10 text-xs font-medium text-zinc-100 transition-all"
           >
             <RefreshCw
               size={13}
@@ -297,9 +454,471 @@ export default function ConnectedBudgetPage() {
       }
     >
       {savedToast && (
-        <div className="px-4 py-2.5 rounded-xl bg-emerald-500/20 border border-emerald-400/45 text-emerald-200 text-xs font-medium flex items-center gap-2">
+        <div className="px-4 py-2.5 rounded-xl bg-emerald-500/20 border border-emerald-400/45 text-emerald-300 text-xs font-medium flex items-center gap-2">
           <Check size={14} className="text-emerald-400" />
           {savedToast}
+        </div>
+      )}
+
+      {/* ── FINANCIAL STATEMENTS, WORKDAYS & PLAID TAB BAR ───────────────────── */}
+      <div
+        className="flex items-center gap-1.5 overflow-x-auto p-1.5 rounded-2xl border"
+        style={{
+          backgroundColor: "var(--glass-surface)",
+          borderColor: "var(--glass-border)",
+        }}
+      >
+        {[
+          { id: "overview", label: "Overview & Ledger", icon: Wallet },
+          { id: "income_statement", label: "Income Statement (P&L)", icon: FileSpreadsheet },
+          { id: "cash_flow", label: "Cash Flow Statement", icon: TrendingUp },
+          { id: "balance_sheet", label: "Balance Sheet", icon: PiggyBank },
+          { id: "workdays", label: "Workdays & Shift Calculator", icon: Clock },
+          { id: "plaid", label: "Plaid Bank Sync", icon: Building2 },
+        ].map((tab) => {
+          const Icon = tab.icon;
+          const active = financeTab === tab.id;
+          return (
+            <button
+              key={tab.id}
+              type="button"
+              onClick={() => setFinanceTab(tab.id as any)}
+              className={`flex items-center gap-1.5 px-3.5 py-2 rounded-xl text-xs font-medium shrink-0 transition ${
+                active
+                  ? "bg-emerald-500/20 text-emerald-500 border border-emerald-500/35"
+                  : "opacity-75 hover:opacity-100"
+              }`}
+              style={{ color: active ? undefined : "var(--glass-text-primary)" }}
+            >
+              <Icon size={14} />
+              <span>{tab.label}</span>
+            </button>
+          );
+        })}
+      </div>
+
+      {/* ── DEDICATED FINANCIAL STATEMENT / WORKDAYS / PLAID PANELS ──────────── */}
+      {financeTab === "income_statement" && (
+        <div
+          className="rounded-2xl border p-6 space-y-5"
+          style={{
+            backgroundColor: "var(--glass-surface)",
+            borderColor: "var(--glass-border)",
+            color: "var(--glass-text-primary)",
+          }}
+        >
+          <div className="flex items-center justify-between flex-wrap gap-2">
+            <div>
+              <h2 className="text-base font-medium">Income Statement (Profit &amp; Loss) · {selectedYear}</h2>
+              <p className="text-xs" style={{ color: "var(--glass-text-muted)" }}>
+                Live revenue vs. operating expenses across all 12 months
+              </p>
+            </div>
+            <span className="px-3 py-1 rounded-xl bg-emerald-500/15 text-emerald-500 text-xs font-mono">
+              Net Margin: {savingsRatePct}%
+            </span>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4 font-mono">
+            <div className="p-4 rounded-xl border" style={{ backgroundColor: "var(--glass-surface-elevated)", borderColor: "var(--glass-border)" }}>
+              <div className="text-[11px] uppercase" style={{ color: "var(--glass-text-muted)" }}>Gross Revenue</div>
+              <div className="text-2xl text-emerald-500 mt-1">{fmtUSD(annualTotals.actualIncome)}</div>
+              <div className="text-[11px] mt-1" style={{ color: "var(--glass-text-muted)" }}>
+                Shifts: {fmtUSD(annualTotals.totalShiftIncome)} · Manual/Appts: {fmtUSD(annualTotals.actualIncome - annualTotals.totalShiftIncome)}
+              </div>
+            </div>
+            <div className="p-4 rounded-xl border" style={{ backgroundColor: "var(--glass-surface-elevated)", borderColor: "var(--glass-border)" }}>
+              <div className="text-[11px] uppercase" style={{ color: "var(--glass-text-muted)" }}>Operating Expenses</div>
+              <div className="text-2xl text-rose-500 mt-1">{fmtUSD(annualTotals.totalSpend)}</div>
+              <div className="text-[11px] mt-1" style={{ color: "var(--glass-text-muted)" }}>
+                Budget Cap: {fmtUSD(annualTotals.annualExpenseCap)}
+              </div>
+            </div>
+            <div className="p-4 rounded-xl border" style={{ backgroundColor: "var(--glass-surface-elevated)", borderColor: "var(--glass-border)" }}>
+              <div className="text-[11px] uppercase" style={{ color: "var(--glass-text-muted)" }}>Net Operating Income</div>
+              <div className={`text-2xl mt-1 ${annualTotals.netCashFlow >= 0 ? "text-emerald-500" : "text-rose-500"}`}>
+                {fmtUSD(annualTotals.netCashFlow)}
+              </div>
+              <div className="text-[11px] mt-1" style={{ color: "var(--glass-text-muted)" }}>
+                Allocated to Savings: {fmtUSD(annualTotals.totalSavings)}
+              </div>
+            </div>
+          </div>
+
+          <div className="overflow-x-auto">
+            <table className="w-full text-xs font-mono">
+              <thead>
+                <tr className="border-b text-left" style={{ borderColor: "var(--glass-border)", color: "var(--glass-text-muted)" }}>
+                  <th className="py-2">Month</th>
+                  <th className="py-2 text-right">Revenue</th>
+                  <th className="py-2 text-right">Expenses</th>
+                  <th className="py-2 text-right">Net Income</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y" style={{ borderColor: "var(--glass-border)" }}>
+                {months.map((m) => (
+                  <tr key={m.month}>
+                    <td className="py-2">{m.monthLabel} {selectedYear}</td>
+                    <td className="py-2 text-right text-emerald-500">{fmtUSD(m.totalActualIncome)}</td>
+                    <td className="py-2 text-right text-rose-500">{fmtUSD(m.totalActualSpend)}</td>
+                    <td className={`py-2 text-right ${m.netCashFlow >= 0 ? "text-emerald-500" : "text-rose-500"}`}>
+                      {fmtUSD(m.netCashFlow)}
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      )}
+
+      {financeTab === "cash_flow" && (
+        <div
+          className="rounded-2xl border p-6 space-y-5"
+          style={{
+            backgroundColor: "var(--glass-surface)",
+            borderColor: "var(--glass-border)",
+            color: "var(--glass-text-primary)",
+          }}
+        >
+          <h2 className="text-base font-medium">Statement of Cash Flows · {selectedYear}</h2>
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4 font-mono">
+            <div className="p-4 rounded-xl border" style={{ backgroundColor: "var(--glass-surface-elevated)", borderColor: "var(--glass-border)" }}>
+              <div className="text-[11px] uppercase" style={{ color: "var(--glass-text-muted)" }}>Operating Cash Inflows</div>
+              <div className="text-2xl text-emerald-500 mt-1">{fmtUSD(annualTotals.actualIncome)}</div>
+            </div>
+            <div className="p-4 rounded-xl border" style={{ backgroundColor: "var(--glass-surface-elevated)", borderColor: "var(--glass-border)" }}>
+              <div className="text-[11px] uppercase" style={{ color: "var(--glass-text-muted)" }}>Operating Cash Outflows</div>
+              <div className="text-2xl text-amber-500 mt-1">-{fmtUSD(annualTotals.totalSpend)}</div>
+            </div>
+            <div className="p-4 rounded-xl border" style={{ backgroundColor: "var(--glass-surface-elevated)", borderColor: "var(--glass-border)" }}>
+              <div className="text-[11px] uppercase" style={{ color: "var(--glass-text-muted)" }}>Financing / Savings Allocation</div>
+              <div className="text-2xl text-sky-500 mt-1">{fmtUSD(annualTotals.totalSavings)}</div>
+            </div>
+          </div>
+          <div className="p-4 rounded-xl border flex items-center justify-between font-mono text-sm" style={{ backgroundColor: "var(--glass-surface-elevated)", borderColor: "var(--glass-border)" }}>
+            <span>Net Change in Cash Position ({selectedYear})</span>
+            <span className={annualTotals.netCashFlow >= 0 ? "text-emerald-500" : "text-rose-500"}>
+              {annualTotals.netCashFlow >= 0 ? "+" : ""}{fmtUSD(annualTotals.netCashFlow)}
+            </span>
+          </div>
+        </div>
+      )}
+
+      {financeTab === "balance_sheet" && (
+        <div
+          className="rounded-2xl border p-6 space-y-5"
+          style={{
+            backgroundColor: "var(--glass-surface)",
+            borderColor: "var(--glass-border)",
+            color: "var(--glass-text-primary)",
+          }}
+        >
+          <div className="flex items-center justify-between flex-wrap gap-2">
+            <div>
+              <h2 className="text-base font-medium">Personal Balance Sheet · {selectedYear}</h2>
+              <p className="text-xs" style={{ color: "var(--glass-text-muted)" }}>
+                Powered by your linked bank accounts &amp; logged savings (starts at $0)
+              </p>
+            </div>
+            <button
+              type="button"
+              onClick={() => setFinanceTab("plaid")}
+              className="px-3 py-1.5 rounded-xl bg-emerald-500 text-zinc-950 text-xs font-medium"
+            >
+              + Add Bank / Asset Account
+            </button>
+          </div>
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4 font-mono">
+            <div className="p-4 rounded-xl border" style={{ backgroundColor: "var(--glass-surface-elevated)", borderColor: "var(--glass-border)" }}>
+              <div className="text-[11px] uppercase" style={{ color: "var(--glass-text-muted)" }}>Total Assets</div>
+              <div className="text-2xl text-emerald-500 mt-1">{fmtUSD(totalAssets)}</div>
+            </div>
+            <div className="p-4 rounded-xl border" style={{ backgroundColor: "var(--glass-surface-elevated)", borderColor: "var(--glass-border)" }}>
+              <div className="text-[11px] uppercase" style={{ color: "var(--glass-text-muted)" }}>Total Liabilities</div>
+              <div className="text-2xl text-rose-500 mt-1">{fmtUSD(totalLiabilities)}</div>
+            </div>
+            <div className="p-4 rounded-xl border" style={{ backgroundColor: "var(--glass-surface-elevated)", borderColor: "var(--glass-border)" }}>
+              <div className="text-[11px] uppercase" style={{ color: "var(--glass-text-muted)" }}>Net Worth</div>
+              <div className="text-2xl text-sky-500 mt-1">{fmtUSD(totalAssets - totalLiabilities)}</div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {financeTab === "workdays" && (
+        <div
+          className="rounded-2xl border p-6 space-y-5"
+          style={{
+            backgroundColor: "var(--glass-surface)",
+            borderColor: "var(--glass-border)",
+            color: "var(--glass-text-primary)",
+          }}
+        >
+          <div>
+            <h2 className="text-base font-medium">Workdays &amp; Recurring Shift Pay Calculator</h2>
+            <p className="text-xs" style={{ color: "var(--glass-text-muted)" }}>
+              Configure your recurring shift schedule (e.g. Nurse Night Shift 1900–0600 Mon–Thu) to auto-calculate pay and sync directly to Calendar &amp; Budget.
+            </p>
+          </div>
+
+          <form onSubmit={handleGenerateRecurringShifts} className="grid grid-cols-1 md:grid-cols-3 gap-4 text-xs">
+            <div>
+              <label className="block mb-1 opacity-75">Role / Shift Name</label>
+              <input
+                type="text"
+                value={shiftRole}
+                onChange={(e) => setShiftRole(e.target.value)}
+                className="w-full px-3 py-2 rounded-xl border focus:outline-none focus:border-emerald-500"
+                style={{ backgroundColor: "var(--glass-surface-elevated)", borderColor: "var(--glass-border)" }}
+              />
+            </div>
+            <div>
+              <label className="block mb-1 opacity-75">Hourly Rate ($/hr)</label>
+              <input
+                type="number"
+                step="0.5"
+                value={shiftHourly}
+                onChange={(e) => setShiftHourly(e.target.value)}
+                className="w-full px-3 py-2 rounded-xl border font-mono focus:outline-none focus:border-emerald-500"
+                style={{ backgroundColor: "var(--glass-surface-elevated)", borderColor: "var(--glass-border)" }}
+              />
+            </div>
+            <div>
+              <label className="block mb-1 opacity-75">Hours per Shift</label>
+              <input
+                type="number"
+                step="0.5"
+                value={shiftHours}
+                onChange={(e) => setShiftHours(e.target.value)}
+                className="w-full px-3 py-2 rounded-xl border font-mono focus:outline-none focus:border-emerald-500"
+                style={{ backgroundColor: "var(--glass-surface-elevated)", borderColor: "var(--glass-border)" }}
+              />
+            </div>
+
+            <div>
+              <label className="block mb-1 opacity-75">Start Time (24h Military)</label>
+              <input
+                type="time"
+                value={shiftStart}
+                onChange={(e) => setShiftStart(e.target.value)}
+                className="w-full px-3 py-2 rounded-xl border font-mono"
+                style={{ backgroundColor: "var(--glass-surface-elevated)", borderColor: "var(--glass-border)" }}
+              />
+            </div>
+            <div>
+              <label className="block mb-1 opacity-75">End Time (24h Military)</label>
+              <input
+                type="time"
+                value={shiftEnd}
+                onChange={(e) => setShiftEnd(e.target.value)}
+                className="w-full px-3 py-2 rounded-xl border font-mono"
+                style={{ backgroundColor: "var(--glass-surface-elevated)", borderColor: "var(--glass-border)" }}
+              />
+            </div>
+            <div>
+              <label className="block mb-1 opacity-75">Weeks to Auto-Fill</label>
+              <input
+                type="number"
+                min={1}
+                max={52}
+                value={shiftWeeks}
+                onChange={(e) => setShiftWeeks(e.target.value)}
+                className="w-full px-3 py-2 rounded-xl border font-mono"
+                style={{ backgroundColor: "var(--glass-surface-elevated)", borderColor: "var(--glass-border)" }}
+              />
+            </div>
+
+            <div className="md:col-span-3 space-y-2">
+              <label className="block opacity-75">Recurring Shift Days</label>
+              <div className="flex flex-wrap gap-2">
+                {[
+                  { d: 1, label: "Mon" },
+                  { d: 2, label: "Tue" },
+                  { d: 3, label: "Wed" },
+                  { d: 4, label: "Thu" },
+                  { d: 5, label: "Fri" },
+                  { d: 6, label: "Sat" },
+                  { d: 0, label: "Sun" },
+                ].map((day) => {
+                  const selected = shiftDays.includes(day.d);
+                  return (
+                    <button
+                      key={day.d}
+                      type="button"
+                      onClick={() =>
+                        setShiftDays((prev) =>
+                          prev.includes(day.d) ? prev.filter((x) => x !== day.d) : [...prev, day.d]
+                        )
+                      }
+                      className={`px-3 py-1.5 rounded-xl border font-mono transition ${
+                        selected
+                          ? "bg-emerald-500 text-zinc-950 border-emerald-400 font-medium"
+                          : "opacity-70 hover:opacity-100"
+                      }`}
+                      style={{
+                        backgroundColor: selected ? undefined : "var(--glass-surface-elevated)",
+                        borderColor: selected ? undefined : "var(--glass-border)",
+                      }}
+                    >
+                      {day.label}
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+
+            {/* Live Pay Preview Strip */}
+            <div
+              className="md:col-span-3 p-4 rounded-xl border flex flex-wrap items-center justify-between gap-4 font-mono"
+              style={{ backgroundColor: "var(--glass-surface-elevated)", borderColor: "var(--glass-border)" }}
+            >
+              <div>
+                <div className="text-[10px] uppercase opacity-70">Per Shift</div>
+                <div className="text-lg text-emerald-500">
+                  {fmtUSDExact((Number(shiftHourly) || 0) * (Number(shiftHours) || 0))}
+                </div>
+              </div>
+              <div>
+                <div className="text-[10px] uppercase opacity-70">Weekly ({shiftDays.length} shifts)</div>
+                <div className="text-lg text-sky-500">
+                  {fmtUSDExact((Number(shiftHourly) || 0) * (Number(shiftHours) || 0) * shiftDays.length)}
+                </div>
+              </div>
+              <div>
+                <div className="text-[10px] uppercase opacity-70">Projected ({shiftWeeks} wks)</div>
+                <div className="text-lg text-emerald-500">
+                  {fmtUSDExact(
+                    (Number(shiftHourly) || 0) *
+                      (Number(shiftHours) || 0) *
+                      shiftDays.length *
+                      (Number(shiftWeeks) || 0)
+                  )}
+                </div>
+              </div>
+
+              <div className="flex items-center gap-3">
+                <label className="flex items-center gap-1.5 cursor-pointer text-[11px]">
+                  <input
+                    type="checkbox"
+                    checked={syncShiftsToCal}
+                    onChange={(e) => setSyncShiftsToCal(e.target.checked)}
+                  />
+                  <span>Auto-sync to Calendar</span>
+                </label>
+                <button
+                  type="submit"
+                  disabled={isGeneratingShifts || shiftDays.length === 0}
+                  className="px-4 py-2 rounded-xl bg-emerald-500 hover:bg-emerald-400 text-zinc-950 font-medium transition disabled:opacity-40"
+                >
+                  {isGeneratingShifts ? "Generating..." : "Generate Shifts & Sync"}
+                </button>
+              </div>
+            </div>
+          </form>
+        </div>
+      )}
+
+      {financeTab === "plaid" && (
+        <div
+          className="rounded-2xl border p-6 space-y-5"
+          style={{
+            backgroundColor: "var(--glass-surface)",
+            borderColor: "var(--glass-border)",
+            color: "var(--glass-text-primary)",
+          }}
+        >
+          <div className="flex items-center justify-between flex-wrap gap-3">
+            <div>
+              <h2 className="text-base font-medium flex items-center gap-2">
+                <ShieldCheck size={18} className="text-emerald-500" />
+                <span>Plaid Bank Connection &amp; Account Balances</span>
+              </h2>
+              <p className="text-xs" style={{ color: "var(--glass-text-muted)" }}>
+                Connect checking, savings, and credit accounts via Plaid ({plaidEnv}) or log balances manually.
+              </p>
+            </div>
+            <button
+              type="button"
+              onClick={handleConnectPlaid}
+              className="px-4 py-2 rounded-xl bg-[#4984fd] hover:bg-blue-500 text-white text-xs font-medium transition"
+            >
+              {plaidConfigured ? "Launch Plaid Link" : "Connect Bank via Plaid"}
+            </button>
+          </div>
+
+          {plaidMessage && (
+            <div className="p-3 rounded-xl border border-amber-500/35 bg-amber-500/10 text-amber-500 text-xs font-mono">
+              {plaidMessage}
+            </div>
+          )}
+
+          <form onSubmit={handleAddManualBankAccount} className="grid grid-cols-1 sm:grid-cols-5 gap-2.5 text-xs">
+            <input
+              type="text"
+              placeholder="Institution (e.g. Chase)"
+              value={bankInst}
+              onChange={(e) => setBankInst(e.target.value)}
+              className="px-3 py-2 rounded-xl border"
+              style={{ backgroundColor: "var(--glass-surface-elevated)", borderColor: "var(--glass-border)" }}
+            />
+            <input
+              type="text"
+              placeholder="Account Name (e.g. Checking)"
+              value={bankAccName}
+              onChange={(e) => setBankAccName(e.target.value)}
+              className="px-3 py-2 rounded-xl border"
+              style={{ backgroundColor: "var(--glass-surface-elevated)", borderColor: "var(--glass-border)" }}
+            />
+            <select
+              value={bankAccType}
+              onChange={(e) => setBankAccType(e.target.value)}
+              className="px-3 py-2 rounded-xl border"
+              style={{ backgroundColor: "var(--glass-surface-elevated)", borderColor: "var(--glass-border)" }}
+            >
+              <option value="depository">Checking / Savings (Asset)</option>
+              <option value="investment">Brokerage / 401k (Asset)</option>
+              <option value="credit">Credit Card (Liability)</option>
+              <option value="loan">Loan / Mortgage (Liability)</option>
+            </select>
+            <input
+              type="number"
+              step="0.01"
+              placeholder="Balance ($)"
+              value={bankBalance}
+              onChange={(e) => setBankBalance(e.target.value)}
+              className="px-3 py-2 rounded-xl border font-mono"
+              style={{ backgroundColor: "var(--glass-surface-elevated)", borderColor: "var(--glass-border)" }}
+            />
+            <button
+              type="submit"
+              className="px-3 py-2 rounded-xl bg-emerald-500 text-zinc-950 font-medium hover:bg-emerald-400 transition"
+            >
+              + Add Account
+            </button>
+          </form>
+
+          {plaidAccounts.length === 0 ? (
+            <div className="py-8 text-center text-xs font-mono rounded-xl border border-dashed" style={{ borderColor: "var(--glass-border)", color: "var(--glass-text-muted)" }}>
+              No bank accounts connected yet. Click &quot;Connect Bank via Plaid&quot; or add an account above.
+            </div>
+          ) : (
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+              {plaidAccounts.map((acc) => (
+                <div
+                  key={acc.id}
+                  className="p-4 rounded-xl border flex items-center justify-between"
+                  style={{ backgroundColor: "var(--glass-surface-elevated)", borderColor: "var(--glass-border)" }}
+                >
+                  <div>
+                    <div className="text-xs font-medium">{acc.institutionName} · {acc.accountName}</div>
+                    <div className="text-[10px] font-mono uppercase opacity-65">{acc.accountType}</div>
+                  </div>
+                  <div className="text-sm font-mono text-emerald-500">{fmtUSDExact(acc.currentBalance)}</div>
+                </div>
+              ))}
+            </div>
+          )}
         </div>
       )}
 

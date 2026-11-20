@@ -56,10 +56,11 @@ export default function SynthesisRoadmapPage() {
   const [isSynthesizing, setIsSynthesizing] = useState<boolean>(false);
   const [feedbackToast, setFeedbackToast] = useState<string | null>(null);
 
-  // 4. Modal States
+  // 4. Modal & Backward Chain Drawer States
   const [selectedNodeId, setSelectedNodeId] = useState<string | null>(null);
   const [isDwyOpen, setIsDwyOpen] = useState<boolean>(false);
   const [isManualBuilderOpen, setIsManualBuilderOpen] = useState<boolean>(false);
+  const [isBackwardChainOpen, setIsBackwardChainOpen] = useState<boolean>(false);
 
   // Active node lookup for modal
   const activeNode = useMemo(() => {
@@ -83,10 +84,15 @@ export default function SynthesisRoadmapPage() {
     setTimeout(() => setFeedbackToast(null), 4500);
   };
 
-  // Backward Chaining Audit
+  // Backward Chaining Audit — toggles interactive dependency chain trace banner
   const handleBackwardChainAudit = () => {
+    setIsBackwardChainOpen((prev) => !prev);
+    const totalNodes = activeTree.tier0.length + activeTree.tier1.length + activeTree.tier2.length;
+    const blockedCount = [...activeTree.tier0, ...activeTree.tier1, ...activeTree.tier2].filter(
+      (n) => n.status === "BLOCKED"
+    ).length;
     showToast(
-      "✓ Backward Chain Audit: Validated 100% convergence from Goal ➔ Integration ➔ Sub-Assemblies ➔ Inputs. Zero orphan nodes!"
+      `Backward Chain Trace: ${totalNodes} nodes audited (${blockedCount} blocked) from "${activeTree.tier3.title}" ➔ Tier 0 inputs.`
     );
   };
 
@@ -288,6 +294,74 @@ export default function SynthesisRoadmapPage() {
           onOpenManualBuilder={() => setIsManualBuilderOpen(true)}
           isProcessing={isSynthesizing}
         />
+
+        {/* 2.5 Interactive Backward Chaining Trace Panel */}
+        {isBackwardChainOpen && (
+          <div className="mx-4 sm:mx-6 mt-3 p-4 rounded-2xl border border-amber-400/40 bg-amber-950/30 backdrop-blur-xl text-xs space-y-3">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-2 font-mono text-amber-300 uppercase tracking-wider">
+                <span>↺ Backward Chaining Dependency Trace</span>
+                <span className="text-[10px] px-2 py-0.5 rounded-full bg-amber-400/15 border border-amber-400/30">
+                  Goal ➔ Tier 2 ➔ Tier 1 ➔ Tier 0
+                </span>
+              </div>
+              <button
+                onClick={() => setIsBackwardChainOpen(false)}
+                className="text-zinc-400 hover:text-white px-2 py-0.5 rounded-lg bg-white/5"
+              >
+                Close ✕
+              </button>
+            </div>
+            <div className="grid grid-cols-1 md:grid-cols-4 gap-3 font-mono">
+              <div className="p-2.5 rounded-xl bg-black/40 border border-amber-400/30">
+                <div className="text-[10px] text-amber-400 uppercase mb-1">Step 1 · Target Goal</div>
+                <div className="text-white font-medium">{activeTree.tier3.title}</div>
+              </div>
+              <div className="p-2.5 rounded-xl bg-black/40 border border-white/10">
+                <div className="text-[10px] text-cyan-400 uppercase mb-1">Step 2 · Integration ({activeTree.tier2.length})</div>
+                <div className="space-y-1">
+                  {activeTree.tier2.map((n) => (
+                    <button
+                      key={n.id}
+                      onClick={() => setSelectedNodeId(n.id)}
+                      className="block w-full text-left truncate text-zinc-200 hover:text-cyan-300"
+                    >
+                      • {n.title} ({n.status})
+                    </button>
+                  ))}
+                </div>
+              </div>
+              <div className="p-2.5 rounded-xl bg-black/40 border border-white/10">
+                <div className="text-[10px] text-indigo-400 uppercase mb-1">Step 3 · Sub-Assemblies ({activeTree.tier1.length})</div>
+                <div className="space-y-1">
+                  {activeTree.tier1.map((n) => (
+                    <button
+                      key={n.id}
+                      onClick={() => setSelectedNodeId(n.id)}
+                      className="block w-full text-left truncate text-zinc-200 hover:text-cyan-300"
+                    >
+                      • {n.title} ({n.status})
+                    </button>
+                  ))}
+                </div>
+              </div>
+              <div className="p-2.5 rounded-xl bg-black/40 border border-white/10">
+                <div className="text-[10px] text-emerald-400 uppercase mb-1">Step 4 · Raw Inputs ({activeTree.tier0.length})</div>
+                <div className="space-y-1">
+                  {activeTree.tier0.map((n) => (
+                    <button
+                      key={n.id}
+                      onClick={() => setSelectedNodeId(n.id)}
+                      className="block w-full text-left truncate text-zinc-200 hover:text-cyan-300"
+                    >
+                      • {n.title} ({n.status})
+                    </button>
+                  ))}
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
 
         {/* 3. Main Workspace: Desktop/Tablet Canvas + Mobile Stacked Stream */}
         <main className="flex-1 flex flex-col relative w-full overflow-hidden">

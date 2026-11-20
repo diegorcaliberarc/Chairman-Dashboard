@@ -507,49 +507,76 @@ export default function CommandersCounselMindsetPage() {
         </div>
       </div>
 
-      {/* 2. FOUR OPERATIONAL MODES SELECTOR */}
-      <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-3.5">
-        {OPERATIONAL_MODES.map((m) => {
+      {/* 2. FOUR OPERATIONAL MODES SELECTOR (with Atmospheric Visual Banners) */}
+      <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-4">
+        {OPERATIONAL_MODES.map((m, idx) => {
           const isSelected = selectedMode === m.id;
+          const modeImages = [
+            "https://images.unsplash.com/photo-1506905925346-21bda4d32df4?auto=format&fit=crop&w=600&q=75",
+            "https://images.unsplash.com/photo-1464822759023-fed622ff2c3b?auto=format&fit=crop&w=600&q=75",
+            "https://images.unsplash.com/photo-1507525428034-b723cf961d3e?auto=format&fit=crop&w=600&q=75",
+            "https://images.unsplash.com/photo-1519681393784-d120267933ba?auto=format&fit=crop&w=600&q=75",
+          ];
           return (
             <div
               key={m.id}
               onClick={() => setSelectedMode(m.id)}
-              className={`cursor-pointer rounded-2xl p-4 border transition flex flex-col justify-between gap-3 ${
+              className={`cursor-pointer rounded-2xl border overflow-hidden transition flex flex-col justify-between ${
                 isSelected
                   ? `${m.borderClass} shadow-lg`
-                  : "border-white/10 bg-[#0d121d]/75 hover:border-white/20"
+                  : "hover:border-sky-400/40"
               }`}
+              style={{
+                backgroundColor: isSelected ? undefined : "var(--glass-surface)",
+                borderColor: isSelected ? undefined : "var(--glass-border)",
+              }}
             >
-              <div>
-                <div className="flex items-center justify-between gap-2">
-                  <div className="p-2 rounded-xl bg-black/40 border border-white/10">
+              {/* Atmospheric Header Photo */}
+              <div className="relative h-24 w-full overflow-hidden">
+                <img
+                  src={modeImages[idx % modeImages.length]}
+                  alt={m.label}
+                  className="w-full h-full object-cover transition-transform duration-500 hover:scale-105"
+                />
+                <div className="absolute inset-0 bg-gradient-to-t from-black/75 via-black/25 to-transparent" />
+                <div className="absolute bottom-2.5 left-3 right-3 flex items-center justify-between gap-2">
+                  <div className="p-1.5 rounded-lg bg-black/55 backdrop-blur-md border border-white/15">
                     {m.icon}
                   </div>
                   {isSelected && (
-                    <span className="px-2 py-0.5 rounded-full text-[9.5px] font-bold uppercase tracking-wider bg-white/15 text-white">
+                    <span className="px-2 py-0.5 rounded-full text-[9.5px] font-medium uppercase tracking-wider bg-white/20 backdrop-blur-md text-white">
                       Active Mode
                     </span>
                   )}
                 </div>
-                <h3 className="text-sm font-bold text-white mt-2.5">
-                  {m.label}
-                </h3>
-                <p className="text-[11px] text-zinc-400 mt-0.5 leading-relaxed">
-                  {m.tagline}
-                </p>
               </div>
 
-              <button
-                onClick={(e) => {
-                  e.stopPropagation();
-                  dispatchCounsel(m.starterPrompt, m.id, undefined, true);
-                }}
-                disabled={submitting}
-                className="w-full py-1.5 rounded-lg bg-black/40 hover:bg-black/65 border border-white/10 text-[10.5px] font-bold uppercase tracking-wider text-zinc-200 transition"
-              >
-                Engage {m.label.split(" ")[0]} →
-              </button>
+              <div className="p-4 flex-1 flex flex-col justify-between gap-3">
+                <div>
+                  <h3 className="text-sm font-medium" style={{ color: "var(--glass-text-primary)" }}>
+                    {m.label}
+                  </h3>
+                  <p className="text-[11px] mt-1 leading-relaxed" style={{ color: "var(--glass-text-muted)" }}>
+                    {m.tagline}
+                  </p>
+                </div>
+
+                <button
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    dispatchCounsel(m.starterPrompt, m.id, undefined, true);
+                  }}
+                  disabled={submitting}
+                  className="w-full py-1.5 rounded-xl border text-[11px] font-medium uppercase tracking-wider transition hover:bg-[#4984fd] hover:text-white hover:border-[#4984fd]"
+                  style={{
+                    backgroundColor: "var(--glass-surface-elevated)",
+                    borderColor: "var(--glass-border)",
+                    color: "var(--glass-text-primary)",
+                  }}
+                >
+                  Engage {m.label.split(" ")[0]} →
+                </button>
+              </div>
             </div>
           );
         })}

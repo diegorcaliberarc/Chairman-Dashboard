@@ -2,7 +2,7 @@
 
 import React, { useState } from "react";
 import { CoPilotMode } from "@/lib/synthesisRoadmapTypes";
-import { Sparkles, HelpCircle, PlusCircle, Wand2, Compass, Play, Check } from "lucide-react";
+import { Sparkles, HelpCircle, PlusCircle, Wand2, Compass, Mic, MicOff } from "lucide-react";
 
 interface CoPilotModeBarProps {
   currentMode: CoPilotMode;
@@ -22,6 +22,31 @@ export function CoPilotModeBar({
   isProcessing = false,
 }: CoPilotModeBarProps) {
   const [goalInput, setGoalInput] = useState("");
+  const [isListening, setIsListening] = useState(false);
+
+  const handleToggleVoiceGoal = () => {
+    if (typeof window === "undefined") return;
+    const SpeechRecognition =
+      (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
+    if (!SpeechRecognition) {
+      alert("Voice input is not supported in this browser.");
+      return;
+    }
+    const recognition = new SpeechRecognition();
+    recognition.lang = "en-US";
+    recognition.continuous = false;
+    recognition.interimResults = false;
+    recognition.onstart = () => setIsListening(true);
+    recognition.onend = () => setIsListening(false);
+    recognition.onerror = () => setIsListening(false);
+    recognition.onresult = (e: any) => {
+      const transcript = e.results?.[0]?.[0]?.transcript;
+      if (transcript) {
+        setGoalInput(transcript);
+      }
+    };
+    recognition.start();
+  };
 
   const handleDfySubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -79,9 +104,21 @@ export function CoPilotModeBar({
                 type="text"
                 value={goalInput}
                 onChange={(e) => setGoalInput(e.target.value)}
-                placeholder="Enter any goal (e.g. '155 lb lean cut @ 8% BF', 'Build utility sink in workshop', '$50k MRR')..."
-                className="w-full bg-[#05070E] border border-white/10 rounded-xl px-3.5 py-2 text-xs text-white placeholder-zinc-500 focus:outline-none focus:border-cyan-400 font-mono"
+                placeholder="Speak or type any goal (e.g. '155 lb lean cut @ 8% BF', 'Build utility sink', '$50k MRR')..."
+                className="w-full bg-[#05070E] border border-white/10 rounded-xl pl-3.5 pr-10 py-2 text-xs text-white placeholder-zinc-500 focus:outline-none focus:border-cyan-400 font-mono"
               />
+              <button
+                type="button"
+                onClick={handleToggleVoiceGoal}
+                className={`absolute right-2 top-1/2 -translate-y-1/2 p-1 rounded-lg transition ${
+                  isListening
+                    ? "bg-rose-500/20 text-rose-400 animate-pulse"
+                    : "text-zinc-400 hover:text-cyan-400"
+                }`}
+                title={isListening ? "Listening..." : "Speak your goal with microphone"}
+              >
+                {isListening ? <MicOff size={14} /> : <Mic size={14} />}
+              </button>
             </div>
             <button
               type="submit"

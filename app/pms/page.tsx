@@ -27,6 +27,7 @@ import {
   CalendarDays,
   Network,
 } from "lucide-react";
+import { ExecutiveModuleShell } from "@/components/chairman/ExecutiveModuleShell";
 import {
   PmsSpaceDTO,
   PmsFolderDTO,
@@ -34,12 +35,12 @@ import {
   PmsStatusDTO,
   PmsTaskDTO,
 } from "@/app/api/pms/route";
-import { PmsSidebarRail } from "@/components/pms/PmsSidebarRail";
 import { PmsHierarchySidebar } from "@/components/pms/PmsHierarchySidebar";
 import { TaskDetailModal } from "@/components/pms/TaskDetailModal";
 import { NewSpaceModal } from "@/components/pms/NewSpaceModal";
+import { Mic, Send, Home as HomeIcon, PanelLeft } from "lucide-react";
 
-type ViewMode = "board" | "list" | "overview";
+type ViewMode = "home" | "board" | "list" | "overview";
 
 export default function SovereignPmsPage() {
   // Navigation & Data States
@@ -53,10 +54,16 @@ export default function SovereignPmsPage() {
   const [selectedFolderId, setSelectedFolderId] = useState<string | null>(null);
   const [selectedListId, setSelectedListId] = useState<string | null>(null);
 
-  // Rail & View States
-  const [activeRailSection, setActiveRailSection] = useState("dashboards");
+  // View & Spaces Drawer States
   const [viewMode, setViewMode] = useState<ViewMode>("board");
   const [showAddViewMenu, setShowAddViewMenu] = useState(false);
+  const [showSpacesDrawer, setShowSpacesDrawer] = useState(true);
+
+  // Universal AI Command Bar (syncs PMS + Health/Nutrition/Operations)
+  const [aiCommand, setAiCommand] = useState("");
+  const [isAiRunning, setIsAiRunning] = useState(false);
+  const [isAiListening, setIsAiListening] = useState(false);
+  const [aiToast, setAiToast] = useState<string | null>(null);
 
   // Filter & Search
   const [searchQuery, setSearchQuery] = useState("");
@@ -445,90 +452,291 @@ export default function SovereignPmsPage() {
     return { total, completed, active, totalEstHours, totalChecklists, completedChecklists };
   }, [filteredTasks]);
 
+  // Universal AI Command Handler: creates PMS task AND cross-syncs to Health/Nutrition/Operations
+  const handleUniversalAiCommand = async (rawText?: string) => {
+    const cmd = (rawText ?? aiCommand).trim();
+    if (!cmd || isAiRunning) return;
+    setIsAiRunning(true);
+    try {
+      const lower = cmd.toLowerCase();
+      // 1. Determine target space/list
+      let targetListId = selectedListId;
+      if (!targetListId && currentSpace) {
+        targetListId =
+          currentSpace.lists[0]?.id ||
+          currentSpace.folders[0]?.lists[0]?.id ||
+          null;
+      }
+      if (!targetListId && spaces.length > 0) {
+        const matchedSpace =
+          spaces.find((s) => lower.includes(s.name.toLowerCase())) || spaces[0];
+        targetListId =
+          matchedSpace.lists[0]?.id ||
+          matchedSpace.folders[0]?.lists[0]?.id ||
+          null;
+      }
+
+      const priority =
+        lower.includes("urgent") || lower.includes("asap")
+          ? "urgent"
+          : lower.includes("high")
+          ? "high"
+          : "normal";
+
+      // Create task in PMS
+      if (targetListId) {
+        await fetch("/api/pms", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            action: "create_task",
+            name: cmd,
+            list_id: targetListId,
+            status_id: currentSpaceStatuses[0]?.id,
+            priority,
+          }),
+        });
+      }
+
+      // 2. Cross-domain universal sync
+      const syncedAreas: string[] = ["PMS"];
+      const todayIso = new Date().toISOString().split("T")[0];
+
+      // Health / Water / Steps / Weight sync
+      const waterMatch = lower.match(/(\d+(?:\.\d+)?)\s*(oz|ml|liter|liters|l)\b.*water|water.*?(\d+(?:\.\d+)?)\s*(oz|ml)/i);
+      const stepsMatch = lower.match(/(\d[\d,]*)\s*steps/i);
+      if (waterMatch || stepsMatch || lower.includes("health") || lower.includes("workout")) {
+        const patch: Record<string, any> = { log_date: todayIso, notes: `Synced from PMS: ${cmd}` };
+        if (stepsMatch) patch.total_steps = parseInt(stepsMatch[1].replace(/,/g, ""), 10);
+        if (lower.includes("workout") || lower.includes("lift")) patch.lift_completed = true;
+        await fetch("/api/sitrep", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(patch),
+        });
+        syncedAreas.push("Health & Sitrep");
+      }
+
+      // Nutrition / Food sync
+      if (lower.includes("ate ") || lower.includes("eat ") || lower.includes("meal") || lower.includes("chicken") || lower.includes("protein")) {
+        await fetch("/api/parse-food", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ text: cmd, date: todayIso }),
+        }).catch(() => {});
+        syncedAreas.push("Nutrition");
+      }
+
+      setAiCommand("");
+      setAiToast(`Synced "${cmd}" → ${syncedAreas.join(" + ")}`);
+      setTimeout(() => setAiToast(null), 4500);
+      await loadPmsData();
+    } catch (err) {
+      console.error("Universal AI command error:", err);
+      setAiToast("Could not sync command — check connection.");
+      setTimeout(() => setAiToast(null), 3500);
+    } finally {
+      setIsAiRunning(false);
+    }
+  };
+
+  const handleToggleAiMic = () => {
+    if (typeof window === "undefined") return;
+    const SpeechRecognition =
+      (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
+    if (!SpeechRecognition) {
+      setAiToast("Voice input not supported in this browser.");
+      setTimeout(() => setAiToast(null), 3000);
+      return;
+    }
+    const recognition = new SpeechRecognition();
+    recognition.lang = "en-US";
+    recognition.continuous = false;
+    recognition.interimResults = false;
+    recognition.onstart = () => setIsAiListening(true);
+    recognition.onend = () => setIsAiListening(false);
+    recognition.onerror = () => setIsAiListening(false);
+    recognition.onresult = (e: any) => {
+      const transcript = e.results?.[0]?.[0]?.transcript;
+      if (transcript) {
+        setAiCommand(transcript);
+        handleUniversalAiCommand(transcript);
+      }
+    };
+    recognition.start();
+  };
+
   return (
-    <div className="flex h-screen w-screen overflow-hidden bg-[#090A0F] font-sans text-zinc-100 select-none">
-      {/* 1. Left Icon Rail (56px) */}
-      <PmsSidebarRail
-        activeSection={activeRailSection}
-        onSelectSection={setActiveRailSection}
-      />
+    <ExecutiveModuleShell
+      moduleId="PMS"
+      eyebrow="Operations & Planning"
+      title="Project Management"
+      subtitle="Universal spaces, boards, and AI-synced tasks across Health, Wealth & Operations"
+      accentColor="#4984fd"
+      fullBleed={true}
+      headerActions={
+        <form
+          onSubmit={(e) => {
+            e.preventDefault();
+            handleUniversalAiCommand();
+          }}
+          className="flex items-center gap-2 w-full sm:w-auto"
+        >
+          <div className="relative flex-1 sm:w-80">
+            <Sparkles className="w-3.5 h-3.5 text-[#4984fd] absolute left-3 top-1/2 -translate-y-1/2" />
+            <input
+              type="text"
+              value={aiCommand}
+              onChange={(e) => setAiCommand(e.target.value)}
+              placeholder="Ask AI to add task & sync Health / Wealth / Ops..."
+              className="w-full pl-8 pr-9 py-1.5 rounded-xl border text-xs focus:outline-none focus:border-[#4984fd] transition"
+              style={{
+                backgroundColor: "var(--glass-surface-elevated)",
+                borderColor: "var(--glass-border)",
+                color: "var(--glass-text-primary)",
+              }}
+            />
+            <button
+              type="button"
+              onClick={handleToggleAiMic}
+              className={`absolute right-2 top-1/2 -translate-y-1/2 p-1 rounded-lg transition ${
+                isAiListening ? "text-rose-500 animate-pulse" : "text-zinc-400 hover:text-[#4984fd]"
+              }`}
+              title="Speak AI command"
+            >
+              <Mic className="w-3.5 h-3.5" />
+            </button>
+          </div>
+          <button
+            type="submit"
+            disabled={isAiRunning || !aiCommand.trim()}
+            className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-[#4984fd] hover:bg-blue-500 text-white text-xs font-medium transition disabled:opacity-40"
+          >
+            {isAiRunning ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Send className="w-3.5 h-3.5" />}
+            <span className="hidden sm:inline">Sync</span>
+          </button>
+        </form>
+      }
+    >
+      <div
+        className="flex min-h-[calc(100vh-140px)] w-full rounded-2xl border overflow-hidden select-none transition-colors"
+        style={{
+          backgroundColor: "var(--glass-surface)",
+          borderColor: "var(--glass-border)",
+          color: "var(--glass-text-primary)",
+        }}
+      >
+        {/* Toast feedback for Universal AI Sync */}
+        {aiToast && (
+          <div className="fixed bottom-6 right-6 z-50 px-4 py-2.5 rounded-xl bg-[#4984fd] text-white text-xs font-medium shadow-xl flex items-center gap-2">
+            <Sparkles className="w-3.5 h-3.5" />
+            <span>{aiToast}</span>
+          </div>
+        )}
 
-      {/* 2. Space Hierarchy Sidebar (240px) */}
-      <PmsHierarchySidebar
-        spaces={spaces}
-        selectedSpaceId={selectedSpaceId}
-        selectedFolderId={selectedFolderId}
-        selectedListId={selectedListId}
-        onSelectSpace={handleSelectSpace}
-        onSelectFolder={handleSelectFolder}
-        onSelectList={handleSelectList}
-        onOpenNewSpaceModal={() => setIsNewSpaceModalOpen(true)}
-        onCreateFolder={handleCreateFolder}
-        onCreateList={handleCreateList}
-      />
+        {/* 1. Inline Space Hierarchy Sidebar (pops right out inside the workspace) */}
+        {showSpacesDrawer && (
+          <PmsHierarchySidebar
+            spaces={spaces}
+            selectedSpaceId={selectedSpaceId}
+            selectedFolderId={selectedFolderId}
+            selectedListId={selectedListId}
+            onSelectSpace={handleSelectSpace}
+            onSelectFolder={handleSelectFolder}
+            onSelectList={handleSelectList}
+            onOpenNewSpaceModal={() => setIsNewSpaceModalOpen(true)}
+            onCreateFolder={handleCreateFolder}
+            onCreateList={handleCreateList}
+          />
+        )}
 
-      {/* 3. Fluid Main Canvas (calc(100vw - 296px)) */}
-      <main className="flex-1 flex flex-col h-full bg-[#0D0F17] overflow-hidden">
-        {/* Persistent View Tabs Bar (40px Height) */}
-        <div className="h-10 px-4 border-b border-[#1E222D] flex items-center justify-between bg-[#11131C]">
-          {/* Breadcrumb Path & Tabs */}
-          <div className="flex items-center gap-4">
-            <div className="flex items-center gap-1.5 text-xs text-zinc-400 font-medium">
-              {breadcrumb.map((b, i) => (
-                <React.Fragment key={b + i}>
-                  {i > 0 && <span className="text-zinc-600">/</span>}
-                  <span
-                    className={
-                      i === breadcrumb.length - 1
-                        ? "text-zinc-100 font-semibold"
-                        : "text-zinc-400"
-                    }
-                  >
-                    {b}
-                  </span>
-                </React.Fragment>
-              ))}
-            </div>
-
-            <div className="h-4 w-px bg-[#222634]" />
-
-            {/* View Tabs */}
-            <div className="flex items-center gap-1 text-xs">
+        {/* 2. Fluid Main Canvas */}
+        <main className="flex-1 flex flex-col min-w-0 overflow-hidden bg-transparent">
+          {/* Persistent View Tabs Bar */}
+          <div
+            className="min-h-11 px-4 py-1.5 border-b flex flex-wrap items-center justify-between gap-2"
+            style={{
+              backgroundColor: "var(--glass-surface-elevated)",
+              borderColor: "var(--glass-border)",
+            }}
+          >
+            {/* Breadcrumb Path & Tabs */}
+            <div className="flex items-center gap-3 flex-wrap">
               <button
-                onClick={() => setViewMode("overview")}
-                className={`flex items-center gap-1.5 px-2.5 py-1 rounded-md transition ${
-                  viewMode === "overview"
-                    ? "bg-blue-600/20 text-blue-400 font-medium"
-                    : "text-zinc-400 hover:text-zinc-200"
-                }`}
+                onClick={() => setShowSpacesDrawer((v) => !v)}
+                className="p-1.5 rounded-lg hover:bg-black/5 dark:hover:bg-white/10 transition"
+                style={{ color: "var(--glass-text-muted)" }}
+                title={showSpacesDrawer ? "Hide Spaces Drawer" : "Show Spaces Drawer"}
               >
-                <LayoutDashboard className="w-3.5 h-3.5" />
-                <span>Overview</span>
+                <PanelLeft className="w-4 h-4" />
               </button>
 
-              <button
-                onClick={() => setViewMode("list")}
-                className={`flex items-center gap-1.5 px-2.5 py-1 rounded-md transition ${
-                  viewMode === "list"
-                    ? "bg-blue-600/20 text-blue-400 font-medium"
-                    : "text-zinc-400 hover:text-zinc-200"
-                }`}
-              >
-                <ListIcon className="w-3.5 h-3.5" />
-                <span>List</span>
-              </button>
+              <div className="flex items-center gap-1.5 text-xs font-medium" style={{ color: "var(--glass-text-muted)" }}>
+                {breadcrumb.map((b, i) => (
+                  <React.Fragment key={b + i}>
+                    {i > 0 && <span className="opacity-50">/</span>}
+                    <span
+                      style={{
+                        color: i === breadcrumb.length - 1 ? "var(--glass-text-primary)" : "var(--glass-text-muted)",
+                      }}
+                    >
+                      {b}
+                    </span>
+                  </React.Fragment>
+                ))}
+              </div>
 
-              <button
-                onClick={() => setViewMode("board")}
-                className={`flex items-center gap-1.5 px-2.5 py-1 rounded-md transition ${
-                  viewMode === "board"
-                    ? "bg-blue-600/20 text-blue-400 font-medium"
-                    : "text-zinc-400 hover:text-zinc-200"
-                }`}
-              >
-                <Columns3 className="w-3.5 h-3.5" />
-                <span>Board</span>
-              </button>
+              <div className="h-4 w-px" style={{ backgroundColor: "var(--glass-border)" }} />
+
+              {/* View Tabs (including Home Dashboard!) */}
+              <div className="flex items-center gap-1 text-xs">
+                <button
+                  onClick={() => setViewMode("home")}
+                  className={`flex items-center gap-1.5 px-2.5 py-1 rounded-md transition ${
+                    viewMode === "home"
+                      ? "bg-[#4984fd]/15 text-[#4984fd] font-medium"
+                      : "opacity-75 hover:opacity-100"
+                  }`}
+                >
+                  <HomeIcon className="w-3.5 h-3.5" />
+                  <span>Home</span>
+                </button>
+
+                <button
+                  onClick={() => setViewMode("overview")}
+                  className={`flex items-center gap-1.5 px-2.5 py-1 rounded-md transition ${
+                    viewMode === "overview"
+                      ? "bg-[#4984fd]/15 text-[#4984fd] font-medium"
+                      : "opacity-75 hover:opacity-100"
+                  }`}
+                >
+                  <LayoutDashboard className="w-3.5 h-3.5" />
+                  <span>Overview</span>
+                </button>
+
+                <button
+                  onClick={() => setViewMode("list")}
+                  className={`flex items-center gap-1.5 px-2.5 py-1 rounded-md transition ${
+                    viewMode === "list"
+                      ? "bg-[#4984fd]/15 text-[#4984fd] font-medium"
+                      : "opacity-75 hover:opacity-100"
+                  }`}
+                >
+                  <ListIcon className="w-3.5 h-3.5" />
+                  <span>List</span>
+                </button>
+
+                <button
+                  onClick={() => setViewMode("board")}
+                  className={`flex items-center gap-1.5 px-2.5 py-1 rounded-md transition ${
+                    viewMode === "board"
+                      ? "bg-[#4984fd]/15 text-[#4984fd] font-medium"
+                      : "opacity-75 hover:opacity-100"
+                  }`}
+                >
+                  <Columns3 className="w-3.5 h-3.5" />
+                  <span>Board</span>
+                </button>
 
               {/* + View Modal Button */}
               <div className="relative">
@@ -950,10 +1158,65 @@ export default function SovereignPmsPage() {
               </div>
             </div>
           )}
+
+          {/* HOME DASHBOARD VIEW INSIDE PMS */}
+          {!loading && viewMode === "home" && (
+            <div className="p-6 max-w-6xl mx-auto space-y-6">
+              <div className="flex items-center justify-between flex-wrap gap-3">
+                <div>
+                  <h2 className="text-lg font-medium" style={{ color: "var(--glass-text-primary)" }}>
+                    Universal Home Dashboard
+                  </h2>
+                  <p className="text-xs" style={{ color: "var(--glass-text-muted)" }}>
+                    All active spaces &amp; tasks interconnected across Operations, Health, Wealth, and Family.
+                  </p>
+                </div>
+                <button
+                  onClick={() => setIsNewSpaceModalOpen(true)}
+                  className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-[#4984fd] text-white text-xs font-medium hover:bg-blue-500 transition"
+                >
+                  <Plus className="w-3.5 h-3.5" />
+                  <span>New Space</span>
+                </button>
+              </div>
+
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+                {spaces.map((sp) => {
+                  const spTasks = tasks.filter((t) => t.space_id === sp.id);
+                  const doneCount = spTasks.filter((t) => t.status_category === "closed").length;
+                  return (
+                    <button
+                      key={sp.id}
+                      onClick={() => {
+                        handleSelectSpace(sp.id);
+                        setViewMode("board");
+                      }}
+                      className="text-left p-4 rounded-2xl border transition hover:border-[#4984fd]/50 space-y-2"
+                      style={{
+                        backgroundColor: "var(--glass-surface-elevated)",
+                        borderColor: "var(--glass-border)",
+                      }}
+                    >
+                      <div className="flex items-center justify-between">
+                        <span className="text-sm font-medium flex items-center gap-2" style={{ color: "var(--glass-text-primary)" }}>
+                          <span className="w-2.5 h-2.5 rounded-full" style={{ backgroundColor: sp.color_hex || "#4984fd" }} />
+                          {sp.name}
+                        </span>
+                        <ArrowRight className="w-3.5 h-3.5 opacity-60" />
+                      </div>
+                      <div className="text-xs font-mono" style={{ color: "var(--glass-text-muted)" }}>
+                        {spTasks.length} tasks · {doneCount} completed
+                      </div>
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+          )}
         </div>
       </main>
 
-      {/* 4. Task Detail Modal (90vw, 85vh, 65% / 35%) */}
+      {/* 4. Task Detail Modal */}
       <TaskDetailModal
         task={selectedTaskForDetail}
         statuses={currentSpaceStatuses}
@@ -975,6 +1238,7 @@ export default function SovereignPmsPage() {
         onClose={() => setIsNewSpaceModalOpen(false)}
         onCreateSpace={handleCreateSpace}
       />
-    </div>
+      </div>
+    </ExecutiveModuleShell>
   );
 }

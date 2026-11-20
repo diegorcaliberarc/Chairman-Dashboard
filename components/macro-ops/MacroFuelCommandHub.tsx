@@ -66,8 +66,8 @@ export function MacroFuelCommandHub({
           <div className="flex items-center justify-between mb-2">
             <div className="flex items-center gap-2">
               <span className="w-2.5 h-2.5 rounded-full bg-amber-400" />
-              <span className="font-mono font-bold text-xs uppercase tracking-wider text-zinc-600 dark:text-zinc-400">
-                Energy Deficit Fuel
+              <span className="font-mono font-medium text-xs uppercase tracking-wider" style={{ color: "var(--glass-text-primary)" }}>
+                Calories
               </span>
             </div>
             <span className="font-mono text-[10px] font-bold text-amber-600 dark:text-amber-300 uppercase px-2 py-0.5 rounded bg-amber-500/10 border border-amber-500/20">
@@ -121,8 +121,8 @@ export function MacroFuelCommandHub({
           <div className="flex items-center justify-between mb-2">
             <div className="flex items-center gap-2">
               <span className="w-2.5 h-2.5 rounded-full bg-cyan-400" />
-              <span className="font-mono font-bold text-xs uppercase tracking-wider text-zinc-600 dark:text-zinc-400">
-                Protein Anabolism
+              <span className="font-mono font-medium text-xs uppercase tracking-wider" style={{ color: "var(--glass-text-primary)" }}>
+                Protein
               </span>
             </div>
             <span className="font-mono text-[10px] font-bold text-cyan-600 dark:text-cyan-300 uppercase px-2 py-0.5 rounded bg-cyan-500/10 border border-cyan-500/20">
@@ -175,8 +175,8 @@ export function MacroFuelCommandHub({
           <div className="flex items-center justify-between mb-2">
             <div className="flex items-center gap-2">
               <span className="w-2.5 h-2.5 rounded-full bg-rose-400" />
-              <span className="font-mono font-bold text-xs uppercase tracking-wider text-zinc-600 dark:text-zinc-400">
-                Glycogen Repletion
+              <span className="font-mono font-medium text-xs uppercase tracking-wider" style={{ color: "var(--glass-text-primary)" }}>
+                Carbohydrates
               </span>
             </div>
             <span className="font-mono text-[10px] font-bold text-rose-600 dark:text-rose-300 uppercase px-2 py-0.5 rounded bg-rose-500/10 border border-rose-500/20">
@@ -229,8 +229,8 @@ export function MacroFuelCommandHub({
           <div className="flex items-center justify-between mb-2">
             <div className="flex items-center gap-2">
               <span className="w-2.5 h-2.5 rounded-full bg-purple-400" />
-              <span className="font-mono font-bold text-xs uppercase tracking-wider text-zinc-600 dark:text-zinc-400">
-                Lipids &amp; Hormones
+              <span className="font-mono font-medium text-xs uppercase tracking-wider" style={{ color: "var(--glass-text-primary)" }}>
+                Fats
               </span>
             </div>
             <span className="font-mono text-[10px] font-bold text-purple-600 dark:text-purple-300 uppercase px-2 py-0.5 rounded bg-purple-500/10 border border-purple-500/20">

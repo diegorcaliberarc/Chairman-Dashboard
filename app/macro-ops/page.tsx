@@ -73,6 +73,13 @@ export default function MacroOpsPage() {
 
   // Fast in-memory cache for instant 0ms date switching
   const cacheRef = React.useRef<Record<string, { sitrep: any; nutrition: any }>>({});
+  // Atomic water ref & sequence guard so rapid clicks accumulate reliably without stale closures
+  const waterOzRef = React.useRef<number>(0);
+  const waterSeqRef = React.useRef<number>(0);
+
+  useEffect(() => {
+    waterOzRef.current = Number(todayLog?.water_oz || 0);
+  }, [todayLog?.water_oz, selectedDate]);
 
   // Unified fast parallel data loader
   const loadAllData = useCallback(async (targetDate: string, force = false) => {
@@ -156,7 +163,10 @@ export default function MacroOpsPage() {
   }, [entries]);
 
   // Database persistence helpers
-  const updateSitrepField = async (partial: Partial<DailySitrepLog> | Record<string, any>) => {
+  const updateSitrepField = async (
+    partial: Partial<DailySitrepLog> | Record<string, any>,
+    expectedWaterSeq?: number
+  ) => {
     try {
       const payload = {
         log_date: selectedDate,
@@ -165,7 +175,7 @@ export default function MacroOpsPage() {
         calories_eaten: totals?.calories || todayLog?.calories_eaten || 0,
         kcal_burned: todayLog?.kcal_burned ?? 0,
         protein_g: totals?.protein || todayLog?.protein_g || 0,
-        water_oz: todayLog?.water_oz ?? 0,
+        water_oz: waterOzRef.current,
         sleep_hours: todayLog?.sleep_hours ?? null,
         recovery_score: todayLog?.recovery_score ?? null,
         lift_completed: todayLog?.lift_completed ?? false,
@@ -185,15 +195,20 @@ export default function MacroOpsPage() {
         const data = await res.json();
         const savedLog = data.entry || data.log || data.todayLog;
         if (savedLog) {
-          setTodayLog(savedLog);
+          // If a newer water click happened while this request was in flight, keep the latest water_oz
+          const mergedLog =
+            expectedWaterSeq !== undefined && expectedWaterSeq < waterSeqRef.current
+              ? { ...savedLog, water_oz: waterOzRef.current }
+              : savedLog;
+          setTodayLog(mergedLog);
           setSitrepHistory((prev) => {
             const idx = prev.findIndex((h) => h.log_date === selectedDate);
             if (idx >= 0) {
               const updated = [...prev];
-              updated[idx] = savedLog;
+              updated[idx] = mergedLog;
               return updated;
             }
-            return [savedLog, ...prev];
+            return [mergedLog, ...prev];
           });
         }
       }
@@ -203,8 +218,9 @@ export default function MacroOpsPage() {
   };
 
   const handleQuickAddWater = async (deltaOz: number) => {
-    const currentWater = Number(todayLog?.water_oz || 0);
-    const nextWater = +(currentWater + deltaOz).toFixed(1);
+    const seq = ++waterSeqRef.current;
+    const nextWater = Math.max(0, +(waterOzRef.current + deltaOz).toFixed(1));
+    waterOzRef.current = nextWater;
 
     // 1. Optimistic update immediately for zero-lag UI response
     setTodayLog((prev) =>
@@ -239,11 +255,13 @@ export default function MacroOpsPage() {
     delete cacheRef.current[selectedDate];
 
     // 2. Persist to sitrep database
-    await updateSitrepField({ water_oz: nextWater });
+    await updateSitrepField({ water_oz: nextWater }, seq);
   };
 
   const handleSetWater = async (totalOz: number) => {
+    const seq = ++waterSeqRef.current;
     const nextWater = Math.max(0, +totalOz.toFixed(1));
+    waterOzRef.current = nextWater;
 
     // 1. Optimistic update immediately for zero-lag UI response
     setTodayLog((prev) =>
@@ -275,7 +293,7 @@ export default function MacroOpsPage() {
     );
 
     delete cacheRef.current[selectedDate];
-    await updateSitrepField({ water_oz: nextWater });
+    await updateSitrepField({ water_oz: nextWater }, seq);
   };
 
   const handleUpdateSteps = async (steps: number) => {
@@ -437,24 +455,6 @@ export default function MacroOpsPage() {
               <span>MEAL PROTOCOL</span>
             </button>
           </div>
-
-          {/* Quick Fuel Entry Modal Button */}
-          <button
-            onClick={() => setIsMealModalOpen(true)}
-            className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-cyan-500 hover:bg-cyan-400 text-zinc-950 font-bold font-mono text-xs tracking-wider shadow-lg shadow-cyan-500/20 active:scale-95 transition"
-          >
-            <Utensils size={13} />
-            <span>+ LOG FUEL</span>
-          </button>
-
-          {/* Quick Debrief Button */}
-          <button
-            onClick={() => setIsDebriefOpen(true)}
-            className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-400 hover:to-amber-500 text-zinc-950 font-bold font-mono text-xs tracking-wider shadow-lg active:scale-95 transition"
-          >
-            <Moon size={13} />
-            <span className="hidden sm:inline">DEBRIEF</span>
-          </button>
 
           {/* Refresh */}
           <button
