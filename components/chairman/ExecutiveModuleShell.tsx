@@ -4,7 +4,6 @@ import React, { useState } from "react";
 import { useSession, signIn, signOut } from "next-auth/react";
 import { Palette } from "lucide-react";
 import { Sidebar } from "@/components/Sidebar";
-import { CluelyFooter } from "@/components/chairman/CluelyFooter";
 
 interface ExecutiveModuleShellProps {
   moduleId: string;
@@ -120,14 +119,11 @@ export function ExecutiveModuleShell({
           className={
             fullBleed
               ? "flex-1 relative min-h-0 bg-transparent"
-              : "flex-1 px-4 sm:px-8 py-8 max-w-[1440px] w-full mx-auto space-y-8 pb-20 bg-transparent"
+              : "flex-1 px-4 sm:px-8 py-6 max-w-[1480px] w-full mx-auto space-y-6 pb-20 bg-transparent"
           }
         >
           {children}
         </main>
-
-        {/* Always-Light Cluely Footer (#f9fafb, #6b7280) */}
-        <CluelyFooter />
       </div>
     </div>
   );

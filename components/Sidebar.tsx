@@ -43,6 +43,8 @@ import {
   Settings,
   Compass,
   GitBranch,
+  Zap,
+  HeartHandshake,
 } from "lucide-react";
 import { useRouter, usePathname } from "next/navigation";
 import { useSession } from "next-auth/react";
@@ -73,16 +75,16 @@ function LiveClock() {
 
 export type LifePillarFilter =
   | "all"
+  | "operations"
   | "health"
   | "wealth"
-  | "relationships"
   | "fam"
   | "happiness";
 
 interface NavModuleItem {
   id: string;
   label: string;
-  pillar: "health" | "wealth" | "relationships" | "fam" | "happiness" | "all";
+  pillar: "operations" | "health" | "wealth" | "fam" | "happiness";
   icon: React.ReactNode;
   route: string;
   badge?: string;
@@ -90,51 +92,75 @@ interface NavModuleItem {
 }
 
 const ALL_MODULE_ITEMS: NavModuleItem[] = [
-  // Operations & Planning Hub (Consolidated: Command, PMS, Roadmap, Topology, Vault, Horizon, Life Ops, Academy)
+  // Operations (Top-down strategy, home overview, PMS, roadmap, architecture, skills & artifacts)
+  {
+    id: "MASTER",
+    label: "Home Dashboard",
+    pillar: "operations",
+    icon: <LayoutDashboard size={14} />,
+    route: "/",
+    description: "Customizable workspace overview",
+  },
   {
     id: "COMMAND",
     label: "Operations & Strategy",
-    pillar: "all",
+    pillar: "operations",
     icon: <Compass size={14} />,
     route: "/command",
-    badge: "Hub",
-    description: "Goals, priorities, vault, horizon & academy",
+    badge: "Ops",
+    description: "Goals, priorities & weekly plans",
   },
   {
     id: "PMS",
     label: "Project Management",
-    pillar: "all",
+    pillar: "operations",
     icon: <KanbanSquare size={14} />,
     route: "/pms",
-    description: "Projects, tasks & sprint execution",
+    description: "Projects, tasks & sprints",
   },
   {
     id: "ROADMAPS",
     label: "Strategic Roadmap",
-    pillar: "all",
+    pillar: "operations",
     icon: <GitBranch size={14} />,
     route: "/roadmaps",
-    badge: "Plan",
-    description: "Multi-branch goals & milestone dependencies",
+    description: "Multi-branch plans & milestones",
   },
   {
     id: "ORG_CHART",
     label: "Architecture Map",
-    pillar: "all",
+    pillar: "operations",
     icon: <Network size={14} />,
     route: "/org-chart",
-    description: "System topology & visual diagrams",
+    description: "Topology & multi-page diagrams",
+  },
+  {
+    id: "SKILLS",
+    label: "Skills",
+    pillar: "operations",
+    icon: <Zap size={14} />,
+    route: "/skills",
+    badge: "AI",
+    description: "Reusable workflows & team skills",
+  },
+  {
+    id: "ARTIFACTS",
+    label: "Artifacts",
+    pillar: "operations",
+    icon: <Sparkles size={14} />,
+    route: "/artifacts",
+    badge: "Build",
+    description: "Apps, dashboards, slides & reports",
   },
 
-  // Health Hub (Workouts + Nutrition + Circadian Solar)
+  // Health (Workouts, Nutrition, Circadian Solar, Mindset)
   {
     id: "WORKOUTS",
     label: "Strength & Training",
     pillar: "health",
     icon: <Dumbbell size={14} />,
     route: "/workouts",
-    badge: "Gym",
-    description: "Progressive overload, sets & rest timers",
+    description: "Progressive overload & rest timers",
   },
   {
     id: "MACRO_OPS",
@@ -142,8 +168,7 @@ const ALL_MODULE_ITEMS: NavModuleItem[] = [
     pillar: "health",
     icon: <Utensils size={14} />,
     route: "/macro-ops",
-    badge: "Fuel",
-    description: "Voice food log, macros & water intake",
+    description: "Voice food log, macros & water",
   },
   {
     id: "CALENDAR_HABITS",
@@ -151,19 +176,25 @@ const ALL_MODULE_ITEMS: NavModuleItem[] = [
     pillar: "health",
     icon: <CalendarRange size={14} />,
     route: "/calendar",
-    badge: "24H",
-    description: "24-hour rhythm & synced calendar",
+    description: "2400 solar dial & synced calendar",
+  },
+  {
+    id: "MINDSET",
+    label: "Mindset & Clarity",
+    pillar: "health",
+    icon: <Flame size={14} />,
+    route: "/mindset",
+    description: "Cognitive framing & reflection",
   },
 
-  // Wealth Hub (Budget + Caliber Arc)
+  // Wealth (Budget, Caliber Arc, Trend Intelligence)
   {
     id: "BUDGET",
     label: "Budget & Shift Ledger",
     pillar: "wealth",
     icon: <Wallet size={14} />,
     route: "/budget",
-    badge: "$",
-    description: "12-month cashflow & shift tracking",
+    description: "12-month cashflow & shifts",
   },
   {
     id: "CALIBER_ARC",
@@ -171,58 +202,33 @@ const ALL_MODULE_ITEMS: NavModuleItem[] = [
     pillar: "wealth",
     icon: <TrendingUp size={14} />,
     route: "/caliber-arc",
-    badge: "Markets",
-    description: "Trading journal & execution review",
+    description: "Trading journal & execution",
+  },
+  {
+    id: "MARKETING_AGENT",
+    label: "Trend Intelligence",
+    pillar: "wealth",
+    icon: <Radar size={14} />,
+    route: "/marketing-agent",
+    description: "Market signals & growth research",
   },
 
-  // Relationships (Decoupled from Operations)
+  // Family (His & Hers Pods + Family Hub)
   {
     id: "PODS",
     label: "His & Hers Pods",
-    pillar: "relationships",
+    pillar: "fam",
     icon: <Users size={14} />,
     route: "/pods",
-    badge: "Shared",
-    description: "Shared goals, bucket list & connection",
+    description: "Shared goals & connection",
   },
-  {
-    id: "MINDSET",
-    label: "Mindset & Clarity",
-    pillar: "relationships",
-    icon: <Flame size={14} />,
-    route: "/mindset",
-    badge: "⌘⇧M",
-    description: "Cognitive framing & daily reflection",
-  },
-
-  // Family
   {
     id: "FAMILY_HUB",
     label: "Family Hub",
     pillar: "fam",
     icon: <Dog size={14} />,
     route: "/family-hub",
-    badge: "Pack",
-    description: "Household & pack care schedules",
-  },
-
-  // Joy
-  {
-    id: "MASTER",
-    label: "Home Overview",
-    pillar: "happiness",
-    icon: <LayoutDashboard size={14} />,
-    route: "/",
-    description: "Daily focus & calm overview",
-  },
-  {
-    id: "MARKETING_AGENT",
-    label: "Trend Intelligence",
-    pillar: "happiness",
-    icon: <Radar size={14} />,
-    route: "/marketing-agent",
-    badge: "Research",
-    description: "Market signals & creative insights",
+    description: "Household & pack schedules",
   },
 ];
 
@@ -242,55 +248,48 @@ const PILLARS_CONFIG: Array<{
   shortLabel: string;
   icon: React.ReactNode;
   color: string;
-  count: number;
 }> = [
   {
     id: "all",
-    label: "All Spheres",
+    label: "All",
     shortLabel: "All",
-    icon: <Layers size={13} />,
+    icon: <Layers size={16} />,
     color: "var(--theme-grad-start, #4984fd)",
-    count: ALL_MODULE_ITEMS.length,
+  },
+  {
+    id: "operations",
+    label: "Operations",
+    shortLabel: "Ops",
+    icon: <Compass size={16} />,
+    color: "#4984fd",
   },
   {
     id: "health",
     label: "Health",
     shortLabel: "Health",
-    icon: <Activity size={13} />,
+    icon: <Activity size={16} />,
     color: "#10B981",
-    count: ALL_MODULE_ITEMS.filter((i) => i.pillar === "health").length,
   },
   {
     id: "wealth",
     label: "Wealth",
     shortLabel: "Wealth",
-    icon: <CircleDollarSign size={13} />,
+    icon: <CircleDollarSign size={16} />,
     color: "#F59E0B",
-    count: ALL_MODULE_ITEMS.filter((i) => i.pillar === "wealth").length,
-  },
-  {
-    id: "relationships",
-    label: "Relationships",
-    shortLabel: "Relationships",
-    icon: <Users size={13} />,
-    color: "#4984fd",
-    count: ALL_MODULE_ITEMS.filter((i) => i.pillar === "relationships").length,
   },
   {
     id: "fam",
     label: "Family",
     shortLabel: "Family",
-    icon: <Dog size={13} />,
+    icon: <Heart size={16} />,
     color: "#EC4899",
-    count: ALL_MODULE_ITEMS.filter((i) => i.pillar === "fam").length,
   },
   {
     id: "happiness",
-    label: "Joy",
+    label: "Happiness",
     shortLabel: "Joy",
-    icon: <Sparkles size={13} />,
+    icon: <Sparkles size={16} />,
     color: "#8B5CF6",
-    count: ALL_MODULE_ITEMS.filter((i) => i.pillar === "happiness").length,
   },
 ];
 
@@ -415,11 +414,80 @@ export function Sidebar({
     return () => window.removeEventListener("keydown", onKeyDown);
   }, [router]);
 
-  // Filtered module items for Column 2 based on Column 1 selection
+  // Drag & Drop customizable module order + sphere assignment (persisted in localStorage)
+  const [moduleLayout, setModuleLayout] = useState<
+    Array<{ id: string; pillar: NavModuleItem["pillar"] }>
+  >(() => ALL_MODULE_ITEMS.map((m) => ({ id: m.id, pillar: m.pillar })));
+  const [draggedModuleId, setDraggedModuleId] = useState<string | null>(null);
+  const [dragOverPillar, setDragOverPillar] = useState<LifePillarFilter | null>(null);
+
+  useEffect(() => {
+    try {
+      const saved = localStorage.getItem("chairman-sidebar-layout-v1");
+      if (saved) {
+        const parsed = JSON.parse(saved) as Array<{ id: string; pillar: NavModuleItem["pillar"] }>;
+        if (Array.isArray(parsed) && parsed.length > 0) {
+          const validIds = new Set(ALL_MODULE_ITEMS.map((m) => m.id));
+          const merged = parsed.filter((p) => validIds.has(p.id));
+          const existingIds = new Set(merged.map((p) => p.id));
+          for (const m of ALL_MODULE_ITEMS) {
+            if (!existingIds.has(m.id)) merged.push({ id: m.id, pillar: m.pillar });
+          }
+          setModuleLayout(merged);
+        }
+      }
+    } catch {}
+  }, []);
+
+  const persistLayout = (next: Array<{ id: string; pillar: NavModuleItem["pillar"] }>) => {
+    setModuleLayout(next);
+    try {
+      localStorage.setItem("chairman-sidebar-layout-v1", JSON.stringify(next));
+    } catch {}
+  };
+
+  const handleDropOnPillar = (targetPillar: LifePillarFilter) => {
+    if (!draggedModuleId || targetPillar === "all") {
+      setDraggedModuleId(null);
+      setDragOverPillar(null);
+      return;
+    }
+    const next = moduleLayout.map((entry) =>
+      entry.id === draggedModuleId ? { ...entry, pillar: targetPillar } : entry
+    );
+    persistLayout(next);
+    setDraggedModuleId(null);
+    setDragOverPillar(null);
+  };
+
+  const handleDropOnModule = (targetId: string) => {
+    if (!draggedModuleId || draggedModuleId === targetId) {
+      setDraggedModuleId(null);
+      return;
+    }
+    const next = [...moduleLayout];
+    const fromIdx = next.findIndex((x) => x.id === draggedModuleId);
+    const toIdx = next.findIndex((x) => x.id === targetId);
+    if (fromIdx === -1 || toIdx === -1) return;
+    const [moved] = next.splice(fromIdx, 1);
+    next.splice(toIdx, 0, moved);
+    persistLayout(next);
+    setDraggedModuleId(null);
+  };
+
+  // Filtered module items for Column 2 based on Column 1 selection & custom order
   const filteredModules = useMemo(() => {
-    if (activePillar === "all") return ALL_MODULE_ITEMS;
-    return ALL_MODULE_ITEMS.filter((item) => item.pillar === activePillar);
-  }, [activePillar]);
+    const byId: Record<string, NavModuleItem> = {};
+    for (const m of ALL_MODULE_ITEMS) byId[m.id] = m;
+    const ordered = moduleLayout
+      .map((entry) => {
+        const base = byId[entry.id];
+        return base ? { ...base, pillar: entry.pillar } : null;
+      })
+      .filter(Boolean) as NavModuleItem[];
+    if (activePillar === "all") return ordered;
+    return ordered.filter((item) => item.pillar === activePillar);
+  }, [activePillar, moduleLayout]);
 
   // Active pillar metadata
   const currentPillarMeta = useMemo(() => {
@@ -429,22 +497,34 @@ export function Sidebar({
   return (
     <>
       {/* Mobile Top Navigation Bar (iPhone & Android Viewports) */}
-      <div className="lg:hidden fixed top-0 left-0 right-0 h-14 bg-[#ffffff]/90 backdrop-blur-xl border-b border-[#d1d6e0] z-40 flex items-center justify-between px-4 text-[#000000]">
+      <div
+        className="lg:hidden fixed top-0 left-0 right-0 h-14 backdrop-blur-xl border-b z-40 flex items-center justify-between px-4"
+        style={{
+          backgroundColor: "var(--glass-surface-elevated)",
+          borderColor: "var(--glass-border)",
+          color: "var(--glass-text-primary)",
+        }}
+      >
         <button
           type="button"
           onClick={() => setMobileMenuOpen((p) => !p)}
-          className="p-2 rounded-[12px] bg-[#f9fafb] hover:bg-[#dde2ee]/60 border border-[#d1d6e0] text-[#000000] transition-colors flex items-center gap-2"
+          className="p-2 rounded-[12px] border transition-colors flex items-center gap-2"
+          style={{
+            backgroundColor: "var(--glass-surface)",
+            borderColor: "var(--glass-border)",
+            color: "var(--glass-text-primary)",
+          }}
           aria-label="Toggle Navigation Menu"
         >
           {mobileMenuOpen ? <X size={18} /> : <Menu size={18} />}
-          <span className="text-[13px] font-medium tracking-[-0.13px] text-[#000000]">
+          <span className="text-[13px] font-medium tracking-[-0.13px]">
             {currentPillarMeta.label}
           </span>
         </button>
 
         <div className="flex items-center gap-2">
           <div className="w-2 h-2 rounded-full bg-[#4984fd]" />
-          <span className="text-[14px] font-medium tracking-[-0.13px] text-[#000000]">
+          <span className="text-[14px] font-medium tracking-[-0.13px]">
             Chairman Dashboard
           </span>
         </div>
@@ -458,9 +538,9 @@ export function Sidebar({
         />
       )}
 
-      {/* Main Dual-Column Sidebar: Slide-over Drawer on Mobile, Compact Theme-Adaptive Rail on Desktop */}
+      {/* Main Dual-Column Sidebar: Sticky Full-Height Desktop Rail (Never Cuts Off on Scroll!) */}
       <aside
-        className={`fixed lg:relative left-0 top-0 h-screen shrink-0 flex flex-row border-r z-50 lg:z-30 transition-all duration-300 backdrop-blur-xl ${
+        className={`fixed lg:sticky left-0 top-0 h-screen shrink-0 flex flex-row border-r z-50 lg:z-30 transition-all duration-300 backdrop-blur-xl ${
           mobileMenuOpen ? "translate-x-0" : "-translate-x-full lg:translate-x-0"
         }`}
         style={{
@@ -471,101 +551,73 @@ export function Sidebar({
         }}
       >
         {/* ====================================================================
-         * COLUMN 1: LIFE SPHERES (Compact Width)
+         * COLUMN 1: CLICKUP-STYLE ICON RAIL (Icon on Top + Label Below, No Numbers)
          * ================================================================== */}
         <div
-          className={`h-full flex flex-col border-r transition-all duration-300 ${
-            col1Collapsed ? "w-14" : "w-36"
-          }`}
+          className="h-full w-[68px] flex flex-col items-center border-r py-3 gap-1.5 shrink-0"
           style={{
             backgroundColor: "var(--glass-surface)",
             borderColor: "var(--glass-border)",
           }}
         >
-          {/* Brand Header & Col 1 Collapse Toggle */}
-          <div className="px-3 py-3.5 border-b border-zinc-200/50 dark:border-white/10 flex items-center justify-between gap-1">
-            <div className="flex items-center gap-2 min-w-0 overflow-hidden">
-              <Map size={16} className="text-[color:var(--theme-grad-start)] shrink-0" />
-              {!col1Collapsed && (
-                <span
-                  className="font-bold text-xs truncate bg-theme-gradient bg-clip-text text-transparent"
-                  style={{ letterSpacing: "0.04em" }}
-                >
-                  Pillars
-                </span>
-              )}
-            </div>
-            <button
-              type="button"
-              onClick={handleToggleCol1}
-              className="p-1 rounded-lg text-zinc-400 hover:text-zinc-900 dark:hover:text-white hover:bg-zinc-200/50 dark:hover:bg-white/10 transition-colors shrink-0"
-              title={col1Collapsed ? "Expand Pillars Column" : "Collapse Pillars Column"}
-            >
-              <PanelLeftClose
-                size={14}
-                className={`transition-transform duration-200 ${
-                  col1Collapsed ? "rotate-180" : ""
-                }`}
-              />
-            </button>
-          </div>
+          {/* Brand Emblem */}
+          <button
+            type="button"
+            onClick={() => router.push("/")}
+            className="w-9 h-9 rounded-xl flex items-center justify-center mb-1.5 border transition-transform hover:scale-105"
+            style={{
+              backgroundColor: "rgba(73, 132, 253, 0.14)",
+              borderColor: "rgba(73, 132, 253, 0.4)",
+              color: "#4984fd",
+            }}
+            title="Home Dashboard"
+          >
+            <Compass size={17} />
+          </button>
 
-          {/* Pillars List */}
-          <div className="flex flex-col gap-1 p-2 flex-1 overflow-y-auto">
-            {!col1Collapsed && (
-              <div className="text-[9px] font-bold tracking-[0.18em] uppercase text-zinc-500 dark:text-zinc-500 px-2 py-1">
-                Life Spheres
-              </div>
-            )}
-
+          {/* Life Spheres Icon-Top Navigation (Also Drop Targets for Dragging Modules!) */}
+          <div className="flex flex-col items-center gap-1.5 flex-1 w-full px-1.5 overflow-y-auto">
             {PILLARS_CONFIG.map((p) => {
               const isSelected = activePillar === p.id;
+              const isDropHover = dragOverPillar === p.id && p.id !== "all";
               return (
                 <button
                   key={p.id}
                   type="button"
                   onClick={() => handleSelectPillar(p.id)}
-                  className="flex items-center justify-between gap-2 px-2 py-2 rounded-xl text-left transition-all border"
+                  onDragOver={(e) => {
+                    if (p.id !== "all") {
+                      e.preventDefault();
+                      setDragOverPillar(p.id);
+                    }
+                  }}
+                  onDragLeave={() => setDragOverPillar(null)}
+                  onDrop={(e) => {
+                    e.preventDefault();
+                    handleDropOnPillar(p.id);
+                  }}
+                  className="w-full py-2 px-1 rounded-xl flex flex-col items-center justify-center gap-1 transition-all border"
                   style={{
-                    borderColor: isSelected ? "rgba(73, 132, 253, 0.45)" : "transparent",
-                    backgroundColor: isSelected ? "rgba(73, 132, 253, 0.12)" : "transparent",
+                    borderColor: isDropHover
+                      ? "#4984fd"
+                      : isSelected
+                      ? "rgba(73, 132, 253, 0.45)"
+                      : "transparent",
+                    backgroundColor: isDropHover
+                      ? "rgba(73, 132, 253, 0.22)"
+                      : isSelected
+                      ? "rgba(73, 132, 253, 0.14)"
+                      : "transparent",
                     color: isSelected ? "var(--glass-text-primary)" : "var(--glass-text-muted)",
                   }}
-                  title={`${p.label} (${p.count} modules)`}
+                  title={`${p.label} — drop a module here to move it`}
                 >
-                  <div className="flex items-center gap-2 min-w-0">
-                    <span
-                      className="shrink-0 p-1 rounded-lg border"
-                      style={{
-                        color: p.color,
-                        borderColor: `${p.color}35`,
-                        backgroundColor: `${p.color}12`,
-                      }}
-                    >
-                      {p.icon}
-                    </span>
-                    {!col1Collapsed && (
-                      <span
-                        className="text-[11.5px] font-medium truncate"
-                        style={{
-                          color: isSelected ? "var(--glass-text-primary)" : "var(--glass-text-muted)",
-                        }}
-                      >
-                        {p.shortLabel}
-                      </span>
-                    )}
-                  </div>
-                  {!col1Collapsed && (
-                    <span
-                      className="text-[9.5px] font-mono px-1.5 py-0.5 rounded-md font-semibold shrink-0"
-                      style={{
-                        color: p.color,
-                        backgroundColor: `${p.color}18`,
-                      }}
-                    >
-                      {p.count}
-                    </span>
-                  )}
+                  <span style={{ color: isSelected ? "#4984fd" : p.color }}>
+                    {p.icon}
+                  </span>
+                  <span className="text-[10px] font-medium leading-tight truncate max-w-full">
+                    {p.shortLabel}
+                  </span>
                 </button>
               );
             })}
@@ -630,6 +682,17 @@ export function Sidebar({
               return (
                 <button
                   key={item.id}
+                  draggable
+                  onDragStart={() => setDraggedModuleId(item.id)}
+                  onDragOver={(e) => e.preventDefault()}
+                  onDrop={(e) => {
+                    e.preventDefault();
+                    handleDropOnModule(item.id);
+                  }}
+                  onDragEnd={() => {
+                    setDraggedModuleId(null);
+                    setDragOverPillar(null);
+                  }}
                   onClick={() => {
                     setMobileMenuOpen(false);
                     if (item.route === pathname) {
@@ -639,13 +702,14 @@ export function Sidebar({
                       router.push(item.route);
                     }
                   }}
-                  className="flex items-center justify-between gap-2 w-full px-2.5 py-2 rounded-xl text-left transition-all border"
+                  className="flex items-center justify-between gap-2 w-full px-2.5 py-2 rounded-xl text-left transition-all border cursor-grab active:cursor-grabbing"
                   style={{
                     borderColor: isActive ? "rgba(73, 132, 253, 0.48)" : "transparent",
                     backgroundColor: isActive ? "rgba(73, 132, 253, 0.12)" : "transparent",
                     color: isActive ? "var(--glass-text-primary)" : "var(--glass-text-muted)",
+                    opacity: draggedModuleId === item.id ? 0.5 : 1,
                   }}
-                  title={item.label}
+                  title={`${item.label} — drag to reorder or drop onto a sphere`}
                 >
                   <div className="flex items-center gap-2 min-w-0">
                     <span
