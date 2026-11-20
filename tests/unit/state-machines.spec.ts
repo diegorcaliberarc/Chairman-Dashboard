@@ -14,6 +14,16 @@ import {
   resolveRouteGuard,
   transitionConsentLifecycle,
 } from "@features/rbac-governance";
+import {
+  buildAuthSessionMock,
+  buildCalendarOpsMock,
+  buildCircadianRadarMock,
+  buildKpiScorecardMock,
+  buildMissionFlowGetMock,
+  buildMissionFlowPostMock,
+  buildRoadmapsSynthesizeMock,
+  buildUiPreferencesMock,
+} from "../fixtures/apiContractMocks";
 
 describe("Tier 1 & 3A — Deterministic State Machines & Spend Isolation", () => {
   it("scrubs live secrets and blocks unmocked outbound fetch calls", async () => {
@@ -125,5 +135,56 @@ describe("Tier 1 & 3A — Deterministic State Machines & Spend Isolation", () =>
       actorRole: "OWNER",
     });
     expect(illegalDirectApproveFromRevoked.status).toBe("REVOKED");
+  });
+
+  it("maintains strict Mock Contract Parity with production API route shapes", () => {
+    const dfyRes = buildRoadmapsSynthesizeMock({
+      action: "dfy",
+      domain: "health",
+      goalPrompt: "Cut to 155 lbs @ 8% BF",
+    });
+    expect(dfyRes.success).toBe(true);
+    expect("tree" in dfyRes && dfyRes.tree.tier0.length > 0).toBe(true);
+    expect("source" in dfyRes && dfyRes.source).toBe("deterministic");
+
+    const dwyInitRes = buildRoadmapsSynthesizeMock({
+      action: "dwy_init",
+      goalPrompt: "Scale SaaS MRR",
+    });
+    expect("questions" in dwyInitRes && dwyInitRes.questions.length).toBe(3);
+
+    const mfGet = buildMissionFlowGetMock();
+    expect(mfGet).toEqual({ success: true, missions: [], lessons: [] });
+
+    const mfDeploy = buildMissionFlowPostMock({ action: "deploy_mission" });
+    expect(mfDeploy.success).toBe(true);
+    expect("pmsSynced" in mfDeploy && typeof mfDeploy.pmsSynced).toBe("number");
+
+    const mfAar = buildMissionFlowPostMock({
+      action: "save_aar_lesson",
+      missionTitle: "Audit Parity",
+      domain: "master",
+    });
+    expect(mfAar.success).toBe(true);
+    expect("lesson" in mfAar && mfAar.lesson?.missionTitle).toBe("Audit Parity");
+
+    const uiPrefs = buildUiPreferencesMock();
+    expect(uiPrefs.ok).toBe(true);
+    expect(uiPrefs.preferences).toBeNull();
+    expect(uiPrefs.wheelStops.length).toBe(3);
+
+    const calOps = buildCalendarOpsMock();
+    expect(calOps.shiftConfig.totalScheduledDays).toBe(22);
+    expect(calOps.paySummary.payRate).toBe(320);
+
+    const radar = buildCircadianRadarMock("2026-11-20");
+    expect(radar.bucketCount).toBe(96);
+
+    const kpi = buildKpiScorecardMock();
+    expect(kpi).toEqual({ ok: true, snapshots: [], streakCount: 0, latest: null });
+
+    const session = buildAuthSessionMock();
+    expect(session.userId).toBe("isolated-user-01");
+    expect(session.role).toBe("ADMIN");
   });
 });

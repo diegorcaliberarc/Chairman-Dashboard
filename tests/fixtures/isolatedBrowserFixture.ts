@@ -1,4 +1,15 @@
-import { test as base, expect, Page } from "@playwright/test";
+import { test as base, expect, Page, Request } from "@playwright/test";
+import {
+  buildAuthSessionMock,
+  buildCalendarOpsMock,
+  buildCircadianRadarMock,
+  buildGoogleSyncMock,
+  buildKpiScorecardMock,
+  buildMissionFlowGetMock,
+  buildMissionFlowPostMock,
+  buildRoadmapsSynthesizeMock,
+  buildUiPreferencesMock,
+} from "./apiContractMocks";
 
 const FORBIDDEN_EXTERNAL_HOST_PATTERNS = [
   /\.supabase\.co$/i,
@@ -20,12 +31,24 @@ function jsonResponse(payload: unknown, status = 200) {
   };
 }
 
+function safeParsePostJson(request: Request): Record<string, unknown> {
+  try {
+    const parsed = request.postDataJSON();
+    return parsed && typeof parsed === "object"
+      ? (parsed as Record<string, unknown>)
+      : {};
+  } catch {
+    return {};
+  }
+}
+
 /**
  * Keiji Kanazawa Isolated Browser Fixture:
  * 1. Hard-blocks & fails the test if any request attempts outbound egress to
  *    live Supabase, Gemini/OpenAI, Stripe, Plaid, or Google OAuth/Calendar APIs.
- * 2. Serves deterministic, zero-latency mock responses for local `/api/*` routes
- *    so autonomous UI fuzzing never mutates live databases or burns API spend.
+ * 2. Serves deterministic, schema-locked mock responses (`apiContractMocks.ts`)
+ *    for local `/api/*` routes so autonomous UI fuzzing never mutates live DBs
+ *    or drifts from production TypeScript contracts.
  */
 export const test = base.extend<{
   outboundViolations: string[];
@@ -34,11 +57,12 @@ export const test = base.extend<{
     const violations: string[] = [];
 
     await context.route("**/*", async (route) => {
-      const reqUrl = new URL(route.request().url());
+      const request = route.request();
+      const reqUrl = new URL(request.url());
       const host = reqUrl.hostname;
 
       if (FORBIDDEN_EXTERNAL_HOST_PATTERNS.some((re) => re.test(host))) {
-        violations.push(`${route.request().method()} ${reqUrl.href}`);
+        violations.push(`${request.method()} ${reqUrl.href}`);
         await route.abort("blockedbyclient");
         return;
       }
@@ -54,44 +78,28 @@ export const test = base.extend<{
       ) {
         const p = reqUrl.pathname;
         if (p.startsWith("/api/auth/session")) {
-          await route.fulfill(
-            jsonResponse({
-              user: { name: "Isolated Test Commander", email: "isolated@test.local" },
-              role: "ADMIN",
-              expires: "2099-01-01T00:00:00.000Z",
-            })
-          );
+          await route.fulfill(jsonResponse(buildAuthSessionMock()));
           return;
         }
         if (p === "/api/ui-preferences") {
-          await route.fulfill(jsonResponse({ ok: true, preferences: {} }));
+          await route.fulfill(jsonResponse(buildUiPreferencesMock()));
           return;
         }
-        if (p === "/api/calendar-events") {
-          await route.fulfill(jsonResponse({ events: [] }));
-          return;
-        }
-        if (p === "/api/circadian") {
+        if (p === "/api/calendar-events" || p === "/api/circadian") {
           await route.fulfill(jsonResponse({ events: [] }));
           return;
         }
         if (p === "/api/circadian/radar") {
-          await route.fulfill(jsonResponse({ layers: [] }));
+          const dateParam = reqUrl.searchParams.get("date") ?? "2026-11-20";
+          await route.fulfill(jsonResponse(buildCircadianRadarMock(dateParam)));
           return;
         }
         if (p === "/api/calendar-ops") {
-          await route.fulfill(
-            jsonResponse({
-              ok: true,
-              habits: [],
-              highlightSpans: [],
-              appointments: [],
-            })
-          );
+          await route.fulfill(jsonResponse(buildCalendarOpsMock()));
           return;
         }
         if (p === "/api/calendar/google-sync") {
-          await route.fulfill(jsonResponse({ connected: false, synced: 0 }));
+          await route.fulfill(jsonResponse(buildGoogleSyncMock()));
           return;
         }
         if (p === "/api/tasks") {
@@ -99,36 +107,20 @@ export const test = base.extend<{
           return;
         }
         if (p === "/api/mission-flow") {
-          if (route.request().method() === "GET") {
-            await route.fulfill(jsonResponse({ lessons: [] }));
+          if (request.method() === "GET") {
+            await route.fulfill(jsonResponse(buildMissionFlowGetMock()));
             return;
           }
           await route.fulfill(
-            jsonResponse({
-              ok: true,
-              id: "isolated-mission-01",
-              deployedAt: "2026-11-20T00:00:00.000Z",
-              pmsSynced: 3,
-              calendarSynced: 2,
-              lesson: {
-                id: "isolated-aar-01",
-                missionTitle: "Isolated Test Mission",
-                domain: "master",
-                whatWorked: "Deterministic state machine",
-                whatBroke: "None",
-                ruleChange: "Maintain isolation",
-                createdAt: "2026-11-20T00:00:00.000Z",
-              },
-            })
+            jsonResponse(buildMissionFlowPostMock(safeParsePostJson(request)))
           );
           return;
         }
         if (p === "/api/roadmaps/synthesize") {
           await route.fulfill(
-            jsonResponse({
-              success: true,
-              message: "Isolated mock synthesis complete",
-            })
+            jsonResponse(
+              buildRoadmapsSynthesizeMock(safeParsePostJson(request))
+            )
           );
           return;
         }
@@ -137,12 +129,16 @@ export const test = base.extend<{
           return;
         }
         if (p === "/api/kpi-scorecard") {
-          await route.fulfill(jsonResponse({ ok: true, snapshots: [], streakCount: 0 }));
+          await route.fulfill(jsonResponse(buildKpiScorecardMock()));
           return;
         }
         if (p === "/api/plaid") {
           await route.fulfill(
-            jsonResponse({ configured: false, environment: "sandbox", accounts: [] })
+            jsonResponse({
+              configured: false,
+              environment: "sandbox",
+              accounts: [],
+            })
           );
           return;
         }
@@ -181,9 +177,10 @@ export function attachRuntimeMonitors(page: Page, outboundViolations: string[]) 
         outboundViolations,
         `Live outbound calls blocked: ${outboundViolations.join(" | ")}`
       ).toEqual([]);
-      expect(uncaughtErrors, `Uncaught page exceptions: ${uncaughtErrors.join(" | ")}`).toEqual(
-        []
-      );
+      expect(
+        uncaughtErrors,
+        `Uncaught page exceptions: ${uncaughtErrors.join(" | ")}`
+      ).toEqual([]);
       expect(
         consoleErrors,
         `Console/hydration errors: ${consoleErrors.join(" | ")}`

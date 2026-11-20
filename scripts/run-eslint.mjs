@@ -2,7 +2,7 @@ import { spawnSync } from "node:child_process";
 import path from "node:path";
 
 const extraArgs = process.argv.slice(2);
-const args = extraArgs.length > 0 ? extraArgs : [".", "--max-warnings=999"];
+const args = extraArgs.length > 0 ? extraArgs : [".", "--max-warnings=151"];
 const eslintBin = path.resolve("node_modules", "eslint", "bin", "eslint.js");
 
 const result = spawnSync(process.execPath, [eslintBin, ...args], {

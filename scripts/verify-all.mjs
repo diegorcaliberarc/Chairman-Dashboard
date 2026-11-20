@@ -9,6 +9,18 @@ const LOG_FILE = path.join(LOG_DIR, "verify-all.log");
 fs.mkdirSync(LOG_DIR, { recursive: true });
 fs.writeFileSync(LOG_FILE, "", "utf8");
 
+function resolvePythonCommand() {
+  for (const candidate of ["python", "python3"]) {
+    const check = spawnSync(candidate, ["--version"], { encoding: "utf8" });
+    if (check.status === 0) {
+      return candidate;
+    }
+  }
+  return "python3";
+}
+
+const PYTHON_BIN = resolvePythonCommand();
+
 /**
  * 7-Stage Deterministic Verification Pipeline (v3.0 Autonomous Software Factory):
  * Captures verbose compiler/linter/bundler output to test-results/verify-all.log
@@ -35,9 +47,9 @@ const GATES = [
   },
   {
     id: "lint",
-    label: "ESLint Full Repository Boundary & Suppression Gate",
+    label: "ESLint Full Repository Boundary & Legacy Ratchet (--max-warnings=151)",
     cmd: process.execPath,
-    args: [path.resolve("scripts/run-eslint.mjs")],
+    args: [path.resolve("scripts/run-eslint.mjs"), ".", "--max-warnings=151"],
   },
   {
     id: "audit:skills",
@@ -54,7 +66,7 @@ const GATES = [
   {
     id: "test:backend",
     label: "FastAPI Pydantic & Spend-Isolated Pytest Suite",
-    cmd: "python",
+    cmd: PYTHON_BIN,
     args: ["-m", "pytest"],
   },
   {
