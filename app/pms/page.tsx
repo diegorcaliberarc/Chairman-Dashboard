@@ -34,7 +34,7 @@ import {
   PmsListDTO,
   PmsStatusDTO,
   PmsTaskDTO,
-} from "@/app/api/pms/route";
+} from "@/lib/pmsTypes";
 import { PmsHierarchySidebar } from "@/components/pms/PmsHierarchySidebar";
 import { TaskDetailModal } from "@/components/pms/TaskDetailModal";
 import { NewSpaceModal } from "@/components/pms/NewSpaceModal";
@@ -586,6 +586,7 @@ export default function SovereignPmsPage() {
             <Sparkles className="w-3.5 h-3.5 text-[#4984fd] absolute left-3 top-1/2 -translate-y-1/2" />
             <input
               type="text"
+              data-testid="pms-ai-command-input"
               value={aiCommand}
               onChange={(e) => setAiCommand(e.target.value)}
               placeholder="Ask AI to add task & sync Health / Wealth / Ops..."
@@ -691,6 +692,7 @@ export default function SovereignPmsPage() {
               {/* View Tabs (including Home Dashboard!) */}
               <div className="flex items-center gap-1 text-xs">
                 <button
+                  data-testid="pms-view-home"
                   onClick={() => setViewMode("home")}
                   className={`flex items-center gap-1.5 px-2.5 py-1 rounded-md transition ${
                     viewMode === "home"
@@ -703,6 +705,7 @@ export default function SovereignPmsPage() {
                 </button>
 
                 <button
+                  data-testid="pms-view-overview"
                   onClick={() => setViewMode("overview")}
                   className={`flex items-center gap-1.5 px-2.5 py-1 rounded-md transition ${
                     viewMode === "overview"
@@ -715,6 +718,7 @@ export default function SovereignPmsPage() {
                 </button>
 
                 <button
+                  data-testid="pms-view-list"
                   onClick={() => setViewMode("list")}
                   className={`flex items-center gap-1.5 px-2.5 py-1 rounded-md transition ${
                     viewMode === "list"
@@ -727,6 +731,7 @@ export default function SovereignPmsPage() {
                 </button>
 
                 <button
+                  data-testid="pms-view-board"
                   onClick={() => setViewMode("board")}
                   className={`flex items-center gap-1.5 px-2.5 py-1 rounded-md transition ${
                     viewMode === "board"

@@ -126,7 +126,7 @@ export function CircadianHeatmapStrip({ todayLog, entries = [] }: CircadianHeatm
             Circadian Kinetic &amp; Ingestion Heatmap Spectrum
           </span>
           <span className="font-mono text-zinc-500 dark:text-zinc-400 text-xs hidden md:inline">
-            // 24h Synchronous Density Matrix
+            {"// 24h Synchronous Density Matrix"}
           </span>
         </div>
 

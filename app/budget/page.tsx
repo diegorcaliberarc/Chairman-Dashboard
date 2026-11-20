@@ -421,6 +421,7 @@ export default function ConnectedBudgetPage() {
 
           <button
             type="button"
+            data-testid="budget-reset-zero-btn"
             onClick={handlePurgeYearToZero}
             className="flex items-center gap-1.5 px-3 py-2 rounded-xl bg-rose-500/10 hover:bg-rose-500/20 border border-rose-500/30 text-xs font-medium text-rose-400 transition-all"
             title="Clear all previously seeded dummy data for this year back to $0"
@@ -482,6 +483,7 @@ export default function ConnectedBudgetPage() {
             <button
               key={tab.id}
               type="button"
+              data-testid={`budget-tab-${tab.id}`}
               onClick={() => setFinanceTab(tab.id as any)}
               className={`flex items-center gap-1.5 px-3.5 py-2 rounded-xl text-xs font-medium shrink-0 transition ${
                 active

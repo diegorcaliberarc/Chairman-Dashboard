@@ -175,6 +175,9 @@ export function TacticalDossierModal({
       className="fixed inset-0 bg-black/85 backdrop-blur-md z-50 flex items-center justify-center p-4 transition-all duration-200 select-none"
     >
       <div
+        data-testid="pardo-fmea-dossier-drawer"
+        role="dialog"
+        aria-modal="true"
         onClick={(e) => e.stopPropagation()}
         className="w-full max-w-2xl bg-[#0D1220]/95 border-2 border-cyan-400/50 rounded-3xl p-6 shadow-2xl glow-cyan flex flex-col gap-4 relative max-h-[92vh] overflow-y-auto"
       >
@@ -200,6 +203,8 @@ export function TacticalDossierModal({
           </div>
 
           <button
+            data-testid="pardo-fmea-close-btn"
+            aria-label="Close Tactical Dossier"
             onClick={onClose}
             className="w-9 h-9 rounded-full bg-white/10 hover:bg-white/20 text-zinc-300 hover:text-white flex items-center justify-center transition"
           >

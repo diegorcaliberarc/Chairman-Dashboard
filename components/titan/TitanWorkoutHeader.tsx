@@ -59,7 +59,7 @@ export function TitanWorkoutHeader({
             <span className="bg-amber-400/15 border border-amber-400/40 text-amber-300 font-mono text-[10px] font-bold px-2 py-0.5 rounded tracking-wider uppercase">
               Hypertrophy & Strength
             </span>
-            <span className="text-zinc-600 font-mono text-xs">//</span>
+            <span className="text-zinc-600 font-mono text-xs">{"//"}</span>
             <h1 className="text-sm sm:text-base font-display font-extrabold tracking-wide text-white uppercase">
               Titan Bodybuilding Engine
             </h1>

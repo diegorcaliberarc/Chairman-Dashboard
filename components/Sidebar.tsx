@@ -585,6 +585,7 @@ export function Sidebar({
           {/* Brand Emblem */}
           <button
             type="button"
+            data-testid="nav-home-emblem"
             onClick={() => router.push("/")}
             className="w-9 h-9 rounded-xl flex items-center justify-center mb-1.5 border transition-transform hover:scale-105"
             style={{
@@ -606,6 +607,7 @@ export function Sidebar({
                 <button
                   key={p.id}
                   type="button"
+                  data-testid={`nav-sphere-${p.id}`}
                   onClick={() => handleSelectPillar(p.id)}
                   onDragOver={(e) => {
                     if (p.id !== "all") {
@@ -706,6 +708,7 @@ export function Sidebar({
               return (
                 <button
                   key={item.id}
+                  data-testid={`nav-module-${item.id}`}
                   draggable
                   onDragStart={() => setDraggedModuleId(item.id)}
                   onDragOver={(e) => e.preventDefault()}
@@ -778,6 +781,7 @@ export function Sidebar({
           <div className="mt-auto p-2.5 border-t border-zinc-200/50 dark:border-white/10 bg-zinc-50/50 dark:bg-white/5 flex items-center justify-between gap-1.5 h-14">
             <button
               type="button"
+              data-testid="nav-avatar-menu-trigger"
               onClick={() => setSettingsMenuOpen((p) => !p)}
               className="relative flex items-center justify-center p-0.5 rounded-full hover:ring-2 hover:ring-[#4984fd]/50 transition-all shrink-0"
               title="Account, Settings & Google Calendar"
@@ -804,6 +808,7 @@ export function Sidebar({
             {/* Unified Account, Google Calendar & Settings Popover */}
             {settingsMenuOpen && (
               <div
+                data-testid="nav-settings-popover"
                 className="absolute bottom-16 left-2 right-2 rounded-xl border p-2 z-50 space-y-1 backdrop-blur-xl"
                 style={{
                   backgroundColor: "var(--glass-surface-elevated)",
@@ -854,6 +859,7 @@ export function Sidebar({
                   <button
                     key={item.route}
                     type="button"
+                    data-testid={`nav-settings-link-${item.route.replace(/\//g, "")}`}
                     onClick={() => {
                       setSettingsMenuOpen(false);
                       router.push(item.route);
@@ -888,6 +894,7 @@ export function Sidebar({
             <div className="flex items-center gap-1 shrink-0">
               <button
                 type="button"
+                data-testid="nav-theme-palette-trigger"
                 onClick={() => setIsAppearanceOpen(true)}
                 className="w-8 h-8 rounded-xl flex items-center justify-center border border-transparent hover:border-[#4984fd]/40 hover:bg-[#4984fd]/10 transition-all"
                 style={{ color: "var(--glass-text-primary)" }}

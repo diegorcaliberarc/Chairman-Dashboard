@@ -19,7 +19,7 @@ import {
   FilePlus,
   Layers,
 } from "lucide-react";
-import { PmsSpaceDTO, PmsFolderDTO, PmsListDTO } from "@/app/api/pms/route";
+import { PmsSpaceDTO, PmsFolderDTO, PmsListDTO } from "@/lib/pmsTypes";
 
 interface PmsHierarchySidebarProps {
   spaces: PmsSpaceDTO[];

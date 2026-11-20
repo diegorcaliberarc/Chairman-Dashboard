@@ -317,7 +317,12 @@ export function MissionFlowNavigatorModal({
   };
 
   return (
-    <div className="fixed inset-0 z-[100] bg-black/80 backdrop-blur-md flex items-center justify-center p-2 sm:p-4 overflow-y-auto">
+    <div
+      data-testid="mission-flow-modal"
+      role="dialog"
+      aria-modal="true"
+      className="fixed inset-0 z-[100] bg-black/80 backdrop-blur-md flex items-center justify-center p-2 sm:p-4 overflow-y-auto"
+    >
       <div className="relative w-full max-w-6xl max-h-[94vh] flex flex-col rounded-3xl border border-white/15 bg-[#080b14] text-zinc-100 shadow-2xl overflow-hidden">
         {toast && (
           <div className="absolute bottom-5 right-5 z-50 px-4 py-2.5 rounded-xl bg-cyan-500 text-zinc-950 font-mono text-xs font-medium shadow-2xl">
@@ -357,6 +362,7 @@ export function MissionFlowNavigatorModal({
                   <button
                     key={m.id}
                     type="button"
+                    data-testid={`mission-mode-${m.id}`}
                     onClick={() => setDraft((p) => ({ ...p, mode: m.id }))}
                     className={`flex items-center gap-1 px-2.5 py-1.5 rounded-lg transition ${
                       active
@@ -373,6 +379,8 @@ export function MissionFlowNavigatorModal({
 
             <button
               type="button"
+              data-testid="mission-close-btn"
+              aria-label="Close Mission Flow Navigator"
               onClick={onClose}
               className="p-2 rounded-xl bg-white/5 hover:bg-white/10 text-zinc-400 hover:text-white transition"
             >
@@ -386,6 +394,7 @@ export function MissionFlowNavigatorModal({
           <div className="px-4 sm:px-6 py-2.5 bg-cyan-950/30 border-b border-cyan-500/20 flex flex-col sm:flex-row items-stretch sm:items-center gap-2 shrink-0">
             <input
               type="text"
+              data-testid="mission-dfy-input"
               value={brainDump}
               onChange={(e) => setBrainDump(e.target.value)}
               onKeyDown={(e) => e.key === "Enter" && handleRunDfy()}
@@ -394,6 +403,7 @@ export function MissionFlowNavigatorModal({
             />
             <button
               type="button"
+              data-testid="mission-dfy-run-btn"
               onClick={handleRunDfy}
               disabled={!brainDump.trim()}
               className="px-4 py-2 rounded-xl bg-cyan-400 hover:bg-cyan-300 text-zinc-950 font-mono text-xs font-medium uppercase tracking-wider flex items-center justify-center gap-1.5 transition disabled:opacity-40"
@@ -438,6 +448,7 @@ export function MissionFlowNavigatorModal({
               <button
                 key={s.idx}
                 type="button"
+                data-testid={`mission-stage-tab-${s.idx}`}
                 onClick={() => setStage(s.idx)}
                 className={`px-3 py-1.5 rounded-xl text-[11px] font-mono shrink-0 transition border ${
                   active
@@ -1055,6 +1066,7 @@ export function MissionFlowNavigatorModal({
                 </div>
                 <button
                   type="button"
+                  data-testid="mission-deploy-btn"
                   onClick={handleDeployMission}
                   disabled={deploying}
                   className="flex items-center gap-2 px-5 py-2.5 rounded-xl bg-gradient-to-r from-amber-400 via-yellow-300 to-cyan-400 text-zinc-950 font-mono text-xs font-medium uppercase tracking-wider shadow-xl hover:brightness-110 transition disabled:opacity-50"

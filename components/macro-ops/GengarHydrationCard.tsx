@@ -382,6 +382,7 @@ export function GengarHydrationCard({
       {/* ── 1-TAP INCREMENT LOGGING BUTTONS (Non-blocking rapid tap!) ── */}
       <div className="grid grid-cols-4 gap-1.5 mt-1 font-mono">
         <button
+          data-testid="water-add-250ml"
           onClick={() => handleAddMl(250)}
           className="flex items-center justify-center gap-1 py-1.5 px-1 rounded-xl border text-[10px] font-medium uppercase transition active:scale-95 text-cyan-500 hover:bg-cyan-500/15"
           style={{

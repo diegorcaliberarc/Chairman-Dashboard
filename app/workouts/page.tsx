@@ -883,6 +883,7 @@ export default function TitanWorkoutsPage() {
             }}
           >
             <button
+              data-testid="workouts-tab-dashboard"
               onClick={() => setActiveTab("dashboard")}
               className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg transition font-medium ${
                 activeTab === "dashboard"
@@ -894,6 +895,7 @@ export default function TitanWorkoutsPage() {
               <span>Dashboard</span>
             </button>
             <button
+              data-testid="workouts-tab-trends"
               onClick={() => setActiveTab("trends")}
               className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg transition font-medium ${
                 activeTab === "trends"

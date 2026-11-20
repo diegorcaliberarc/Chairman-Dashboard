@@ -59,6 +59,7 @@ export function CoPilotModeBar({
       {/* 1. Left: 3-Way Mode Switcher */}
       <div className="flex items-center gap-1.5 bg-[#05070E] p-1 rounded-2xl border border-white/10 shrink-0">
         <button
+          data-testid="copilot-mode-dfy"
           onClick={() => onChangeMode("dfy")}
           className={`px-3 py-1.5 rounded-xl font-bold transition flex items-center gap-1.5 ${
             currentMode === "dfy"
@@ -71,6 +72,7 @@ export function CoPilotModeBar({
         </button>
 
         <button
+          data-testid="copilot-mode-dwy"
           onClick={() => onChangeMode("dwy")}
           className={`px-3 py-1.5 rounded-xl font-bold transition flex items-center gap-1.5 ${
             currentMode === "dwy"
@@ -83,6 +85,7 @@ export function CoPilotModeBar({
         </button>
 
         <button
+          data-testid="copilot-mode-diy"
           onClick={() => onChangeMode("diy")}
           className={`px-3 py-1.5 rounded-xl font-bold transition flex items-center gap-1.5 ${
             currentMode === "diy"
@@ -102,6 +105,7 @@ export function CoPilotModeBar({
             <div className="relative flex-1">
               <input
                 type="text"
+                data-testid="copilot-goal-input"
                 value={goalInput}
                 onChange={(e) => setGoalInput(e.target.value)}
                 placeholder="Speak or type any goal (e.g. '155 lb lean cut @ 8% BF', 'Build utility sink', '$50k MRR')..."
@@ -109,6 +113,7 @@ export function CoPilotModeBar({
               />
               <button
                 type="button"
+                data-testid="copilot-voice-mic-btn"
                 onClick={handleToggleVoiceGoal}
                 className={`absolute right-2 top-1/2 -translate-y-1/2 p-1 rounded-lg transition ${
                   isListening
@@ -122,6 +127,7 @@ export function CoPilotModeBar({
             </div>
             <button
               type="submit"
+              data-testid="copilot-generate-dag-btn"
               disabled={isProcessing || !goalInput.trim()}
               className="px-4 py-2 rounded-xl bg-cyan-400 hover:bg-cyan-300 text-black font-extrabold text-xs uppercase tracking-wider flex items-center gap-1.5 shadow-md shadow-cyan-400/30 transition disabled:opacity-40"
             >

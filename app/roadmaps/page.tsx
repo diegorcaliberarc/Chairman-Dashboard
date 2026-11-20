@@ -318,7 +318,10 @@ export default function SynthesisRoadmapPage() {
 
         {/* 2.5 Interactive Backward Chaining Trace Panel */}
         {isBackwardChainOpen && (
-          <div className="mx-4 sm:mx-6 mt-3 p-4 rounded-2xl border border-amber-400/40 bg-amber-950/30 backdrop-blur-xl text-xs space-y-3">
+          <div
+            data-testid="roadmap-backward-chain-panel"
+            className="mx-4 sm:mx-6 mt-3 p-4 rounded-2xl border border-amber-400/40 bg-amber-950/30 backdrop-blur-xl text-xs space-y-3"
+          >
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-2 font-mono text-amber-300 uppercase tracking-wider">
                 <span>↺ Backward Chaining Dependency Trace</span>
@@ -327,6 +330,7 @@ export default function SynthesisRoadmapPage() {
                 </span>
               </div>
               <button
+                data-testid="roadmap-backward-chain-close-btn"
                 onClick={() => setIsBackwardChainOpen(false)}
                 className="text-zinc-400 hover:text-white px-2 py-0.5 rounded-lg bg-white/5"
               >

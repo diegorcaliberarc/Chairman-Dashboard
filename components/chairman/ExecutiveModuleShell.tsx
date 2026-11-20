@@ -38,6 +38,7 @@ export function ExecutiveModuleShell({
 
   return (
     <div
+      data-testid={`module-shell-${moduleId}`}
       className="executive-glass-shell min-h-screen bg-transparent font-sans font-normal flex flex-row overflow-x-clip transition-colors duration-300"
       style={{ color: "var(--glass-text-primary, var(--text-ink))" }}
     >
@@ -106,6 +107,7 @@ export function ExecutiveModuleShell({
             {headerActions}
             <button
               type="button"
+              data-testid="global-launch-mission-flow-btn"
               onClick={() => setIsMissionFlowOpen(true)}
               className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-[#4984fd] hover:bg-blue-500 text-white text-xs font-medium shadow-sm transition active:scale-95 shrink-0"
               title="Launch Guided 6-Stage Mission Flow Navigator (OOCEMR, WBS, BOM, CPM, FRAGO, PACE)"

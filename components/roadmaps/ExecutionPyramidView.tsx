@@ -247,7 +247,10 @@ export function ExecutionPyramidView({
     widthClass: string,
     showAscendStairs = true
   ) => (
-    <div className={`relative mx-auto w-full ${widthClass} transition-all duration-300`}>
+    <div
+      data-testid={`pyramid-level-${Number(stepNum)}`}
+      className={`relative mx-auto w-full ${widthClass} transition-all duration-300`}
+    >
       {/* Left-Aligned STEP Badge */}
       <div className="hidden lg:flex flex-col items-end justify-center absolute -left-20 top-1/2 -translate-y-1/2 w-16 text-right select-none">
         <span className="text-[10px] font-mono tracking-widest text-amber-400/80 uppercase">STEP</span>
@@ -270,6 +273,7 @@ export function ExecutionPyramidView({
               <React.Fragment key={item.id}>
                 <button
                   type="button"
+                  data-testid={`pyramid-panel-${item.id}`}
                   onClick={() => onNodeClick(item.targetNodeId)}
                   className={`flex-1 min-w-0 text-left rounded-xl border ${st.cardBorder} bg-[#090d18]/90 hover:bg-[#11182b] p-3.5 transition-all duration-200 hover:-translate-y-0.5 flex flex-col justify-between gap-2.5 group`}
                 >
@@ -326,7 +330,10 @@ export function ExecutionPyramidView({
   );
 
   return (
-    <div className="w-full min-h-[820px] bg-gradient-to-b from-[#140d0a] via-[#090d18] to-[#060911] px-4 sm:px-8 lg:px-24 py-8 select-none overflow-x-hidden">
+    <div
+      data-testid="execution-pyramid-view"
+      className="w-full min-h-[820px] bg-gradient-to-b from-[#140d0a] via-[#090d18] to-[#060911] px-4 sm:px-8 lg:px-24 py-8 select-none overflow-x-hidden"
+    >
       {/* Pyramid Title Banner */}
       <div className="text-center max-w-3xl mx-auto mb-8 space-y-1.5">
         <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-amber-500/15 border border-amber-400/35 text-amber-300 text-[10px] font-mono uppercase tracking-widest">
@@ -344,13 +351,14 @@ export function ExecutionPyramidView({
       {/* 5-Tier Bottom-Up Stepped Pyramid Stack (Apex at Top → Foundation at Bottom) */}
       <div className="max-w-6xl mx-auto flex flex-col items-center gap-7">
         {/* LEVEL 5 (APEX): COMPLETE — GOAL ACHIEVED (Maps to Tier 3 Final Destination) */}
-        <div className="relative w-full max-w-md mx-auto">
+        <div data-testid="pyramid-level-5" className="relative w-full max-w-md mx-auto">
           <div className="hidden lg:flex flex-col items-end justify-center absolute -left-20 top-1/2 -translate-y-1/2 w-16 text-right select-none">
             <span className="text-[10px] font-mono tracking-widest text-amber-400 uppercase">STEP</span>
             <span className="text-2xl font-mono font-medium text-amber-300 leading-none">05</span>
           </div>
 
           <div
+            data-testid="pyramid-panel-goal"
             onClick={() => onNodeClick("goal")}
             className="cursor-pointer group relative rounded-3xl border-2 border-amber-400/80 bg-gradient-to-b from-amber-500/25 via-amber-950/50 to-[#0e1322] p-6 text-center shadow-[0_0_50px_rgba(245,158,11,0.28)] hover:scale-[1.02] transition-all"
           >

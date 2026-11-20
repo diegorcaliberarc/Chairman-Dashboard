@@ -181,7 +181,10 @@ export function DagCanvasView({ tree, zoomScale, onNodeClick, onLockGoal }: DagC
   };
 
   return (
-    <div className="flex-1 relative bg-[#060911] overflow-x-auto min-h-[820px] flex items-stretch p-6 sm:p-8 select-none blueprint-dots">
+    <div
+      data-testid="dag-canvas-view"
+      className="flex-1 relative bg-[#060911] overflow-x-auto min-h-[820px] flex items-stretch p-6 sm:p-8 select-none blueprint-dots"
+    >
       {/* 1. Ambient Background Glows */}
       <div className="absolute inset-0 pointer-events-none overflow-hidden">
         <div className="absolute -top-32 left-20 w-[550px] h-[550px] bg-cyan-500/10 rounded-full blur-[140px]" />
@@ -311,6 +314,7 @@ export function DagCanvasView({ tree, zoomScale, onNodeClick, onLockGoal }: DagC
                   <div
                     key={node.id}
                     id={`dag_node_${node.id}`}
+                    data-testid={`dag-node-${node.id}`}
                     style={getOffsetStyle(node.id)}
                     onPointerDown={(e) => handleNodePointerDown(node.id, e)}
                     onPointerMove={(e) => handleNodePointerMove(node.id, e)}
@@ -375,6 +379,7 @@ export function DagCanvasView({ tree, zoomScale, onNodeClick, onLockGoal }: DagC
                   <div
                     key={node.id}
                     id={`dag_node_${node.id}`}
+                    data-testid={`dag-node-${node.id}`}
                     style={getOffsetStyle(node.id)}
                     onPointerDown={(e) => handleNodePointerDown(node.id, e)}
                     onPointerMove={(e) => handleNodePointerMove(node.id, e)}
@@ -444,6 +449,7 @@ export function DagCanvasView({ tree, zoomScale, onNodeClick, onLockGoal }: DagC
                   <div
                     key={node.id}
                     id={`dag_node_${node.id}`}
+                    data-testid={`dag-node-${node.id}`}
                     style={getOffsetStyle(node.id)}
                     onPointerDown={(e) => handleNodePointerDown(node.id, e)}
                     onPointerMove={(e) => handleNodePointerMove(node.id, e)}
@@ -508,6 +514,7 @@ export function DagCanvasView({ tree, zoomScale, onNodeClick, onLockGoal }: DagC
 
             <div
               id="dag_node_goal"
+              data-testid="dag-node-goal"
               style={getOffsetStyle("goal")}
               onPointerDown={(e) => handleNodePointerDown("goal", e)}
               onPointerMove={(e) => handleNodePointerMove("goal", e)}

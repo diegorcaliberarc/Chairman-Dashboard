@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useCallback, useRef, useState } from "react";
-import { createClient } from "@supabase/supabase-js";
+import { uploadCircadianMediaFile } from "@/services/mediaStorageService";
 import {
   CheckCircle2,
   Film,
@@ -81,38 +81,14 @@ export function EventMediaUploader({
       const detectedType: MediaTypeEnum = isVideo ? "video_loop" : "image";
 
       try {
-        const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
-        const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
-
-        // 1. Try Supabase Storage bucket (`circadian-media`) when configured
-        if (supabaseUrl && supabaseAnonKey) {
-          try {
-            const supabase = createClient(supabaseUrl, supabaseAnonKey);
-            const safeName = file.name.replace(/[^a-zA-Z0-9._-]/g, "_");
-            const objectPath = `events/${Date.now()}-${safeName}`;
-            const { error } = await supabase.storage
-              .from("circadian-media")
-              .upload(objectPath, file, {
-                cacheControl: "3600",
-                upsert: true,
-              });
-
-            if (!error) {
-              const { data } = supabase.storage
-                .from("circadian-media")
-                .getPublicUrl(objectPath);
-              if (data?.publicUrl) {
-                onChangeMedia({
-                  mediaUrl: data.publicUrl,
-                  mediaType: detectedType,
-                });
-                setUploadNotice("Uploaded to Supabase Storage (circadian-media)");
-                return;
-              }
-            }
-          } catch {
-            // Fall through seamlessly to zero-dependency local Data/Object URL encoding
-          }
+        const publicUrl = await uploadCircadianMediaFile(file);
+        if (publicUrl) {
+          onChangeMedia({
+            mediaUrl: publicUrl,
+            mediaType: detectedType,
+          });
+          setUploadNotice("Uploaded to Supabase Storage (circadian-media)");
+          return;
         }
 
         // 2. Resilient local encoding so drag-and-drop works 100% offline/locally

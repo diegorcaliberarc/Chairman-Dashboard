@@ -1,7 +1,7 @@
 import { getServerSession } from "next-auth/next";
 import { redirect } from "next/navigation";
 import { authOptions } from "@/lib/auth";
-import { prisma } from "@/lib/prisma";
+import { getAdminUsersList } from "@/services/adminService";
 
 // ─── Server-side ADMIN guard ──────────────────────────────────────────────────
 
@@ -14,18 +14,7 @@ export default async function AdminPage() {
   }
 
   // ─── Fetch all users ────────────────────────────────────────────────────────
-  const users = await prisma.user.findMany({
-    select: {
-      id:            true,
-      name:          true,
-      email:         true,
-      role:          true,
-      emailVerified: true,
-      image:         true,
-      _count:        { select: { tasks: true } },
-    },
-    orderBy: { emailVerified: "asc" },
-  });
+  const users = await getAdminUsersList();
 
   // ─── Styles (inline — no client bundle needed) ────────────────────────────
 

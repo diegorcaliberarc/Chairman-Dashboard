@@ -14,7 +14,7 @@ const withPWA = withPWAInit({
 /** @type {import('next').NextConfig} */
 const nextConfig = {
   eslint:     { ignoreDuringBuilds: true },
-  typescript: { ignoreBuildErrors:  true },
+  typescript: { ignoreBuildErrors:  false },
   images: {
     domains: ["lh3.googleusercontent.com"],
   },

@@ -91,6 +91,7 @@ export function SynthesisHeaderStrip({
       <div className="flex items-center gap-2.5 min-w-0">
         <div className="relative">
           <button
+            data-testid="roadmap-domain-selector"
             onClick={() => {
               setMenuOpen((v) => !v);
               setAuditOpen(false);
@@ -120,6 +121,7 @@ export function SynthesisHeaderStrip({
                 return (
                   <button
                     key={dom.id}
+                    data-testid={`roadmap-domain-option-${dom.id}`}
                     onClick={() => {
                       onSelectDomain(dom.id);
                       setMenuOpen(false);
@@ -155,6 +157,7 @@ export function SynthesisHeaderStrip({
         {/* Compact Audit & PACE Menu */}
         <div className="relative">
           <button
+            data-testid="roadmap-audit-pace-trigger"
             onClick={() => {
               setAuditOpen((v) => !v);
               setMenuOpen(false);
@@ -199,6 +202,7 @@ export function SynthesisHeaderStrip({
                     return (
                       <button
                         key={pace}
+                        data-testid={`roadmap-pace-btn-${pace}`}
                         onClick={() => onSelectPace(pace)}
                         className={`py-1.5 rounded-lg font-mono text-xs transition ${
                           isActive
@@ -264,6 +268,7 @@ export function SynthesisHeaderStrip({
           >
             <button
               type="button"
+              data-testid="roadmap-view-toggle-dag"
               onClick={() => onChangeRoadmapViewMode("dag")}
               className={`px-2.5 py-1 rounded-lg transition ${
                 roadmapViewMode === "dag"
@@ -275,6 +280,7 @@ export function SynthesisHeaderStrip({
             </button>
             <button
               type="button"
+              data-testid="roadmap-view-toggle-pyramid"
               onClick={() => onChangeRoadmapViewMode("pyramid")}
               className={`px-2.5 py-1 rounded-lg transition ${
                 roadmapViewMode === "pyramid"
@@ -289,6 +295,7 @@ export function SynthesisHeaderStrip({
 
         {/* Backward Chaining Button */}
         <button
+          data-testid="roadmap-backward-chain-btn"
           onClick={onTriggerBackwardChain}
           className="px-3 py-1.5 rounded-xl border text-xs font-medium flex items-center gap-1.5 transition hover:border-amber-400/60"
           style={{
@@ -304,6 +311,7 @@ export function SynthesisHeaderStrip({
 
         {/* Synthesize DAG Button */}
         <button
+          data-testid="roadmap-synthesize-dag-btn"
           onClick={onTriggerSynthesize}
           disabled={isSynthesizing}
           className="px-3.5 py-1.5 rounded-xl bg-cyan-500 hover:bg-cyan-400 text-zinc-950 font-medium text-xs flex items-center gap-1.5 shadow-sm active:scale-95 transition disabled:opacity-50"

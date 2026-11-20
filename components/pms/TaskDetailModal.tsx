@@ -33,7 +33,7 @@ import {
   Trash2,
   ChevronDown,
 } from "lucide-react";
-import { PmsTaskDTO, PmsStatusDTO } from "@/app/api/pms/route";
+import { PmsTaskDTO, PmsStatusDTO } from "@/lib/pmsTypes";
 
 interface TaskDetailModalProps {
   task: PmsTaskDTO | null;
