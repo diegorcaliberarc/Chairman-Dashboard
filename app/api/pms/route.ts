@@ -255,6 +255,19 @@ export async function GET() {
       };
     });
 
+    const subtasksByParent = new Map<string, PmsTaskDTO[]>();
+    for (const task of hydratedTasks) {
+      if (task.parent_task_id) {
+        const list = subtasksByParent.get(task.parent_task_id) ?? [];
+        list.push(task);
+        subtasksByParent.set(task.parent_task_id, list);
+      }
+    }
+    const hydratedWithSubtasks: PmsTaskDTO[] = hydratedTasks.map((task) => ({
+      ...task,
+      subtasks: subtasksByParent.get(task.id) ?? [],
+    }));
+
     // Assemble Space Hierarchy
     const nestedSpaces: PmsSpaceDTO[] = spaces.map((s) => {
       const spaceFolders = folders.filter((f) => f.space_id === s.id);
@@ -287,7 +300,7 @@ export async function GET() {
       spaces: nestedSpaces,
       lists,
       statuses,
-      tasks: hydratedTasks,
+      tasks: hydratedWithSubtasks,
     });
   } catch (error: any) {
     console.error("[GET /api/pms] Error:", error);

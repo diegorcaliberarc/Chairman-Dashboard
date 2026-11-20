@@ -126,7 +126,6 @@ const LEGACY_OVERSIZED_ALLOWLIST = [
   "app/marketing-agent/page.tsx",
   "app/mindset/page.tsx",
   "app/org-chart/page.tsx",
-  "app/pms/page.tsx",
   "app/resources/page.tsx",
   "app/skills/page.tsx",
   "app/vault/page.tsx",

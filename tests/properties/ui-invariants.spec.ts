@@ -305,4 +305,52 @@ test.describe("Chairman Dashboard v3.0 — Isolated Property-Based UI Invariants
     await expect(modal).toHaveCount(0);
     monitor.assertHealthy();
   });
+
+  test("Property 5: /pms ClickUp/Plane view switcher (List/Board/Calendar), collapsible groups, and slide-over TaskDetailDrawer stay synchronized", async ({
+    page,
+    outboundViolations,
+  }) => {
+    const monitor = attachRuntimeMonitors(page, outboundViolations);
+    await page.goto("/pms", { waitUntil: "domcontentloaded" });
+    const root = page.getByTestId("pms-workspace-root");
+    await expect(root).toBeVisible({ timeout: 20_000 });
+    await expect(page.getByTestId("pms-grouped-list-view")).toBeVisible();
+
+    const ops = fc.sample(
+      fc.array(
+        fc.constantFrom("list" as const, "board" as const, "calendar" as const, "overview" as const, "home" as const),
+        { minLength: 10, maxLength: 14 }
+      ),
+      { seed: 505050, numRuns: 1 }
+    )[0];
+
+    for (const mode of ops) {
+      await page.getByTestId(`pms-view-${mode}`).click();
+      await expect(root).toHaveAttribute("data-view-mode", mode);
+      monitor.assertHealthy();
+    }
+
+    await page.getByTestId("pms-view-list").click();
+    await page.getByTestId("pms-list-group-toggle-st-todo").click();
+    await page.getByTestId("pms-list-group-toggle-st-todo").click();
+    await page.getByTestId("pms-list-task-title-iso-task-1").click();
+
+    const drawer = page.getByTestId("pms-task-drawer");
+    await expect(drawer).toBeVisible();
+    await expect(drawer).toHaveAttribute("data-peek-mode", "side-peek");
+    await page.getByTestId("pms-drawer-peek-modal").click();
+    await expect(drawer).toHaveAttribute("data-peek-mode", "modal");
+    await page.getByTestId("pms-drawer-peek-side").click();
+    await expect(drawer).toHaveAttribute("data-peek-mode", "side-peek");
+    await page.getByTestId("pms-drawer-close-btn").click();
+    await expect(drawer).toHaveCount(0);
+
+    await page.getByTestId("pms-view-board").click();
+    await expect(page.getByTestId("pms-kanban-board-view")).toBeVisible();
+    await expect(page.getByTestId("pms-kanban-card-iso-task-1")).toBeVisible();
+
+    await page.getByTestId("pms-view-calendar").click();
+    await expect(page.getByTestId("pms-calendar-view")).toBeVisible();
+    monitor.assertHealthy();
+  });
 });

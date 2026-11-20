@@ -7,6 +7,7 @@ import {
   buildKpiScorecardMock,
   buildMissionFlowGetMock,
   buildMissionFlowPostMock,
+  buildPmsWorkspaceMock,
   buildRoadmapsSynthesizeMock,
   buildUiPreferencesMock,
 } from "./apiContractMocks";
@@ -104,6 +105,14 @@ export const test = base.extend<{
         }
         if (p === "/api/tasks") {
           await route.fulfill(jsonResponse({ tasks: [] }));
+          return;
+        }
+        if (p === "/api/pms") {
+          if (request.method() === "GET") {
+            await route.fulfill(jsonResponse(buildPmsWorkspaceMock()));
+            return;
+          }
+          await route.fulfill(jsonResponse({ success: true }));
           return;
         }
         if (p === "/api/mission-flow") {

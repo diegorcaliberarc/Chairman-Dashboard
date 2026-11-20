@@ -34,14 +34,18 @@
 - **APIs & Types:** `GET/POST /api/command`, `GET/POST /api/scorecard`, `lib/commandTypes.ts`
 - **Key Selectors:** `[data-testid="module-shell-COMMAND"]`, `[data-testid="global-launch-mission-flow-btn"]`.
 
-### 2.3 `/pms` — Project Management (Pristine PMS)
+### 2.3 `/pms` — Project Management (Pristine PMS — ClickUp / Plane-Inspired)
 - **Entry Point:** `app/pms/page.tsx`
-- **Components & Types:** `components/pms/PmsHierarchySidebar.tsx`, `TaskDetailModal.tsx`, `NewSpaceModal.tsx`, `lib/pmsTypes.ts`
-- **APIs:** `GET/POST/PATCH/DELETE /api/pms`, cross-syncs AI commands to `/api/sitrep` & `/api/parse-food`
+- **Feature Barrel, State Machine & Components:** `features/pms/index.ts` → `features/pms/state/pmsMachine.ts` (`INV-PMS-1..4` non-orphaned drawer, mutually exclusive modal/drawer, atomic status badge sync), `features/pms/hooks/usePmsWorkspace.ts`, `TaskViewSwitcher.tsx`, `GroupedTaskList.tsx` (collapsible status groups, DnD, bottom quick-add), `TaskKanbanBoard.tsx` (DnD + collapsible columns), `TaskCalendarView.tsx` (due-date grid + DnD reschedule), `TaskDetailDrawer.tsx` (`side-peek` / `modal` / `full-screen` inspector with Markdown Edit/Preview, subtasks, checklists, comments), `PmsOverviewAndHome.tsx`, `PmsAiCommandBar.tsx`, `components/pms/PmsHierarchySidebar.tsx`, `components/pms/NewSpaceModal.tsx`
+- **Services, Types & APIs:** `services/pmsClientService.ts`, `lib/pmsTypes.ts`, `GET/POST/PATCH/DELETE /api/pms`, cross-syncs AI commands to `/api/sitrep` & `/api/parse-food` · Property Spec: `tests/properties/ui-invariants.spec.ts` (Property 5)
 - **Deterministic Selectors:**
-  - Shell: `[data-testid="module-shell-PMS"]`
+  - Shell & Root: `[data-testid="module-shell-PMS"]`, `[data-testid="pms-workspace-root"]` (`data-view-mode`), `[data-testid="pms-toast"]`
   - Universal AI Command Input: `[data-testid="pms-ai-command-input"]`
-  - View Switcher Tabs: `[data-testid="pms-view-home"]`, `[data-testid="pms-view-overview"]`, `[data-testid="pms-view-list"]`, `[data-testid="pms-view-board"]`
+  - View Switcher & Toolbar: `[data-testid="pms-view-switcher"]`, `[data-testid="pms-toggle-spaces-btn"]`, `[data-testid="pms-view-home"]`, `[data-testid="pms-view-overview"]`, `[data-testid="pms-view-list"]`, `[data-testid="pms-view-board"]`, `[data-testid="pms-view-calendar"]`, `[data-testid="pms-search-input"]`, `[data-testid="pms-priority-filter"]`, `[data-testid="pms-add-task-btn"]`
+  - Grouped List View: `[data-testid="pms-grouped-list-view"]`, `[data-testid="pms-list-group-{statusId}"]`, `[data-testid="pms-list-group-toggle-{statusId}"]`, `[data-testid="pms-list-quickadd-btn-{statusId}"]`, `[data-testid="pms-list-quickadd-input-{statusId}"]`, `[data-testid="pms-list-task-{taskId}"]`
+  - Kanban Board View: `[data-testid="pms-kanban-board-view"]`, `[data-testid="pms-kanban-col-{statusId}"]`, `[data-testid="pms-kanban-collapse-{statusId}"]`, `[data-testid="pms-kanban-card-{taskId}"]`
+  - Task Calendar View: `[data-testid="pms-calendar-view"]`, `[data-testid="pms-cal-prev-month"]`, `[data-testid="pms-cal-next-month"]`, `[data-testid="pms-cal-day-{YYYY-MM-DD}"]`
+  - Slide-Over Task Detail Drawer: `[data-testid="pms-task-drawer"]` (`role="dialog"`, `data-peek-mode`), `[data-testid="pms-drawer-peek-side"]`, `[data-testid="pms-drawer-peek-modal"]`, `[data-testid="pms-drawer-peek-full"]`, `[data-testid="pms-drawer-title-input"]`, `[data-testid="pms-drawer-status-select"]`, `[data-testid="pms-drawer-priority-select"]`, `[data-testid="pms-drawer-due-input"]`, `[data-testid="pms-drawer-desc-input"]`, `[data-testid="pms-drawer-subtask-input"]`, `[data-testid="pms-drawer-checklist-input"]`, `[data-testid="pms-drawer-comment-input"]`, `[data-testid="pms-drawer-delete-btn"]`, `[data-testid="pms-drawer-close-btn"]`
 
 ### 2.4 `/roadmaps` — Strategic Roadmap (DAG Graph & 5-Tier Execution Pyramid)
 - **Entry Point:** `app/roadmaps/page.tsx`

@@ -20,6 +20,12 @@ import {
   StrategicDomain,
   StrategicTree,
 } from "@/lib/synthesisRoadmapTypes";
+import type {
+  PmsListDTO,
+  PmsSpaceDTO,
+  PmsStatusDTO,
+  PmsTaskDTO,
+} from "@/lib/pmsTypes";
 
 const VALID_DOMAINS: readonly StrategicDomain[] = [
   "master",
@@ -314,4 +320,99 @@ export function buildRoadmapsSynthesizeMock(body: Record<string, unknown>):
     tree,
     source: action === "dwy_refine" ? "dwy_refined" : "deterministic",
   };
+}
+
+export function buildPmsWorkspaceMock(): {
+  spaces: PmsSpaceDTO[];
+  lists: PmsListDTO[];
+  statuses: PmsStatusDTO[];
+  tasks: PmsTaskDTO[];
+} {
+  const spaceId = "iso-space-ops";
+  const listId = "iso-list-sprint";
+  const statuses: PmsStatusDTO[] = [
+    { id: "st-todo", space_id: spaceId, name: "TO DO", category: "not_started", color_hex: "#3B82F6", sort_order: 0 },
+    { id: "st-prog", space_id: spaceId, name: "IN PROGRESS", category: "active", color_hex: "#F59E0B", sort_order: 1 },
+    { id: "st-rev", space_id: spaceId, name: "REVIEW", category: "active", color_hex: "#A855F7", sort_order: 2 },
+    { id: "st-done", space_id: spaceId, name: "COMPLETE", category: "closed", color_hex: "#10B981", sort_order: 3 },
+  ];
+  const lists: PmsListDTO[] = [
+    { id: listId, space_id: spaceId, folder_id: null, name: "Q4 Sprint", space_name: "Sovereign Ops" },
+  ];
+  const spaces: PmsSpaceDTO[] = [
+    {
+      id: spaceId,
+      workspace_id: "iso-ws-01",
+      name: "Sovereign Ops",
+      color_hex: "#4984fd",
+      icon: "cpu",
+      is_private: false,
+      folders: [],
+      lists,
+      statuses,
+    },
+  ];
+  const tasks: PmsTaskDTO[] = [
+    {
+      id: "iso-task-1",
+      list_id: listId,
+      space_id: spaceId,
+      folder_id: null,
+      parent_task_id: null,
+      name: "Ship ClickUp-Style Grouped List & Board",
+      description: "## Spec\n- Collapsible status groups\n- Slide-over inspector",
+      status_id: "st-todo",
+      status_name: "TO DO",
+      status_category: "not_started",
+      status_color: "#3B82F6",
+      priority: "high",
+      start_date: "2026-11-20T09:00:00.000Z",
+      due_date: "2026-11-22T12:00:00.000Z",
+      time_estimate_ms: 5400000,
+      time_estimate_minutes: 90,
+      tags: ["sovereign", "pms"],
+      sort_order: 0,
+      created_at: "2026-11-20T08:00:00.000Z",
+      updated_at: "2026-11-20T08:00:00.000Z",
+      space_name: "Sovereign Ops",
+      list_name: "Q4 Sprint",
+      folder_name: null,
+      checklists: [
+        { id: "iso-chk-1", task_id: "iso-task-1", name: "Verify DnD status sync", is_completed: false, sort_order: 0 },
+      ],
+      comments: [],
+      dependencies: [],
+      subtasks: [],
+    },
+    {
+      id: "iso-task-2",
+      list_id: listId,
+      space_id: spaceId,
+      folder_id: null,
+      parent_task_id: null,
+      name: "Audit Production Telemetry Gates",
+      description: "Ensure zero console errors across all routes.",
+      status_id: "st-prog",
+      status_name: "IN PROGRESS",
+      status_category: "active",
+      status_color: "#F59E0B",
+      priority: "urgent",
+      start_date: null,
+      due_date: "2026-11-24T12:00:00.000Z",
+      time_estimate_ms: 3600000,
+      time_estimate_minutes: 60,
+      tags: ["ops"],
+      sort_order: 1,
+      created_at: "2026-11-20T08:30:00.000Z",
+      updated_at: "2026-11-20T08:30:00.000Z",
+      space_name: "Sovereign Ops",
+      list_name: "Q4 Sprint",
+      folder_name: null,
+      checklists: [],
+      comments: [],
+      dependencies: [],
+      subtasks: [],
+    },
+  ];
+  return { spaces, lists, statuses, tasks };
 }

@@ -1,625 +1,63 @@
 "use client";
 
-import React, { useCallback, useEffect, useMemo, useState } from "react";
-import {
-  Plus,
-  Search,
-  Filter,
-  Columns3,
-  List as ListIcon,
-  LayoutDashboard,
-  Calendar,
-  Layers,
-  ChevronRight,
-  ChevronLeft,
-  Clock,
-  Flag,
-  CheckCircle2,
-  AlertCircle,
-  Folder,
-  CheckSquare,
-  Sparkles,
-  Loader2,
-  Trash2,
-  ArrowRight,
-  TrendingUp,
-  BarChart3,
-  CalendarDays,
-  Network,
-} from "lucide-react";
+import React from "react";
+import { Loader2, Sparkles, X } from "lucide-react";
 import { ExecutiveModuleShell } from "@/components/chairman/ExecutiveModuleShell";
-import {
-  PmsSpaceDTO,
-  PmsFolderDTO,
-  PmsListDTO,
-  PmsStatusDTO,
-  PmsTaskDTO,
-} from "@/lib/pmsTypes";
-import { PmsHierarchySidebar } from "@/components/pms/PmsHierarchySidebar";
-import { TaskDetailModal } from "@/components/pms/TaskDetailModal";
 import { NewSpaceModal } from "@/components/pms/NewSpaceModal";
-import { Mic, Send, Home as HomeIcon, PanelLeft } from "lucide-react";
-
-type ViewMode = "home" | "board" | "list" | "overview";
+import { PmsHierarchySidebar } from "@/components/pms/PmsHierarchySidebar";
+import {
+  GroupedTaskList,
+  PmsAiCommandBar,
+  PmsHomePanel,
+  PmsOverviewPanel,
+  TaskCalendarView,
+  TaskDetailDrawer,
+  TaskKanbanBoard,
+  TaskViewSwitcher,
+  usePmsWorkspace,
+} from "@features/pms";
 
 export default function SovereignPmsPage() {
-  // Navigation & Data States
-  const [spaces, setSpaces] = useState<PmsSpaceDTO[]>([]);
-  const [statuses, setStatuses] = useState<PmsStatusDTO[]>([]);
-  const [tasks, setTasks] = useState<PmsTaskDTO[]>([]);
-  const [loading, setLoading] = useState(true);
-
-  // Hierarchy Selection
-  const [selectedSpaceId, setSelectedSpaceId] = useState<string | null>(null);
-  const [selectedFolderId, setSelectedFolderId] = useState<string | null>(null);
-  const [selectedListId, setSelectedListId] = useState<string | null>(null);
-
-  // View & Spaces Drawer States
-  const [viewMode, setViewMode] = useState<ViewMode>("board");
-  const [showAddViewMenu, setShowAddViewMenu] = useState(false);
-  const [showSpacesDrawer, setShowSpacesDrawer] = useState(true);
-
-  // Universal AI Command Bar (syncs PMS + Health/Nutrition/Operations)
-  const [aiCommand, setAiCommand] = useState("");
-  const [isAiRunning, setIsAiRunning] = useState(false);
-  const [isAiListening, setIsAiListening] = useState(false);
-  const [aiToast, setAiToast] = useState<string | null>(null);
-
-  // Filter & Search
-  const [searchQuery, setSearchQuery] = useState("");
-  const [priorityFilter, setPriorityFilter] = useState("ALL");
-
-  // Modals
-  const [isNewSpaceModalOpen, setIsNewSpaceModalOpen] = useState(false);
-  const [selectedTaskForDetail, setSelectedTaskForDetail] = useState<PmsTaskDTO | null>(null);
-
-  // Quick Inline Add Task in Board
-  const [inlineTaskNameByStatus, setInlineTaskNameByStatus] = useState<Record<string, string>>({});
-  const [addingTaskForStatusId, setAddingTaskForStatusId] = useState<string | null>(null);
-
-  // Fetch Full PMS Hierarchy
-  const loadPmsData = useCallback(async () => {
-    try {
-      setLoading(true);
-      const res = await fetch("/api/pms", { cache: "no-store" });
-      const data = await res.json();
-      if (data.spaces) {
-        setSpaces(data.spaces);
-        // Default to first space if none selected
-        if (!selectedSpaceId && data.spaces.length > 0) {
-          setSelectedSpaceId(data.spaces[0].id);
-        }
-      }
-      if (data.statuses) {
-        setStatuses(data.statuses);
-      }
-      if (data.tasks) {
-        setTasks(data.tasks);
-      }
-    } catch (err) {
-      console.error("Failed to fetch PMS:", err);
-    } finally {
-      setLoading(false);
-    }
-  }, [selectedSpaceId]);
-
-  useEffect(() => {
-    loadPmsData();
-  }, [loadPmsData]);
-
-  // Selected Scope Details
-  const currentSpace = useMemo(
-    () => spaces.find((s) => s.id === selectedSpaceId) || spaces[0] || null,
-    [spaces, selectedSpaceId]
-  );
-
-  const currentFolder = useMemo(() => {
-    if (!currentSpace || !selectedFolderId) return null;
-    return currentSpace.folders.find((f) => f.id === selectedFolderId) || null;
-  }, [currentSpace, selectedFolderId]);
-
-  const currentList = useMemo(() => {
-    if (!currentSpace || !selectedListId) return null;
-    const direct = currentSpace.lists.find((l) => l.id === selectedListId);
-    if (direct) return direct;
-    for (const f of currentSpace.folders) {
-      const match = f.lists.find((l) => l.id === selectedListId);
-      if (match) return match;
-    }
-    return null;
-  }, [currentSpace, selectedListId]);
-
-  // Filter Statuses for Current Space
-  const currentSpaceStatuses = useMemo(() => {
-    if (!currentSpace) return [];
-    const spaceStatuses = statuses.filter((st) => st.space_id === currentSpace.id);
-    if (spaceStatuses.length > 0) return spaceStatuses;
-    // Fallback default set if empty
-    return [
-      { id: "s1", space_id: currentSpace.id, name: "NOT STARTED", category: "not_started" as const, color_hex: "#64748B", sort_order: 0 },
-      { id: "s2", space_id: currentSpace.id, name: "TO DO", category: "not_started" as const, color_hex: "#3B82F6", sort_order: 1 },
-      { id: "s3", space_id: currentSpace.id, name: "IN PROGRESS", category: "active" as const, color_hex: "#F59E0B", sort_order: 2 },
-      { id: "s4", space_id: currentSpace.id, name: "REVIEW", category: "active" as const, color_hex: "#A855F7", sort_order: 3 },
-      { id: "s5", space_id: currentSpace.id, name: "COMPLETE", category: "closed" as const, color_hex: "#10B981", sort_order: 4 },
-    ];
-  }, [currentSpace, statuses]);
-
-  // Filter Tasks by Active Scope & Filters
-  const filteredTasks = useMemo(() => {
-    return tasks.filter((t) => {
-      // Scope filter
-      if (selectedListId && t.list_id !== selectedListId) return false;
-      if (selectedFolderId && !selectedListId && t.folder_id !== selectedFolderId) return false;
-      if (selectedSpaceId && !selectedFolderId && !selectedListId && t.space_id !== selectedSpaceId) {
-        return false;
-      }
-
-      // Priority filter
-      if (priorityFilter !== "ALL" && t.priority !== priorityFilter) return false;
-
-      // Search query
-      if (searchQuery.trim()) {
-        const q = searchQuery.toLowerCase();
-        const matchTitle = t.name.toLowerCase().includes(q);
-        const matchDesc = (t.description || "").toLowerCase().includes(q);
-        const matchTags = t.tags.some((tg) => tg.toLowerCase().includes(q));
-        if (!matchTitle && !matchDesc && !matchTags) return false;
-      }
-
-      return true;
-    });
-  }, [tasks, selectedSpaceId, selectedFolderId, selectedListId, priorityFilter, searchQuery]);
-
-  // Actions
-  const handleSelectSpace = (spaceId: string) => {
-    setSelectedSpaceId(spaceId);
-    setSelectedFolderId(null);
-    setSelectedListId(null);
-  };
-
-  const handleSelectFolder = (spaceId: string, folderId: string) => {
-    setSelectedSpaceId(spaceId);
-    setSelectedFolderId(folderId);
-    setSelectedListId(null);
-  };
-
-  const handleSelectList = (spaceId: string, folderId: string | null, listId: string) => {
-    setSelectedSpaceId(spaceId);
-    setSelectedFolderId(folderId);
-    setSelectedListId(listId);
-  };
-
-  const handleCreateSpace = async (name: string, colorHex: string, icon: string) => {
-    const res = await fetch("/api/pms", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ action: "create_space", name, color_hex: colorHex, icon }),
-    });
-    if (res.ok) {
-      await loadPmsData();
-    }
-  };
-
-  const handleCreateFolder = async (spaceId: string, name: string) => {
-    const res = await fetch("/api/pms", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ action: "create_folder", space_id: spaceId, name }),
-    });
-    if (res.ok) {
-      await loadPmsData();
-    }
-  };
-
-  const handleCreateList = async (spaceId: string, folderId: string | null, name: string) => {
-    const res = await fetch("/api/pms", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ action: "create_list", space_id: spaceId, folder_id: folderId, name }),
-    });
-    if (res.ok) {
-      await loadPmsData();
-    }
-  };
-
-  const handleCreateTaskInline = async (statusId: string) => {
-    const title = (inlineTaskNameByStatus[statusId] || "").trim();
-    if (!title || !currentSpace) return;
-
-    // Pick target list
-    let targetListId = selectedListId;
-    if (!targetListId) {
-      if (currentFolder && currentFolder.lists.length > 0) {
-        targetListId = currentFolder.lists[0].id;
-      } else if (currentSpace.lists.length > 0) {
-        targetListId = currentSpace.lists[0].id;
-      } else if (currentSpace.folders.length > 0 && currentSpace.folders[0].lists.length > 0) {
-        targetListId = currentSpace.folders[0].lists[0].id;
-      }
-    }
-
-    if (!targetListId) return;
-
-    const res = await fetch("/api/pms", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        action: "create_task",
-        name: title,
-        list_id: targetListId,
-        status_id: statusId,
-        priority: "normal",
-      }),
-    });
-
-    if (res.ok) {
-      setInlineTaskNameByStatus((prev) => ({ ...prev, [statusId]: "" }));
-      setAddingTaskForStatusId(null);
-      await loadPmsData();
-    }
-  };
-
-  const handleMoveStatus = async (taskId: string, targetStatusId: string) => {
-    setTasks((prev) =>
-      prev.map((t) => {
-        if (t.id === taskId) {
-          const st = statuses.find((s) => s.id === targetStatusId);
-          return {
-            ...t,
-            status_id: targetStatusId,
-            status_name: st?.name || t.status_name,
-            status_color: st?.color_hex || t.status_color,
-            status_category: st?.category || t.status_category,
-          };
-        }
-        return t;
-      })
-    );
-
-    await fetch("/api/pms", {
-      method: "PATCH",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ action: "move_status", task_id: taskId, status_id: targetStatusId }),
-    });
-  };
-
-  const handleStepStatus = (task: PmsTaskDTO, direction: -1 | 1) => {
-    const curIdx = currentSpaceStatuses.findIndex((s) => s.id === task.status_id);
-    if (curIdx === -1) return;
-    const nextIdx = curIdx + direction;
-    if (nextIdx >= 0 && nextIdx < currentSpaceStatuses.length) {
-      handleMoveStatus(task.id, currentSpaceStatuses[nextIdx].id);
-    }
-  };
-
-  const handleUpdateTask = async (taskId: string, patch: Partial<PmsTaskDTO>) => {
-    setTasks((prev) =>
-      prev.map((t) => (t.id === taskId ? { ...t, ...patch } : t))
-    );
-    if (selectedTaskForDetail?.id === taskId) {
-      setSelectedTaskForDetail((prev) => (prev ? { ...prev, ...patch } : null));
-    }
-
-    await fetch("/api/pms", {
-      method: "PATCH",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ action: "update_task", task_id: taskId, ...patch }),
-    });
-  };
-
-  const handleToggleChecklist = async (taskId: string, checklistId: string, current: boolean) => {
-    const nextVal = !current;
-    setTasks((prev) =>
-      prev.map((t) => {
-        if (t.id === taskId) {
-          return {
-            ...t,
-            checklists: t.checklists.map((c) =>
-              c.id === checklistId ? { ...c, is_completed: nextVal } : c
-            ),
-          };
-        }
-        return t;
-      })
-    );
-
-    if (selectedTaskForDetail?.id === taskId) {
-      setSelectedTaskForDetail((prev) =>
-        prev
-          ? {
-              ...prev,
-              checklists: prev.checklists.map((c) =>
-                c.id === checklistId ? { ...c, is_completed: nextVal } : c
-              ),
-            }
-          : null
-      );
-    }
-
-    await fetch("/api/pms", {
-      method: "PATCH",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        action: "toggle_checklist",
-        checklist_id: checklistId,
-        is_completed: nextVal,
-      }),
-    });
-  };
-
-  const handleAddChecklist = async (taskId: string, name: string) => {
-    const res = await fetch("/api/pms", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ action: "add_checklist", task_id: taskId, name }),
-    });
-    const data = await res.json();
-    if (data.checklist) {
-      setTasks((prev) =>
-        prev.map((t) =>
-          t.id === taskId ? { ...t, checklists: [...t.checklists, data.checklist] } : t
-        )
-      );
-      if (selectedTaskForDetail?.id === taskId) {
-        setSelectedTaskForDetail((prev) =>
-          prev ? { ...prev, checklists: [...prev.checklists, data.checklist] } : null
-        );
-      }
-    }
-  };
-
-  const handleAddComment = async (taskId: string, content: string) => {
-    const res = await fetch("/api/pms", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ action: "add_comment", task_id: taskId, content }),
-    });
-    const data = await res.json();
-    if (data.comment) {
-      setTasks((prev) =>
-        prev.map((t) =>
-          t.id === taskId ? { ...t, comments: [...t.comments, data.comment] } : t
-        )
-      );
-      if (selectedTaskForDetail?.id === taskId) {
-        setSelectedTaskForDetail((prev) =>
-          prev ? { ...prev, comments: [...prev.comments, data.comment] } : null
-        );
-      }
-    }
-  };
-
-  const handleAddDependency = async (dependentTaskId: string, prereqTaskId: string, type: string) => {
-    const res = await fetch("/api/pms", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        action: "add_dependency",
-        dependent_task_id: dependentTaskId,
-        prerequisite_task_id: prereqTaskId,
-        type,
-      }),
-    });
-    const data = await res.json();
-    if (data.dependency) {
-      await loadPmsData();
-    }
-  };
-
-  const handleAddSubtask = async (parentTaskId: string, listId: string, name: string) => {
-    await fetch("/api/pms", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        action: "create_task",
-        parent_task_id: parentTaskId,
-        list_id: listId,
-        name,
-      }),
-    });
-    await loadPmsData();
-  };
-
-  const handleDeleteTask = async (taskId: string) => {
-    setTasks((prev) => prev.filter((t) => t.id !== taskId));
-    if (selectedTaskForDetail?.id === taskId) {
-      setSelectedTaskForDetail(null);
-    }
-    await fetch(`/api/pms?taskId=${encodeURIComponent(taskId)}`, { method: "DELETE" });
-  };
-
-  // Breadcrumb Label
-  const breadcrumb = useMemo(() => {
-    const parts = [currentSpace?.name || "Workspace"];
-    if (currentFolder) parts.push(currentFolder.name);
-    if (currentList) parts.push(currentList.name);
-    return parts;
-  }, [currentSpace, currentFolder, currentList]);
-
-  // Overview Stats
-  const overviewStats = useMemo(() => {
-    const total = filteredTasks.length;
-    const completed = filteredTasks.filter((t) => t.status_category === "closed").length;
-    const active = filteredTasks.filter((t) => t.status_category === "active").length;
-    const totalEstHours = Math.round(
-      filteredTasks.reduce((acc, t) => acc + (t.time_estimate_minutes || 0), 0) / 60
-    );
-    const totalChecklists = filteredTasks.reduce((acc, t) => acc + t.checklists.length, 0);
-    const completedChecklists = filteredTasks.reduce(
-      (acc, t) => acc + t.checklists.filter((c) => c.is_completed).length,
-      0
-    );
-    return { total, completed, active, totalEstHours, totalChecklists, completedChecklists };
-  }, [filteredTasks]);
-
-  // Universal AI Command Handler: creates PMS task AND cross-syncs to Health/Nutrition/Operations
-  const handleUniversalAiCommand = async (rawText?: string) => {
-    const cmd = (rawText ?? aiCommand).trim();
-    if (!cmd || isAiRunning) return;
-    setIsAiRunning(true);
-    try {
-      const lower = cmd.toLowerCase();
-      // 1. Determine target space/list
-      let targetListId = selectedListId;
-      if (!targetListId && currentSpace) {
-        targetListId =
-          currentSpace.lists[0]?.id ||
-          currentSpace.folders[0]?.lists[0]?.id ||
-          null;
-      }
-      if (!targetListId && spaces.length > 0) {
-        const matchedSpace =
-          spaces.find((s) => lower.includes(s.name.toLowerCase())) || spaces[0];
-        targetListId =
-          matchedSpace.lists[0]?.id ||
-          matchedSpace.folders[0]?.lists[0]?.id ||
-          null;
-      }
-
-      const priority =
-        lower.includes("urgent") || lower.includes("asap")
-          ? "urgent"
-          : lower.includes("high")
-          ? "high"
-          : "normal";
-
-      // Create task in PMS
-      if (targetListId) {
-        await fetch("/api/pms", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            action: "create_task",
-            name: cmd,
-            list_id: targetListId,
-            status_id: currentSpaceStatuses[0]?.id,
-            priority,
-          }),
-        });
-      }
-
-      // 2. Cross-domain universal sync
-      const syncedAreas: string[] = ["PMS"];
-      const todayIso = new Date().toISOString().split("T")[0];
-
-      // Health / Water / Steps / Weight sync
-      const waterMatch = lower.match(/(\d+(?:\.\d+)?)\s*(oz|ml|liter|liters|l)\b.*water|water.*?(\d+(?:\.\d+)?)\s*(oz|ml)/i);
-      const stepsMatch = lower.match(/(\d[\d,]*)\s*steps/i);
-      if (waterMatch || stepsMatch || lower.includes("health") || lower.includes("workout")) {
-        const patch: Record<string, any> = { log_date: todayIso, notes: `Synced from PMS: ${cmd}` };
-        if (stepsMatch) patch.total_steps = parseInt(stepsMatch[1].replace(/,/g, ""), 10);
-        if (lower.includes("workout") || lower.includes("lift")) patch.lift_completed = true;
-        await fetch("/api/sitrep", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify(patch),
-        });
-        syncedAreas.push("Health & Sitrep");
-      }
-
-      // Nutrition / Food sync
-      if (lower.includes("ate ") || lower.includes("eat ") || lower.includes("meal") || lower.includes("chicken") || lower.includes("protein")) {
-        await fetch("/api/parse-food", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ text: cmd, date: todayIso }),
-        }).catch(() => {});
-        syncedAreas.push("Nutrition");
-      }
-
-      setAiCommand("");
-      setAiToast(`Synced "${cmd}" → ${syncedAreas.join(" + ")}`);
-      setTimeout(() => setAiToast(null), 4500);
-      await loadPmsData();
-    } catch (err) {
-      console.error("Universal AI command error:", err);
-      setAiToast("Could not sync command — check connection.");
-      setTimeout(() => setAiToast(null), 3500);
-    } finally {
-      setIsAiRunning(false);
-    }
-  };
-
-  const handleToggleAiMic = () => {
-    if (typeof window === "undefined") return;
-    const SpeechRecognition =
-      (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
-    if (!SpeechRecognition) {
-      setAiToast("Voice input not supported in this browser.");
-      setTimeout(() => setAiToast(null), 3000);
-      return;
-    }
-    const recognition = new SpeechRecognition();
-    recognition.lang = "en-US";
-    recognition.continuous = false;
-    recognition.interimResults = false;
-    recognition.onstart = () => setIsAiListening(true);
-    recognition.onend = () => setIsAiListening(false);
-    recognition.onerror = () => setIsAiListening(false);
-    recognition.onresult = (e: any) => {
-      const transcript = e.results?.[0]?.[0]?.transcript;
-      if (transcript) {
-        setAiCommand(transcript);
-        handleUniversalAiCommand(transcript);
-      }
-    };
-    recognition.start();
-  };
+  const {
+    state,
+    dispatch,
+    currentSpaceStatuses,
+    filteredTasks,
+    selectedTask,
+    breadcrumb,
+    handleCreateSpace,
+    handleCreateFolder,
+    handleCreateList,
+    handleCreateTask,
+    handleMoveStatus,
+    handleStepStatus,
+    handleUpdateTask,
+    handleToggleChecklist,
+    handleAddChecklist,
+    handleAddComment,
+    handleAddSubtask,
+    handleDeleteTask,
+    handleRunAiCommand,
+  } = usePmsWorkspace();
 
   return (
     <ExecutiveModuleShell
       moduleId="PMS"
       eyebrow="Operations & Planning"
       title="Project Management"
-      subtitle="Universal spaces, boards, and AI-synced tasks across Health, Wealth & Operations"
+      subtitle="ClickUp-style spaces, grouped status lists, Kanban boards, task calendar & slide-over inspector"
       accentColor="#4984fd"
       fullBleed={true}
       headerActions={
-        <form
-          onSubmit={(e) => {
-            e.preventDefault();
-            handleUniversalAiCommand();
-          }}
-          className="flex items-center gap-2 w-full sm:w-auto"
-        >
-          <div className="relative flex-1 sm:w-80">
-            <Sparkles className="w-3.5 h-3.5 text-[#4984fd] absolute left-3 top-1/2 -translate-y-1/2" />
-            <input
-              type="text"
-              data-testid="pms-ai-command-input"
-              value={aiCommand}
-              onChange={(e) => setAiCommand(e.target.value)}
-              placeholder="Ask AI to add task & sync Health / Wealth / Ops..."
-              className="w-full pl-8 pr-9 py-1.5 rounded-xl border text-xs focus:outline-none focus:border-[#4984fd] transition"
-              style={{
-                backgroundColor: "var(--glass-surface-elevated)",
-                borderColor: "var(--glass-border)",
-                color: "var(--glass-text-primary)",
-              }}
-            />
-            <button
-              type="button"
-              onClick={handleToggleAiMic}
-              className={`absolute right-2 top-1/2 -translate-y-1/2 p-1 rounded-lg transition ${
-                isAiListening ? "text-rose-500 animate-pulse" : "text-zinc-400 hover:text-[#4984fd]"
-              }`}
-              title="Speak AI command"
-            >
-              <Mic className="w-3.5 h-3.5" />
-            </button>
-          </div>
-          <button
-            type="submit"
-            disabled={isAiRunning || !aiCommand.trim()}
-            className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-[#4984fd] hover:bg-blue-500 text-white text-xs font-medium transition disabled:opacity-40"
-          >
-            {isAiRunning ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Send className="w-3.5 h-3.5" />}
-            <span className="hidden sm:inline">Sync</span>
-          </button>
-        </form>
+        <PmsAiCommandBar
+          onRunCommand={handleRunAiCommand}
+          onNotify={(message) => dispatch({ type: "SET_TOAST", message })}
+        />
       }
     >
       <div
+        data-testid="pms-workspace-root"
+        data-view-mode={state.viewMode}
         className="flex min-h-[calc(100vh-140px)] w-full rounded-2xl border overflow-hidden select-none transition-colors"
         style={{
           backgroundColor: "var(--glass-surface)",
@@ -627,622 +65,175 @@ export default function SovereignPmsPage() {
           color: "var(--glass-text-primary)",
         }}
       >
-        {/* Toast feedback for Universal AI Sync */}
-        {aiToast && (
-          <div className="fixed bottom-6 right-6 z-50 px-4 py-2.5 rounded-xl bg-[#4984fd] text-white text-xs font-medium shadow-xl flex items-center gap-2">
+        {state.toastMessage && (
+          <div
+            data-testid="pms-toast"
+            className="fixed bottom-6 right-6 z-50 px-4 py-2.5 rounded-xl bg-[#4984fd] text-white text-xs font-medium shadow-xl flex items-center gap-2"
+          >
             <Sparkles className="w-3.5 h-3.5" />
-            <span>{aiToast}</span>
+            <span>{state.toastMessage}</span>
+            <button
+              type="button"
+              onClick={() => dispatch({ type: "SET_TOAST", message: null })}
+              className="ml-1 p-0.5 rounded hover:bg-white/20"
+            >
+              <X className="w-3 h-3" />
+            </button>
           </div>
         )}
 
-        {/* 1. Inline Space Hierarchy Sidebar (pops right out inside the workspace) */}
-        {showSpacesDrawer && (
+        {state.showSpacesDrawer && (
           <PmsHierarchySidebar
-            spaces={spaces}
-            selectedSpaceId={selectedSpaceId}
-            selectedFolderId={selectedFolderId}
-            selectedListId={selectedListId}
-            onSelectSpace={handleSelectSpace}
-            onSelectFolder={handleSelectFolder}
-            onSelectList={handleSelectList}
-            onOpenNewSpaceModal={() => setIsNewSpaceModalOpen(true)}
+            spaces={state.spaces}
+            selectedSpaceId={state.selectedSpaceId}
+            selectedFolderId={state.selectedFolderId}
+            selectedListId={state.selectedListId}
+            onSelectSpace={(spaceId) =>
+              dispatch({ type: "SELECT_SPACE", spaceId })
+            }
+            onSelectFolder={(spaceId, folderId) =>
+              dispatch({ type: "SELECT_FOLDER", spaceId, folderId })
+            }
+            onSelectList={(spaceId, folderId, listId) =>
+              dispatch({ type: "SELECT_LIST", spaceId, folderId, listId })
+            }
+            onOpenNewSpaceModal={() =>
+              dispatch({ type: "OPEN_NEW_SPACE_MODAL" })
+            }
             onCreateFolder={handleCreateFolder}
             onCreateList={handleCreateList}
           />
         )}
 
-        {/* 2. Fluid Main Canvas */}
         <main className="flex-1 flex flex-col min-w-0 overflow-hidden bg-transparent">
-          {/* Persistent View Tabs Bar */}
-          <div
-            className="min-h-11 px-4 py-1.5 border-b flex flex-wrap items-center justify-between gap-2"
-            style={{
-              backgroundColor: "var(--glass-surface-elevated)",
-              borderColor: "var(--glass-border)",
-            }}
-          >
-            {/* Breadcrumb Path & Tabs */}
-            <div className="flex items-center gap-3 flex-wrap">
-              <button
-                onClick={() => setShowSpacesDrawer((v) => !v)}
-                className="p-1.5 rounded-lg hover:bg-black/5 dark:hover:bg-white/10 transition"
-                style={{ color: "var(--glass-text-muted)" }}
-                title={showSpacesDrawer ? "Hide Spaces Drawer" : "Show Spaces Drawer"}
-              >
-                <PanelLeft className="w-4 h-4" />
-              </button>
-
-              <div className="flex items-center gap-1.5 text-xs font-medium" style={{ color: "var(--glass-text-muted)" }}>
-                {breadcrumb.map((b, i) => (
-                  <React.Fragment key={b + i}>
-                    {i > 0 && <span className="opacity-50">/</span>}
-                    <span
-                      style={{
-                        color: i === breadcrumb.length - 1 ? "var(--glass-text-primary)" : "var(--glass-text-muted)",
-                      }}
-                    >
-                      {b}
-                    </span>
-                  </React.Fragment>
-                ))}
-              </div>
-
-              <div className="h-4 w-px" style={{ backgroundColor: "var(--glass-border)" }} />
-
-              {/* View Tabs (including Home Dashboard!) */}
-              <div className="flex items-center gap-1 text-xs">
-                <button
-                  data-testid="pms-view-home"
-                  onClick={() => setViewMode("home")}
-                  className={`flex items-center gap-1.5 px-2.5 py-1 rounded-md transition ${
-                    viewMode === "home"
-                      ? "bg-[#4984fd]/15 text-[#4984fd] font-medium"
-                      : "opacity-75 hover:opacity-100"
-                  }`}
-                >
-                  <HomeIcon className="w-3.5 h-3.5" />
-                  <span>Home</span>
-                </button>
-
-                <button
-                  data-testid="pms-view-overview"
-                  onClick={() => setViewMode("overview")}
-                  className={`flex items-center gap-1.5 px-2.5 py-1 rounded-md transition ${
-                    viewMode === "overview"
-                      ? "bg-[#4984fd]/15 text-[#4984fd] font-medium"
-                      : "opacity-75 hover:opacity-100"
-                  }`}
-                >
-                  <LayoutDashboard className="w-3.5 h-3.5" />
-                  <span>Overview</span>
-                </button>
-
-                <button
-                  data-testid="pms-view-list"
-                  onClick={() => setViewMode("list")}
-                  className={`flex items-center gap-1.5 px-2.5 py-1 rounded-md transition ${
-                    viewMode === "list"
-                      ? "bg-[#4984fd]/15 text-[#4984fd] font-medium"
-                      : "opacity-75 hover:opacity-100"
-                  }`}
-                >
-                  <ListIcon className="w-3.5 h-3.5" />
-                  <span>List</span>
-                </button>
-
-                <button
-                  data-testid="pms-view-board"
-                  onClick={() => setViewMode("board")}
-                  className={`flex items-center gap-1.5 px-2.5 py-1 rounded-md transition ${
-                    viewMode === "board"
-                      ? "bg-[#4984fd]/15 text-[#4984fd] font-medium"
-                      : "opacity-75 hover:opacity-100"
-                  }`}
-                >
-                  <Columns3 className="w-3.5 h-3.5" />
-                  <span>Board</span>
-                </button>
-
-              {/* + View Modal Button */}
-              <div className="relative">
-                <button
-                  onClick={() => setShowAddViewMenu((prev) => !prev)}
-                  className="flex items-center gap-1 px-2 py-1 rounded-md text-zinc-400 hover:text-white transition text-xs"
-                >
-                  <Plus className="w-3 h-3" />
-                  <span>View</span>
-                </button>
-
-                {showAddViewMenu && (
-                  <div className="absolute left-0 top-8 w-44 bg-[#141724] border border-[#282E42] rounded-xl shadow-2xl py-1.5 z-50 text-xs text-zinc-300">
-                    <button
-                      onClick={() => setShowAddViewMenu(false)}
-                      className="w-full px-3 py-1.5 text-left hover:bg-[#202538] flex items-center gap-2"
-                    >
-                      <BarChart3 className="w-3.5 h-3.5 text-blue-400" /> Gantt
-                    </button>
-                    <button
-                      onClick={() => setShowAddViewMenu(false)}
-                      className="w-full px-3 py-1.5 text-left hover:bg-[#202538] flex items-center gap-2"
-                    >
-                      <CalendarDays className="w-3.5 h-3.5 text-amber-400" /> Calendar
-                    </button>
-                    <button
-                      onClick={() => setShowAddViewMenu(false)}
-                      className="w-full px-3 py-1.5 text-left hover:bg-[#202538] flex items-center gap-2"
-                    >
-                      <Columns3 className="w-3.5 h-3.5 text-emerald-400" /> Table
-                    </button>
-                    <button
-                      onClick={() => setShowAddViewMenu(false)}
-                      className="w-full px-3 py-1.5 text-left hover:bg-[#202538] flex items-center gap-2"
-                    >
-                      <Network className="w-3.5 h-3.5 text-purple-400" /> Mind Map
-                    </button>
-                  </div>
-                )}
-              </div>
-            </div>
-          </div>
-
-          {/* Right Toolbar Controls */}
-          <div className="flex items-center gap-3">
-            {/* Search Input */}
-            <div className="relative">
-              <Search className="w-3.5 h-3.5 text-zinc-500 absolute left-2.5 top-1/2 -translate-y-1/2" />
-              <input
-                type="text"
-                placeholder="Search tasks..."
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                className="pl-8 pr-3 py-1 bg-[#090A0F] border border-[#222634] rounded-lg text-xs text-zinc-200 placeholder-zinc-500 focus:outline-none focus:border-blue-500 w-44 transition"
-              />
-            </div>
-
-            {/* Priority Filter */}
-            <div className="flex items-center gap-1.5">
-              <Filter className="w-3.5 h-3.5 text-zinc-500" />
-              <select
-                value={priorityFilter}
-                onChange={(e) => setPriorityFilter(e.target.value)}
-                className="px-2 py-1 bg-[#090A0F] border border-[#222634] rounded-lg text-xs text-zinc-300 focus:outline-none"
-              >
-                <option value="ALL">All Priorities</option>
-                <option value="urgent">Urgent</option>
-                <option value="high">High</option>
-                <option value="normal">Normal</option>
-                <option value="low">Low</option>
-              </select>
-            </div>
-
-            {/* Add Task Primary CTA */}
-            <button
-              onClick={() => {
-                if (currentSpaceStatuses.length > 0) {
-                  setAddingTaskForStatusId(currentSpaceStatuses[0].id);
+          <TaskViewSwitcher
+            breadcrumb={breadcrumb}
+            showSpacesDrawer={state.showSpacesDrawer}
+            viewMode={state.viewMode}
+            searchQuery={state.searchQuery}
+            priorityFilter={state.priorityFilter}
+            onToggleSpacesDrawer={() =>
+              dispatch({ type: "TOGGLE_SPACES_DRAWER" })
+            }
+            onSelectViewMode={(viewMode) =>
+              dispatch({ type: "SET_VIEW_MODE", viewMode })
+            }
+            onSearchChange={(query) =>
+              dispatch({ type: "SET_SEARCH_QUERY", query })
+            }
+            onPriorityFilterChange={(priority) =>
+              dispatch({ type: "SET_PRIORITY_FILTER", priority })
+            }
+            onTriggerQuickAdd={() => {
+              if (currentSpaceStatuses[0]) {
+                if (state.viewMode !== "list" && state.viewMode !== "board") {
+                  dispatch({ type: "SET_VIEW_MODE", viewMode: "list" });
                 }
-              }}
-              className="flex items-center gap-1.5 px-3 py-1 bg-blue-600 hover:bg-blue-500 text-white rounded-lg text-xs font-semibold shadow-md shadow-blue-500/20 transition"
-            >
-              <Plus className="w-3.5 h-3.5" />
-              <span>Add Task</span>
-            </button>
+                dispatch({
+                  type: "SET_ADDING_TASK_STATUS",
+                  statusId: currentSpaceStatuses[0].id,
+                });
+              }
+            }}
+          />
+
+          <div className="flex-1 overflow-hidden p-4">
+            {state.loading ? (
+              <div className="h-full flex items-center justify-center">
+                <Loader2 className="w-6 h-6 animate-spin text-blue-500" />
+              </div>
+            ) : state.viewMode === "list" ? (
+              <GroupedTaskList
+                statuses={currentSpaceStatuses}
+                tasks={filteredTasks}
+                collapsedStatusIds={state.collapsedStatusIds}
+                addingTaskForStatusId={state.addingTaskForStatusId}
+                onToggleCollapse={(statusId) =>
+                  dispatch({ type: "TOGGLE_COLLAPSE_STATUS", statusId })
+                }
+                onSetAddingStatus={(statusId) =>
+                  dispatch({ type: "SET_ADDING_TASK_STATUS", statusId })
+                }
+                onCreateTask={handleCreateTask}
+                onSelectTask={(taskId) =>
+                  dispatch({ type: "OPEN_TASK_DRAWER", taskId })
+                }
+                onMoveStatus={handleMoveStatus}
+                onUpdateTask={handleUpdateTask}
+              />
+            ) : state.viewMode === "board" ? (
+              <TaskKanbanBoard
+                statuses={currentSpaceStatuses}
+                tasks={filteredTasks}
+                collapsedStatusIds={state.collapsedStatusIds}
+                addingTaskForStatusId={state.addingTaskForStatusId}
+                onToggleCollapse={(statusId) =>
+                  dispatch({ type: "TOGGLE_COLLAPSE_STATUS", statusId })
+                }
+                onSetAddingStatus={(statusId) =>
+                  dispatch({ type: "SET_ADDING_TASK_STATUS", statusId })
+                }
+                onCreateTask={handleCreateTask}
+                onSelectTask={(taskId) =>
+                  dispatch({ type: "OPEN_TASK_DRAWER", taskId })
+                }
+                onMoveStatus={handleMoveStatus}
+                onStepStatus={handleStepStatus}
+              />
+            ) : state.viewMode === "calendar" ? (
+              <TaskCalendarView
+                tasks={filteredTasks}
+                statuses={currentSpaceStatuses}
+                onSelectTask={(taskId) =>
+                  dispatch({ type: "OPEN_TASK_DRAWER", taskId })
+                }
+                onRescheduleTask={(taskId, dueDateIso) =>
+                  handleUpdateTask(taskId, { due_date: dueDateIso })
+                }
+                onCreateTaskOnDate={handleCreateTask}
+              />
+            ) : state.viewMode === "overview" ? (
+              <PmsOverviewPanel
+                tasks={filteredTasks}
+                statuses={currentSpaceStatuses}
+              />
+            ) : (
+              <PmsHomePanel
+                spaces={state.spaces}
+                tasks={state.tasks}
+                onOpenNewSpaceModal={() =>
+                  dispatch({ type: "OPEN_NEW_SPACE_MODAL" })
+                }
+                onSelectSpaceToBoard={(spaceId) => {
+                  dispatch({ type: "SELECT_SPACE", spaceId });
+                  dispatch({ type: "SET_VIEW_MODE", viewMode: "board" });
+                }}
+              />
+            )}
           </div>
-        </div>
+        </main>
 
-        {/* View Content Canvas */}
-        <div className="flex-1 overflow-x-auto overflow-y-hidden p-4">
-          {loading ? (
-            <div className="h-full flex items-center justify-center">
-              <Loader2 className="w-6 h-6 animate-spin text-blue-500" />
-            </div>
-          ) : viewMode === "board" ? (
-            /* CLEAN KANBAN BOARD: 272px Columns, 12px Gap, Crisp 1px #222630 Borders */
-            <div className="flex gap-3 h-full items-start pb-4">
-              {currentSpaceStatuses.map((status) => {
-                const columnTasks = filteredTasks.filter((t) => t.status_id === status.id);
-                const isAdding = addingTaskForStatusId === status.id;
+        <TaskDetailDrawer
+          task={selectedTask}
+          statuses={currentSpaceStatuses}
+          peekMode={state.peekMode}
+          onChangePeekMode={(peekMode) =>
+            dispatch({ type: "SET_PEEK_MODE", peekMode })
+          }
+          onClose={() => dispatch({ type: "CLOSE_TASK_DRAWER" })}
+          onUpdateTask={handleUpdateTask}
+          onToggleChecklist={handleToggleChecklist}
+          onAddChecklist={handleAddChecklist}
+          onAddSubtask={handleAddSubtask}
+          onAddComment={handleAddComment}
+          onDeleteTask={handleDeleteTask}
+        />
 
-                return (
-                  <div
-                    key={status.id}
-                    className="w-[272px] min-w-[272px] max-h-full bg-[#11131C] border border-[#222630] rounded-xl flex flex-col overflow-hidden"
-                  >
-                    {/* Column Header */}
-                    <div className="h-10 px-3 border-b border-[#1E222D] flex items-center justify-between bg-[#141624]">
-                      <div className="flex items-center gap-2">
-                        <span
-                          className="w-2.5 h-2.5 rounded-full"
-                          style={{ backgroundColor: status.color_hex }}
-                        />
-                        <span className="text-xs font-bold tracking-wider text-zinc-200 uppercase">
-                          {status.name}
-                        </span>
-                        <span className="px-1.5 py-0.5 rounded-full bg-[#1E2230] text-[10px] font-mono text-zinc-400">
-                          {columnTasks.length}
-                        </span>
-                      </div>
-
-                      <button
-                        onClick={() => setAddingTaskForStatusId(status.id)}
-                        className="p-1 rounded text-zinc-400 hover:text-white hover:bg-[#202538] transition"
-                        title="Add Task to Status"
-                      >
-                        <Plus className="w-3.5 h-3.5" />
-                      </button>
-                    </div>
-
-                    {/* Column Cards Container */}
-                    <div className="flex-1 overflow-y-auto p-2 space-y-2">
-                      {columnTasks.map((task) => (
-                        <div
-                          key={task.id}
-                          onClick={() => setSelectedTaskForDetail(task)}
-                          className="group w-[256px] p-3 bg-[#161924] border border-[#222630] hover:border-blue-500/50 hover:bg-[#1A1E2B] rounded-lg cursor-pointer transition shadow-sm space-y-2.5"
-                        >
-                          {/* Task Name */}
-                          <div className="flex items-start justify-between gap-1">
-                            <h4 className="text-xs font-semibold text-zinc-100 group-hover:text-blue-300 transition line-clamp-2">
-                              {task.name}
-                            </h4>
-                          </div>
-
-                          {/* Badges Row */}
-                          <div className="flex flex-wrap items-center gap-1.5 text-[10px]">
-                            {/* Priority Badge */}
-                            {task.priority !== "none" && (
-                              <span
-                                className={`px-1.5 py-0.5 rounded font-medium flex items-center gap-1 ${
-                                  task.priority === "urgent"
-                                    ? "bg-rose-500/20 text-rose-300"
-                                    : task.priority === "high"
-                                    ? "bg-amber-500/20 text-amber-300"
-                                    : task.priority === "normal"
-                                    ? "bg-blue-500/20 text-blue-300"
-                                    : "bg-zinc-500/20 text-zinc-400"
-                                }`}
-                              >
-                                <Flag className="w-2.5 h-2.5" />
-                                {task.priority}
-                              </span>
-                            )}
-
-                            {/* Checklist Counter */}
-                            {task.checklists.length > 0 && (
-                              <span className="px-1.5 py-0.5 rounded bg-[#202434] text-zinc-300 flex items-center gap-1">
-                                <CheckSquare className="w-2.5 h-2.5 text-emerald-400" />
-                                {task.checklists.filter((c) => c.is_completed).length}/
-                                {task.checklists.length}
-                              </span>
-                            )}
-
-                            {/* Estimate */}
-                            {task.time_estimate_minutes > 0 && (
-                              <span className="px-1.5 py-0.5 rounded bg-[#202434] text-zinc-400 flex items-center gap-1">
-                                <Clock className="w-2.5 h-2.5" />
-                                {task.time_estimate_minutes}m
-                              </span>
-                            )}
-
-                            {/* Due Date */}
-                            {task.due_date && (
-                              <span className="px-1.5 py-0.5 rounded bg-[#202434] text-zinc-400 flex items-center gap-1">
-                                <Calendar className="w-2.5 h-2.5 text-zinc-400" />
-                                {new Date(task.due_date).toLocaleDateString([], {
-                                  month: "short",
-                                  day: "numeric",
-                                })}
-                              </span>
-                            )}
-                          </div>
-
-                          {/* Quick Step Controls on Hover */}
-                          <div className="opacity-0 group-hover:opacity-100 flex items-center justify-between pt-1 border-t border-[#202534] transition">
-                            <span className="text-[10px] text-zinc-500">Move status:</span>
-                            <div className="flex items-center gap-1">
-                              <button
-                                title="Move Left"
-                                onClick={(e) => {
-                                  e.stopPropagation();
-                                  handleStepStatus(task, -1);
-                                }}
-                                className="p-0.5 rounded hover:bg-[#282F44] text-zinc-400 hover:text-white"
-                              >
-                                <ChevronLeft className="w-3.5 h-3.5" />
-                              </button>
-                              <button
-                                title="Move Right"
-                                onClick={(e) => {
-                                  e.stopPropagation();
-                                  handleStepStatus(task, 1);
-                                }}
-                                className="p-0.5 rounded hover:bg-[#282F44] text-zinc-400 hover:text-white"
-                              >
-                                <ChevronRight className="w-3.5 h-3.5" />
-                              </button>
-                            </div>
-                          </div>
-                        </div>
-                      ))}
-
-                      {/* Inline Task Creator Form */}
-                      {isAdding && (
-                        <div className="w-[256px] p-2 bg-[#161924] border border-blue-500 rounded-lg space-y-2">
-                          <input
-                            type="text"
-                            placeholder="What needs to be done?"
-                            value={inlineTaskNameByStatus[status.id] || ""}
-                            onChange={(e) =>
-                              setInlineTaskNameByStatus((prev) => ({
-                                ...prev,
-                                [status.id]: e.target.value,
-                              }))
-                            }
-                            onKeyDown={(e) => {
-                              if (e.key === "Enter") handleCreateTaskInline(status.id);
-                              if (e.key === "Escape") setAddingTaskForStatusId(null);
-                            }}
-                            autoFocus
-                            className="w-full px-2 py-1 bg-[#090A0F] border border-[#222634] rounded text-xs text-white placeholder-zinc-500 focus:outline-none"
-                          />
-                          <div className="flex justify-end gap-1.5">
-                            <button
-                              onClick={() => setAddingTaskForStatusId(null)}
-                              className="px-2 py-0.5 text-[11px] text-zinc-400 hover:text-zinc-200"
-                            >
-                              Cancel
-                            </button>
-                            <button
-                              onClick={() => handleCreateTaskInline(status.id)}
-                              className="px-2 py-0.5 bg-blue-600 hover:bg-blue-500 text-white rounded text-[11px] font-medium"
-                            >
-                              Add
-                            </button>
-                          </div>
-                        </div>
-                      )}
-                    </div>
-
-                    {/* Inline + Add Task Button at Bottom */}
-                    {!isAdding && (
-                      <button
-                        onClick={() => setAddingTaskForStatusId(status.id)}
-                        className="h-9 px-3 border-t border-[#1E222D] flex items-center gap-1.5 text-xs text-zinc-400 hover:text-zinc-200 hover:bg-[#161924] transition"
-                      >
-                        <Plus className="w-3 h-3" />
-                        <span>Add Task</span>
-                      </button>
-                    )}
-                  </div>
-                );
-              })}
-            </div>
-          ) : viewMode === "list" ? (
-            /* TABULAR LIST VIEW */
-            <div className="h-full bg-[#11131C] border border-[#222630] rounded-xl overflow-hidden flex flex-col">
-              <div className="h-9 px-4 border-b border-[#1E222D] grid grid-cols-12 gap-2 text-[11px] font-bold text-zinc-400 uppercase tracking-wider items-center bg-[#141624]">
-                <div className="col-span-5">Task Name</div>
-                <div className="col-span-2">Status</div>
-                <div className="col-span-2">Priority</div>
-                <div className="col-span-2">Due Date</div>
-                <div className="col-span-1 text-right">Estimate</div>
-              </div>
-
-              <div className="flex-1 overflow-y-auto divide-y divide-[#1B1F2C]">
-                {filteredTasks.length === 0 ? (
-                  <div className="h-48 flex items-center justify-center text-xs text-zinc-500">
-                    No tasks found in this scope.
-                  </div>
-                ) : (
-                  filteredTasks.map((task) => (
-                    <div
-                      key={task.id}
-                      onClick={() => setSelectedTaskForDetail(task)}
-                      className="h-10 px-4 grid grid-cols-12 gap-2 items-center hover:bg-[#161926] cursor-pointer text-xs transition"
-                    >
-                      <div className="col-span-5 flex items-center gap-2 truncate font-medium text-zinc-200">
-                        <span
-                          className="w-2 h-2 rounded-full flex-shrink-0"
-                          style={{ backgroundColor: task.status_color }}
-                        />
-                        <span className="truncate">{task.name}</span>
-                        {task.checklists.length > 0 && (
-                          <span className="text-[10px] text-zinc-500 font-mono">
-                            [{task.checklists.filter((c) => c.is_completed).length}/
-                            {task.checklists.length}]
-                          </span>
-                        )}
-                      </div>
-
-                      <div className="col-span-2">
-                        <span
-                          className="px-2 py-0.5 rounded text-[10px] font-semibold"
-                          style={{
-                            backgroundColor: `${task.status_color}20`,
-                            color: task.status_color,
-                          }}
-                        >
-                          {task.status_name}
-                        </span>
-                      </div>
-
-                      <div className="col-span-2">
-                        <span className="capitalize text-zinc-400">{task.priority}</span>
-                      </div>
-
-                      <div className="col-span-2 text-zinc-400">
-                        {task.due_date
-                          ? new Date(task.due_date).toLocaleDateString([], {
-                              month: "short",
-                              day: "numeric",
-                            })
-                          : "—"}
-                      </div>
-
-                      <div className="col-span-1 text-right text-zinc-400 font-mono">
-                        {task.time_estimate_minutes > 0
-                          ? `${task.time_estimate_minutes}m`
-                          : "—"}
-                      </div>
-                    </div>
-                  ))
-                )}
-              </div>
-            </div>
-          ) : (
-            /* EXECUTIVE OVERVIEW VIEW */
-            <div className="h-full overflow-y-auto space-y-6">
-              {/* Executive Stat Cards */}
-              <div className="grid grid-cols-4 gap-4">
-                <div className="p-4 rounded-xl bg-[#11131C] border border-[#222630] space-y-1">
-                  <span className="text-xs text-zinc-400">Total Tasks</span>
-                  <div className="text-2xl font-bold text-white">{overviewStats.total}</div>
-                </div>
-
-                <div className="p-4 rounded-xl bg-[#11131C] border border-[#222630] space-y-1">
-                  <span className="text-xs text-blue-400">Active In Flight</span>
-                  <div className="text-2xl font-bold text-blue-300">
-                    {overviewStats.active}
-                  </div>
-                </div>
-
-                <div className="p-4 rounded-xl bg-[#11131C] border border-[#222630] space-y-1">
-                  <span className="text-xs text-emerald-400">Completed</span>
-                  <div className="text-2xl font-bold text-emerald-300">
-                    {overviewStats.completed}
-                  </div>
-                </div>
-
-                <div className="p-4 rounded-xl bg-[#11131C] border border-[#222630] space-y-1">
-                  <span className="text-xs text-amber-400">Estimated Effort</span>
-                  <div className="text-2xl font-bold text-amber-300">
-                    {overviewStats.totalEstHours} hrs
-                  </div>
-                </div>
-              </div>
-
-              {/* Status Breakdown Bar */}
-              <div className="p-5 rounded-xl bg-[#11131C] border border-[#222630] space-y-3">
-                <div className="flex items-center justify-between text-xs font-semibold text-zinc-300">
-                  <span>Execution Breakdown</span>
-                  <span className="text-zinc-500 font-mono">
-                    {overviewStats.total} total items
-                  </span>
-                </div>
-
-                <div className="w-full h-3 rounded-full bg-[#181B26] overflow-hidden flex">
-                  {currentSpaceStatuses.map((st) => {
-                    const count = filteredTasks.filter((t) => t.status_id === st.id).length;
-                    const pct = overviewStats.total > 0 ? (count / overviewStats.total) * 100 : 0;
-                    if (pct === 0) return null;
-                    return (
-                      <div
-                        key={st.id}
-                        style={{ width: `${pct}%`, backgroundColor: st.color_hex }}
-                        title={`${st.name}: ${count} (${Math.round(pct)}%)`}
-                      />
-                    );
-                  })}
-                </div>
-
-                <div className="flex flex-wrap gap-4 pt-1">
-                  {currentSpaceStatuses.map((st) => {
-                    const count = filteredTasks.filter((t) => t.status_id === st.id).length;
-                    return (
-                      <div key={st.id} className="flex items-center gap-1.5 text-xs text-zinc-400">
-                        <span
-                          className="w-2.5 h-2.5 rounded-full"
-                          style={{ backgroundColor: st.color_hex }}
-                        />
-                        <span>{st.name}:</span>
-                        <span className="font-semibold text-zinc-200">{count}</span>
-                      </div>
-                    );
-                  })}
-                </div>
-              </div>
-            </div>
-          )}
-
-          {/* HOME DASHBOARD VIEW INSIDE PMS */}
-          {!loading && viewMode === "home" && (
-            <div className="p-6 max-w-6xl mx-auto space-y-6">
-              <div className="flex items-center justify-between flex-wrap gap-3">
-                <div>
-                  <h2 className="text-lg font-medium" style={{ color: "var(--glass-text-primary)" }}>
-                    Universal Home Dashboard
-                  </h2>
-                  <p className="text-xs" style={{ color: "var(--glass-text-muted)" }}>
-                    All active spaces &amp; tasks interconnected across Operations, Health, Wealth, and Family.
-                  </p>
-                </div>
-                <button
-                  onClick={() => setIsNewSpaceModalOpen(true)}
-                  className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-[#4984fd] text-white text-xs font-medium hover:bg-blue-500 transition"
-                >
-                  <Plus className="w-3.5 h-3.5" />
-                  <span>New Space</span>
-                </button>
-              </div>
-
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-                {spaces.map((sp) => {
-                  const spTasks = tasks.filter((t) => t.space_id === sp.id);
-                  const doneCount = spTasks.filter((t) => t.status_category === "closed").length;
-                  return (
-                    <button
-                      key={sp.id}
-                      onClick={() => {
-                        handleSelectSpace(sp.id);
-                        setViewMode("board");
-                      }}
-                      className="text-left p-4 rounded-2xl border transition hover:border-[#4984fd]/50 space-y-2"
-                      style={{
-                        backgroundColor: "var(--glass-surface-elevated)",
-                        borderColor: "var(--glass-border)",
-                      }}
-                    >
-                      <div className="flex items-center justify-between">
-                        <span className="text-sm font-medium flex items-center gap-2" style={{ color: "var(--glass-text-primary)" }}>
-                          <span className="w-2.5 h-2.5 rounded-full" style={{ backgroundColor: sp.color_hex || "#4984fd" }} />
-                          {sp.name}
-                        </span>
-                        <ArrowRight className="w-3.5 h-3.5 opacity-60" />
-                      </div>
-                      <div className="text-xs font-mono" style={{ color: "var(--glass-text-muted)" }}>
-                        {spTasks.length} tasks · {doneCount} completed
-                      </div>
-                    </button>
-                  );
-                })}
-              </div>
-            </div>
-          )}
-        </div>
-      </main>
-
-      {/* 4. Task Detail Modal */}
-      <TaskDetailModal
-        task={selectedTaskForDetail}
-        statuses={currentSpaceStatuses}
-        allTasks={tasks}
-        isOpen={!!selectedTaskForDetail}
-        onClose={() => setSelectedTaskForDetail(null)}
-        onUpdateTask={handleUpdateTask}
-        onToggleChecklist={handleToggleChecklist}
-        onAddChecklist={handleAddChecklist}
-        onAddComment={handleAddComment}
-        onAddDependency={handleAddDependency}
-        onAddSubtask={handleAddSubtask}
-        onDeleteTask={handleDeleteTask}
-      />
-
-      {/* 5. New Space Creator Modal */}
-      <NewSpaceModal
-        isOpen={isNewSpaceModalOpen}
-        onClose={() => setIsNewSpaceModalOpen(false)}
-        onCreateSpace={handleCreateSpace}
-      />
+        <NewSpaceModal
+          isOpen={state.isNewSpaceModalOpen}
+          onClose={() => dispatch({ type: "CLOSE_NEW_SPACE_MODAL" })}
+          onCreateSpace={handleCreateSpace}
+        />
       </div>
     </ExecutiveModuleShell>
   );

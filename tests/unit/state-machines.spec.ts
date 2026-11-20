@@ -14,6 +14,7 @@ import {
   resolveRouteGuard,
   transitionConsentLifecycle,
 } from "@features/rbac-governance";
+import { INITIAL_PMS_STATE, pmsReducer } from "@features/pms";
 import {
   buildAuthSessionMock,
   buildCalendarOpsMock,
@@ -21,6 +22,7 @@ import {
   buildKpiScorecardMock,
   buildMissionFlowGetMock,
   buildMissionFlowPostMock,
+  buildPmsWorkspaceMock,
   buildRoadmapsSynthesizeMock,
   buildUiPreferencesMock,
 } from "../fixtures/apiContractMocks";
@@ -186,5 +188,47 @@ describe("Tier 1 & 3A — Deterministic State Machines & Spend Isolation", () =>
     const session = buildAuthSessionMock();
     expect(session.userId).toBe("isolated-user-01");
     expect(session.role).toBe("ADMIN");
+
+    const pms = buildPmsWorkspaceMock();
+    expect(pms.spaces.length).toBe(1);
+    expect(pms.statuses.length).toBe(4);
+    expect(pms.tasks.length).toBe(2);
+  });
+
+  it("enforces PMS INV-PMS-1..4 state machine invariants (no orphaned drawer, exclusive modal, atomic status sync)", () => {
+    const mock = buildPmsWorkspaceMock();
+    let s = pmsReducer(INITIAL_PMS_STATE, {
+      type: "HYDRATE_DATA",
+      spaces: mock.spaces,
+      statuses: mock.statuses,
+      tasks: mock.tasks,
+    });
+    expect(s.selectedSpaceId).toBe(mock.spaces[0].id);
+
+    s = pmsReducer(s, { type: "OPEN_TASK_DRAWER", taskId: "nonexistent" });
+    expect(s.selectedTaskId).toBeNull();
+
+    s = pmsReducer(s, { type: "OPEN_TASK_DRAWER", taskId: "iso-task-1" });
+    expect(s.selectedTaskId).toBe("iso-task-1");
+
+    s = pmsReducer(s, { type: "OPEN_NEW_SPACE_MODAL" });
+    expect(s.isNewSpaceModalOpen).toBe(true);
+    expect(s.selectedTaskId).toBeNull();
+
+    s = pmsReducer(s, { type: "OPEN_TASK_DRAWER", taskId: "iso-task-1" });
+    expect(s.isNewSpaceModalOpen).toBe(false);
+    expect(s.selectedTaskId).toBe("iso-task-1");
+
+    s = pmsReducer(s, {
+      type: "OPTIMISTIC_MOVE_STATUS",
+      taskId: "iso-task-1",
+      targetStatusId: "st-done",
+    });
+    const moved = s.tasks.find((t) => t.id === "iso-task-1");
+    expect(moved?.status_name).toBe("COMPLETE");
+    expect(moved?.status_category).toBe("closed");
+
+    s = pmsReducer(s, { type: "OPTIMISTIC_DELETE_TASK", taskId: "iso-task-1" });
+    expect(s.selectedTaskId).toBeNull();
   });
 });
