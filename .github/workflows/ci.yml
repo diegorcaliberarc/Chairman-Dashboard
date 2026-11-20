@@ -25,6 +25,24 @@ jobs:
     steps:
       - name: Checkout Repository
         uses: actions/checkout@v4
+        with:
+          fetch-depth: 2
+
+      - name: Classify PR Risk (Two-Way vs. One-Way Door)
+        shell: bash
+        run: |
+          CHANGED=$(git diff --name-only HEAD~1 HEAD 2>/dev/null || true)
+          ONE_WAY=$(echo "$CHANGED" | grep -E '^(prisma/schema\.prisma|supabase/|app/api/auth/|lib/auth\.ts|features/rbac-governance/|backend/state_machines/|app/api/plaid/)' || true)
+          if [ -n "$ONE_WAY" ]; then
+            echo "## PR Risk Classification: ONE-WAY DOOR (Irreversible / High-Risk)" >> "$GITHUB_STEP_SUMMARY"
+            echo "Requires state-chart proof, rollback migration plan, and explicit human sign-off:" >> "$GITHUB_STEP_SUMMARY"
+            echo '```' >> "$GITHUB_STEP_SUMMARY"
+            echo "$ONE_WAY" >> "$GITHUB_STEP_SUMMARY"
+            echo '```' >> "$GITHUB_STEP_SUMMARY"
+          else
+            echo "## PR Risk Classification: TWO-WAY DOOR (Reversible)" >> "$GITHUB_STEP_SUMMARY"
+            echo "Cleared for fast merge once Gates 1-2 pass." >> "$GITHUB_STEP_SUMMARY"
+          fi
 
       - name: Setup Node.js 20
         uses: actions/setup-node@v4

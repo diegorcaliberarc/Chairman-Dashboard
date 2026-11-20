@@ -85,6 +85,74 @@ const chairmanEngineeringPlugin = {
         };
       },
     },
+
+    "no-tautological-tests": {
+      meta: {
+        type: "problem",
+        docs: {
+          description:
+            "Forbid rubber-stamp tautological assertions (expect(x).toBe(x), expect(true).toBe(true), or literal truthiness checks) in test suites.",
+        },
+        schema: [],
+      },
+      create(context) {
+        const EQUALITY_MATCHERS = new Set([
+          "toBe",
+          "toEqual",
+          "toStrictEqual",
+          "toMatchObject",
+        ]);
+        const TRIVIAL_BOOL_MATCHERS = new Set(["toBeTruthy", "toBeFalsy"]);
+
+        return {
+          CallExpression(node) {
+            if (
+              node.callee?.type !== "MemberExpression" ||
+              node.callee.property?.type !== "Identifier"
+            ) {
+              return;
+            }
+            const matcherName = node.callee.property.name;
+            const expectCall = node.callee.object;
+            if (
+              expectCall?.type !== "CallExpression" ||
+              expectCall.callee?.type !== "Identifier" ||
+              expectCall.callee.name !== "expect" ||
+              expectCall.arguments.length === 0
+            ) {
+              return;
+            }
+
+            const sourceCode = context.sourceCode || context.getSourceCode();
+            const actualNode = expectCall.arguments[0];
+
+            if (
+              EQUALITY_MATCHERS.has(matcherName) &&
+              node.arguments.length >= 1
+            ) {
+              const expectedNode = node.arguments[0];
+              const actualText = sourceCode.getText(actualNode).trim();
+              const expectedText = sourceCode.getText(expectedNode).trim();
+              if (actualText === expectedText) {
+                context.report({
+                  node,
+                  message: `Tautological self-assertion 'expect(${actualText}).${matcherName}(${expectedText})' is forbidden. Remediation: assert a real state-machine transition, forbidden-state rejection (INV-1..INV-7 / INV-PMS-1..4), schema error (422/403/409), or DOM contract.`,
+                });
+              }
+            } else if (
+              TRIVIAL_BOOL_MATCHERS.has(matcherName) &&
+              actualNode.type === "Literal"
+            ) {
+              const actualText = sourceCode.getText(actualNode).trim();
+              context.report({
+                node,
+                message: `Tautological literal assertion 'expect(${actualText}).${matcherName}()' is forbidden. Remediation: assert behavioral output from a real reducer, API contract, or rendered component.`,
+              });
+            }
+          },
+        };
+      },
+    },
   },
 };
 
@@ -192,7 +260,6 @@ const config = [
       "prisma/**",
       "supabase/**",
       "scripts/**",
-      "tests/**",
       "playwright-report/**",
       "test-results/**",
       "*.js",
@@ -386,6 +453,18 @@ const config = [
           skipComments: true,
         },
       ],
+    },
+  },
+
+  // Anti-Tautology Test Enforcement (`tests/**/*.{ts,tsx}` — v3.2 Masterclass Guardrail)
+  {
+    files: ["tests/**/*.ts", "tests/**/*.tsx"],
+    rules: {
+      "chairman/no-tautological-tests": "error",
+      "chairman/no-suppression-escapes": "error",
+      "chairman/no-narrated-comments": "error",
+      "max-lines": "off",
+      "react-hooks/rules-of-hooks": "off",
     },
   },
 ];

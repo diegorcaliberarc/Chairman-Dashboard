@@ -18,8 +18,9 @@ All agents operating in this repository MUST follow Lauren Tan's **Inverse Pyram
 - **Deterministic State Machines Over Boolean Guessing:**
   - Model multi-step business lifecycles, RBAC/consent transitions, and multi-panel UI workspaces (`roadmapReducer`, `missionFlowReducer`, `transitionConsentLifecycle`, `transition_pod_consent`) as explicit TypeScript/Python state machines rather than ad-hoc booleans.
 
-## 2. Tier 2 — Self-Teaching Static Analysis & Zero Escape Hatches
+## 2. Tier 2 — Self-Teaching Static Analysis, Zero Escape Hatches & Anti-Tautology
 - **Zero Suppression Escape Hatches Repo-Wide:** `linterOptions: { noInlineConfig: true, reportUnusedDisableDirectives: "error" }` + `chairman/no-suppression-escapes` forbid `eslint-disable*`, `@ts-ignore`, and `@ts-nocheck` across TypeScript, and `# type: ignore` is forbidden in `backend/`. Always resolve the root architectural or type boundary issue.
+- **Anti-Tautology Test Enforcement (`chairman/no-tautological-tests`):** Enforced as an `error` on `tests/**/*.{ts,tsx}`. Every `it(...)` / `test(...)` block must assert behavioral state transitions, forbidden-state rejections (`INV-1..INV-7`, `INV-PMS-1..4`), schema validation errors (`422`/`403`/`409`), or DOM visibility/accessibility contracts—never `expect(x).toBe(x)` or trivial constant-to-constant mirrors.
 - **Strict Build & DTO Validation:** Keep `typescript.ignoreBuildErrors: false` in `next.config.mjs` and `ConfigDict(extra="forbid")` on inbound FastAPI Pydantic mutation DTOs.
 
 ## 3. Tier 3A — Strict Production/Spend Isolation & Skill Security Audit
@@ -31,6 +32,10 @@ All agents operating in this repository MUST follow Lauren Tan's **Inverse Pyram
 - **State-Chart Visual Verification (`.agents/skills/state-chart/SKILL.md`):** Embed Before/After Mermaid `stateDiagram-v2` state charts + an explicit Forbidden-State Invariant Table in `walkthrough.md` whenever modifying multi-state UI views or workflow lifecycles.
 - **Property Fuzzing (`npm run test:properties`) & Browser Subagent Proof (`.agents/skills/verify-ui/SKILL.md`):** Run isolated property fuzzing and live Browser Subagent verification on localhost, embedding machine-readable gate JSON, console/network audit counts (`0` errors, `0` HTTP `4xx`/`5xx`), and screenshots in `walkthrough.md`.
 
-## 5. Tier 4 — Atomic Git Checkpoints & Machine-Readable CLI Gate
+## 5. Tier 4 — Atomic Git Checkpoints, Risk Classification, Tech-Debt Queue & CLI Gate
+- **Two-Way Door vs. One-Way Door Risk Classification:** Every `implementation_plan.md` and `walkthrough.md` MUST declare its risk class at the top:
+  - **Two-Way Door (Reversible):** Isolated UI components, styling updates, additive tests, non-destructive refactors → fast execution once Gates 1–3 pass.
+  - **One-Way Door (Irreversible / High-Risk):** `prisma/schema.prisma` migrations, Supabase RLS/RBAC permission changes, authentication flows (`app/api/auth/**`), or external billing/API mutations → requires `state-chart` proof, rollback SQL/migration plan, and explicit human sign-off before execution or merge.
+- **Pattern-Buffer Tech Debt Queue (`docs/TECH_DEBT_QUEUE.md`) & `recall` Skill:** Log out-of-scope legacy smells in `docs/TECH_DEBT_QUEUE.md` instead of scattered micro-PRs, and run `.agents/skills/recall/SKILL.md` whenever repeated human corrections occur.
 - **Atomic Git Checkpoints:** Run `npm run checkpoint` (or verify clean `git status` / create a dedicated worktree) before multi-file refactors so failed experiments revert cleanly without stacking reactive patches.
-- **Machine-Readable CLI Gate:** Run `npm run verify:all:json` (`scripts/verify-all.mjs --json`) to validate `typecheck`, `lint:strict`, `lint`, `audit:skills`, `test:unit`, `pytest`, and `next build` in compact structured output.
+- **Machine-Readable CLI Gate:** Run `npm run verify:all:json` (`scripts/verify-all.mjs --json`) to validate `typecheck`, `lint:strict`, `lint` (`--max-warnings=151`), `audit:skills`, `test:unit`, `pytest`, and `next build` in compact structured output.
