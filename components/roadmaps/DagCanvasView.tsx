@@ -24,6 +24,67 @@ export function DagCanvasView({ tree, zoomScale, onNodeClick, onLockGoal }: DagC
     }>
   >([]);
 
+  // Miro-style freeform drag offsets per node ID
+  const [nodeOffsets, setNodeOffsets] = useState<Record<string, { x: number; y: number }>>({});
+  const dragStateRef = useRef<{
+    nodeId: string;
+    startClientX: number;
+    startClientY: number;
+    origX: number;
+    origY: number;
+    moved: boolean;
+  } | null>(null);
+
+  const handleNodePointerDown = (nodeId: string, e: React.PointerEvent) => {
+    // Allow dragging from anywhere on the card except explicit buttons
+    if ((e.target as HTMLElement).closest("button")) return;
+    const cur = nodeOffsets[nodeId] || { x: 0, y: 0 };
+    dragStateRef.current = {
+      nodeId,
+      startClientX: e.clientX,
+      startClientY: e.clientY,
+      origX: cur.x,
+      origY: cur.y,
+      moved: false,
+    };
+    (e.currentTarget as HTMLElement).setPointerCapture(e.pointerId);
+  };
+
+  const handleNodePointerMove = (nodeId: string, e: React.PointerEvent) => {
+    const ds = dragStateRef.current;
+    if (!ds || ds.nodeId !== nodeId) return;
+    const dx = (e.clientX - ds.startClientX) / zoomScale;
+    const dy = (e.clientY - ds.startClientY) / zoomScale;
+    if (Math.abs(dx) > 4 || Math.abs(dy) > 4) {
+      ds.moved = true;
+    }
+    if (ds.moved) {
+      setNodeOffsets((prev) => ({
+        ...prev,
+        [nodeId]: { x: ds.origX + dx, y: ds.origY + dy },
+      }));
+    }
+  };
+
+  const handleNodePointerUp = (nodeId: string, e: React.PointerEvent) => {
+    const ds = dragStateRef.current;
+    if (!ds || ds.nodeId !== nodeId) return;
+    try {
+      (e.currentTarget as HTMLElement).releasePointerCapture(e.pointerId);
+    } catch {}
+    const wasDragged = ds.moved;
+    dragStateRef.current = null;
+    if (!wasDragged) {
+      onNodeClick(nodeId);
+    }
+  };
+
+  const getOffsetStyle = (nodeId: string): React.CSSProperties => {
+    const off = nodeOffsets[nodeId];
+    if (!off || (off.x === 0 && off.y === 0)) return {};
+    return { transform: `translate3d(${off.x}px, ${off.y}px, 0)`, zIndex: 40 };
+  };
+
   // Function to calculate smooth bezier curves between connected nodes
   const calculateConnections = useCallback(() => {
     if (!containerRef.current) return;
@@ -79,10 +140,10 @@ export function DagCanvasView({ tree, zoomScale, onNodeClick, onLockGoal }: DagC
     });
 
     setSvgPaths(paths);
-  }, [tree, zoomScale]);
+  }, [tree, zoomScale, nodeOffsets]);
 
   useEffect(() => {
-    const timer = setTimeout(calculateConnections, 60);
+    const timer = setTimeout(calculateConnections, 20);
     window.addEventListener("resize", calculateConnections);
     return () => {
       clearTimeout(timer);
@@ -146,8 +207,17 @@ export function DagCanvasView({ tree, zoomScale, onNodeClick, onLockGoal }: DagC
         </div>
         <span className="text-white/20 hidden md:inline">|</span>
         <span className="text-zinc-400 font-medium hidden md:inline">
-          Click node to open FRAGO & PACE Dossier
+          Drag any card freely like Miro · Click to open FRAGO &amp; PACE Dossier
         </span>
+        {Object.keys(nodeOffsets).length > 0 && (
+          <button
+            type="button"
+            onClick={() => setNodeOffsets({})}
+            className="ml-2 px-2 py-0.5 rounded-full bg-cyan-500/20 text-cyan-300 border border-cyan-500/35 hover:bg-cyan-500/30 transition"
+          >
+            Reset Layout
+          </button>
+        )}
       </div>
 
       {/* 3. Scalable Inner DAG Canvas */}
@@ -241,8 +311,11 @@ export function DagCanvasView({ tree, zoomScale, onNodeClick, onLockGoal }: DagC
                   <div
                     key={node.id}
                     id={`dag_node_${node.id}`}
-                    onClick={() => onNodeClick(node.id)}
-                    className="cursor-pointer group flex flex-col relative transition-all duration-200"
+                    style={getOffsetStyle(node.id)}
+                    onPointerDown={(e) => handleNodePointerDown(node.id, e)}
+                    onPointerMove={(e) => handleNodePointerMove(node.id, e)}
+                    onPointerUp={(e) => handleNodePointerUp(node.id, e)}
+                    className="cursor-grab active:cursor-grabbing group flex flex-col relative select-none"
                   >
                     {/* Dr. Stone START!! Comic Tag */}
                     <div className="relative -mb-3 ml-3 z-30 flex items-center">
@@ -302,8 +375,11 @@ export function DagCanvasView({ tree, zoomScale, onNodeClick, onLockGoal }: DagC
                   <div
                     key={node.id}
                     id={`dag_node_${node.id}`}
-                    onClick={() => onNodeClick(node.id)}
-                    className="cursor-pointer group flex flex-col relative transition-all duration-200"
+                    style={getOffsetStyle(node.id)}
+                    onPointerDown={(e) => handleNodePointerDown(node.id, e)}
+                    onPointerMove={(e) => handleNodePointerMove(node.id, e)}
+                    onPointerUp={(e) => handleNodePointerUp(node.id, e)}
+                    className="cursor-grab active:cursor-grabbing group flex flex-col relative select-none"
                   >
                     <div className="relative -mb-2.5 ml-4 z-30">
                       <span className="bg-gradient-to-r from-cyan-500 to-primary text-black font-black text-[10px] px-3 py-0.5 rounded-full uppercase tracking-wider shadow-md border border-white/40 flex items-center gap-1 font-mono">
@@ -368,8 +444,11 @@ export function DagCanvasView({ tree, zoomScale, onNodeClick, onLockGoal }: DagC
                   <div
                     key={node.id}
                     id={`dag_node_${node.id}`}
-                    onClick={() => onNodeClick(node.id)}
-                    className="cursor-pointer group flex flex-col relative transition-all duration-200"
+                    style={getOffsetStyle(node.id)}
+                    onPointerDown={(e) => handleNodePointerDown(node.id, e)}
+                    onPointerMove={(e) => handleNodePointerMove(node.id, e)}
+                    onPointerUp={(e) => handleNodePointerUp(node.id, e)}
+                    className="cursor-grab active:cursor-grabbing group flex flex-col relative select-none"
                   >
                     <div className="relative -mb-2.5 ml-4 z-30">
                       <span className="bg-gradient-to-r from-indigo-400 to-purple-400 text-black font-black text-[10px] px-3 py-0.5 rounded-full uppercase tracking-wider shadow-md border border-white/40 flex items-center gap-1 font-mono">
@@ -429,8 +508,11 @@ export function DagCanvasView({ tree, zoomScale, onNodeClick, onLockGoal }: DagC
 
             <div
               id="dag_node_goal"
-              onClick={() => onNodeClick("goal")}
-              className="cursor-pointer group flex flex-col items-center relative w-full"
+              style={getOffsetStyle("goal")}
+              onPointerDown={(e) => handleNodePointerDown("goal", e)}
+              onPointerMove={(e) => handleNodePointerMove("goal", e)}
+              onPointerUp={(e) => handleNodePointerUp("goal", e)}
+              className="cursor-grab active:cursor-grabbing group flex flex-col items-center relative w-full select-none"
             >
               {/* Explosive Dr. Stone GOAL!! Comic Pill */}
               <div className="relative -mb-6 z-30">

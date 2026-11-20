@@ -2,8 +2,9 @@
 
 import React, { useState } from "react";
 import { useSession, signIn, signOut } from "next-auth/react";
-import { Palette } from "lucide-react";
+import { Rocket } from "lucide-react";
 import { Sidebar } from "@/components/Sidebar";
+import { MissionFlowNavigatorModal } from "@/components/mission/MissionFlowNavigatorModal";
 
 interface ExecutiveModuleShellProps {
   moduleId: string;
@@ -33,6 +34,7 @@ export function ExecutiveModuleShell({
   const [activeTab, setActiveTab] = useState(moduleId);
   const [isAppearanceOpen, setIsAppearanceOpen] = useState(false);
   const [deepWork, setDeepWork] = useState(false);
+  const [isMissionFlowOpen, setIsMissionFlowOpen] = useState(false);
 
   return (
     <div
@@ -100,11 +102,18 @@ export function ExecutiveModuleShell({
             </p>
           </div>
 
-          {headerActions && (
-            <div className="flex flex-wrap items-center gap-2.5">
-              {headerActions}
-            </div>
-          )}
+          <div className="flex flex-wrap items-center gap-2.5">
+            {headerActions}
+            <button
+              type="button"
+              onClick={() => setIsMissionFlowOpen(true)}
+              className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-[#4984fd] hover:bg-blue-500 text-white text-xs font-medium shadow-sm transition active:scale-95 shrink-0"
+              title="Launch Guided 6-Stage Mission Flow Navigator (OOCEMR, WBS, BOM, CPM, FRAGO, PACE)"
+            >
+              <Rocket size={13} />
+              <span>Launch Mission Flow</span>
+            </button>
+          </div>
         </header>
 
         <main
@@ -117,6 +126,18 @@ export function ExecutiveModuleShell({
           {children}
         </main>
       </div>
+
+      <MissionFlowNavigatorModal
+        isOpen={isMissionFlowOpen}
+        onClose={() => setIsMissionFlowOpen(false)}
+        onMissionDeployed={(tree, draft) => {
+          if (typeof window !== "undefined") {
+            window.dispatchEvent(
+              new CustomEvent("chairman:mission-deployed", { detail: { tree, draft } })
+            );
+          }
+        }}
+      />
     </div>
   );
 }

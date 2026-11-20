@@ -13,6 +13,7 @@ import { DEFAULT_STRATEGIC_TREES } from "@/lib/defaultStrategicTrees";
 import { SynthesisHeaderStrip } from "@/components/roadmaps/SynthesisHeaderStrip";
 import { CoPilotModeBar } from "@/components/roadmaps/CoPilotModeBar";
 import { DagCanvasView } from "@/components/roadmaps/DagCanvasView";
+import { ExecutionPyramidView } from "@/components/roadmaps/ExecutionPyramidView";
 import { MobileDagAccordion } from "@/components/roadmaps/MobileDagAccordion";
 import { TacticalDossierModal } from "@/components/roadmaps/TacticalDossierModal";
 import { DoneWithYouModal } from "@/components/roadmaps/DoneWithYouModal";
@@ -49,12 +50,30 @@ export default function SynthesisRoadmapPage() {
     }
   }, [strategicTrees]);
 
-  // 3. Operational Mode & Controls
+  // 3. Operational Mode, View Switcher (DAG Graph | Execution Pyramid) & Controls
+  const [roadmapViewMode, setRoadmapViewMode] = useState<"dag" | "pyramid">("dag");
   const [coPilotMode, setCoPilotMode] = useState<CoPilotMode>("dfy");
   const [activePace, setActivePace] = useState<PaceType>("P");
   const [zoomScale, setZoomScale] = useState<number>(1.0);
   const [isSynthesizing, setIsSynthesizing] = useState<boolean>(false);
   const [feedbackToast, setFeedbackToast] = useState<string | null>(null);
+
+  // Sync live when user deploys a Mission from the Guided Mission Flow Navigator
+  useEffect(() => {
+    const onDeployed = (e: Event) => {
+      const detail = (e as CustomEvent).detail;
+      if (detail?.tree) {
+        const dom = (detail.tree.domain || "master") as StrategicDomain;
+        setCurrentDomain(dom);
+        setStrategicTrees((prev) => ({
+          ...prev,
+          [dom]: detail.tree,
+        }));
+      }
+    };
+    window.addEventListener("chairman:mission-deployed", onDeployed);
+    return () => window.removeEventListener("chairman:mission-deployed", onDeployed);
+  }, []);
 
   // 4. Modal & Backward Chain Drawer States
   const [selectedNodeId, setSelectedNodeId] = useState<string | null>(null);
@@ -283,6 +302,8 @@ export default function SynthesisRoadmapPage() {
           onTriggerSynthesize={() => handleSynthesizeDfy(activeTree.title)}
           onTriggerBackwardChain={handleBackwardChainAudit}
           isSynthesizing={isSynthesizing}
+          roadmapViewMode={roadmapViewMode}
+          onChangeRoadmapViewMode={setRoadmapViewMode}
         />
 
         {/* 2. 3-Way AI Co-Pilot Mode Bar */}
@@ -363,24 +384,34 @@ export default function SynthesisRoadmapPage() {
           </div>
         )}
 
-        {/* 3. Main Workspace: Desktop/Tablet Canvas + Mobile Stacked Stream */}
+        {/* 3. Main Workspace: DAG Graph (Draggable Miro-Style) OR 5-Tier Execution Pyramid */}
         <main className="flex-1 flex flex-col relative w-full overflow-hidden">
-          {/* Desktop/Tablet Zoomable SVG DAG Canvas */}
-          <div className="hidden lg:flex flex-1 w-full overflow-hidden">
-            <DagCanvasView
+          {roadmapViewMode === "pyramid" ? (
+            <ExecutionPyramidView
               tree={activeTree}
-              zoomScale={zoomScale}
               onNodeClick={(id) => setSelectedNodeId(id)}
               onLockGoal={handleLockGoal}
             />
-          </div>
+          ) : (
+            <>
+              {/* Desktop/Tablet Zoomable Draggable SVG DAG Canvas */}
+              <div className="hidden lg:flex flex-1 w-full overflow-hidden">
+                <DagCanvasView
+                  tree={activeTree}
+                  zoomScale={zoomScale}
+                  onNodeClick={(id) => setSelectedNodeId(id)}
+                  onLockGoal={handleLockGoal}
+                />
+              </div>
 
-          {/* Mobile-Optimized Progressive Accordion Stream */}
-          <MobileDagAccordion
-            tree={activeTree}
-            onNodeClick={(id) => setSelectedNodeId(id)}
-            onLockGoal={handleLockGoal}
-          />
+              {/* Mobile-Optimized Progressive Accordion Stream */}
+              <MobileDagAccordion
+                tree={activeTree}
+                onNodeClick={(id) => setSelectedNodeId(id)}
+                onLockGoal={handleLockGoal}
+              />
+            </>
+          )}
         </main>
 
         {/* 4. Interactive Tactical Dossier Modal */}

@@ -37,6 +37,9 @@ interface SynthesisHeaderStripProps {
   onTriggerSynthesize: () => void;
   onTriggerBackwardChain: () => void;
   isSynthesizing?: boolean;
+  /** Optional — ONLY passed by /roadmaps to render the DAG Graph | Execution Pyramid toggle */
+  roadmapViewMode?: "dag" | "pyramid";
+  onChangeRoadmapViewMode?: (mode: "dag" | "pyramid") => void;
 }
 
 const DOMAINS: Array<{
@@ -69,6 +72,8 @@ export function SynthesisHeaderStrip({
   onTriggerSynthesize,
   onTriggerBackwardChain,
   isSynthesizing = false,
+  roadmapViewMode,
+  onChangeRoadmapViewMode,
 }: SynthesisHeaderStripProps) {
   const [menuOpen, setMenuOpen] = React.useState(false);
   const [auditOpen, setAuditOpen] = React.useState(false);
@@ -247,6 +252,40 @@ export function SynthesisHeaderStrip({
             <RotateCcw size={12} />
           </button>
         </div>
+
+        {/* Exclusive /roadmaps View Switcher: DAG Graph | Execution Pyramid */}
+        {roadmapViewMode && onChangeRoadmapViewMode && (
+          <div
+            className="flex items-center p-0.5 rounded-xl border text-xs font-mono"
+            style={{
+              backgroundColor: "var(--glass-surface-elevated)",
+              borderColor: "var(--glass-border)",
+            }}
+          >
+            <button
+              type="button"
+              onClick={() => onChangeRoadmapViewMode("dag")}
+              className={`px-2.5 py-1 rounded-lg transition ${
+                roadmapViewMode === "dag"
+                  ? "bg-cyan-500/20 text-cyan-400 border border-cyan-500/35 font-medium"
+                  : "opacity-70 hover:opacity-100"
+              }`}
+            >
+              DAG Graph
+            </button>
+            <button
+              type="button"
+              onClick={() => onChangeRoadmapViewMode("pyramid")}
+              className={`px-2.5 py-1 rounded-lg transition ${
+                roadmapViewMode === "pyramid"
+                  ? "bg-amber-500/20 text-amber-400 border border-amber-500/35 font-medium"
+                  : "opacity-70 hover:opacity-100"
+              }`}
+            >
+              Execution Pyramid
+            </button>
+          </div>
+        )}
 
         {/* Backward Chaining Button */}
         <button

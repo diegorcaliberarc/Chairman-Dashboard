@@ -497,42 +497,14 @@ export default function OrgChartTopologyPage() {
       accentColor="#0969DA"
     >
       <div className="p-2 sm:p-4 lg:p-6 max-w-[1780px] mx-auto space-y-3">
-        {/* Workspace Switcher & Multi-Page Tabs Header */}
-        <div className="flex flex-wrap items-center justify-between gap-3 p-2 rounded-2xl bg-[#080C18]/90 border border-white/10 backdrop-blur-xl shadow-xl">
-          {/* Workspace Space Tabs */}
-          <div className="flex items-center gap-1.5 overflow-x-auto no-scrollbar py-0.5 max-w-full">
-            {spaces.map((s) => (
-              <button
-                key={s.id}
-                onClick={() => {
-                  setActiveSpaceId(s.id);
-                  setSelectedNode(null);
-                }}
-                className={`flex items-center gap-2 px-3.5 py-1.5 rounded-xl text-xs font-semibold whitespace-nowrap transition-all ${
-                  activeSpaceId === s.id
-                    ? "bg-sky-500/20 text-sky-300 border border-sky-500/40 shadow-sm"
-                    : "text-zinc-400 hover:text-white hover:bg-white/5 border border-transparent"
-                }`}
-              >
-                <span>{s.title}</span>
-                <span className="px-1.5 py-0.2 rounded-full text-[10px] font-mono bg-white/10 text-zinc-300">
-                  {s.badge}
-                </span>
-              </button>
-            ))}
-
-            {/* + New Space Button */}
-            <button
-              onClick={() => setIsNewSpaceModalOpen(true)}
-              className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl border border-dashed border-white/20 hover:border-sky-400/50 hover:bg-sky-500/10 text-zinc-400 hover:text-sky-300 text-xs font-mono transition whitespace-nowrap"
-              title="Create Custom Diagram Space"
-            >
-              <Plus size={13} />
-              <span>New Space</span>
-            </button>
+        {/* Master Planning & Interactive Miro Whiteboard Switcher */}
+        <div className="flex flex-wrap items-center justify-between gap-3 p-2.5 rounded-2xl bg-[#080C18]/90 border border-white/10 backdrop-blur-xl shadow-xl">
+          <div className="flex items-center gap-2">
+            <span className="text-xs font-mono text-zinc-400 px-2">
+              Master Planning &amp; Interactive Whiteboard · Drag any node freely
+            </span>
           </div>
 
-          {/* Engine Mode Toggle (Synthesis Roadmap DAG vs Mermaid Auto-Directed vs Freeform Whiteboard) */}
           <div className="flex items-center gap-2 flex-shrink-0">
             <div className="flex items-center rounded-xl bg-black/60 p-0.5 border border-white/10 text-xs">
               <button
@@ -542,23 +514,10 @@ export default function OrgChartTopologyPage() {
                     ? "bg-cyan-500/20 text-cyan-300 border border-cyan-500/30 shadow-sm"
                     : "text-zinc-400 hover:text-white"
                 }`}
-                title="Converging Multi-Branch Directed Acyclic Graph Synthesis Engine"
+                title="Converging Multi-Branch Master Planning DAG (Draggable Miro-Style)"
               >
                 <Bolt size={13} className={engineMode === "roadmap" ? "text-cyan-300" : "text-zinc-400"} />
-                <span>Synthesis DAG</span>
-              </button>
-
-              <button
-                onClick={() => setEngineMode("mermaid")}
-                className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold transition ${
-                  engineMode === "mermaid"
-                    ? "bg-sky-500/20 text-sky-300 border border-sky-500/30 shadow-sm"
-                    : "text-zinc-400 hover:text-white"
-                }`}
-                title="Auto-Directed Mermaid Directed Graph Engine (Zero Overlapping Nodes)"
-              >
-                <GitBranch size={13} className={engineMode === "mermaid" ? "text-sky-300" : "text-zinc-400"} />
-                <span>Architecture Spaces</span>
+                <span>Master Planning DAG</span>
               </button>
 
               <button
@@ -571,7 +530,7 @@ export default function OrgChartTopologyPage() {
                 title="Miro / Lucidspark Freeform Whiteboard (Sticky Notes & Connectors)"
               >
                 <Layers size={13} className={engineMode === "whiteboard" ? "text-amber-300" : "text-zinc-400"} />
-                <span>Freeform Miro</span>
+                <span>Miro Whiteboard</span>
               </button>
             </div>
           </div>

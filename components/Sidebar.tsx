@@ -132,7 +132,23 @@ const ALL_MODULE_ITEMS: NavModuleItem[] = [
     pillar: "operations",
     icon: <Network size={14} />,
     route: "/org-chart",
-    description: "Topology & multi-page diagrams",
+    description: "Master planning & whiteboard",
+  },
+  {
+    id: "HORIZON",
+    label: "Horizon & Zoom",
+    pillar: "operations",
+    icon: <Sunrise size={14} />,
+    route: "/horizon",
+    description: "Multi-horizon focus & altitude",
+  },
+  {
+    id: "LIFE_OPS",
+    label: "Life Operations",
+    pillar: "operations",
+    icon: <Wrench size={14} />,
+    route: "/life-ops",
+    description: "Systems, routines & maintenance",
   },
   {
     id: "SKILLS",
@@ -212,6 +228,14 @@ const ALL_MODULE_ITEMS: NavModuleItem[] = [
     route: "/marketing-agent",
     description: "Market signals & growth research",
   },
+  {
+    id: "EDUCATION",
+    label: "Learning Academy",
+    pillar: "wealth",
+    icon: <GraduationCap size={14} />,
+    route: "/education",
+    description: "Curriculum, mastery & wealth skills",
+  },
 
   // Family (His & Hers Pods + Family Hub)
   {
@@ -233,13 +257,11 @@ const ALL_MODULE_ITEMS: NavModuleItem[] = [
 ];
 
 const SETTINGS_NAV_ITEMS = [
+  { label: "Codebase Infrastructure Diagrams", route: "/codebase-diagrams", icon: <Network size={13} /> },
   { label: "Epistemic Matrix", route: "/epistemic", icon: <ShieldAlert size={13} /> },
   { label: "Integrations & Console", route: "/integrations", icon: <PlugZap size={13} /> },
   { label: "Resources & Guides", route: "/resources", icon: <Database size={13} /> },
   { label: "Knowledge Vault", route: "/vault", icon: <Archive size={13} /> },
-  { label: "Horizon & Zoom", route: "/horizon", icon: <Sunrise size={13} /> },
-  { label: "Life Operations", route: "/life-ops", icon: <Wrench size={13} /> },
-  { label: "Learning Academy", route: "/education", icon: <GraduationCap size={13} /> },
 ];
 
 const PILLARS_CONFIG: Array<{
