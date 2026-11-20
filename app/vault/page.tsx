@@ -245,10 +245,12 @@ export default function NeuralVaultPage() {
     }
   }, [selectedId]);
 
+  const initialVaultLoadedRef = useRef(false);
   useEffect(() => {
-    loadVault(false);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+    if (initialVaultLoadedRef.current) return;
+    initialVaultLoadedRef.current = true;
+    void loadVault(false);
+  }, [loadVault]);
 
   // Degree counts per node
   const degreeMap = useMemo(() => {

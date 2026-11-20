@@ -6,7 +6,7 @@
 > 2. A view toggle, modal, drawer, or primary interactive control is added or modified.
 > 3. Any `data-testid` selector or ARIA dialog role changes.
 >
-> **Never rely on fragile CSS class selectors** when driving the Browser Subagent (`.agent/skills/verify-ui/SKILL.md`). Always target `[data-testid="..."]` or semantic ARIA roles documented below.
+> **Never rely on fragile CSS class selectors** when driving the Browser Subagent (`.agents/skills/verify-ui/SKILL.md`). Always target `[data-testid="..."]` or semantic ARIA roles documented below.
 
 ---
 
@@ -16,7 +16,7 @@
 | :--- | :--- | :--- | :--- |
 | **Executive Module Shell** | `components/chairman/ExecutiveModuleShell.tsx`<br/> Barrel: `shared/index.ts` | NextAuth session (`useSession`) | `[data-testid="module-shell-{moduleId}"]`<br/>`[data-testid="global-launch-mission-flow-btn"]` |
 | **Dual-Column Sticky Sidebar** | `components/Sidebar.tsx`<br/>`components/AppearanceSettings.tsx`<br/>`components/UserAccountModal.tsx` | `/api/ui-preferences`<br/>`/api/calendar/google-sync` | **Home Emblem:** `[data-testid="nav-home-emblem"]`<br/>**Spheres:** `[data-testid="nav-sphere-all"]`, `nav-sphere-operations`, `nav-sphere-health`, `nav-sphere-wealth`, `nav-sphere-fam`, `nav-sphere-happiness`<br/>**Modules:** `[data-testid="nav-module-{ID}"]` (`MASTER`, `COMMAND`, `PMS`, `ROADMAPS`, `ORG_CHART`, `HORIZON`, `LIFE_OPS`, `SKILLS`, `ARTIFACTS`, `WORKOUTS`, `MACRO_OPS`, `CALENDAR_HABITS`, `MINDSET`, `BUDGET`, `CALIBER_ARC`, `MARKETING_AGENT`, `EDUCATION`, `PODS`, `FAMILY_HUB`)<br/>**Avatar & Settings:** `[data-testid="nav-avatar-menu-trigger"]`, `[data-testid="nav-settings-popover"]`, `[data-testid="nav-settings-link-codebase-diagrams"]`, `nav-settings-link-epistemic`, `nav-settings-link-integrations`, `nav-settings-link-resources`, `nav-settings-link-vault`<br/>**Theme Studio (Sole Theme Switcher):** `[data-testid="nav-theme-palette-trigger"]` |
-| **Guided Mission Flow Navigator (6-Stage Engine)** | `components/mission/MissionFlowNavigatorModal.tsx`<br/>`lib/missionFlowTypes.ts`<br/> Barrel: `features/mission-flow/index.ts` | `GET/POST /api/mission-flow`<br/>Cross-syncs to `pms_tasks` & `yearly_appointments` | **Dialog:** `[data-testid="mission-flow-modal"]` (`role="dialog"` `aria-modal="true"`), `[data-testid="mission-close-btn"]`<br/>**Co-Pilot Modes:** `[data-testid="mission-mode-dfy"]`, `mission-mode-dwy`, `mission-mode-diy`<br/>**DFY Synthesizer:** `[data-testid="mission-dfy-input"]`, `[data-testid="mission-dfy-run-btn"]`<br/>**6-Stage Stepper:** `[data-testid="mission-stage-tab-0"]` (OOCEMR) .. `mission-stage-tab-5` (HUD & AAR Vault)<br/>**Deploy:** `[data-testid="mission-deploy-btn"]` |
+| **Guided Mission Flow Navigator (6-Stage State Machine)** | `components/mission/MissionFlowNavigatorModal.tsx`<br/>`features/mission-flow/` (`state/missionFlowMachine.ts`, `hooks/useMissionFlowMachine.ts`, `Stage0OocemrPanel`..`Stage5HudAarPanel`)<br/>`services/missionFlowClientService.ts` | `GET/POST /api/mission-flow`<br/>Cross-syncs to `pms_tasks` & `yearly_appointments`<br/>Property Spec: `tests/properties/ui-invariants.spec.ts` (Property 4) | **Dialog:** `[data-testid="mission-flow-modal"]` (`data-active-stage`, `data-async-phase`, `role="dialog"`), `[data-testid="mission-close-btn"]`, `[data-testid="mission-flow-toast"]`<br/>**Co-Pilot Modes:** `[data-testid="mission-mode-dfy"]`, `mission-mode-dwy`, `mission-mode-diy`<br/>**DFY / DWY Controls:** `[data-testid="mission-dfy-input"]`, `[data-testid="mission-dfy-run-btn"]`, `[data-testid="mission-dwy-constraint-input"]`, `[data-testid="mission-dwy-tools-input"]`, `[data-testid="mission-dwy-calibrate-btn"]`<br/>**6-Stage Stepper & Panels:** `[data-testid="mission-stage-tab-0..5"]`, `[data-testid="mission-stage-panel-0..5"]`, `[data-testid="mission-prev-stage-btn"]`, `[data-testid="mission-next-stage-btn"]`, `[data-testid="mission-skip-stage0-btn"]`, `[data-testid="mission-goal-title-input"]`, `[data-testid="mission-add-wbs-node-btn"]`, `[data-testid="mission-deploy-btn"]`, `[data-testid="mission-aar-form"]`, `[data-testid="mission-save-aar-btn"]` |
 | **Theme-Adaptive Pixel Companion** | `components/chairman/pixel-pals/DittoGengarPals.tsx`<br/>`components/GlassThemeController.tsx` | `lib/glassTheme.ts`, `lib/fontTheme.ts` | Ambient companion mounted globally in `app/layout.tsx` |
 
 ---
@@ -143,6 +143,18 @@
 | `/resources` | `app/resources/page.tsx` | Reference guides & SOP index | `[data-testid="module-shell-RESOURCES"]` |
 | `/vault` | `app/vault/page.tsx` | Second-brain Knowledge Vault · `/api/vault` | `[data-testid="module-shell-VAULT"]` |
 | `/kpis` | `app/kpis/page.tsx` | `features/kpi-scorecard/index.ts` (`ScorecardHeroBanner`, `ScorecardMatrixTable`, `SectorPhysicsCard`, `SparklineSvg`, `useKpiScorecard`, `personalSectorPhysics`, `executiveSectorPhysics`) · `services/kpiClientService.ts` · `/api/kpi-scorecard`, `/api/metrics` | `[data-testid="kpi-scorecard-root"]`, `[data-testid="kpi-view-{matrix|cards|both}"]`, `[data-testid="kpi-log-checkin-btn"]`, `[data-testid="kpi-checkin-form"]`, `[data-testid="kpi-sector-filter-{all|wealth|health|relate|joy}"]`, `[data-testid="kpi-rag-filter-{all|green|yellow|red}"]`, `[data-testid="kpi-search-input"]`, `[data-testid="kpi-sector-card-{wealth|health|relate|joy}"]`, `[data-testid="kpi-sector-flip-btn-{id}"]`, `[data-testid="kpi-sector-confirm-btn-{id}"]` |
-| `/admin` | `app/admin/page.tsx` | System administration | `/admin` |
-| `/auth/signin` | `app/auth/signin/page.tsx` | Google OAuth / NextAuth sign-in · `/api/auth/[...nextauth]` | `/auth/signin` |
+| `/admin` | `app/admin/page.tsx` | **Role Guard: `ADMIN`** (`@features/rbac-governance` `resolveRouteGuard`) · `services/adminService.ts` | `[data-testid="admin-rbac-root"]`, `[data-testid="admin-back-dashboard-link"]`, `[data-testid="admin-user-row-{idx}"]` |
+| `/auth/signin` | `app/auth/signin/page.tsx` | **Role Guard: `PUBLIC`** · Google OAuth / NextAuth sign-in · `/api/auth/[...nextauth]` | `[data-testid="auth-signin-root"]`, `[data-testid="auth-google-signin-btn"]` |
 | `/overview` | `app/overview/page.tsx` | Redirect alias to `/` | `/` |
+
+---
+
+## 7. FastAPI Contract Engine & RBAC / Pod State Machines (`backend/` & `features/rbac-governance/`)
+
+| Module | File Path | Responsibility & Verification |
+| :--- | :--- | :--- |
+| **FastAPI App & Scoped CORS** | `backend/main.py`, `backend/store.py` | Explicit `CHAIRMAN_ALLOWED_ORIGINS` CORS policy (wildcard credentialed CORS banned) · `/health` |
+| **Circadian Contract Router** | `backend/routers/circadian_router.py`, `backend/schemas/circadian.py` | `/api/v1/circadian/events` (`GET`, `POST`, `DELETE`) · `ConfigDict(extra="forbid")` temporal validation |
+| **Zero-Trust Shared Pods Router** | `backend/routers/pods_router.py`, `backend/schemas/pods.py` | `/api/v1/pods/dashboard`, `/api/v1/pods/consent` · `ConfigDict(extra="forbid")` |
+| **Pod Consent State Machine** | `backend/state_machines/pod_governance.py` & `features/rbac-governance/state/rbacMachine.ts` | Deterministic lifecycle `DRAFT → PENDING_REVIEW → ACTIVE_GRANT → RESTRICTED → REVOKED` with `OWNER` / `ADMIN` role guards · Verified in `backend/tests/test_contracts.py` & `tests/unit/state-machines.spec.ts` |
+| **MCP Sovereign Mesh & Live WS** | `backend/routers/copilot_mcp_router.py` | `/mcp/manifest` (4 typed tool schemas) & `/ws/copilot/live` · Audited by `scripts/audit-skills-and-mcp.mjs` (`npm run audit:skills`) |

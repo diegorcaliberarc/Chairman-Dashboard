@@ -12,7 +12,7 @@ export { DoneWithYouModal } from "@/components/roadmaps/DoneWithYouModal";
 export { ManualNodeBuilderModal } from "@/components/roadmaps/ManualNodeBuilderModal";
 export { BackwardChainTracePanel } from "./components/BackwardChainTracePanel";
 export { useRoadmapMachine } from "./hooks/useRoadmapMachine";
-export { roadmapReducer } from "./state/roadmapMachineReducer";
+export { INITIAL_ROADMAP_STATE, roadmapReducer } from "./state/roadmapMachineReducer";
 export type {
   RoadmapMachineState,
   RoadmapModalState,

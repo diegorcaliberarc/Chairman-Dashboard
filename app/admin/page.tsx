@@ -2,15 +2,18 @@ import { getServerSession } from "next-auth/next";
 import { redirect } from "next/navigation";
 import { authOptions } from "@/lib/auth";
 import { getAdminUsersList } from "@/services/adminService";
-
-// ─── Server-side ADMIN guard ──────────────────────────────────────────────────
+import { normalizeUserRole, resolveRouteGuard } from "@features/rbac-governance";
 
 export default async function AdminPage() {
   const session = await getServerSession(authOptions);
-  const role    = (session as any)?.role as string | undefined;
+  const role = normalizeUserRole(
+    (session as { role?: string } | null)?.role,
+    Boolean(session)
+  );
+  const guard = resolveRouteGuard(role, "ADMIN");
 
-  if (!session || role !== "ADMIN") {
-    redirect("/");
+  if (guard !== "ALLOW") {
+    redirect(guard === "REDIRECT_SIGNIN" ? "/auth/signin" : "/");
   }
 
   // ─── Fetch all users ────────────────────────────────────────────────────────
@@ -25,7 +28,7 @@ export default async function AdminPage() {
   const border  = "#1E1F24";
 
   return (
-    <div style={{ minHeight: "100vh", backgroundColor: "#08090C", color: "#7A8599", fontFamily: "inherit", padding: "0 0 80px" }}>
+    <div data-testid="admin-rbac-root" style={{ minHeight: "100vh", backgroundColor: "#08090C", color: "#7A8599", fontFamily: "inherit", padding: "0 0 80px" }}>
 
       {/* ── Top bar ─────────────────────────────────────────────────────────── */}
       <div style={{ backgroundColor: surface, borderBottom: `1px solid ${border}`, padding: "18px 48px", display: "flex", alignItems: "center", justifyContent: "space-between" }}>
@@ -39,6 +42,7 @@ export default async function AdminPage() {
         </div>
         <a
           href="/"
+          data-testid="admin-back-dashboard-link"
           style={{ fontSize: 9, letterSpacing: "0.18em", textTransform: "uppercase", color: dim, textDecoration: "none", padding: "6px 14px", border: `1px solid ${border}`, borderRadius: 6 }}
         >
           ← Dashboard
@@ -90,6 +94,7 @@ export default async function AdminPage() {
             return (
               <div
                 key={u.id}
+                data-testid={`admin-user-row-${i}`}
                 style={{
                   display:             "grid",
                   gridTemplateColumns: "40px 1fr 1fr 120px 80px 80px",
@@ -108,7 +113,6 @@ export default async function AdminPage() {
                 {/* Name + avatar */}
                 <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
                   {u.image ? (
-                    /* eslint-disable-next-line @next/next/no-img-element */
                     <img src={u.image} alt="" width={24} height={24} style={{ borderRadius: "50%", border: `1px solid ${border}` }} />
                   ) : (
                     <div style={{ width: 24, height: 24, borderRadius: "50%", backgroundColor: "rgba(201,169,97,0.12)", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>

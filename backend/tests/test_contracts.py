@@ -1,33 +1,35 @@
 from __future__ import annotations
 
 import base64
-import sys
+import os
+import socket
 from datetime import datetime, timedelta, timezone
-from pathlib import Path
 
 import pytest
 from fastapi.testclient import TestClient
 from pydantic import ValidationError
 
-# Ensure workspace root is importable regardless of pytest invocation directory
-ROOT_DIR = Path(__file__).resolve().parents[2]
-if str(ROOT_DIR) not in sys.path:
-    sys.path.insert(0, str(ROOT_DIR))
-
-from backend.main import app  # noqa: E402
-from backend.schemas.circadian import (  # noqa: E402
+from backend.main import app
+from backend.schemas.circadian import (
     ChecklistItemDTO,
     CircadianEventCreateDTO,
     CircadianEventResponseDTO,
     EventDomain,
     MediaType,
 )
-from backend.schemas.pods import (  # noqa: E402
+from backend.schemas.pods import (
     HisAndHersDashboardResponseDTO,
     PodConsentUpdateDTO,
     PodRole,
     PodType,
     SharedMemberProfileDTO,
+)
+from backend.state_machines.pod_governance import (
+    ConsentEventType,
+    ConsentLifecycleStatus,
+    ConsentTransitionError,
+    PodConsentMachineState,
+    transition_pod_consent,
 )
 
 
@@ -71,7 +73,7 @@ def test_circadian_response_computes_sweep_angle_and_is_active_now() -> None:
         checklists=[ChecklistItemDTO(label="Execute architecture spec", is_completed=True)],
     )
     assert active_ev.duration_minutes == 120.0
-    assert active_ev.sweep_angle == 30.0  # (120 / 1440) * 360 == 30.0 deg
+    assert active_ev.sweep_angle == 30.0
     assert active_ev.is_active_now is True
 
     future_ev = CircadianEventResponseDTO(
@@ -83,8 +85,80 @@ def test_circadian_response_computes_sweep_angle_and_is_active_now() -> None:
         media_url="/circadian/gym-workout.jpg",
     )
     assert future_ev.duration_minutes == 90.0
-    assert future_ev.sweep_angle == 22.5  # (90 / 1440) * 360 == 22.5 deg
+    assert future_ev.sweep_angle == 22.5
     assert future_ev.is_active_now is False
+
+
+def test_strict_extra_forbid_blocks_mass_assignment_injection() -> None:
+    client = TestClient(app)
+    injected_res = client.post(
+        "/api/v1/pods/consent",
+        json={
+            "pod_id": "pod-01",
+            "grantor_user_id": "user-a",
+            "grantee_user_id": "user-b",
+            "is_admin": True,
+            "plaid_access_token": "leak-attempt",
+        },
+    )
+    assert injected_res.status_code == 422
+
+
+def test_zero_trust_cors_blocks_untrusted_origins_while_allowing_localhost() -> None:
+    client = TestClient(app)
+    evil_res = client.options(
+        "/api/v1/pods/dashboard",
+        headers={
+            "Origin": "https://evil.attacker.example",
+            "Access-Control-Request-Method": "GET",
+        },
+    )
+    assert evil_res.headers.get("access-control-allow-origin") is None
+
+    trusted_res = client.options(
+        "/api/v1/pods/dashboard",
+        headers={
+            "Origin": "http://localhost:3000",
+            "Access-Control-Request-Method": "GET",
+        },
+    )
+    assert trusted_res.headers.get("access-control-allow-origin") == "http://localhost:3000"
+
+
+def test_pod_governance_deterministic_state_machine() -> None:
+    s0 = PodConsentMachineState(pod_id="pod-01")
+    assert s0.status == ConsentLifecycleStatus.DRAFT
+
+    with pytest.raises(ConsentTransitionError):
+        transition_pod_consent(s0, ConsentEventType.SUBMIT_FOR_REVIEW, PodRole.DEPENDENT)
+
+    s1 = transition_pod_consent(s0, ConsentEventType.SUBMIT_FOR_REVIEW, PodRole.PARTNER)
+    assert s1.status == ConsentLifecycleStatus.PENDING_REVIEW
+
+    with pytest.raises(ConsentTransitionError):
+        transition_pod_consent(s1, ConsentEventType.APPROVE_GRANT, PodRole.MEMBER)
+
+    s2 = transition_pod_consent(s1, ConsentEventType.APPROVE_GRANT, PodRole.OWNER)
+    assert s2.status == ConsentLifecycleStatus.ACTIVE_GRANT
+
+    s3 = transition_pod_consent(s2, ConsentEventType.REVOKE_GRANT, PodRole.ADMIN)
+    assert s3.status == ConsentLifecycleStatus.REVOKED
+
+    with pytest.raises(ConsentTransitionError):
+        transition_pod_consent(s3, ConsentEventType.APPROVE_GRANT, PodRole.OWNER)
+
+    s4 = transition_pod_consent(s3, ConsentEventType.REOPEN_DRAFT, PodRole.OWNER)
+    assert s4.status == ConsentLifecycleStatus.DRAFT
+
+
+def test_spend_and_secret_isolation_fixture_is_enforced() -> None:
+    assert os.environ.get("CHAIRMAN_TEST_ISOLATION") == "1"
+    assert os.environ.get("DATABASE_URL") == ""
+    assert os.environ.get("GEMINI_API_KEY") == ""
+    assert os.environ.get("STRIPE_SECRET_KEY") == ""
+
+    with pytest.raises(RuntimeError, match="SPEND_ISOLATION_VIOLATION"):
+        socket.create_connection(("generativelanguage.googleapis.com", 443), timeout=1)
 
 
 def test_pods_dtos_contract_serialization() -> None:
@@ -120,14 +194,12 @@ def test_pods_dtos_contract_serialization() -> None:
 def test_fastapi_rest_and_live_websocket_contracts() -> None:
     client = TestClient(app)
 
-    # 1. GET /mcp/manifest
     manifest_res = client.get("/mcp/manifest")
     assert manifest_res.status_code == 200
     manifest = manifest_res.json()
     assert manifest["server_name"] == "chairman-living-os-mcp"
     assert len(manifest["tools"]) >= 4
 
-    # 2. POST /api/v1/circadian/events rejects end_time <= start_time with 422
     bad_res = client.post(
         "/api/v1/circadian/events",
         json={
@@ -140,7 +212,6 @@ def test_fastapi_rest_and_live_websocket_contracts() -> None:
     )
     assert bad_res.status_code == 422
 
-    # 3. POST /api/v1/circadian/events accepts valid window & computes sweep_angle
     good_res = client.post(
         "/api/v1/circadian/events",
         json={
@@ -156,23 +227,19 @@ def test_fastapi_rest_and_live_websocket_contracts() -> None:
     created = good_res.json()
     assert created["sweep_angle"] == 15.0
 
-    # 4. GET /api/v1/pods/dashboard
     pods_res = client.get("/api/v1/pods/dashboard")
     assert pods_res.status_code == 200
     assert pods_res.json()["pod_type"] == "couple"
 
-    # 5. Full-duplex WebSocket /ws/copilot/live (PCM binary + video frame + turn)
     with client.websocket_connect("/ws/copilot/live") as ws:
         ready = ws.receive_json()
         assert ready["type"] == "session_ready"
 
-        # Send binary PCM16 chunk (3200 bytes = 100ms @ 16kHz 16-bit mono)
         ws.send_bytes(b"\x00\x01" * 1600)
         pcm_ack = ws.receive_json()
         assert pcm_ack["type"] == "pcm_ack"
         assert pcm_ack["chunk_bytes"] == 3200
 
-        # Send base64 vision frame
         ws.send_json(
             {
                 "type": "video_frame",
@@ -183,7 +250,3 @@ def test_fastapi_rest_and_live_websocket_contracts() -> None:
         frame_ack = ws.receive_json()
         assert frame_ack["type"] == "frame_ack"
         assert frame_ack["frame_index"] == 1
-
-
-if __name__ == "__main__":
-    raise SystemExit(pytest.main([__file__, "-v"]))

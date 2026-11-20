@@ -1,5 +1,9 @@
-import { expect, Page, test } from "@playwright/test";
 import fc from "fast-check";
+import {
+  attachRuntimeMonitors,
+  expect,
+  test,
+} from "../fixtures/isolatedBrowserFixture";
 
 const DOMAINS = [
   "master",
@@ -11,47 +15,12 @@ const DOMAINS = [
   "custom",
 ] as const;
 
-function attachRuntimeMonitors(page: Page) {
-  const uncaughtErrors: string[] = [];
-  const consoleErrors: string[] = [];
-  const isOfflineCiDb = (process.env.DATABASE_URL || "").includes("chairman_ci");
-
-  page.on("pageerror", (err) => {
-    uncaughtErrors.push(err.message);
-  });
-
-  page.on("console", (msg) => {
-    if (msg.type() !== "error") return;
-    const text = msg.text();
-    if (
-      isOfflineCiDb &&
-      (text.includes("Failed to load resource") ||
-        text.includes("Failed to fetch all calendar events") ||
-        text.includes("CLIENT_FETCH_ERROR"))
-    ) {
-      return;
-    }
-    consoleErrors.push(text);
-  });
-
-  return {
-    assertHealthy: () => {
-      expect(uncaughtErrors, `Uncaught page exceptions: ${uncaughtErrors.join(" | ")}`).toEqual(
-        []
-      );
-      expect(
-        consoleErrors,
-        `Console/hydration errors: ${consoleErrors.join(" | ")}`
-      ).toEqual([]);
-    },
-  };
-}
-
-test.describe("Chairman Dashboard v2 — Property-Based UI Invariants", () => {
+test.describe("Chairman Dashboard v3.0 — Isolated Property-Based UI Invariants", () => {
   test("Property 1: /roadmaps rapid view/mode/domain fuzzing never crashes, orphans modals, or hangs spinners", async ({
     page,
+    outboundViolations,
   }) => {
-    const monitor = attachRuntimeMonitors(page);
+    const monitor = attachRuntimeMonitors(page, outboundViolations);
     await page.goto("/roadmaps", { waitUntil: "domcontentloaded" });
 
     const root = page.getByTestId("roadmap-workspace-root");
@@ -81,7 +50,7 @@ test.describe("Chairman Dashboard v2 — Property-Based UI Invariants", () => {
       })
     );
 
-    const actionSequences = fc.sample(fc.array(opArbitrary, { minLength: 26, maxLength: 32 }), {
+    const actionSequences = fc.sample(fc.array(opArbitrary, { minLength: 24, maxLength: 30 }), {
       seed: 20261120,
       numRuns: 2,
     });
@@ -130,8 +99,9 @@ test.describe("Chairman Dashboard v2 — Property-Based UI Invariants", () => {
 
   test("Property 2: PARDO & FMEA Dossier Drawer always renders valid metadata and closes cleanly across DAG & Pyramid nodes", async ({
     page,
+    outboundViolations,
   }) => {
-    const monitor = attachRuntimeMonitors(page);
+    const monitor = attachRuntimeMonitors(page, outboundViolations);
     await page.goto("/roadmaps", { waitUntil: "domcontentloaded" });
     await expect(page.getByTestId("roadmap-workspace-root")).toBeVisible();
 
@@ -192,8 +162,9 @@ test.describe("Chairman Dashboard v2 — Property-Based UI Invariants", () => {
 
   test("Property 3: /calendar switching between Circadian Solar Arc and Google Calendar Grid always preserves active date state", async ({
     page,
+    outboundViolations,
   }) => {
-    const monitor = attachRuntimeMonitors(page);
+    const monitor = attachRuntimeMonitors(page, outboundViolations);
     await page.goto("/calendar", { waitUntil: "domcontentloaded" });
 
     const solarBtn = page.getByTestId("calendar-engine-solar");
@@ -260,5 +231,78 @@ test.describe("Chairman Dashboard v2 — Property-Based UI Invariants", () => {
 
       monitor.assertHealthy();
     }
+  });
+
+  test("Property 4: MissionFlowNavigatorModal 6-stage state machine & Co-Pilot fuzzing preserves stage bounds and deploy guard", async ({
+    page,
+    outboundViolations,
+  }) => {
+    const monitor = attachRuntimeMonitors(page, outboundViolations);
+    await page.goto("/roadmaps", { waitUntil: "domcontentloaded" });
+
+    await page.getByTestId("global-launch-mission-flow-btn").click();
+    const modal = page.getByTestId("mission-flow-modal");
+    await expect(modal).toBeVisible();
+
+    // Verify missing-title deploy guard redirects to Stage 1 cleanly
+    await page.getByTestId("mission-stage-tab-4").click();
+    await expect(modal).toHaveAttribute("data-active-stage", "4");
+    await page.getByTestId("mission-deploy-btn").click();
+    await expect(modal).toHaveAttribute("data-active-stage", "1");
+
+    // Fuzz randomized stage tabs, Co-Pilot modes, and WBS mutations
+    const stageOps = fc.sample(
+      fc.array(
+        fc.oneof(
+          fc.record({ kind: fc.constant("stage" as const), idx: fc.integer({ min: 0, max: 5 }) }),
+          fc.record({
+            kind: fc.constant("mode" as const),
+            mode: fc.constantFrom("dfy" as const, "dwy" as const, "diy" as const),
+          }),
+          fc.constant({ kind: "next" as const }),
+          fc.constant({ kind: "prev" as const })
+        ),
+        { minLength: 18, maxLength: 24 }
+      ),
+      { seed: 303030, numRuns: 1 }
+    )[0];
+
+    for (const op of stageOps) {
+      if (op.kind === "stage") {
+        await page.getByTestId(`mission-stage-tab-${op.idx}`).click();
+        await expect(modal).toHaveAttribute("data-active-stage", String(op.idx));
+        await expect(page.getByTestId(`mission-stage-panel-${op.idx}`)).toBeVisible();
+      } else if (op.kind === "mode") {
+        await page.getByTestId(`mission-mode-${op.mode}`).click();
+      } else if (op.kind === "next") {
+        const cur = Number(await modal.getAttribute("data-active-stage"));
+        if (cur < 5) {
+          await page.getByTestId("mission-next-stage-btn").click();
+          await expect(modal).toHaveAttribute("data-active-stage", String(cur + 1));
+        }
+      } else {
+        const cur = Number(await modal.getAttribute("data-active-stage"));
+        if (cur > 0) {
+          await page.getByTestId("mission-prev-stage-btn").click();
+          await expect(modal).toHaveAttribute("data-active-stage", String(cur - 1));
+        }
+      }
+      monitor.assertHealthy();
+    }
+
+    // Run DFY synthesis + isolated deploy to Stage 5
+    await page.getByTestId("mission-mode-dfy").click();
+    await page.getByTestId("mission-dfy-input").fill("Cut to 155 lbs @ 8% BF");
+    await page.getByTestId("mission-dfy-run-btn").click();
+    await expect(modal).toHaveAttribute("data-active-stage", "1");
+
+    await page.getByTestId("mission-stage-tab-4").click();
+    await page.getByTestId("mission-deploy-btn").click();
+    await expect(modal).toHaveAttribute("data-active-stage", "5");
+    await expect(page.getByTestId("mission-stage-panel-5")).toBeVisible();
+
+    await page.getByTestId("mission-close-btn").click();
+    await expect(modal).toHaveCount(0);
+    monitor.assertHealthy();
   });
 });

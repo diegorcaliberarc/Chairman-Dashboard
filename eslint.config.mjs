@@ -12,8 +12,8 @@ const compat = new FlatCompat({
 });
 
 /**
- * Custom Chairman Dashboard AST plugin enforcing zero-slop comments and
- * zero lint/compiler suppression escape hatches in modern architecture layers.
+ * Custom Chairman Dashboard v3.0 AST plugin enforcing zero-slop comments and
+ * repo-wide zero lint/compiler suppression escape hatches.
  */
 const chairmanEngineeringPlugin = {
   rules: {
@@ -77,7 +77,7 @@ const chairmanEngineeringPlugin = {
                 context.report({
                   loc: comment.loc,
                   message:
-                    "Inline suppression escape hatch forbidden (eslint-disable / @ts-ignore / @ts-nocheck). Remediation: resolve the underlying TypeScript contract, barrel boundary, or 350-line module split at its root cause.",
+                    "Inline suppression escape hatch forbidden (eslint-disable / @ts-ignore / @ts-nocheck). Remediation: resolve the underlying TypeScript contract, React hook dependency, barrel boundary, or 350-line module split at its root cause.",
                 });
               }
             }
@@ -104,10 +104,10 @@ const IMPERATIVE_TIMER_SELECTORS = [
 ];
 
 /**
- * Legacy Debt Ratchet Allowlist (72 grandfathered files; down from 77 in v1 after pulling
+ * Legacy Debt Ratchet Allowlist (71 grandfathered files; down from 77 in v1 after pulling
  * app/kpis/page.tsx, app/roadmaps/page.tsx, DagCanvasView.tsx, ExecutionPyramidView.tsx,
- * and TacticalDossierModal.tsx). Whenever touching any file below, extract subcomponents/hooks
- * <350 lines and remove the refactored file from this list.
+ * TacticalDossierModal.tsx, and MissionFlowNavigatorModal.tsx). Whenever touching any file
+ * below, extract subcomponents/hooks <350 lines and remove the refactored file from this list.
  */
 const LEGACY_OVERSIZED_ALLOWLIST = [
   "app/page.tsx",
@@ -168,7 +168,6 @@ const LEGACY_OVERSIZED_ALLOWLIST = [
   "components/command/SundayReviewWizardModal.tsx",
   "components/macro-ops/GengarHydrationCard.tsx",
   "components/macro-ops/QuickMealLogModal.tsx",
-  "components/mission/MissionFlowNavigatorModal.tsx",
   "components/pms/PmsHierarchySidebar.tsx",
   "components/pms/TaskDetailModal.tsx",
   "components/temporal/GeospatialTacticalMap.tsx",
@@ -206,6 +205,10 @@ const config = [
 
   {
     files: ["**/*.ts", "**/*.tsx"],
+    linterOptions: {
+      noInlineConfig: true,
+      reportUnusedDisableDirectives: "error",
+    },
     languageOptions: {
       parser: tsParser,
       parserOptions: {
@@ -243,6 +246,7 @@ const config = [
       ],
 
       "chairman/no-narrated-comments": "error",
+      "chairman/no-suppression-escapes": "error",
 
       "boundaries/element-types": [
         "error",
@@ -332,7 +336,7 @@ const config = [
     },
   },
 
-  // Zero-Escape-Hatch & Anti-Footgun Tier for Modern Architecture (`features/**`, `shared/**`, `services/**`)
+  // Anti-Footgun Tier for Modern Architecture (`features/**`, `shared/**`, `services/**`)
   {
     files: [
       "features/**/*.ts",
@@ -342,12 +346,7 @@ const config = [
       "services/**/*.ts",
       "services/**/*.tsx",
     ],
-    linterOptions: {
-      noInlineConfig: true,
-      reportUnusedDisableDirectives: "error",
-    },
     rules: {
-      "chairman/no-suppression-escapes": "error",
       "no-restricted-syntax": [
         "error",
         {

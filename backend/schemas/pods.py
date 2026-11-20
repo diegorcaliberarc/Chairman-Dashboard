@@ -23,10 +23,11 @@ class PodRole(str, Enum):
 
 class PodConsentUpdateDTO(BaseModel):
     """
-    Zero-Trust Granular Consent Matrix for His & Hers / Multi-Member Shared Pods (Section 13.5).
+    Zero-Trust Granular Consent Matrix for His & Hers / Multi-Member Shared Pods.
+    Enforces extra='forbid' so injected privilege keys are deterministically rejected.
     """
 
-    model_config = ConfigDict(populate_by_name=True)
+    model_config = ConfigDict(populate_by_name=True, extra="forbid")
 
     pod_id: str = Field(..., min_length=1)
     grantor_user_id: str = Field(default="chairman-default", min_length=1)
@@ -45,13 +46,13 @@ class PodConsentUpdateDTO(BaseModel):
 
 
 class SharedMemberProfileDTO(BaseModel):
-    model_config = ConfigDict(populate_by_name=True)
+    model_config = ConfigDict(populate_by_name=True, extra="forbid")
 
     user_id: str = Field(..., min_length=1)
     role: PodRole = Field(default=PodRole.MEMBER)
     display_alias: str = Field(..., min_length=1, max_length=64)
     avatar_url: Optional[str] = Field(default=None)
-    active_streak_days: int = Field(default=14, ge=0)
+    active_streak_days: int = Field(default=0, ge=0)
     today_completed_tasks_count: int = Field(default=0, ge=0)
     today_workout_completed: bool = Field(default=False)
     current_status: Optional[str] = Field(default=None, max_length=120)
@@ -61,7 +62,7 @@ class SharedMemberProfileDTO(BaseModel):
 
 
 class HisAndHersDashboardResponseDTO(BaseModel):
-    model_config = ConfigDict(populate_by_name=True)
+    model_config = ConfigDict(populate_by_name=True, extra="forbid")
 
     pod_id: str = Field(..., min_length=1)
     pod_name: str = Field(..., min_length=1, max_length=120)

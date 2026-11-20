@@ -22,7 +22,7 @@ class MediaType(str, Enum):
 
 
 class ChecklistItemDTO(BaseModel):
-    model_config = ConfigDict(populate_by_name=True)
+    model_config = ConfigDict(populate_by_name=True, extra="forbid")
 
     id: str = Field(default_factory=lambda: str(uuid4()))
     label: str = Field(..., min_length=1, max_length=255)
@@ -31,7 +31,7 @@ class ChecklistItemDTO(BaseModel):
 
 
 class CircadianEventCreateDTO(BaseModel):
-    model_config = ConfigDict(populate_by_name=True)
+    model_config = ConfigDict(populate_by_name=True, extra="forbid")
 
     title: str = Field(..., min_length=1, max_length=120)
     description: Optional[str] = Field(default=None, max_length=2000)
@@ -70,13 +70,11 @@ class CircadianEventResponseDTO(CircadianEventCreateDTO):
     id: str = Field(default_factory=lambda: str(uuid4()))
     user_id: Optional[str] = Field(default="chairman-default")
 
-    @computed_field  # type: ignore[prop-decorator]
-    @property
+    @computed_field
     def duration_minutes(self) -> float:
         return round((self.end_time - self.start_time).total_seconds() / 60.0, 2)
 
-    @computed_field  # type: ignore[prop-decorator]
-    @property
+    @computed_field
     def sweep_angle(self) -> float:
         """
         Section 2.2 Segment Sweep Angle Formula:
@@ -85,8 +83,7 @@ class CircadianEventResponseDTO(CircadianEventCreateDTO):
         duration_mins = (self.end_time - self.start_time).total_seconds() / 60.0
         return round((duration_mins / 1440.0) * 360.0, 4)
 
-    @computed_field  # type: ignore[prop-decorator]
-    @property
+    @computed_field
     def is_active_now(self) -> bool:
         if self.start_time.tzinfo is not None:
             now = datetime.now(timezone.utc)

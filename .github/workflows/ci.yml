@@ -1,4 +1,4 @@
-name: CI — Verify All & Property Fuzzing
+name: CI — Autonomous Software Factory v3.0
 
 on:
   push:
@@ -12,14 +12,15 @@ concurrency:
 
 jobs:
   verify:
-    name: Typecheck, Lint, Production Build & UI Property Fuzzing
+    name: 7-Stage Verify Gate (TS + ESLint + Zenity + Vitest + Pytest + Build) & Isolated UI Fuzzing
     runs-on: ubuntu-latest
     timeout-minutes: 20
 
     env:
-      DATABASE_URL: "postgresql://postgres:postgres@localhost:5432/chairman_ci?schema=public"
-      NEXTAUTH_SECRET: "ci-verification-secret-placeholder"
-      NEXTAUTH_URL: "http://localhost:3000"
+      DATABASE_URL: "postgresql://isolated:isolated@127.0.0.1:54399/chairman_isolated_test?schema=public"
+      NEXTAUTH_SECRET: "ci-isolated-secret-placeholder"
+      NEXTAUTH_URL: "http://127.0.0.1:3100"
+      CHAIRMAN_TEST_ISOLATION: "1"
 
     steps:
       - name: Checkout Repository
@@ -31,20 +32,27 @@ jobs:
           node-version: "20"
           cache: "npm"
 
-      - name: Install Dependencies
+      - name: Setup Python 3.12
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: "pip"
+          cache-dependency-path: "backend/requirements.txt"
+
+      - name: Install Backend Python Dependencies
+        run: pip install -r backend/requirements.txt
+
+      - name: Install Frontend Node Dependencies
         run: npm ci --legacy-peer-deps
 
       - name: Generate Prisma Client
         run: npx prisma generate
 
-      - name: Gate 1 — Strict Modern Layer Lint (Zero Warnings, Zero Escape Hatches)
-        run: npm run lint:strict
-
-      - name: Gate 1 — Deterministic Static & Build Gate (tsc + eslint + next build)
-        run: npm run verify:all
+      - name: Gate 1 — Machine-Readable 7-Stage Verification Pipeline
+        run: npm run verify:all:json
 
       - name: Install Playwright Headless Chromium
         run: npx playwright install --with-deps chromium
 
-      - name: Gate 2 — Property-Based UI Invariant Fuzzing (/roadmaps & /calendar)
+      - name: Gate 2 — Spend-Isolated Property-Based UI Fuzzing (Port 3100)
         run: npm run test:properties

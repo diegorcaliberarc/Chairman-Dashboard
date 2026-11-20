@@ -14,6 +14,7 @@ export default function SignInPage() {
 
   return (
     <div
+      data-testid="auth-signin-root"
       style={{
         minHeight:       "100vh",
         backgroundColor: "#08090C",
@@ -88,6 +89,8 @@ export default function SignInPage() {
 
         {/* Google Sign-In Button */}
         <button
+          type="button"
+          data-testid="auth-google-signin-btn"
           onClick={handleSignIn}
           disabled={loading}
           style={{

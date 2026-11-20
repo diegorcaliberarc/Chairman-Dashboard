@@ -9,9 +9,14 @@
     "typecheck": "tsc --noEmit",
     "lint": "node scripts/run-eslint.mjs",
     "lint:strict": "node scripts/run-eslint.mjs features shared services --max-warnings=0",
+    "audit:skills": "node scripts/audit-skills-and-mcp.mjs",
+    "checkpoint": "node scripts/git-checkpoint.mjs",
+    "test:unit": "vitest run",
+    "test:backend": "python -m pytest",
     "test:properties": "playwright test --config=playwright.config.ts",
-    "test:bombadil": "bombadil test http://localhost:3000/roadmaps tests/properties/roadmaps.bombadil.ts --headless",
-    "verify:all": "npm run typecheck && npm run lint && npm run build",
+    "test:bombadil": "node scripts/with-isolated-env.mjs bombadil test http://127.0.0.1:3100/roadmaps tests/properties/roadmaps.bombadil.ts --headless",
+    "verify:all": "node scripts/verify-all.mjs",
+    "verify:all:json": "node scripts/verify-all.mjs --json",
     "postinstall": "prisma generate"
   },
   "dependencies": {
@@ -58,6 +63,7 @@
     "fast-check": "^4.10.3",
     "postcss": "^8",
     "tailwindcss": "^3.4.1",
-    "typescript": "^5"
+    "typescript": "^5",
+    "vitest": "^2.1.9"
   }
 }

@@ -304,10 +304,12 @@ export default function MacroHorizonPage() {
     }
   }, [msPillarId, selectedSliver, selectedWaypoint]);
 
+  const initialHorizonLoadedRef = useRef(false);
   useEffect(() => {
-    loadHorizon();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+    if (initialHorizonLoadedRef.current) return;
+    initialHorizonLoadedRef.current = true;
+    void loadHorizon();
+  }, [loadHorizon]);
 
   // Smooth Zoom Animation Loop for Breadcrumb & Wheel Transitions
   useEffect(() => {
