@@ -120,7 +120,7 @@ export function PmsHierarchySidebar({
   };
 
   return (
-    <aside className="w-[240px] min-w-[240px] h-full bg-[#11131C] border-r border-[#1E222D] flex flex-col select-none z-10 text-zinc-300">
+    <aside className="w-[240px] min-w-[240px] self-stretch min-h-full bg-[#11131C] border-r border-[#1E222D] flex flex-col select-none z-10 text-zinc-300">
       {/* Top Header */}
       <div className="h-12 px-3 border-b border-[#1E222D] flex items-center justify-between">
         <div className="flex items-center gap-2">

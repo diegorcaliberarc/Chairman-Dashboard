@@ -99,22 +99,22 @@ export function SectorPhysicsCard({
               {evaluatedItems.map((k) => (
                 <div
                   key={k.label}
-                  className="flex justify-between items-center bg-zinc-50/50 dark:bg-white/5 p-2 rounded-lg border border-zinc-200/50 dark:border-white/5"
+                  className="flex justify-between items-center gap-2 bg-zinc-50/50 dark:bg-white/5 p-2 rounded-lg border border-zinc-200/50 dark:border-white/5"
                 >
-                  <div className="flex flex-col">
-                    <span className="text-[10px] font-bold tracking-widest uppercase text-zinc-900 dark:text-zinc-100">
+                  <div className="flex flex-col min-w-0">
+                    <span className="text-[10px] font-bold tracking-widest uppercase text-zinc-900 dark:text-zinc-100 truncate">
                       {k.label}
                     </span>
-                    <span className="text-[8px] tracking-widest uppercase text-zinc-500">
+                    <span className="text-[8px] tracking-widest uppercase text-zinc-500 truncate">
                       {k.sub}
                     </span>
                   </div>
-                  <div className="flex flex-col items-end gap-0.5">
-                    <span className="font-mono text-xs font-medium text-zinc-900 dark:text-white">
+                  <div className="flex flex-col items-end gap-0.5 shrink-0">
+                    <span className="font-mono text-xs font-medium text-zinc-900 dark:text-white whitespace-nowrap">
                       {k.actualDisplay}
                     </span>
                     <span
-                      className={`text-[9px] font-bold tracking-widest uppercase ${k.status.color}`}
+                      className={`text-[9px] font-bold tracking-widest uppercase whitespace-nowrap ${k.status.color}`}
                     >
                       {k.status.label}
                     </span>

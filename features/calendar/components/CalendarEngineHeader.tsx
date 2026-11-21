@@ -74,15 +74,15 @@ export function CalendarEngineHeader({
 
   return (
     <header
-      className="h-14 px-5 border-b flex items-center justify-between z-20 sticky top-0 backdrop-blur-xl transition-colors"
+      className="min-h-14 py-2 px-4 sm:px-5 border-b flex flex-wrap items-center justify-between gap-y-2 gap-x-3 z-20 sticky top-0 backdrop-blur-xl transition-colors"
       style={{
         backgroundColor: "var(--glass-surface)",
         borderColor: "var(--glass-border)",
       }}
     >
-      <div className="flex items-center gap-3">
+      <div className="flex items-center gap-2.5 flex-wrap">
         <div
-          className="flex items-center border rounded-xl p-1"
+          className="flex items-center border rounded-xl p-1 shrink-0"
           style={{
             backgroundColor: "var(--glass-surface-elevated)",
             borderColor: "var(--glass-border)",
@@ -92,13 +92,13 @@ export function CalendarEngineHeader({
             type="button"
             data-testid="calendar-engine-solar"
             onClick={() => onSelectEngineMode("solar")}
-            className={`flex items-center gap-2 px-3 py-1.5 rounded-lg text-xs font-medium transition ${
+            className={`flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-xs font-medium whitespace-nowrap transition ${
               engineMode === "solar"
                 ? "bg-amber-500/20 text-amber-600 dark:text-amber-300 border border-amber-500/40 shadow-sm"
                 : "opacity-70 hover:opacity-100"
             }`}
           >
-            <Orbit className="w-3.5 h-3.5 text-amber-500" />
+            <Orbit className="w-3.5 h-3.5 text-amber-500 shrink-0" />
             <span>Circadian Solar Arc</span>
           </button>
 
@@ -106,13 +106,13 @@ export function CalendarEngineHeader({
             type="button"
             data-testid="calendar-engine-google"
             onClick={() => onSelectEngineMode("google")}
-            className={`flex items-center gap-2 px-3 py-1.5 rounded-lg text-xs font-medium transition ${
+            className={`flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-xs font-medium whitespace-nowrap transition ${
               engineMode === "google"
                 ? "bg-[#4984fd]/20 text-[#4984fd] border border-[#4984fd]/40 shadow-sm"
                 : "opacity-70 hover:opacity-100"
             }`}
           >
-            <CalendarIcon className="w-3.5 h-3.5 text-[#4984fd]" />
+            <CalendarIcon className="w-3.5 h-3.5 text-[#4984fd] shrink-0" />
             <span>Google Calendar Grid</span>
           </button>
         </div>
@@ -120,7 +120,7 @@ export function CalendarEngineHeader({
         <span
           data-testid="calendar-active-date"
           data-active-date={selectedDate}
-          className="hidden sm:inline-flex items-center px-2.5 py-1 rounded-lg border text-[11px] font-mono"
+          className="hidden sm:inline-flex items-center px-2.5 py-1 rounded-lg border text-[11px] font-mono whitespace-nowrap shrink-0"
           style={{
             backgroundColor: "var(--glass-surface-elevated)",
             borderColor: "var(--glass-border)",
@@ -190,7 +190,7 @@ export function CalendarEngineHeader({
               type="button"
               data-testid="calendar-add-solar-block-btn"
               onClick={onAddSolarBlock}
-              className="flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl bg-gradient-to-r from-amber-400 to-orange-500 text-black text-xs font-bold tracking-wider uppercase shadow-[0_0_20px_rgba(251,191,36,0.28)] hover:brightness-110 transition-all"
+              className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-gradient-to-r from-amber-400 to-orange-500 text-black text-xs font-bold tracking-wider uppercase whitespace-nowrap shrink-0 shadow-[0_0_20px_rgba(251,191,36,0.28)] hover:brightness-110 transition-all"
             >
               <Plus className="w-3.5 h-3.5 stroke-[2.5]" />
               <span>Add Block</span>

@@ -542,8 +542,12 @@ export default function ChairmanHomeDashboard() {
           <button
             type="button"
             onClick={() => setCustomizeOpen((p) => !p)}
-            className="liquid-glass-pill px-3 py-1.5 text-[12.5px] font-medium inline-flex items-center gap-1.5"
-            style={{ color: "var(--glass-text-primary)" }}
+            className="px-3 py-1.5 rounded-xl border text-[12.5px] font-medium inline-flex items-center gap-1.5 transition hover:border-[#4984fd]/60"
+            style={{
+              backgroundColor: "var(--glass-surface-elevated)",
+              borderColor: "var(--glass-border)",
+              color: "var(--glass-text-primary)",
+            }}
           >
             <SlidersHorizontal size={13} className="text-[#4984fd]" />
             <span>Customize</span>

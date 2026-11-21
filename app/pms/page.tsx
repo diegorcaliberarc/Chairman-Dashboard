@@ -55,10 +55,11 @@ export default function SovereignPmsPage() {
         />
       }
     >
+      <div className="p-3 sm:p-4 w-full max-w-full box-border">
       <div
         data-testid="pms-workspace-root"
         data-view-mode={state.viewMode}
-        className="flex min-h-[calc(100vh-140px)] w-full rounded-2xl border overflow-hidden select-none transition-colors"
+        className="flex h-[calc(100vh-164px)] min-h-[600px] w-full max-w-full rounded-2xl border overflow-hidden select-none transition-colors"
         style={{
           backgroundColor: "var(--glass-surface)",
           borderColor: "var(--glass-border)",
@@ -105,7 +106,7 @@ export default function SovereignPmsPage() {
           />
         )}
 
-        <main className="flex-1 flex flex-col min-w-0 overflow-hidden bg-transparent">
+        <div className="flex-1 flex flex-col min-w-0 overflow-hidden bg-transparent">
           <TaskViewSwitcher
             breadcrumb={breadcrumb}
             showSpacesDrawer={state.showSpacesDrawer}
@@ -211,7 +212,7 @@ export default function SovereignPmsPage() {
               />
             )}
           </div>
-        </main>
+        </div>
 
         <TaskDetailDrawer
           task={selectedTask}
@@ -234,6 +235,7 @@ export default function SovereignPmsPage() {
           onClose={() => dispatch({ type: "CLOSE_NEW_SPACE_MODAL" })}
           onCreateSpace={handleCreateSpace}
         />
+      </div>
       </div>
     </ExecutiveModuleShell>
   );

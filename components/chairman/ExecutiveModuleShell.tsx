@@ -121,8 +121,8 @@ export function ExecutiveModuleShell({
         <main
           className={
             fullBleed
-              ? "flex-1 relative min-h-0 bg-transparent"
-              : "flex-1 px-4 sm:px-8 py-6 max-w-[1480px] w-full mx-auto space-y-6 pb-20 bg-transparent"
+              ? "flex-1 relative min-h-0 min-w-0 pb-20 bg-transparent"
+              : "flex-1 px-4 sm:px-8 py-6 max-w-[1480px] w-full mx-auto space-y-6 pb-24 bg-transparent"
           }
         >
           {children}

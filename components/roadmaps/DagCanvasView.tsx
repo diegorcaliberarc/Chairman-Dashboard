@@ -75,7 +75,7 @@ export function DagCanvasView({
       <div
         ref={containerRef}
         style={{ transform: `scale(${zoomScale})` }}
-        className="relative w-[1840px] h-[780px] mx-auto transition-transform duration-200 origin-top-left"
+        className="relative min-w-[1920px] w-[1920px] h-[780px] pr-12 mx-auto transition-transform duration-200 origin-top-left"
       >
         <svg className="absolute inset-0 w-full h-full pointer-events-none z-10">
           <defs>
@@ -145,7 +145,7 @@ export function DagCanvasView({
           ))}
         </svg>
 
-        <div className="relative z-20 w-full h-full flex justify-between items-stretch">
+        <div className="relative z-20 w-full h-full flex justify-between items-stretch gap-10">
           <DagTierColumn
             tierIndex={0}
             nodes={tree.tier0}

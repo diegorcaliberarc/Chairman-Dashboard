@@ -684,7 +684,7 @@ const PIXEL_HEART = [
 
 export function DittoGengarPals() {
   const [hydrated, setHydrated] = useState(false);
-  const [minimized, setMinimized] = useState(false);
+  const [minimized, setMinimized] = useState(true);
   const [dockPosition, setDockPosition] = useState<DockPosition>("bottom-left");
   const [mode, setMode] = useState<PalsMode>("auto");
   const [activeScenario, setActiveScenario] = useState<ScenarioId>("playing");
@@ -1015,7 +1015,7 @@ export function DittoGengarPals() {
         return "fixed top-3 left-1/2 -translate-x-1/2 z-[75]";
       case "bottom-left":
       default:
-        return "fixed bottom-4 left-4 md:left-[272px] z-[75]";
+        return "fixed bottom-4 left-4 md:left-[292px] z-[75]";
     }
   }, [dockPosition]);
 

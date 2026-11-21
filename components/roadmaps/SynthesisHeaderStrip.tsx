@@ -112,7 +112,7 @@ export function SynthesisHeaderStrip({
             <div
               className="absolute left-0 top-10 w-56 rounded-2xl border shadow-2xl p-1.5 z-50 space-y-0.5"
               style={{
-                backgroundColor: "var(--glass-surface)",
+                backgroundColor: "#0c111b",
                 borderColor: "var(--glass-border)",
               }}
             >
