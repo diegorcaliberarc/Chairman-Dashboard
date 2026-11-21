@@ -3,6 +3,7 @@ import { GoogleGenAI } from "@google/genai";
 import { getServerSession } from "next-auth/next";
 import { authOptions } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
+import { createTaskInPmsV2 } from "@/lib/pmsV2Writer";
 import { StrategicTree, DagNode, DagConnection, ClarifyingQuestion } from "@/lib/synthesisRoadmapTypes";
 import { resolveNodeVisual } from "@/lib/roadmapVisuals";
 
@@ -452,18 +453,28 @@ Return a single JSON object with this EXACT structure (no markdown fences, pure 
       const createdTasks = [];
       for (const chk of checks) {
         try {
-          const task = await prisma.task.create({
-            data: {
-              title: `[${nodeTitle}] ${chk.label}`,
-              pillar: domain || "all",
-              agentId: "chairman-dag-engine",
-              category: "Operations",
-              status: chk.completed ? "Done" : "To Do",
-              priority: 2,
-              userId: userId || null,
-            },
+          const v2Task = await createTaskInPmsV2({
+            name: `[${nodeTitle}] ${chk.label}`,
+            description: `Synced from Strategic Roadmap (${domain || "master"})`,
+            priority: "high",
+            spaceHint: String(domain || ""),
           });
-          createdTasks.push({ checkId: chk.id, taskId: task.id, title: task.title });
+          if (v2Task) {
+            createdTasks.push({ checkId: chk.id, taskId: v2Task.id, title: v2Task.name });
+          } else {
+            const task = await prisma.task.create({
+              data: {
+                title: `[${nodeTitle}] ${chk.label}`,
+                pillar: domain || "all",
+                agentId: "chairman-dag-engine",
+                category: "Operations",
+                status: chk.completed ? "Done" : "To Do",
+                priority: 2,
+                userId: userId || null,
+              },
+            });
+            createdTasks.push({ checkId: chk.id, taskId: task.id, title: task.title });
+          }
         } catch (e) {
           console.warn("Error creating individual PMS task:", e);
         }

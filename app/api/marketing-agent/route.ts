@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { GoogleGenerativeAI } from "@google/generative-ai";
 import { getLivingOsUserId, pgExec, pgQuery } from "@/lib/livingOsDb";
+import { createTaskInPmsV2 } from "@/lib/pmsV2Writer";
 import { prisma } from "@/lib/prisma";
 
 export const dynamic = "force-dynamic";
@@ -749,38 +750,19 @@ export async function POST(req: NextRequest) {
         console.warn("Task table insert fallback:", e);
       }
 
-      // 2. Also sync into Sovereign PMS (pms_lists / pms_tasks) if present
+      // 2. Sync directly into Sovereign PMS v2 (`public.pms_tasks_v2`)
       try {
-        let lists = await pgQuery<any>(
-          `SELECT id FROM pms_lists WHERE user_id = $1 ORDER BY created_at ASC LIMIT 1`,
-          userId
-        );
-        if (lists.length === 0) {
-          lists = await pgQuery<any>(
-            `INSERT INTO pms_lists (user_id, name, space_name)
-             VALUES ($1, 'Viral Growth & Gaming Pipeline', 'CMO Intelligence')
-             RETURNING id`,
-            userId
-          );
-        }
-        if (lists[0]?.id) {
-          const desc = `**Hook Angle:** ${intel.hook_angle}\n\n**Summary:** ${intel.summary}\n\n**Playbook:**\n${intel.actionable_playbook
-            .map((s, i) => `${i + 1}. ${s}`)
-            .join("\n")}`;
-          const pmsInserted = await pgQuery<any>(
-            `INSERT INTO pms_tasks (user_id, list_id, name, markdown_description, status, status_category, priority, tags)
-             VALUES ($1, $2::uuid, $3, $4, 'to do', 'unstarted', 'high', ARRAY[$5, $6]::text[])
-             RETURNING id`,
-            userId,
-            lists[0].id,
-            `[${intel.platform}] ${intel.title}`,
-            desc,
-            intel.stream,
-            intel.platform
-          );
-          if (!createdTaskId && pmsInserted[0]?.id) {
-            createdTaskId = String(pmsInserted[0].id);
-          }
+        const desc = `**Hook Angle:** ${intel.hook_angle}\n\n**Summary:** ${intel.summary}\n\n**Playbook:**\n${intel.actionable_playbook
+          .map((s, i) => `${i + 1}. ${s}`)
+          .join("\n")}`;
+        const v2Task = await createTaskInPmsV2({
+          name: `[${intel.platform}] ${intel.title}`,
+          description: desc,
+          priority: intel.viral_score >= 92 ? "urgent" : "high",
+          spaceHint: intel.stream === "gaming" ? "gaming" : "operations",
+        });
+        if (v2Task?.id) {
+          createdTaskId = v2Task.id;
         }
       } catch {
         // Non-blocking PMS secondary sync

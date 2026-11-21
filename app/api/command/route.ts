@@ -2,6 +2,7 @@ export const dynamic = "force-dynamic";
 
 import { NextRequest, NextResponse } from "next/server";
 import { getLivingOsUserId, pgExec, pgQuery } from "@/lib/livingOsDb";
+import { createTaskInPmsV2 } from "@/lib/pmsV2Writer";
 import {
   LifeDomain,
   CommandNorthStar,
@@ -456,44 +457,23 @@ export async function POST(req: NextRequest) {
         return NextResponse.json({ success: false, error: "No tasks provided" }, { status: 400 });
       }
 
-      // Find standard PMS List
-      const listRows = await pgQuery<any>(
-        `SELECT id FROM public.pms_lists ORDER BY created_at ASC LIMIT 1`
-      );
-      const defaultListId = listRows.length > 0 ? listRows[0].id : null;
-
-      if (!defaultListId) {
-        return NextResponse.json({ success: false, error: "No PMS List available" }, { status: 400 });
-      }
-
       const priority = sequenceType === "bottleneck" ? "urgent" : "normal";
-      const tags = [
-        sequenceType === "bottleneck" ? "BOTTLENECK" : "TAG-TEAM",
-        "COMMAND_FRAGO",
-        String(domain).toUpperCase(),
-      ];
-
-      const createdTasks: any[] = [];
+      const createdTasks: Array<{ id: string; name: string; priority: string }> = [];
       for (const tTitle of taskTitles) {
         if (!tTitle || !tTitle.trim()) continue;
-        const taskRows = await pgQuery<any>(
-          `INSERT INTO public.pms_tasks (
-            user_id, list_id, name, markdown_description, status, status_category,
-            priority, tags, is_shared, is_closed, created_at, updated_at
-          ) VALUES (
-            $1, $2::uuid, $3, $4, 'TODO', 'not_started', $5, $6, false, false, NOW(), NOW()
-          )
-          RETURNING id, name, priority, tags;`,
-          rawUserId,
-          defaultListId,
-          tTitle.trim(),
-          `Generated from Command Center FRAGO / AAR (${domain} - ${sequenceType.toUpperCase()})`,
+        const created = await createTaskInPmsV2({
+          name: tTitle.trim(),
+          description: `Generated from Command Center FRAGO / AAR (${domain} - ${sequenceType.toUpperCase()})`,
           priority,
-          tags
-        );
-        if (taskRows.length > 0) {
-          createdTasks.push(taskRows[0]);
+          spaceHint: String(domain || ""),
+        });
+        if (created) {
+          createdTasks.push(created);
         }
+      }
+
+      if (createdTasks.length === 0) {
+        return NextResponse.json({ success: false, error: "No PMS v2 List available" }, { status: 400 });
       }
 
       return NextResponse.json({

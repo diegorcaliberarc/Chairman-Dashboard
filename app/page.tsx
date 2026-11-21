@@ -168,6 +168,8 @@ export default function ChairmanHomeDashboard() {
       .catch(() => {});
   }, []);
 
+  const [pmsDefaultListId, setPmsDefaultListId] = useState<string | null>(null);
+
   const fetchCalendar = useCallback(async () => {
     if (!calConnected) return;
     setCalLoading(true);
@@ -175,7 +177,12 @@ export default function ChairmanHomeDashboard() {
       const res = await fetch("/api/calendar");
       if (res.ok) {
         const data = await res.json();
-        if (Array.isArray(data.items)) setCalendarEvents(data.items.slice(0, 5));
+        const list = Array.isArray(data.events)
+          ? data.events
+          : Array.isArray(data.items)
+            ? data.items
+            : [];
+        setCalendarEvents(list.slice(0, 5));
       }
     } catch {
     } finally {
@@ -183,18 +190,54 @@ export default function ChairmanHomeDashboard() {
     }
   }, [calConnected]);
 
+  const loadDailyFocusFromPms = useCallback(async () => {
+    try {
+      const res = await fetch("/api/pms", { cache: "no-store" });
+      if (!res.ok) return;
+      const data = await res.json();
+      if (Array.isArray(data.lists) && data.lists[0]?.id) {
+        setPmsDefaultListId(String(data.lists[0].id));
+      }
+      if (Array.isArray(data.tasks)) {
+        const mapped: FocusTask[] = data.tasks.slice(0, 12).map((t: { id: string; name: string; status_category?: string }) => ({
+          id: String(t.id),
+          title: String(t.name),
+          completed: t.status_category === "closed" || t.status_category === "done",
+        }));
+        setTasks(mapped);
+      }
+    } catch {
+      // Non-blocking focus hydration
+    }
+  }, []);
+
   useEffect(() => {
     fetchCalendar();
-  }, [fetchCalendar]);
+    void loadDailyFocusFromPms();
+  }, [fetchCalendar, loadDailyFocusFromPms]);
 
-  const handleAddTask = (e: React.FormEvent) => {
+  const handleAddTask = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!newTaskInput.trim()) return;
-    setTasks((prev) => [
-      { id: `task_${Date.now()}`, title: newTaskInput.trim(), completed: false },
-      ...prev,
-    ]);
+    const title = newTaskInput.trim();
+    if (!title) return;
+    const optimisticId = `task_${Date.now()}`;
+    setTasks((prev) => [{ id: optimisticId, title, completed: false }, ...prev]);
     setNewTaskInput("");
+    if (pmsDefaultListId) {
+      const res = await fetch("/api/pms", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          action: "create_task",
+          name: title,
+          list_id: pmsDefaultListId,
+          priority: "normal",
+        }),
+      });
+      if (res.ok) {
+        await loadDailyFocusFromPms();
+      }
+    }
   };
 
   const filteredTasks = useMemo(() => {

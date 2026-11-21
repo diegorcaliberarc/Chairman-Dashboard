@@ -86,29 +86,37 @@ async function fetchOperationalContext(
     )
   );
 
-  // 2. Nutrition Daily Log
+  // 2. Nutrition Daily Log (reads live MacroOps `daily_sitrep_logs` table)
   const macroRows = await pgQuery<{
     consumed_calories: number;
-    target_calories: number;
     consumed_protein: number;
-    target_protein: number;
     total_water_fl_oz: number;
   }>(
-    `SELECT consumed_calories, target_calories, consumed_protein, target_protein, total_water_fl_oz
-     FROM public.nutrition_daily_logs
+    `SELECT COALESCE(calories_eaten, 0)::int AS consumed_calories,
+            COALESCE(protein_g, 0)::int AS consumed_protein,
+            COALESCE(water_oz, 0)::int AS total_water_fl_oz
+     FROM public.daily_sitrep_logs
      WHERE user_id = $1
-     ORDER BY date DESC
+     ORDER BY log_date DESC
      LIMIT 1`,
     userId
   ).catch(() => []);
 
-  const macro = macroRows[0] || {
-    consumed_calories: 0,
-    target_calories: 1750,
-    consumed_protein: 0,
-    target_protein: 180,
-    total_water_fl_oz: 0,
-  };
+  const macro = macroRows[0]
+    ? {
+        consumed_calories: Number(macroRows[0].consumed_calories || 0),
+        target_calories: 1750,
+        consumed_protein: Number(macroRows[0].consumed_protein || 0),
+        target_protein: 180,
+        total_water_fl_oz: Number(macroRows[0].total_water_fl_oz || 0),
+      }
+    : {
+        consumed_calories: 0,
+        target_calories: 1750,
+        consumed_protein: 0,
+        target_protein: 180,
+        total_water_fl_oz: 0,
+      };
 
   // 3. Trading Session / Circuit Breaker
   const tradeRows = await pgQuery<{

@@ -159,7 +159,8 @@ function deterministicParse(text: string): AiLogResponse {
 export async function POST(req: NextRequest) {
   try {
     const body = await req.json();
-    const { input, activeExerciseName } = body;
+    const input = typeof body.input === "string" ? body.input : body.prompt;
+    const activeExerciseName = body.activeExerciseName;
 
     if (!input || typeof input !== "string" || !input.trim()) {
       return NextResponse.json({ error: "Missing input speech or text" }, { status: 400 });

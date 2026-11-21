@@ -509,38 +509,52 @@ export default function UnifiedMasterCalendarPage() {
   };
 
   const handleToggleChecklist = async (eventId: string, checklistId: string) => {
+    let nextCompleted = true;
     setEvents((prev) =>
       prev.map((e) => {
         if (e.id !== eventId) return e;
         return {
           ...e,
-          checklists: e.checklists.map((c) =>
-            c.id === checklistId ? { ...c, isCompleted: !c.isCompleted } : c
-          ),
+          checklists: e.checklists.map((c) => {
+            if (c.id !== checklistId) return c;
+            nextCompleted = !c.isCompleted;
+            return { ...c, isCompleted: nextCompleted };
+          }),
         };
       })
     );
-    await postCalendarOps({
-      action: "toggle_checklist",
-      eventId,
-      checklistId,
+    await fetch("/api/circadian", {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        action: "toggle_checklist",
+        checklistId,
+        isCompleted: nextCompleted,
+      }),
     });
   };
 
   const handleAddChecklist = async (eventId: string, label: string) => {
-    const res = await postCalendarOps({
-      action: "add_checklist",
-      eventId,
-      label,
+    const res = await fetch("/api/circadian", {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        action: "add_checklist",
+        eventId,
+        label,
+      }),
     });
-    if (res?.checklist) {
-      setEvents((prev) =>
-        prev.map((e) =>
-          e.id === eventId
-            ? { ...e, checklists: [...e.checklists, res.checklist] }
-            : e
-        )
-      );
+    if (res.ok) {
+      const data = await res.json();
+      if (data?.checklist) {
+        setEvents((prev) =>
+          prev.map((e) =>
+            e.id === eventId
+              ? { ...e, checklists: [...e.checklists, data.checklist] }
+              : e
+          )
+        );
+      }
     }
   };
 
@@ -675,6 +689,7 @@ export default function UnifiedMasterCalendarPage() {
         }),
       });
       await fetchCircadianEvents(selectedDate);
+      await fetchAllCalendarEvents();
     } else {
       const res = await fetch("/api/calendar-events", {
         method: "POST",
@@ -698,6 +713,7 @@ export default function UnifiedMasterCalendarPage() {
           }).catch(() => {});
         }
         await fetchCircadianEvents(selectedDate);
+        await fetchAllCalendarEvents();
       }
     }
     setIsFullEditorOpen(false);
@@ -712,6 +728,7 @@ export default function UnifiedMasterCalendarPage() {
       method: "DELETE",
     });
     await fetchCircadianEvents(selectedDate);
+    await fetchAllCalendarEvents();
   };
 
   const handleTriggerSync = async () => {
@@ -918,13 +935,13 @@ export default function UnifiedMasterCalendarPage() {
         }
       }}
       onCreateAppointment={async (payload) => {
-        await postCalendarOps({ action: "create_appointment", appointment: payload });
+        await postCalendarOps({ action: "create_appointment", ...payload });
       }}
       onUpdateAppointment={async (id, patch) => {
-        await postCalendarOps({ action: "update_appointment", appointmentId: id, patch });
+        await postCalendarOps({ action: "update_appointment", id, ...patch });
       }}
       onDeleteAppointment={async (id) => {
-        await postCalendarOps({ action: "delete_appointment", appointmentId: id });
+        await postCalendarOps({ action: "delete_appointment", id });
       }}
     />
   );

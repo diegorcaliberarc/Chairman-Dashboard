@@ -680,17 +680,23 @@ export default function TitanWorkoutsPage() {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
-            prompt: input,
-            currentExercises: currentExercises.map((e) => ({ id: e.id, name: e.name })),
+            input,
+            activeExerciseName: currentExercises[0]?.name || "Incline Barbell Bench Press",
           }),
         });
 
         if (!res.ok) throw new Error("API call failed");
         const data = await res.json();
-        const action = data.action;
+        const actionType = typeof data.action === "string" ? data.action : data.action?.type;
 
-        if (action.type === "log_set" && action.payload) {
-          const { exerciseId, exerciseName, weightLbs, reps, rpe, setsCount } = action.payload;
+        if (actionType === "LOG_SET" || actionType === "LOG_MULTIPLE_SETS" || actionType === "log_set") {
+          const payload = data.action?.payload || data;
+          const exerciseId = payload.exerciseId;
+          const exerciseName = payload.exerciseName;
+          const weightLbs = payload.weightLbs;
+          const reps = payload.reps;
+          const rpe = payload.rpe;
+          const setsCount = Array.isArray(payload.sets) ? payload.sets.length : (payload.setsCount || 1);
 
           setRoutinesState((prev) => {
             const dayExs = [...(prev[selectedDayIndex] || [])];
@@ -752,23 +758,28 @@ export default function TitanWorkoutsPage() {
           });
 
           // Start rest timer
-          setRestSeconds(90);
+          setRestSeconds(data.restSeconds || 90);
           setIsRestActive(true);
           setLastFeedbackMessage(
-            data.message ||
+            data.feedbackMessage ||
+              data.message ||
               `Logged ${setsCount || 1} set(s) for ${exerciseName || "exercise"}: ${weightLbs} lbs x ${reps} reps!`
           );
-        } else if (action.type === "update_measurement" && action.payload) {
-          const { part, value } = action.payload;
-          if (part && typeof value === "number") {
-            handleUpdateMeasurement(part, value);
+        } else if (actionType === "UPDATE_BIOMETRIC" || actionType === "update_measurement") {
+          const updates = data.biometricUpdates || (data.action?.payload ? { [data.action.payload.part]: data.action.payload.value } : {});
+          for (const [part, val] of Object.entries(updates)) {
+            if (typeof val === "number") {
+              handleUpdateMeasurement(part as keyof BiometricDimensions, val);
+            }
           }
-        } else if (action.type === "start_timer" && action.payload?.seconds) {
-          setRestSeconds(action.payload.seconds);
+          setLastFeedbackMessage(data.feedbackMessage || data.message || "Updated biometric measurements.");
+        } else if (actionType === "START_REST_TIMER" || actionType === "start_timer") {
+          const secs = data.restSeconds || data.action?.payload?.seconds || 90;
+          setRestSeconds(secs);
           setIsRestActive(true);
-          setLastFeedbackMessage(`Rest timer set to ${action.payload.seconds} seconds.`);
+          setLastFeedbackMessage(data.feedbackMessage || `Rest timer set to ${secs} seconds.`);
         } else {
-          setLastFeedbackMessage(data.message || `Processed: "${input}"`);
+          setLastFeedbackMessage(data.feedbackMessage || data.message || `Processed: "${input}"`);
         }
       } catch (err) {
         console.error("AI logging error:", err);
