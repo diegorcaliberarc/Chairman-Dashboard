@@ -1,8 +1,37 @@
 import { NextRequest, NextResponse } from "next/server";
-import { pgExec, pgQuery } from "@/lib/livingOsDb";
+import { pgExec, pgQuery, getLivingOsUserId } from "@/lib/livingOsDb";
 import { CANONICAL_FOOD_IMAGE_KEYS } from "@/lib/foodImages";
 
 export const dynamic = "force-dynamic";
+
+async function syncDailySitrepMacros(logDate: string): Promise<void> {
+  try {
+    const userId = await getLivingOsUserId();
+    const sums = await pgQuery<{ total_cal: string; total_prot: string }>(
+      `SELECT COALESCE(SUM(calories), 0)::text AS total_cal,
+              COALESCE(SUM(protein_g), 0)::text AS total_prot
+       FROM food_entries
+       WHERE log_date = $1::date`,
+      logDate
+    );
+    const totalCal = Math.round(Number(sums[0]?.total_cal || 0));
+    const totalProt = Math.round(Number(sums[0]?.total_prot || 0));
+    await pgExec(
+      `INSERT INTO public.daily_sitrep_logs (user_id, log_date, calories_eaten, protein_g)
+       VALUES ($1, $2::date, $3, $4)
+       ON CONFLICT (user_id, log_date) DO UPDATE SET
+         calories_eaten = EXCLUDED.calories_eaten,
+         protein_g = EXCLUDED.protein_g,
+         updated_at = NOW()`,
+      userId,
+      logDate,
+      totalCal,
+      totalProt
+    );
+  } catch (err) {
+    console.warn("syncDailySitrepMacros skipped:", err);
+  }
+}
 
 function getTodayIso(): string {
   const now = new Date();
@@ -213,6 +242,7 @@ export async function POST(req: NextRequest) {
         Boolean(is_estimated)
       );
 
+      await syncDailySitrepMacros(date);
       return NextResponse.json({ success: true, entry: rows[0] });
     }
 
@@ -268,6 +298,7 @@ export async function POST(req: NextRequest) {
         if (rows && rows[0]) created.push(rows[0]);
       }
 
+      await syncDailySitrepMacros(date);
       return NextResponse.json({ success: true, count: created.length, entries: created });
     }
 
@@ -393,6 +424,14 @@ export async function PUT(req: NextRequest) {
       Boolean(is_estimated)
     );
 
+    if (rows[0]?.log_date) {
+      const updatedDate =
+        rows[0].log_date instanceof Date
+          ? rows[0].log_date.toISOString().slice(0, 10)
+          : String(rows[0].log_date).slice(0, 10);
+      await syncDailySitrepMacros(updatedDate);
+    }
+
     return NextResponse.json({ success: true, entry: rows[0] });
   } catch (error: any) {
     console.error("PUT /api/nutrition error:", error);
@@ -409,7 +448,17 @@ export async function DELETE(req: NextRequest) {
       return NextResponse.json({ error: "Entry id is required" }, { status: 400 });
     }
 
-    await pgExec(`DELETE FROM food_entries WHERE id = $1::uuid`, id);
+    const deleted = await pgQuery<{ log_date: string | Date }>(
+      `DELETE FROM food_entries WHERE id = $1::uuid RETURNING log_date`,
+      id
+    );
+    if (deleted[0]?.log_date) {
+      const delDate =
+        deleted[0].log_date instanceof Date
+          ? deleted[0].log_date.toISOString().slice(0, 10)
+          : String(deleted[0].log_date).slice(0, 10);
+      await syncDailySitrepMacros(delDate);
+    }
     return NextResponse.json({ success: true, deleted_id: id });
   } catch (error: any) {
     console.error("DELETE /api/nutrition error:", error);

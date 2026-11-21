@@ -71,3 +71,14 @@ These five cross-cutting failure patterns account for the vast majority of why p
 ### Wave 4 — Live Executive Telemetry Auto-Sync
 1. Wire `/kpis` to compute real historical sparklines from `kpi_scorecard_snapshots`, expose the 8 C-suite sectors already defined in `executiveSectorPhysics.ts`, and auto-pull live metrics from `/budget`, `/macro-ops`, `/workouts`, and `/pods`.
 2. Sync `/macro-ops` AI log/edit/delete mutations back to `daily_sitrep_logs` and unify macro targets across all cards.
+
+---
+
+## 4. Post-Remediation Execution Status (Waves 1–4 Completed)
+
+| Wave | Status | Key Shipped Changes |
+| :---: | :---: | :--- |
+| **Wave 1** | **DONE** (`9aaec3a8`) | Unified `lib/pmsV2Writer.ts` for `/command`, `/roadmaps`, and `/marketing-agent` into `pms_tasks_v2`; fixed `/` calendar `data.events` & live PMS Daily Focus; fixed `/calendar` checklist `PATCH /api/circadian` & flat Yearly Appointment CRUD + grid refresh; aligned `/workouts` `/api/titan/ai-log` contract; fixed `/mindset` to query `daily_sitrep_logs`. |
+| **Wave 2** | **DONE** | Added Postgres-backed `/api/skills` (`GET`/`POST`/`PATCH`/`DELETE`) + Edit UI on `/skills`; added Postgres-backed `/api/artifacts` with versioning, AI Draft generation, Edit UI, and `ReactMarkdown` preview on `/artifacts`; exposed `Mermaid Architecture` tab, persisted whiteboard nodes/edges, and replaced `window.alert()` with non-blocking toast on `/org-chart`. |
+| **Wave 3** | **DONE** | Enforced server-side `403` + client-side lock on `/caliber-arc` circuit breaker + added `update_trade`, `create_session`, `delete_session`; removed fabricated `0.82 * days` budget projections, deduplicated `generate_recurring_shifts` calendar inserts, and wired bank account delete on `/budget`; exposed Tier 3 `business_team` pod + `DELETE /api/pods`; added `PATCH`/`DELETE` to `/api/family-hub`; hydrated `/pms` `TaskCalendarView` to current month; added slug collision suffixing & empty-title guard on `/vault`. |
+| **Wave 4** | **DONE** | Replaced modulo-jitter sparklines on `/kpis` (`useKpiScorecard.ts`) with real historical snapshot values + surfaced save errors; synchronized `/macro-ops` (`app/api/nutrition/route.ts`) `POST`/`PUT`/`DELETE` mutations back into `public.daily_sitrep_logs`. |

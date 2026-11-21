@@ -86,10 +86,39 @@ const nodeTypes = {
 // ─────────────────────────────────────────────────────────────────────────────
 // Mode B: Freeform Miro / Lucidspark Canvas Engine
 // ─────────────────────────────────────────────────────────────────────────────
+const WHITEBOARD_STORAGE_KEY = "chairman-org-whiteboard-v1";
+
 function MiroLucidCanvasEngine() {
   const initialTemplate = TOPOLOGY_TEMPLATES[0];
   const [nodes, setNodes, onNodesChange] = useNodesState(initialTemplate.nodes);
   const [edges, setEdges, onEdgesChange] = useEdgesState(initialTemplate.edges);
+  const [hydrated, setHydrated] = useState(false);
+
+  useEffect(() => {
+    try {
+      const raw = localStorage.getItem(WHITEBOARD_STORAGE_KEY);
+      if (raw) {
+        const parsed = JSON.parse(raw) as { nodes?: Node[]; edges?: Edge[] };
+        if (Array.isArray(parsed.nodes) && parsed.nodes.length > 0) {
+          setNodes(parsed.nodes);
+        }
+        if (Array.isArray(parsed.edges)) {
+          setEdges(parsed.edges);
+        }
+      }
+    } catch {}
+    setHydrated(true);
+  }, [setNodes, setEdges]);
+
+  useEffect(() => {
+    if (!hydrated) return;
+    try {
+      localStorage.setItem(
+        WHITEBOARD_STORAGE_KEY,
+        JSON.stringify({ nodes, edges })
+      );
+    } catch {}
+  }, [hydrated, nodes, edges]);
 
   const [interactionMode, setInteractionMode] = useState<"select" | "pan">("select");
   const [edgeStyle, setEdgeStyle] = useState<"smoothstep" | "default" | "straight">("smoothstep");
@@ -313,6 +342,7 @@ function MiroLucidCanvasEngine() {
 // ─────────────────────────────────────────────────────────────────────────────
 export default function OrgChartTopologyPage() {
   const [engineMode, setEngineMode] = useState<"roadmap" | "mermaid" | "whiteboard">("roadmap");
+  const [statusToast, setStatusToast] = useState<string | null>(null);
   const [spaces, setSpaces] = useState<DiagramSpace[]>(INITIAL_DIAGRAM_SPACES);
   const [activeSpaceId, setActiveSpaceId] = useState<string>("master");
   const [modules, setModules] = useState<ArchitectureNode[]>(KNOWN_MODULES_REGISTRY);
@@ -521,6 +551,20 @@ export default function OrgChartTopologyPage() {
               </button>
 
               <button
+                onClick={() => setEngineMode("mermaid")}
+                className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold transition ${
+                  engineMode === "mermaid"
+                    ? "bg-emerald-500/20 text-emerald-300 border border-emerald-500/30 shadow-sm"
+                    : "text-zinc-400 hover:text-white"
+                }`}
+                title="Auto-Directed Mermaid Subsystem Architecture Viewer"
+                data-testid="org-mode-mermaid"
+              >
+                <GitBranch size={13} className={engineMode === "mermaid" ? "text-emerald-300" : "text-zinc-400"} />
+                <span>Mermaid Architecture</span>
+              </button>
+
+              <button
                 onClick={() => setEngineMode("whiteboard")}
                 className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold transition ${
                   engineMode === "whiteboard"
@@ -535,6 +579,19 @@ export default function OrgChartTopologyPage() {
             </div>
           </div>
         </div>
+
+        {statusToast && (
+          <div className="flex items-center justify-between gap-3 px-4 py-2.5 rounded-xl bg-emerald-500/15 border border-emerald-500/30 text-emerald-200 text-xs font-medium">
+            <span>{statusToast}</span>
+            <button
+              type="button"
+              onClick={() => setStatusToast(null)}
+              className="text-emerald-300/80 hover:text-emerald-100 text-xs px-2 py-0.5 rounded bg-emerald-500/20"
+            >
+              Dismiss
+            </button>
+          </div>
+        )}
 
         {/* Master Canvas Container */}
         <div className="relative w-full">
@@ -574,7 +631,7 @@ export default function OrgChartTopologyPage() {
                   }
                 }}
                 onTriggerBackwardChain={() => {
-                  alert("✓ Backward Chain Audit: Validated 100% convergence to Goal!");
+                  setStatusToast("Backward Chain Audit: Validated 100% convergence to Goal.");
                 }}
                 isSynthesizing={isRoadmapSynthesizing}
               />
@@ -607,13 +664,15 @@ export default function OrgChartTopologyPage() {
                   tree={activeRoadmapTree}
                   zoomScale={roadmapZoom}
                   onNodeClick={(id) => setSelectedRoadmapNodeId(id)}
-                  onLockGoal={() => alert("⚡ Vector Locked: 100 Billion % Synthesis Integrity Established!")}
+                  onLockGoal={() =>
+                    setStatusToast("Vector Locked: Synthesis Integrity Established.")
+                  }
                 />
               </div>
               <MobileDagAccordion
                 tree={activeRoadmapTree}
                 onNodeClick={(id) => setSelectedRoadmapNodeId(id)}
-                onLockGoal={() => alert("⚡ Vector Locked!")}
+                onLockGoal={() => setStatusToast("Vector Locked.")}
               />
             </div>
           ) : engineMode === "mermaid" ? (

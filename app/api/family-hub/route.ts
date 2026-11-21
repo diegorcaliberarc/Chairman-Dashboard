@@ -828,3 +828,85 @@ export async function POST(req: NextRequest) {
     );
   }
 }
+
+export async function PATCH(req: NextRequest) {
+  try {
+    const userId = await getLivingOsUserId();
+    const body = await req.json();
+    const entityId = String(body.entity_id || body.id || "").trim();
+    if (!entityId) {
+      return NextResponse.json({ error: "entity_id is required" }, { status: 400 });
+    }
+
+    const updates: string[] = [];
+    const params: unknown[] = [];
+
+    if (body.schedule_blocks !== undefined) {
+      params.push(JSON.stringify(body.schedule_blocks));
+      updates.push(`schedule_blocks = $${params.length}::jsonb`);
+    }
+    if (body.medications !== undefined) {
+      params.push(JSON.stringify(body.medications));
+      updates.push(`medications = $${params.length}::jsonb`);
+    }
+    if (body.target_water_oz !== undefined) {
+      params.push(Math.max(0, Number(body.target_water_oz) || 0));
+      updates.push(`target_water_oz = $${params.length}`);
+    }
+    if (body.target_food_grams !== undefined) {
+      params.push(Math.max(0, Number(body.target_food_grams) || 0));
+      updates.push(`target_food_grams = $${params.length}`);
+    }
+    if (body.notes !== undefined) {
+      params.push(String(body.notes));
+      updates.push(`notes = $${params.length}`);
+    }
+
+    if (updates.length === 0) {
+      return NextResponse.json({ error: "No updatable fields provided" }, { status: 400 });
+    }
+
+    params.push(entityId, userId);
+    const updated = await pgQuery<any>(
+      `UPDATE public.household_entities
+       SET ${updates.join(", ")}
+       WHERE id = $${params.length - 1}::uuid AND user_id = $${params.length}
+       RETURNING *`,
+      ...params
+    );
+    if (updated.length === 0) {
+      return NextResponse.json({ error: "Entity not found" }, { status: 404 });
+    }
+    return NextResponse.json({ ok: true, entity: updated[0] });
+  } catch (error: any) {
+    console.error("[PATCH /api/family-hub] Error:", error);
+    return NextResponse.json(
+      { error: error?.message || "Failed to update household entity" },
+      { status: 500 }
+    );
+  }
+}
+
+export async function DELETE(req: NextRequest) {
+  try {
+    const userId = await getLivingOsUserId();
+    const logId = req.nextUrl.searchParams.get("logId")?.trim() || "";
+    if (!logId) {
+      return NextResponse.json({ error: "logId is required" }, { status: 400 });
+    }
+    await pgExec(
+      `DELETE FROM public.entity_telemetry_logs l
+       USING public.household_entities e
+       WHERE l.entity_id = e.id AND l.id = $1::uuid AND e.user_id = $2`,
+      logId,
+      userId
+    );
+    return NextResponse.json({ ok: true, deleted: true, logId });
+  } catch (error: any) {
+    console.error("[DELETE /api/family-hub] Error:", error);
+    return NextResponse.json(
+      { error: error?.message || "Failed to delete telemetry log" },
+      { status: 500 }
+    );
+  }
+}

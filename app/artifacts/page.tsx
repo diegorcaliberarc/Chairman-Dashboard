@@ -1,6 +1,8 @@
 "use client";
 
 import React, { useEffect, useMemo, useState } from "react";
+import ReactMarkdown from "react-markdown";
+import remarkGfm from "remark-gfm";
 import { ExecutiveModuleShell } from "@/components/chairman/ExecutiveModuleShell";
 import {
   Sparkles,
@@ -16,6 +18,8 @@ import {
   Trash2,
   Eye,
   X,
+  Pencil,
+  Wand2,
 } from "lucide-react";
 
 type ArtifactCategory =
@@ -35,6 +39,7 @@ interface WorkspaceArtifact {
   archived: boolean;
   createdAt: string;
   accent: string;
+  version?: number;
 }
 
 const ARTIFACT_TEMPLATES: Array<{
@@ -118,30 +123,51 @@ export default function ArtifactsPage() {
   const [previewArtifact, setPreviewArtifact] = useState<WorkspaceArtifact | null>(null);
 
   // Form State
+  const [editingArtifactId, setEditingArtifactId] = useState<string | null>(null);
   const [draftTitle, setDraftTitle] = useState("");
   const [draftCategory, setDraftCategory] = useState<ArtifactCategory>("Marketing");
   const [draftSummary, setDraftSummary] = useState("");
   const [draftContent, setDraftContent] = useState("");
   const [draftAccent, setDraftAccent] = useState("#4984fd");
+  const [isSaving, setIsSaving] = useState(false);
+  const [isGeneratingAi, setIsGeneratingAi] = useState(false);
 
-  useEffect(() => {
-    try {
-      const raw = localStorage.getItem(STORAGE_KEY);
-      if (raw) {
-        const parsed = JSON.parse(raw);
-        if (Array.isArray(parsed)) setArtifacts(parsed);
-      }
-    } catch {}
-  }, []);
-
-  const saveArtifacts = (next: WorkspaceArtifact[]) => {
-    setArtifacts(next);
+  const cacheLocal = (next: WorkspaceArtifact[]) => {
     try {
       localStorage.setItem(STORAGE_KEY, JSON.stringify(next));
     } catch {}
   };
 
+  useEffect(() => {
+    let active = true;
+    async function hydrateArtifacts() {
+      try {
+        const res = await fetch("/api/artifacts");
+        if (res.ok) {
+          const data = (await res.json()) as { artifacts?: WorkspaceArtifact[] };
+          if (active && Array.isArray(data.artifacts)) {
+            setArtifacts(data.artifacts);
+            cacheLocal(data.artifacts);
+            return;
+          }
+        }
+      } catch {}
+      try {
+        const raw = localStorage.getItem(STORAGE_KEY);
+        if (raw && active) {
+          const parsed = JSON.parse(raw);
+          if (Array.isArray(parsed)) setArtifacts(parsed);
+        }
+      } catch {}
+    }
+    void hydrateArtifacts();
+    return () => {
+      active = false;
+    };
+  }, []);
+
   const openBuilder = (tpl?: (typeof ARTIFACT_TEMPLATES)[number]) => {
+    setEditingArtifactId(null);
     if (tpl) {
       setDraftTitle(tpl.title);
       setDraftCategory(tpl.category);
@@ -158,31 +184,121 @@ export default function ArtifactsPage() {
     setModalOpen(true);
   };
 
-  const handleCreateArtifact = (e: React.FormEvent) => {
+  const openEditArtifact = (item: WorkspaceArtifact) => {
+    setEditingArtifactId(item.id);
+    setDraftTitle(item.title);
+    setDraftCategory(item.category);
+    setDraftSummary(item.summary);
+    setDraftContent(item.content);
+    setDraftAccent(item.accent);
+    setModalOpen(true);
+  };
+
+  const handleGenerateAiDraft = async () => {
+    if (isGeneratingAi) return;
+    setIsGeneratingAi(true);
+    try {
+      const res = await fetch("/api/artifacts", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          action: "generate_ai",
+          title: draftTitle.trim() || `${draftCategory} Deliverable`,
+          category: draftCategory,
+          summary: draftSummary.trim(),
+        }),
+      });
+      if (res.ok) {
+        const data = (await res.json()) as { content?: string };
+        if (data.content) setDraftContent(data.content);
+      }
+    } finally {
+      setIsGeneratingAi(false);
+    }
+  };
+
+  const handleSaveArtifact = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!draftTitle.trim()) return;
-    const item: WorkspaceArtifact = {
-      id: `art_${Date.now()}`,
-      title: draftTitle.trim(),
-      category: draftCategory,
-      summary: draftSummary.trim() || `${draftCategory} deliverable`,
-      content: draftContent.trim(),
-      archived: false,
-      createdAt: new Date().toISOString(),
-      accent: draftAccent,
-    };
-    saveArtifacts([item, ...artifacts]);
-    setModalOpen(false);
-    setActiveTab("all");
+    if (!draftTitle.trim() || isSaving) return;
+    setIsSaving(true);
+    try {
+      const payload = {
+        id: editingArtifactId || undefined,
+        title: draftTitle.trim(),
+        category: draftCategory,
+        summary: draftSummary.trim() || `${draftCategory} deliverable`,
+        content: draftContent.trim(),
+        accent: draftAccent,
+      };
+      const res = await fetch("/api/artifacts", {
+        method: editingArtifactId ? "PATCH" : "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload),
+      });
+      if (res.ok) {
+        const data = (await res.json()) as { artifact?: WorkspaceArtifact };
+        if (data.artifact) {
+          const saved = data.artifact;
+          const next = editingArtifactId
+            ? artifacts.map((a) => (a.id === editingArtifactId ? saved : a))
+            : [saved, ...artifacts];
+          setArtifacts(next);
+          cacheLocal(next);
+          setModalOpen(false);
+          setEditingArtifactId(null);
+          setActiveTab("all");
+          return;
+        }
+      }
+      const existing = artifacts.find((a) => a.id === editingArtifactId);
+      const fallback: WorkspaceArtifact = {
+        id: editingArtifactId || `art_${Date.now()}`,
+        title: payload.title,
+        category: payload.category,
+        summary: payload.summary,
+        content: payload.content,
+        archived: existing?.archived ?? false,
+        createdAt: existing?.createdAt ?? new Date().toISOString(),
+        accent: payload.accent,
+        version: (existing?.version || 0) + 1,
+      };
+      const next = editingArtifactId
+        ? artifacts.map((a) => (a.id === editingArtifactId ? fallback : a))
+        : [fallback, ...artifacts];
+      setArtifacts(next);
+      cacheLocal(next);
+      setModalOpen(false);
+      setEditingArtifactId(null);
+      setActiveTab("all");
+    } finally {
+      setIsSaving(false);
+    }
   };
 
-  const toggleArchive = (id: string) => {
-    saveArtifacts(artifacts.map((a) => (a.id === id ? { ...a, archived: !a.archived } : a)));
+  const toggleArchive = async (id: string) => {
+    const target = artifacts.find((a) => a.id === id);
+    if (!target) return;
+    const nextArchived = !target.archived;
+    const next = artifacts.map((a) => (a.id === id ? { ...a, archived: nextArchived } : a));
+    setArtifacts(next);
+    cacheLocal(next);
+    try {
+      await fetch("/api/artifacts", {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ id, archived: nextArchived }),
+      });
+    } catch {}
   };
 
-  const deleteArtifact = (id: string) => {
-    saveArtifacts(artifacts.filter((a) => a.id !== id));
+  const deleteArtifact = async (id: string) => {
+    const next = artifacts.filter((a) => a.id !== id);
+    setArtifacts(next);
+    cacheLocal(next);
     if (previewArtifact?.id === id) setPreviewArtifact(null);
+    try {
+      await fetch(`/api/artifacts?id=${encodeURIComponent(id)}`, { method: "DELETE" });
+    } catch {}
   };
 
   const filteredArtifacts = useMemo(() => {
@@ -385,9 +501,14 @@ export default function ArtifactsPage() {
                     >
                       {item.category}
                     </span>
-                    <span className="text-[11px] opacity-55">
-                      {new Date(item.createdAt).toLocaleDateString()}
-                    </span>
+                    <div className="flex items-center gap-1.5">
+                      <span className="text-[10px] font-mono px-1.5 py-0.5 rounded bg-white/10 opacity-75">
+                        v{item.version || 1}
+                      </span>
+                      <span className="text-[11px] opacity-55">
+                        {new Date(item.createdAt).toLocaleDateString()}
+                      </span>
+                    </div>
                   </div>
                   <h3 className="text-[16px] font-medium">{item.title}</h3>
                   <p className="text-[13px] opacity-75 line-clamp-2">{item.summary}</p>
@@ -406,6 +527,15 @@ export default function ArtifactsPage() {
                     <span>Open preview</span>
                   </button>
                   <div className="flex items-center gap-1">
+                    <button
+                      type="button"
+                      onClick={() => openEditArtifact(item)}
+                      className="p-1.5 rounded-lg opacity-60 hover:opacity-100 hover:text-[#4984fd]"
+                      title="Edit artifact"
+                      data-testid={`artifact-edit-${item.id}`}
+                    >
+                      <Pencil size={14} />
+                    </button>
                     <button
                       type="button"
                       onClick={() => toggleArchive(item.id)}
@@ -442,17 +572,22 @@ export default function ArtifactsPage() {
             }}
           >
             <div className="flex items-center justify-between">
-              <h3 className="text-[19px] font-medium">Create Artifact</h3>
+              <h3 className="text-[19px] font-medium">
+                {editingArtifactId ? "Edit Artifact" : "Create Artifact"}
+              </h3>
               <button
                 type="button"
-                onClick={() => setModalOpen(false)}
+                onClick={() => {
+                  setModalOpen(false);
+                  setEditingArtifactId(null);
+                }}
                 className="p-1.5 rounded-lg opacity-70 hover:opacity-100"
               >
                 <X size={18} />
               </button>
             </div>
 
-            <form onSubmit={handleCreateArtifact} className="space-y-4">
+            <form onSubmit={handleSaveArtifact} className="space-y-4">
               <div>
                 <label className="block text-[12px] opacity-75 mb-1">Artifact Title</label>
                 <input
@@ -511,9 +646,21 @@ export default function ArtifactsPage() {
               </div>
 
               <div>
-                <label className="block text-[12px] opacity-75 mb-1">
-                  Content / Spec (Markdown)
-                </label>
+                <div className="flex items-center justify-between mb-1">
+                  <label className="block text-[12px] opacity-75">
+                    Content / Spec (Markdown)
+                  </label>
+                  <button
+                    type="button"
+                    onClick={handleGenerateAiDraft}
+                    disabled={isGeneratingAi}
+                    className="inline-flex items-center gap-1.5 text-[11px] font-medium px-2.5 py-1 rounded-md border border-[#4984fd]/40 bg-[#4984fd]/15 text-[#4984fd] hover:bg-[#4984fd]/25 disabled:opacity-50"
+                    data-testid="artifact-ai-generate"
+                  >
+                    <Wand2 size={12} />
+                    <span>{isGeneratingAi ? "Generating..." : "AI Draft"}</span>
+                  </button>
+                </div>
                 <textarea
                   rows={5}
                   value={draftContent}
@@ -573,13 +720,15 @@ export default function ArtifactsPage() {
               </button>
             </div>
             <div
-              className="p-4 rounded-[12px] border text-[14px] leading-[1.65] whitespace-pre-wrap max-h-[60vh] overflow-y-auto"
+              className="p-4 rounded-[12px] border text-[14px] leading-[1.65] max-h-[60vh] overflow-y-auto prose prose-invert prose-sm max-w-none"
               style={{
                 backgroundColor: "var(--glass-surface)",
                 borderColor: "var(--glass-border)",
               }}
             >
-              {previewArtifact.content || previewArtifact.summary}
+              <ReactMarkdown remarkPlugins={[remarkGfm]}>
+                {previewArtifact.content || previewArtifact.summary}
+              </ReactMarkdown>
             </div>
           </div>
         </div>

@@ -53,7 +53,10 @@ export function useKpiScorecard() {
       .catch(() => {});
   }, []);
 
+  const [saveError, setSaveError] = useState<string | null>(null);
+
   const handleSave = useCallback(async (metric: Metric) => {
+    setSaveError(null);
     setMetrics((prev) => {
       const idx = prev.findIndex(
         (m) =>
@@ -82,9 +85,11 @@ export function useKpiScorecard() {
           }
           return [...prev, saved];
         });
+      } else {
+        setSaveError(`Failed to persist ${metric.metricName} update.`);
       }
     } catch {
-      // Optimistic state retained on transient network failure
+      setSaveError(`Network error saving ${metric.metricName}.`);
     }
   }, []);
 
@@ -161,7 +166,7 @@ export function useKpiScorecard() {
       overallScore,
     ];
     while (overallTrend.length < 6) {
-      overallTrend.unshift(Math.max(0, overallScore - (6 - overallTrend.length) * 3));
+      overallTrend.unshift(overallScore);
     }
 
     return {
@@ -178,10 +183,10 @@ export function useKpiScorecard() {
 
   const getKpiSparklinePoints = useCallback(
     (row: EvaluatedKpiRow, idxInSector: number): number[] => {
-      const hist = snapshots.slice(-5).map((s, sIdx) => {
+      void idxInSector;
+      const hist = snapshots.slice(-5).map((s) => {
         const base = s.sector_scores?.[row.sectorId] ?? s.overall_score ?? row.kpiPoints;
-        const offset = ((idxInSector + sIdx) % 3 - 1) * 3;
-        return Math.max(0, Math.min(100, base + offset));
+        return Math.max(0, Math.min(100, base));
       });
       while (hist.length < 5) {
         hist.unshift(row.kpiPoints);
@@ -286,6 +291,7 @@ export function useKpiScorecard() {
     inlineDrafts,
     setDraftValue,
     savedFlashKey,
+    saveError,
     checkInOpen,
     setCheckInOpen,
     checkInCadence,

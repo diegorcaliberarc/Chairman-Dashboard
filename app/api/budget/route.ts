@@ -268,18 +268,15 @@ async function buildConnectedBudgetYear(userId: string, year: number) {
       const workedDays = Number(sRow?.worked_days ?? 0);
       const workedShifts = Number(sRow?.worked_shifts ?? 0);
 
-      // If user has logged shifts in month m, use logged actual pay & scheduled projection;
-      // for unlogged months in the 12-month horizon, project baseline shift baseline so 12-month comparison chart is complete and realistic
+      // Use actual logged shifts for month m; unlogged months report 0 actuals rather than fabricated pay/expenses.
       const hasShiftLogs = workedDays > 0;
       const shiftAnticipatedPay = scheduledShiftMonthlyProjection;
       const shiftActualPay = hasShiftLogs
         ? Number(sRow?.act_pay ?? workedShifts * shiftConfig.payPerShift)
-        : Math.round(
-            shiftConfig.totalScheduledDays * 0.82 * shiftConfig.payPerShift
-          );
+        : 0;
       const shiftDailyExpenses = hasShiftLogs
         ? Number(sRow?.shift_exp ?? 0)
-        : Math.round(shiftConfig.totalScheduledDays * 0.82 * 16);
+        : 0;
 
       const aRow = apptAggRows.find((r) => Number(r.m) === m);
       const appointmentCount = Number(aRow?.appt_count ?? 0);
@@ -334,12 +331,8 @@ async function buildConnectedBudgetYear(userId: string, year: number) {
         monthShort: MONTH_SHORT[idx],
         monthLabel: MONTH_FULL[idx],
         targets,
-        workedDays: hasShiftLogs
-          ? workedDays
-          : Math.round(shiftConfig.totalScheduledDays * 0.82),
-        workedShifts: hasShiftLogs
-          ? workedShifts
-          : Math.round(shiftConfig.totalScheduledDays * 0.82),
+        workedDays: hasShiftLogs ? workedDays : 0,
+        workedShifts: hasShiftLogs ? workedShifts : 0,
         scheduledDays: shiftConfig.totalScheduledDays,
         shiftAnticipatedPay,
         shiftActualPay,
@@ -661,16 +654,27 @@ export async function POST(req: NextRequest) {
         );
 
         if (syncToCalendar) {
-          await pgExec(
-            `INSERT INTO yearly_appointments (user_id, title, category, appointment_date, start_time, end_time, accent_color, anticipated_pay, actual_pay, notes)
-             VALUES ($1, $2, 'work', $3::date, $4, $5, '#10b981', $6, $6, 'Auto-generated from Workdays & Shift Calculator')`,
+          const shiftTitle = `${roleLabel} Shift`;
+          const existingAppt = await pgQuery<{ id: string }>(
+            `SELECT id FROM yearly_appointments
+             WHERE user_id = $1 AND appointment_date = $2::date AND title = $3
+             LIMIT 1`,
             userId,
-            `${roleLabel} Shift`,
             iso,
-            startTime,
-            endTime,
-            payPerShift
+            shiftTitle
           );
+          if (existingAppt.length === 0) {
+            await pgExec(
+              `INSERT INTO yearly_appointments (user_id, title, category, appointment_date, start_time, end_time, accent_color, anticipated_pay, actual_pay, notes)
+               VALUES ($1, $2, 'work', $3::date, $4, $5, '#10b981', $6, $6, 'Auto-generated from Workdays & Shift Calculator')`,
+              userId,
+              shiftTitle,
+              iso,
+              startTime,
+              endTime,
+              payPerShift
+            );
+          }
         }
       }
     }

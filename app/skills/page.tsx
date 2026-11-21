@@ -16,7 +16,7 @@ import {
   Trash2,
   Play,
   X,
-  Upload,
+  Pencil,
 } from "lucide-react";
 
 interface CustomSkill {
@@ -103,11 +103,13 @@ export default function SkillsPage() {
   const [modalOpen, setModalOpen] = useState(false);
 
   // Modal Form State
+  const [editingSkillId, setEditingSkillId] = useState<string | null>(null);
   const [draftName, setDraftName] = useState("");
   const [draftDesc, setDraftDesc] = useState("");
   const [draftCategory, setDraftCategory] = useState("Operations");
   const [draftInstructions, setDraftInstructions] = useState("");
   const [draftAccent, setDraftAccent] = useState("#4984fd");
+  const [isSaving, setIsSaving] = useState(false);
 
   // Quick Run Preview State
   const [runningSkill, setRunningSkill] = useState<CustomSkill | null>(null);
@@ -115,24 +117,42 @@ export default function SkillsPage() {
   const [runOutput, setRunOutput] = useState<string | null>(null);
   const [isRunning, setIsRunning] = useState(false);
 
-  useEffect(() => {
-    try {
-      const raw = localStorage.getItem(STORAGE_KEY);
-      if (raw) {
-        const parsed = JSON.parse(raw);
-        if (Array.isArray(parsed)) setSkills(parsed);
-      }
-    } catch {}
-  }, []);
-
-  const saveSkills = (next: CustomSkill[]) => {
-    setSkills(next);
+  const cacheLocal = (next: CustomSkill[]) => {
     try {
       localStorage.setItem(STORAGE_KEY, JSON.stringify(next));
     } catch {}
   };
 
+  useEffect(() => {
+    let active = true;
+    async function hydrateSkills() {
+      try {
+        const res = await fetch("/api/skills");
+        if (res.ok) {
+          const data = (await res.json()) as { skills?: CustomSkill[] };
+          if (active && Array.isArray(data.skills)) {
+            setSkills(data.skills);
+            cacheLocal(data.skills);
+            return;
+          }
+        }
+      } catch {}
+      try {
+        const raw = localStorage.getItem(STORAGE_KEY);
+        if (raw && active) {
+          const parsed = JSON.parse(raw);
+          if (Array.isArray(parsed)) setSkills(parsed);
+        }
+      } catch {}
+    }
+    void hydrateSkills();
+    return () => {
+      active = false;
+    };
+  }, []);
+
   const openFromTemplate = (tpl?: (typeof STARTER_SKILLS)[number]) => {
+    setEditingSkillId(null);
     if (tpl) {
       setDraftName(tpl.name);
       setDraftDesc(tpl.description);
@@ -149,30 +169,94 @@ export default function SkillsPage() {
     setModalOpen(true);
   };
 
-  const handleCreateSkill = (e: React.FormEvent) => {
+  const openEditSkill = (skill: CustomSkill) => {
+    setEditingSkillId(skill.id);
+    setDraftName(skill.name);
+    setDraftDesc(skill.description);
+    setDraftCategory(skill.category);
+    setDraftInstructions(skill.instructions);
+    setDraftAccent(skill.accent);
+    setModalOpen(true);
+  };
+
+  const handleSaveSkill = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!draftName.trim()) return;
-    const newSkill: CustomSkill = {
-      id: `skill_${Date.now()}`,
-      name: draftName.trim(),
-      description: draftDesc.trim() || "Custom reusable workflow skill",
-      category: draftCategory,
-      instructions: draftInstructions.trim(),
-      enabled: true,
-      createdByMe: true,
-      createdAt: new Date().toISOString(),
-      accent: draftAccent,
-    };
-    saveSkills([newSkill, ...skills]);
-    setModalOpen(false);
+    if (!draftName.trim() || isSaving) return;
+    setIsSaving(true);
+    try {
+      const payload = {
+        id: editingSkillId || undefined,
+        name: draftName.trim(),
+        description: draftDesc.trim() || "Custom reusable workflow skill",
+        category: draftCategory,
+        instructions: draftInstructions.trim(),
+        accent: draftAccent,
+      };
+      const res = await fetch("/api/skills", {
+        method: editingSkillId ? "PATCH" : "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload),
+      });
+      if (res.ok) {
+        const data = (await res.json()) as { skill?: CustomSkill };
+        if (data.skill) {
+          const saved = data.skill;
+          const next = editingSkillId
+            ? skills.map((s) => (s.id === editingSkillId ? saved : s))
+            : [saved, ...skills];
+          setSkills(next);
+          cacheLocal(next);
+          setModalOpen(false);
+          setEditingSkillId(null);
+          return;
+        }
+      }
+      const fallback: CustomSkill = {
+        id: editingSkillId || `skill_${Date.now()}`,
+        name: payload.name,
+        description: payload.description,
+        category: payload.category,
+        instructions: payload.instructions,
+        enabled: true,
+        createdByMe: true,
+        createdAt: new Date().toISOString(),
+        accent: payload.accent,
+      };
+      const next = editingSkillId
+        ? skills.map((s) => (s.id === editingSkillId ? fallback : s))
+        : [fallback, ...skills];
+      setSkills(next);
+      cacheLocal(next);
+      setModalOpen(false);
+      setEditingSkillId(null);
+    } finally {
+      setIsSaving(false);
+    }
   };
 
-  const toggleSkill = (id: string) => {
-    saveSkills(skills.map((s) => (s.id === id ? { ...s, enabled: !s.enabled } : s)));
+  const toggleSkill = async (id: string) => {
+    const target = skills.find((s) => s.id === id);
+    if (!target) return;
+    const nextEnabled = !target.enabled;
+    const next = skills.map((s) => (s.id === id ? { ...s, enabled: nextEnabled } : s));
+    setSkills(next);
+    cacheLocal(next);
+    try {
+      await fetch("/api/skills", {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ id, enabled: nextEnabled }),
+      });
+    } catch {}
   };
 
-  const deleteSkill = (id: string) => {
-    saveSkills(skills.filter((s) => s.id !== id));
+  const deleteSkill = async (id: string) => {
+    const next = skills.filter((s) => s.id !== id);
+    setSkills(next);
+    cacheLocal(next);
+    try {
+      await fetch(`/api/skills?id=${encodeURIComponent(id)}`, { method: "DELETE" });
+    } catch {}
   };
 
   const handleRunSkill = async (e: React.FormEvent) => {
@@ -445,14 +529,25 @@ export default function SkillsPage() {
                     <Play size={13} />
                     <span>Run skill</span>
                   </button>
-                  <button
-                    type="button"
-                    onClick={() => deleteSkill(skill.id)}
-                    className="p-1.5 rounded-lg opacity-60 hover:opacity-100 hover:text-rose-500 transition-all"
-                    title="Delete skill"
-                  >
-                    <Trash2 size={14} />
-                  </button>
+                  <div className="flex items-center gap-1">
+                    <button
+                      type="button"
+                      onClick={() => openEditSkill(skill)}
+                      className="p-1.5 rounded-lg opacity-60 hover:opacity-100 hover:text-[#4984fd] transition-all"
+                      title="Edit skill"
+                      data-testid={`skill-edit-${skill.id}`}
+                    >
+                      <Pencil size={14} />
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => deleteSkill(skill.id)}
+                      className="p-1.5 rounded-lg opacity-60 hover:opacity-100 hover:text-rose-500 transition-all"
+                      title="Delete skill"
+                    >
+                      <Trash2 size={14} />
+                    </button>
+                  </div>
                 </div>
               </div>
             ))}
@@ -472,17 +567,22 @@ export default function SkillsPage() {
             }}
           >
             <div className="flex items-center justify-between">
-              <h3 className="text-[19px] font-medium">Create Skill</h3>
+              <h3 className="text-[19px] font-medium">
+                {editingSkillId ? "Edit Skill" : "Create Skill"}
+              </h3>
               <button
                 type="button"
-                onClick={() => setModalOpen(false)}
+                onClick={() => {
+                  setModalOpen(false);
+                  setEditingSkillId(null);
+                }}
                 className="p-1.5 rounded-lg opacity-70 hover:opacity-100"
               >
                 <X size={18} />
               </button>
             </div>
 
-            <form onSubmit={handleCreateSkill} className="space-y-4">
+            <form onSubmit={handleSaveSkill} className="space-y-4">
               <div>
                 <label className="block text-[12px] opacity-75 mb-1">Skill Name</label>
                 <input

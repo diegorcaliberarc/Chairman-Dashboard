@@ -405,13 +405,36 @@ export async function GET() {
   }
 }
 
+async function ensureUniqueSlug(
+  userId: string,
+  baseTitle: string,
+  excludeId?: string
+): Promise<string> {
+  const base = slugify(baseTitle) || "vault-note";
+  const existing = await pgQuery<{ id: string; slug: string }>(
+    `SELECT id, slug FROM public.vault_nodes WHERE user_id = $1 AND slug LIKE $2`,
+    userId,
+    `${base}%`
+  );
+  const taken = new Set(
+    existing.filter((r) => !excludeId || r.id !== excludeId).map((r) => r.slug)
+  );
+  if (!taken.has(base)) return base;
+  let n = 2;
+  while (taken.has(`${base}-${n}`)) n += 1;
+  return `${base}-${n}`;
+}
+
 export async function POST(req: NextRequest) {
   try {
     const userId = await getLivingOsUserId();
     const body = await req.json();
 
     const title = String(body.title || "Untitled Vault Note").trim();
-    const slug = slugify(title);
+    if (!title) {
+      return NextResponse.json({ error: "Vault note title cannot be empty" }, { status: 400 });
+    }
+    const slug = await ensureUniqueSlug(userId, title);
     const domain = String(body.domain || "engineering").trim();
     const contentMarkdown = String(
       body.content_markdown ?? `# ${title}\n\n`
@@ -506,7 +529,10 @@ export async function PATCH(req: NextRequest) {
 
     const nextTitle =
       body.title !== undefined ? String(body.title).trim() : existing.title;
-    const nextSlug = slugify(nextTitle);
+    if (!nextTitle) {
+      return NextResponse.json({ error: "Vault note title cannot be empty" }, { status: 400 });
+    }
+    const nextSlug = await ensureUniqueSlug(userId, nextTitle, body.id);
     const nextContent =
       body.content_markdown !== undefined
         ? String(body.content_markdown)

@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useMemo, useState } from "react";
+import React, { useEffect, useMemo, useState } from "react";
 import { ChevronLeft, ChevronRight, Plus } from "lucide-react";
 import type { PmsStatusDTO, PmsTaskDTO } from "@/lib/pmsTypes";
 
@@ -35,6 +35,11 @@ export function TaskCalendarView({
     const d = new Date(2026, 10, 1);
     return { year: d.getFullYear(), month: d.getMonth() };
   });
+
+  useEffect(() => {
+    const now = new Date();
+    setCursor({ year: now.getFullYear(), month: now.getMonth() });
+  }, []);
   const [dragOverDate, setDragOverDate] = useState<string | null>(null);
   const [addingDateIso, setAddingDateIso] = useState<string | null>(null);
   const [quickTitle, setQuickTitle] = useState("");

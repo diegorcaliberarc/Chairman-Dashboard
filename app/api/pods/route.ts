@@ -722,3 +722,25 @@ export async function POST(req: NextRequest) {
     );
   }
 }
+
+export async function DELETE(req: NextRequest) {
+  try {
+    const userId = await getLivingOsUserId();
+    const choreId = req.nextUrl.searchParams.get("choreId")?.trim() || "";
+    if (!choreId) {
+      return NextResponse.json({ error: "choreId is required" }, { status: 400 });
+    }
+    await pgExec(
+      `DELETE FROM public.pms_tasks WHERE id = $1::uuid AND user_id = $2`,
+      choreId,
+      userId
+    );
+    return NextResponse.json({ ok: true, deleted: true, choreId });
+  } catch (error: any) {
+    console.error("[DELETE /api/pods] Error:", error);
+    return NextResponse.json(
+      { error: error?.message || "Failed to delete Pod chore" },
+      { status: 500 }
+    );
+  }
+}

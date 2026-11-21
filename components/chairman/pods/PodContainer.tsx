@@ -2,6 +2,7 @@
 
 import React, { useCallback, useEffect, useMemo, useState } from "react";
 import {
+  Briefcase,
   Heart,
   Home,
   Loader2,
@@ -20,7 +21,7 @@ import {
 } from "./MemberAccountabilityCard";
 import { ChoreItem, SharedChoreKanban } from "./SharedChoreKanban";
 
-type PodTierType = "couple" | "family";
+type PodTierType = "couple" | "family" | "business_team";
 
 interface SharedPod {
   id: string;
@@ -54,6 +55,15 @@ const TIER_TABS: Array<{
     icon: <Home size={15} className="text-emerald-400" />,
     activeClass:
       "border-emerald-400/50 bg-emerald-500/15 text-white shadow-lg shadow-emerald-500/10",
+  },
+  {
+    type: "business_team",
+    tierBadge: "Tier 3 • Zero-Trust Team",
+    label: "Business Pod (Pristine Tech Team)",
+    sub: "Sprint Tasks & Scoped Availability (Zero Private Leakage)",
+    icon: <Briefcase size={15} className="text-cyan-400" />,
+    activeClass:
+      "border-cyan-400/50 bg-cyan-500/15 text-white shadow-lg shadow-cyan-500/10",
   },
 ];
 

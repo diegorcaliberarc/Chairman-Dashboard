@@ -916,7 +916,27 @@ export default function ConnectedBudgetPage() {
                     <div className="text-xs font-medium">{acc.institutionName} · {acc.accountName}</div>
                     <div className="text-[10px] font-mono uppercase opacity-65">{acc.accountType}</div>
                   </div>
-                  <div className="text-sm font-mono text-emerald-500">{fmtUSDExact(acc.currentBalance)}</div>
+                  <div className="flex items-center gap-3">
+                    <div className="text-sm font-mono text-emerald-500">{fmtUSDExact(acc.currentBalance)}</div>
+                    <button
+                      type="button"
+                      onClick={async () => {
+                        setPlaidAccounts((prev) => prev.filter((a) => a.id !== acc.id));
+                        try {
+                          await fetch("/api/plaid", {
+                            method: "POST",
+                            headers: { "Content-Type": "application/json" },
+                            body: JSON.stringify({ action: "delete_account", id: acc.id }),
+                          });
+                        } catch {}
+                      }}
+                      className="p-1.5 rounded-lg text-zinc-400 hover:text-rose-400 hover:bg-rose-500/10 transition"
+                      title="Remove connected bank account"
+                      data-testid={`bank-delete-${acc.id}`}
+                    >
+                      <Trash2 size={14} />
+                    </button>
+                  </div>
                 </div>
               ))}
             </div>

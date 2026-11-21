@@ -392,6 +392,17 @@ export async function POST(req: NextRequest) {
       }
       const sess = sessRows[0];
 
+      if (Boolean(sess.circuit_breaker_tripped)) {
+        return NextResponse.json(
+          {
+            error: `Circuit breaker tripped for ${sess.account_name}: Hard daily loss cutoff (-$${Number(
+              sess.session_loss_cutoff || 250
+            ).toFixed(2)}) breached. Trading is locked for this session.`,
+          },
+          { status: 403 }
+        );
+      }
+
       const startingBal = Number(sess.starting_balance || 50000);
       const dailyNet = Number(sess.daily_net_pnl || 0);
       const currentBal = Number(sess.ending_balance ?? startingBal + dailyNet);
@@ -522,6 +533,101 @@ export async function POST(req: NextRequest) {
       );
 
       await recomputeSessionTotals(sessionId);
+    } else if (action === "update_trade") {
+      const tradeId = String(body.tradeId || "");
+      const existingRows = await pgQuery<any>(
+        `SELECT t.*
+         FROM public.trading_trades t
+         JOIN public.trading_sessions s ON s.id = t.session_id
+         WHERE t.id = $1::uuid AND s.user_id = $2
+         LIMIT 1`,
+        tradeId,
+        userId
+      );
+      if (existingRows.length === 0) {
+        return NextResponse.json({ error: "Trade not found" }, { status: 404 });
+      }
+      const prev = existingRows[0];
+      const instrument = VALID_INSTRUMENTS.has(String(body.instrument || prev.instrument).toUpperCase())
+        ? String(body.instrument || prev.instrument).toUpperCase()
+        : String(prev.instrument);
+      const direction = VALID_DIRECTIONS.has(String(body.direction || prev.direction).toUpperCase())
+        ? String(body.direction || prev.direction).toUpperCase()
+        : String(prev.direction);
+      const contracts = Math.max(1, Math.round(Number(body.contracts ?? prev.contracts)));
+      const entryPrice = Number(Number(body.entryPrice ?? prev.entry_price).toFixed(2));
+      const exitPrice = Number(Number(body.exitPrice ?? prev.exit_price).toFixed(2));
+      const commissions = Math.max(0, Number(Number(body.commissions ?? prev.commissions).toFixed(2)));
+      const setupName = String(body.setupName ?? prev.setup_name ?? "VWAP Reclaim").trim().slice(0, 64);
+      const notes = body.notes !== undefined ? String(body.notes).trim() : prev.notes;
+      const pnl = calculateTradePnl({
+        instrument,
+        direction,
+        contracts,
+        entryPrice,
+        exitPrice,
+        commissions,
+      });
+
+      await pgExec(
+        `UPDATE public.trading_trades
+         SET instrument = $2::public.trade_instrument,
+             direction = $3::public.trade_direction,
+             contracts = $4::int,
+             entry_price = $5::numeric,
+             exit_price = $6::numeric,
+             gross_pnl = $7::numeric,
+             commissions = $8::numeric,
+             net_pnl = $9::numeric,
+             setup_name = $10,
+             notes = $11
+         WHERE id = $1::uuid`,
+        tradeId,
+        instrument,
+        direction,
+        contracts,
+        entryPrice,
+        exitPrice,
+        pnl.grossPnl,
+        commissions,
+        pnl.netPnl,
+        setupName,
+        notes
+      );
+      await recomputeSessionTotals(prev.session_id);
+    } else if (action === "create_session") {
+      const accountName = String(body.accountName || "").trim().slice(0, 64);
+      if (!accountName) {
+        return NextResponse.json({ error: "Account name is required" }, { status: 400 });
+      }
+      const startingBal = Math.max(100, Number(body.startingBalance || 50000));
+      const maxDd = Math.max(50, Number(body.maxDrawdownLimit || 2000));
+      const lossCutoff = Math.max(25, Number(body.sessionLossCutoff || 250));
+      const copierStatus = String(body.copierStatus || "Replikanto Synced").slice(0, 32);
+      const today = new Date().toISOString().slice(0, 10);
+      await pgExec(
+        `INSERT INTO public.trading_sessions (
+           user_id, session_date, account_name, starting_balance, ending_balance,
+           daily_net_pnl, max_drawdown_limit, session_loss_cutoff, circuit_breaker_tripped, copier_status
+         ) VALUES ($1, $2::date, $3, $4::numeric, $4::numeric, 0, $5::numeric, $6::numeric, false, $7)`,
+        userId,
+        today,
+        accountName,
+        startingBal,
+        maxDd,
+        lossCutoff,
+        copierStatus
+      );
+    } else if (action === "delete_session") {
+      const sessionId = String(body.sessionId || "");
+      if (!sessionId) {
+        return NextResponse.json({ error: "sessionId is required" }, { status: 400 });
+      }
+      await pgExec(
+        `DELETE FROM public.trading_sessions WHERE id = $1::uuid AND user_id = $2`,
+        sessionId,
+        userId
+      );
     } else {
       return NextResponse.json({ error: `Unknown action: ${action}` }, { status: 400 });
     }

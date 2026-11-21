@@ -1182,7 +1182,12 @@ export default function CaliberArcPage() {
 
           <button
             type="submit"
-            disabled={mutating}
+            disabled={mutating || riskTelemetry.circuitBreakerTripped}
+            title={
+              riskTelemetry.circuitBreakerTripped
+                ? "Circuit breaker tripped — trade entry locked"
+                : "Log executed trade"
+            }
             className="w-full py-2.5 rounded-xl bg-cyan-500/25 hover:bg-cyan-500/35 border border-cyan-400/50 text-cyan-100 font-bold text-xs uppercase tracking-widest flex items-center justify-center gap-1.5 transition"
           >
             <Plus size={14} /> Journal Execution to {activeSession?.account_name}
