@@ -2,8 +2,12 @@
 
 import React, { useState, useEffect, useCallback } from "react";
 import { ExecutiveModuleShell } from "@/components/chairman/ExecutiveModuleShell";
-import { DomainScorecardGrid } from "@/components/command/DomainScorecardGrid";
-import { DriftWarningBanner } from "@/components/command/DriftWarningBanner";
+import {
+  StrategyAiCommandBar,
+  TelemetryDriftBoxes,
+  UnifiedDomainScorecardGrid,
+} from "@features/strategy";
+import { fetchStrategyCommandDeck } from "@services/strategyClientService";
 import { NorthStarAnchorCard } from "@/components/command/NorthStarAnchorCard";
 import { PhasesTransitionSequence } from "@/components/command/PhasesTransitionSequence";
 import { WeeklyFragoPaceEditor } from "@/components/command/WeeklyFragoPaceEditor";
@@ -15,20 +19,16 @@ import {
   CommandPhase,
   CommandFrago,
   CommandAarLog,
+  DailyTelemetryPoint,
   DomainScorecardItem,
   DriftWarning,
   PaceTier,
 } from "@/lib/commandTypes";
 import {
-  Compass,
   Trophy,
   RefreshCw,
-  Layers,
-  ChevronLeft,
-  ChevronRight,
   BookOpen,
   Calendar,
-  Sparkles,
 } from "lucide-react";
 
 function getMondayIso(d: Date = new Date()): string {
@@ -50,33 +50,20 @@ export default function CommandPage() {
   const [aarLogs, setAarLogs] = useState<CommandAarLog[]>([]);
   const [scorecards, setScorecards] = useState<DomainScorecardItem[]>([]);
   const [driftWarnings, setDriftWarnings] = useState<DriftWarning[]>([]);
+  const [telemetrySeries, setTelemetrySeries] = useState<DailyTelemetryPoint[]>([]);
   const [isLoading, setIsLoading] = useState(true);
 
   // Load Command Engine Data in parallel for fast navigation
   const loadCommandData = useCallback(async () => {
     setIsLoading(true);
     try {
-      const [cmdRes, scRes] = await Promise.all([
-        fetch(`/api/command?weekStart=${weekStartDate}`),
-        fetch(`/api/scorecard`),
-      ]);
-
-      if (cmdRes.ok) {
-        const cmdData = await cmdRes.json();
-        if (cmdData.success) {
-          setNorthStars(cmdData.northStars || []);
-          setFragos(cmdData.fragos || {});
-          setAarLogs(cmdData.aarLogs || []);
-        }
-      }
-
-      if (scRes.ok) {
-        const scData = await scRes.json();
-        if (scData.success) {
-          setScorecards(scData.scorecards || []);
-          setDriftWarnings(scData.driftWarnings || []);
-        }
-      }
+      const snapshot = await fetchStrategyCommandDeck(weekStartDate);
+      setNorthStars(snapshot.northStars);
+      setFragos(snapshot.fragos);
+      setAarLogs(snapshot.aarLogs);
+      setScorecards(snapshot.scorecards);
+      setDriftWarnings(snapshot.driftWarnings);
+      setTelemetrySeries(snapshot.telemetrySeries);
     } catch (err) {
       console.error("Error loading Operations & Strategy data:", err);
     } finally {
@@ -216,20 +203,32 @@ export default function CommandPage() {
         </div>
       }
     >
-      <div className="min-h-screen bg-[#07090E] text-zinc-100 p-4 sm:p-6 lg:p-8 max-w-7xl mx-auto space-y-6">
-        {/* 1. DRIFT & BOTTLENECK EARLY WARNING BANNER */}
-        <DriftWarningBanner warnings={driftWarnings} />
+      <div
+        data-testid="strategy-command-root"
+        className="min-h-screen bg-[#07090E] text-zinc-100 p-4 sm:p-6 lg:p-8 max-w-7xl mx-auto space-y-6"
+      >
+        {/* 1. TOP-ANCHORED AI COMMAND & STATE-MUTATION CHAT WIDGET (CD-201) */}
+        <StrategyAiCommandBar
+          weekStartDate={weekStartDate}
+          onMutationComplete={loadCommandData}
+        />
 
-        {/* 2. 4-DOMAIN SCORECARD GRID (HEALTH, WEALTH, RELATIONSHIPS, HAPPINESS) */}
+        {/* 2. COMPACT BIOMETRIC DRIFT & NEAT SLIPPAGE METRIC BOXES (CD-203) */}
+        <TelemetryDriftBoxes
+          warnings={driftWarnings}
+          telemetrySeries={telemetrySeries}
+        />
+
+        {/* 3. UNIFIED 4-DOMAIN EXECUTIVE SCORECARD GRID (CD-202 & CD-203) */}
         <div className="space-y-2">
           <div className="flex items-center justify-between text-xs font-mono text-zinc-400 uppercase tracking-wider">
             <span>Executive Domain Scorecard</span>
             <span className="text-[11px] text-zinc-500">Live leading & lagging telemetry</span>
           </div>
-          <DomainScorecardGrid
+          <UnifiedDomainScorecardGrid
             scorecards={scorecards}
             selectedDomain={selectedDomain}
-            onSelectDomain={(d) => setSelectedDomain(d as LifeDomain)}
+            onSelectDomain={(d) => setSelectedDomain(d)}
           />
         </div>
 

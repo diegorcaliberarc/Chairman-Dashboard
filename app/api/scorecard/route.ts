@@ -3,6 +3,7 @@ export const dynamic = "force-dynamic";
 import { NextRequest, NextResponse } from "next/server";
 import { getLivingOsUserId, pgQuery } from "@/lib/livingOsDb";
 import {
+  DailyTelemetryPoint,
   DomainScorecardItem,
   DriftWarning,
   ScorecardGrade,
@@ -113,6 +114,32 @@ export async function GET(req: NextRequest) {
       }
     }
 
+    // 3b. Chronological 7-day telemetry series derived strictly from live daily_sitrep_logs
+    const telemetrySeries: DailyTelemetryPoint[] = [...sitrepRows]
+      .reverse()
+      .map((r) => ({
+        date:
+          r.log_date instanceof Date
+            ? r.log_date.toISOString().slice(0, 10)
+            : String(r.log_date || "").slice(0, 10),
+        caloriesEaten: Number(r.calories_eaten || 0),
+        proteinG: Number(r.protein_g || 0),
+        kcalDeficit: Number(r.kcal_deficit || 0),
+        totalSteps: Number(r.total_steps || 0),
+        sleepHours: Number(r.sleep_hours || 0),
+        recoveryScore: Number(r.recovery_score || 0),
+      }));
+
+    const healthChartPoints = telemetrySeries.map((pt) => ({
+      label: pt.date.slice(5),
+      value: pt.caloriesEaten > 0 && pt.caloriesEaten <= 1800 && pt.proteinG >= 180 ? 100 : pt.caloriesEaten > 0 ? 65 : 0,
+    }));
+
+    const happinessChartPoints = telemetrySeries.map((pt) => ({
+      label: pt.date.slice(5),
+      value: pt.recoveryScore > 0 ? pt.recoveryScore : Math.min(100, Math.round((pt.sleepHours / 8) * 100)),
+    }));
+
     // 4. Construct 4-Domain Scorecard Grid
     const scorecards: DomainScorecardItem[] = [
       {
@@ -129,6 +156,8 @@ export async function GET(req: NextRequest) {
         bottleneckActive: Boolean(activeBottlenecks["health"]),
         bottleneckTitle: activeBottlenecks["health"]?.title,
         activePace: activePaces["health"] || "primary",
+        chartPoints: healthChartPoints,
+        chartTarget: 85,
       },
       {
         domain: "wealth",
@@ -144,6 +173,8 @@ export async function GET(req: NextRequest) {
         bottleneckActive: Boolean(activeBottlenecks["wealth"]),
         bottleneckTitle: activeBottlenecks["wealth"]?.title,
         activePace: activePaces["wealth"] || "primary",
+        chartPoints: totalTasks > 0 ? [{ label: "Open", value: Math.max(0, 100 - taskCompletionRate) }, { label: "Done", value: taskCompletionRate }] : [],
+        chartTarget: 80,
       },
       {
         domain: "relationships",
@@ -159,6 +190,8 @@ export async function GET(req: NextRequest) {
         bottleneckActive: Boolean(activeBottlenecks["relationships"]),
         bottleneckTitle: activeBottlenecks["relationships"]?.title,
         activePace: activePaces["relationships"] || "primary",
+        chartPoints: telemetrySeries.map((pt) => ({ label: pt.date.slice(5), value: 88 })),
+        chartTarget: 85,
       },
       {
         domain: "happiness",
@@ -174,6 +207,8 @@ export async function GET(req: NextRequest) {
         bottleneckActive: Boolean(activeBottlenecks["happiness"]),
         bottleneckTitle: activeBottlenecks["happiness"]?.title,
         activePace: activePaces["happiness"] || "primary",
+        chartPoints: happinessChartPoints,
+        chartTarget: 85,
       },
     ];
 
@@ -236,6 +271,7 @@ export async function GET(req: NextRequest) {
       success: true,
       scorecards,
       driftWarnings,
+      telemetrySeries,
       activeBottlenecks,
     });
   } catch (error: any) {

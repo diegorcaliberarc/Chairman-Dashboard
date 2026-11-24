@@ -56,6 +56,12 @@ export const test = base.extend<{
 }>({
   outboundViolations: async ({ context }, use) => {
     const violations: string[] = [];
+    const strategyState = {
+      caloriesEaten: 1920,
+      proteinG: 162,
+      kcalDeficit: 280,
+      totalSteps: 8450,
+    };
 
     await context.route("**/*", async (route) => {
       const request = route.request();
@@ -135,6 +141,63 @@ export const test = base.extend<{
         }
         if (p === "/api/metrics") {
           await route.fulfill(jsonResponse({ metrics: [] }));
+          return;
+        }
+        if (p === "/api/command") {
+          await route.fulfill(
+            jsonResponse({
+              success: true,
+              weekStart: reqUrl.searchParams.get("weekStart") ?? "2026-11-23",
+              northStars: [],
+              fragos: {},
+              aarLogs: [],
+            })
+          );
+          return;
+        }
+        if (p === "/api/command/chat" && request.method() === "POST") {
+          const body = safeParsePostJson(request);
+          const prompt = typeof body.prompt === "string" ? body.prompt : "";
+          const cal = prompt.match(/(\d{3,4})\s*(?:kcal|cal)/i);
+          const prot = prompt.match(/(\d{2,3})\s*g?\s*(?:protein|prot)/i);
+          const steps = prompt.match(/(\d{1,2},?\d{3}|\d{4,5})\s*(?:steps|neat)/i);
+          if (cal) {
+            strategyState.caloriesEaten = Number(cal[1]);
+            strategyState.kcalDeficit = Math.max(0, 2250 - strategyState.caloriesEaten);
+          }
+          if (prot) strategyState.proteinG = Number(prot[1]);
+          if (steps) strategyState.totalSteps = Number(steps[1].replace(/,/g, ""));
+          await route.fulfill(
+            jsonResponse({
+              success: true,
+              mutationType: "sitrep_telemetry",
+              summary: `Updated live telemetry (calories_eaten: ${strategyState.caloriesEaten} · protein_g: ${strategyState.proteinG} · total_steps: ${strategyState.totalSteps})`,
+              updatedFields: { ...strategyState },
+              timestamp: new Date().toISOString(),
+            })
+          );
+          return;
+        }
+        if (p === "/api/scorecard") {
+          const telemetrySeries = [
+            { date: "2026-11-22", caloriesEaten: 1850, proteinG: 170, kcalDeficit: 320, totalSteps: 9100, sleepHours: 7.2, recoveryScore: 82 },
+            { date: "2026-11-23", caloriesEaten: 1790, proteinG: 176, kcalDeficit: 360, totalSteps: 9400, sleepHours: 7.4, recoveryScore: 86 },
+            { date: "2026-11-24", caloriesEaten: strategyState.caloriesEaten, proteinG: strategyState.proteinG, kcalDeficit: strategyState.kcalDeficit, totalSteps: strategyState.totalSteps, sleepHours: 7.6, recoveryScore: 90 },
+          ];
+          const driftWarnings = [];
+          if (strategyState.caloriesEaten > 1700) {
+            driftWarnings.push({ id: "drift-deficit", domain: "health", severity: "warning", title: "Caloric Deficit Drift Detected", message: "Trailing deficit below target.", metric: "3-Day Deficit", currentValue: `${strategyState.kcalDeficit} kcal`, threshold: ">= 350 kcal" });
+          }
+          if (strategyState.totalSteps < 10000) {
+            driftWarnings.push({ id: "drift-steps", domain: "health", severity: "advisory", title: "Non-Exercise Activity (NEAT) Slippage", message: "Steps below 10,000 baseline.", metric: "7-Day Steps", currentValue: `${strategyState.totalSteps.toLocaleString()}`, threshold: "10,000 steps" });
+          }
+          const scorecards = [
+            { domain: "health", title: "Health & Biometrics", leadKpiLabel: "7-Day SITREP Adherence", leadKpiValue: "86%", leadKpiTarget: "85%", leadKpiAdherencePct: 86, lagKpiLabel: "Current Weight", lagKpiValue: "162.4 lbs", grade: "A", trend: "up", bottleneckActive: false, activePace: "primary", chartPoints: telemetrySeries.map((t) => ({ label: t.date.slice(5), value: t.caloriesEaten <= 1750 ? 95 : 70 })), chartTarget: 85 },
+            { domain: "wealth", title: "Wealth & SaaS Ops", leadKpiLabel: "Sovereign Sprint Completion", leadKpiValue: "82%", leadKpiTarget: "80%", leadKpiAdherencePct: 82, lagKpiLabel: "Sprint Throughput", lagKpiValue: "14/17 Tasks", grade: "B", trend: "up", bottleneckActive: false, activePace: "primary", chartPoints: [{ label: "Open", value: 18 }, { label: "Done", value: 82 }], chartTarget: 80 },
+            { domain: "relationships", title: "Family & Relationships", leadKpiLabel: "Committed Pod Cadence", leadKpiValue: "88%", leadKpiTarget: "85%", leadKpiAdherencePct: 88, lagKpiLabel: "Household Harmony", lagKpiValue: "Protected", grade: "B", trend: "up", bottleneckActive: false, activePace: "primary", chartPoints: telemetrySeries.map((t) => ({ label: t.date.slice(5), value: 88 })), chartTarget: 85 },
+            { domain: "happiness", title: "Pursuit of Happiness", leadKpiLabel: "Rest & Mindset Protocol", leadKpiValue: "7.6h Sleep", leadKpiTarget: "7.5h", leadKpiAdherencePct: 90, lagKpiLabel: "Cognitive Recovery", lagKpiValue: "90%", grade: "A", trend: "up", bottleneckActive: false, activePace: "primary", chartPoints: telemetrySeries.map((t) => ({ label: t.date.slice(5), value: t.recoveryScore })), chartTarget: 85 },
+          ];
+          await route.fulfill(jsonResponse({ success: true, scorecards, driftWarnings, telemetrySeries, activeBottlenecks: {} }));
           return;
         }
         if (p === "/api/kpi-scorecard") {

@@ -121,6 +121,29 @@ export interface CommandAarLog {
   updated_at?: string;
 }
 
+export interface DomainChartPoint {
+  label: string;
+  value: number;
+}
+
+export interface DailyTelemetryPoint {
+  date: string;
+  caloriesEaten: number;
+  proteinG: number;
+  kcalDeficit: number;
+  totalSteps: number;
+  sleepHours: number;
+  recoveryScore: number;
+}
+
+export interface StrategyChatMutationReceipt {
+  success: boolean;
+  mutationType: "sitrep_telemetry" | "north_star_metric" | "pms_task";
+  summary: string;
+  updatedFields: Record<string, string | number>;
+  timestamp: string;
+}
+
 export interface DomainScorecardItem {
   domain: LifeDomain;
   title: string;
@@ -135,6 +158,8 @@ export interface DomainScorecardItem {
   bottleneckActive: boolean;
   bottleneckTitle?: string;
   activePace: PaceTier;
+  chartPoints?: DomainChartPoint[];
+  chartTarget?: number;
 }
 
 export interface DriftWarning {

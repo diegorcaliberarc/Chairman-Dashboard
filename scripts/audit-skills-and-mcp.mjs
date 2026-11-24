@@ -53,10 +53,10 @@ if (fs.existsSync(path.join(ROOT, ".agent"))) {
   });
 }
 
-// 2. Audit all `.agents/skills/**/SKILL.md`
+// 2. Audit all `.agents/skills/**/SKILL.md` and `.agents/skills/core-*.md`
 const skillFiles = walkFiles(
   path.join(ROOT, ".agents", "skills"),
-  (f) => path.basename(f) === "SKILL.md"
+  (f) => path.basename(f) === "SKILL.md" || /^core-.*\.md$/i.test(path.basename(f))
 );
 
 for (const file of skillFiles) {

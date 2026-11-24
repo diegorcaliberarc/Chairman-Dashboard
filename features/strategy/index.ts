@@ -1,0 +1,12 @@
+export { StrategyAiCommandBar } from "./chat/StrategyAiCommandBar";
+export type { StrategyAiCommandBarProps } from "./chat/StrategyAiCommandBar";
+export { TelemetryDriftBoxes } from "./cards/TelemetryDriftBoxes";
+export type { TelemetryDriftBoxesProps } from "./cards/TelemetryDriftBoxes";
+export { UnifiedDomainScorecardGrid } from "./cards/UnifiedDomainScorecardGrid";
+export type { UnifiedDomainScorecardGridProps } from "./cards/UnifiedDomainScorecardGrid";
+export { ExecutiveScorecardBox } from "./components/ExecutiveScorecardBox";
+export type { ExecutiveScorecardBoxProps } from "./components/ExecutiveScorecardBox";
+export { CompactStrategyChart } from "./components/CompactStrategyChart";
+export type { CompactStrategyChartProps } from "./components/CompactStrategyChart";
+export { StrategySilhouette } from "./components/StrategySilhouetteRegistry";
+export type { SilhouetteKey, StrategySilhouetteProps } from "./components/StrategySilhouetteRegistry";

@@ -30,9 +30,10 @@
 
 ### 2.2 `/command` — Operations & Strategy (Command Center)
 - **Entry Point:** `app/command/page.tsx`
-- **Components:** `components/command/NorthStarAnchorCard.tsx`, `DomainScorecardGrid.tsx`, `WeeklyFragoPaceEditor.tsx`, `PhasesTransitionSequence.tsx`, `AarLessonVault.tsx`, `SundayReviewWizardModal.tsx`, `DriftWarningBanner.tsx`
-- **APIs & Types:** `GET/POST /api/command`, `GET/POST /api/scorecard`, `lib/commandTypes.ts`
-- **Key Selectors:** `[data-testid="module-shell-COMMAND"]`, `[data-testid="global-launch-mission-flow-btn"]`.
+- **Feature Barrel & Services:** `features/strategy/index.ts` → `StrategyAiCommandBar.tsx` (top-anchored AI state-mutation chat), `TelemetryDriftBoxes.tsx` (compact Caloric Deficit Drift + NEAT Slippage boxes), `UnifiedDomainScorecardGrid.tsx`, `ExecutiveScorecardBox.tsx`, `CompactStrategyChart.tsx`, `StrategySilhouetteRegistry.tsx` · `services/strategyClientService.ts`
+- **Legacy Subcomponents:** `components/command/NorthStarAnchorCard.tsx`, `WeeklyFragoPaceEditor.tsx`, `PhasesTransitionSequence.tsx`, `AarLessonVault.tsx`, `SundayReviewWizardModal.tsx`
+- **APIs & Types:** `GET/POST /api/command`, `POST /api/command/chat`, `GET /api/scorecard`, `lib/commandTypes.ts` · Property Spec: `tests/properties/strategy-command.spec.ts`
+- **Key Selectors:** `[data-testid="module-shell-COMMAND"]`, `[data-testid="strategy-command-root"]`, `[data-testid="strategy-ai-chat-widget"]`, `[data-testid="strategy-ai-chat-input"]`, `[data-testid="strategy-ai-chat-submit"]`, `[data-testid="strategy-ai-chat-receipt"]`, `[data-testid="strategy-telemetry-alerts-grid"]`, `[data-testid="strategy-card-caloric-drift"]`, `[data-testid="strategy-card-neat-slippage"]`, `[data-testid="strategy-domain-grid"]`, `[data-testid="strategy-domain-card-{health|wealth|relationships|happiness}"]`, `[data-testid="strategy-silhouette-{caloric|neat|health|wealth|relationships|happiness}"]`, `[data-testid="global-launch-mission-flow-btn"]`.
 
 ### 2.3 `/pms` — Project Management (Pristine PMS — ClickUp / Plane-Inspired)
 - **Entry Point:** `app/pms/page.tsx`
