@@ -2,6 +2,7 @@
 
 import React, { useState, useEffect } from "react";
 import { X, Play, RotateCcw, Copy, Check, Save } from "lucide-react";
+import { useSafeTimeout } from "@/lib/hooks/useTimers";
 
 interface MermaidSourceDrawerProps {
   isOpen: boolean;
@@ -20,6 +21,7 @@ export function MermaidSourceDrawer({
   onSave,
   onReset,
 }: MermaidSourceDrawerProps) {
+  const scheduleTimeout = useSafeTimeout();
   const [code, setCode] = useState(initialCode);
   const [copied, setCopied] = useState(false);
   const [saved, setSaved] = useState(false);
@@ -34,14 +36,14 @@ export function MermaidSourceDrawer({
     if (typeof navigator !== "undefined" && navigator.clipboard) {
       navigator.clipboard.writeText(code);
       setCopied(true);
-      setTimeout(() => setCopied(false), 2000);
+      scheduleTimeout(() => setCopied(false), 2000);
     }
   };
 
   const handleSaveClick = () => {
     onSave(code);
     setSaved(true);
-    setTimeout(() => setSaved(false), 2000);
+    scheduleTimeout(() => setSaved(false), 2000);
   };
 
   return (

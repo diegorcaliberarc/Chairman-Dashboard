@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useState, useEffect } from "react";
+import { useInterval } from "@/lib/hooks/useTimers";
 import {
   Play,
   Pause,
@@ -51,18 +52,15 @@ export function TopologyTopBar({
   const [showTimerPopover, setShowTimerPopover] = useState<boolean>(false);
   const [showTemplatesDropdown, setShowTemplatesDropdown] = useState<boolean>(false);
 
+  useInterval(
+    () => setTimerSeconds((prev) => Math.max(0, prev - 1)),
+    isTimerRunning && timerSeconds > 0 ? 1000 : null
+  );
+
   useEffect(() => {
-    let interval: NodeJS.Timeout | null = null;
-    if (isTimerRunning && timerSeconds > 0) {
-      interval = setInterval(() => {
-        setTimerSeconds((prev) => Math.max(0, prev - 1));
-      }, 1000);
-    } else if (timerSeconds === 0) {
+    if (timerSeconds === 0 && isTimerRunning) {
       setIsTimerRunning(false);
     }
-    return () => {
-      if (interval) clearInterval(interval);
-    };
   }, [isTimerRunning, timerSeconds]);
 
   const formatTimer = (sec: number) => {

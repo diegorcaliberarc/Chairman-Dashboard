@@ -48,13 +48,9 @@ export default function RootLayout({
   return (
     <html lang="en" suppressHydrationWarning>
       <head>
-        {/* Strictly two fonts: EB Garamond (500, hero h1 only) & Geist (400, 500, all UI text) */}
+        {/* Preconnect hints for Google Fonts imported in globals.css */}
         <link rel="preconnect" href="https://fonts.googleapis.com" />
         <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
-        <link
-          href="https://fonts.googleapis.com/css2?family=EB+Garamond:wght@500&family=Geist:wght@400;500&display=swap"
-          rel="stylesheet"
-        />
 
         {/* iOS PWA — splash / status bar */}
         <meta name="apple-mobile-web-app-capable" content="yes" />

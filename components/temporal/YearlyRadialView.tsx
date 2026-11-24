@@ -13,6 +13,11 @@ interface YearlyRadialViewProps {
   onSelectSeason: (seasonId: string) => void;
 }
 
+const MONTH_NAMES = [
+  "JAN", "FEB", "MAR", "APR", "MAY", "JUN",
+  "JUL", "AUG", "SEP", "OCT", "NOV", "DEC",
+] as const;
+
 export function YearlyRadialView({
   selectedYear,
   activeMonth,
@@ -36,14 +41,9 @@ export function YearlyRadialView({
   const R_SEASON_INNER = 224;
   const R_SEASON_OUTER = 320;
 
-  const monthNames = [
-    "JAN", "FEB", "MAR", "APR", "MAY", "JUN",
-    "JUL", "AUG", "SEP", "OCT", "NOV", "DEC"
-  ];
-
   // 12 Months Arcs (30 degrees each)
   const monthArcs = useMemo(() => {
-    return monthNames.map((name, i) => {
+    return MONTH_NAMES.map((name, i) => {
       const startAngle = (i * 30 - 90) * (Math.PI / 180);
       const endAngle = ((i + 1) * 30 - 90) * (Math.PI / 180);
       const midAngle = ((startAngle + endAngle) / 2);

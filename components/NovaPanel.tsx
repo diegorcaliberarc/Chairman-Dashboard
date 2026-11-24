@@ -3,6 +3,8 @@
 import { useState, useRef, useEffect } from "react";
 import { Bot, X } from "lucide-react";
 import ReactMarkdown from "react-markdown";
+import { fetchNovaContextCounts } from "@services/uiClientService";
+import { useSafeTimeout } from "@/lib/hooks/useTimers";
 
 interface NovaMessage {
   role: "user" | "assistant";
@@ -15,6 +17,7 @@ export function NovaPanel({
   open: boolean;
   onClose: () => void;
 }) {
+  const scheduleTimeout = useSafeTimeout();
   const [agent, setAgent] = useState("Universal Command");
   const [messages, setMessages] = useState<NovaMessage[]>([]);
   const [input, setInput] = useState("");
@@ -26,17 +29,7 @@ export function NovaPanel({
   // Fetch context counts on open
   useEffect(() => {
     if (open) {
-      Promise.all([
-        fetch("/api/tasks").then(r => r.json()).catch(() => ({ tasks: [] })),
-        fetch("/api/calendar").then(r => r.json()).catch(() => ({ events: [] })),
-        fetch("/api/metrics").then(r => r.json()).catch(() => ({ metrics: [] }))
-      ]).then(([tData, cData, mData]) => {
-        setContextCounts({
-          tasks: (tData.tasks || []).filter((t: any) => t.status !== "DONE").length,
-          events: (cData.events || []).length,
-          metrics: (mData.metrics || []).length
-        });
-      });
+      void fetchNovaContextCounts().then(setContextCounts);
     }
   }, [open]);
 
@@ -47,8 +40,8 @@ export function NovaPanel({
 
   // Focus input when opened
   useEffect(() => {
-    if (open) setTimeout(() => inputRef.current?.focus(), 120);
-  }, [open]);
+    if (open) scheduleTimeout(() => inputRef.current?.focus(), 120);
+  }, [open, scheduleTimeout]);
 
   const send = async () => {
     const text = input.trim();

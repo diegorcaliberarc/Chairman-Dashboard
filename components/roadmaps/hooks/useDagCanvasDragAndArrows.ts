@@ -136,11 +136,17 @@ export function useDagCanvasDragAndArrows(
     });
 
     setSvgPaths(paths);
-  }, [tree, zoomScale, nodeOffsets]);
+  }, [tree, zoomScale]);
+
+  const offsetKey = Object.entries(nodeOffsets)
+    .map(([id, pos]) => `${id}:${pos.x},${pos.y}`)
+    .join("|");
 
   useLayoutEffect(() => {
-    calculateConnections();
-  }, [calculateConnections]);
+    if (offsetKey.length >= 0) {
+      calculateConnections();
+    }
+  }, [calculateConnections, offsetKey]);
 
   useEffect(() => {
     const el = containerRef.current;

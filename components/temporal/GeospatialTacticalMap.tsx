@@ -1,6 +1,7 @@
 "use client";
 
-import React, { useMemo, useState, useEffect, useRef } from "react";
+import React, { useMemo, useState, useRef } from "react";
+import { useInterval } from "@/lib/hooks/useTimers";
 import {
   TacticalWaypoint,
   RouteLeg,
@@ -33,6 +34,19 @@ interface GeospatialTacticalMapProps {
   onResetLive: () => void;
 }
 
+const LAT_MIN = 31.745;
+const LAT_MAX = 31.835;
+const LNG_MIN = -106.525;
+const LNG_MAX = -106.465;
+
+function projectToCanvas(lat: number, lng: number, elev: number = 0) {
+  const normX = (lng - LNG_MIN) / (LNG_MAX - LNG_MIN);
+  const normY = 1 - (lat - LAT_MIN) / (LAT_MAX - LAT_MIN);
+  const x = 70 + normX * 760;
+  const y = 60 + normY * 420 - (elev - 1100) * 0.08;
+  return { x, y };
+}
+
 export function GeospatialTacticalMap({
   waypoints,
   routeLegs,
@@ -48,31 +62,10 @@ export function GeospatialTacticalMap({
   const [selectedWaypointId, setSelectedWaypointId] = useState<string | null>("wp-start-work");
 
   // Master timeline animation loop
-  useEffect(() => {
-    if (!isPlaying) return;
-    const interval = setInterval(() => {
-      onScrubMinutes((scrubbedMinutes + 2) % 1440);
-    }, 120);
-    return () => clearInterval(interval);
-  }, [isPlaying, scrubbedMinutes, onScrubMinutes]);
-
-  // Map projection coordinates to 2.5D Canvas space (El Paso bounds)
-  // El Paso approximate bounds: lat 31.74 to 31.84, lng -106.53 to -106.46
-  const LAT_MIN = 31.745;
-  const LAT_MAX = 31.835;
-  const LNG_MIN = -106.525;
-  const LNG_MAX = -106.465;
-
-  const projectToCanvas = (lat: number, lng: number, elev: number = 0) => {
-    // 900x560 canvas space with slight 2.5D perspective tilt
-    const normX = (lng - LNG_MIN) / (LNG_MAX - LNG_MIN);
-    const normY = 1 - (lat - LAT_MIN) / (LAT_MAX - LAT_MIN);
-
-    // Apply isometric/perspective distortion:
-    const x = 70 + normX * 760;
-    const y = 60 + normY * 420 - (elev - 1100) * 0.08;
-    return { x, y };
-  };
+  useInterval(
+    () => onScrubMinutes((scrubbedMinutes + 2) % 1440),
+    isPlaying ? 120 : null
+  );
 
   // Interpolate Current User Position "YOU ARE HERE" Beacon
   const currentBeacon = useMemo(() => {

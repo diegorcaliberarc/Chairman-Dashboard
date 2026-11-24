@@ -2,6 +2,7 @@
 
 import React, { useEffect, useRef, useState } from "react";
 import { useTheme } from "next-themes";
+import { fetchRemoteUiPreferences } from "@services/uiClientService";
 import {
   applyGlassThemeToDocument,
   DEFAULT_GLASS_THEME,
@@ -84,23 +85,18 @@ export function GlassThemeController() {
     window.addEventListener(GLASS_THEME_EVENT, onThemeEvent);
 
     let cancelled = false;
-    fetch("/api/ui-preferences", { cache: "no-store" })
-      .then((res) => (res.ok ? res.json() : null))
-      .then((data) => {
-        if (cancelled || userChangedSinceMountRef.current) return;
-        if (data?.persisted && data?.theme) {
-          const remoteCfg = normalizeGlassThemeConfig(data.theme);
-          applyGlassThemeToDocument(remoteCfg, {
-            persist: true,
-            dispatch: false,
-          });
-          setActivePreset(remoteCfg.presetId);
-          setThemeRef.current(remoteCfg.colorMode);
-        }
-      })
-      .catch(() => {
-        // Resilient offline fallback: localStorage config stays active
-      });
+    void fetchRemoteUiPreferences().then((data) => {
+      if (cancelled || userChangedSinceMountRef.current) return;
+      if (data?.persisted && data?.theme) {
+        const remoteCfg = normalizeGlassThemeConfig(data.theme);
+        applyGlassThemeToDocument(remoteCfg, {
+          persist: true,
+          dispatch: false,
+        });
+        setActivePreset(remoteCfg.presetId);
+        setThemeRef.current(remoteCfg.colorMode);
+      }
+    });
 
     return () => {
       cancelled = true;

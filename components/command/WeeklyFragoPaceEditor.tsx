@@ -2,6 +2,7 @@
 
 import React, { useState } from "react";
 import { CommandFrago, PaceTier, LifeDomain } from "@/lib/commandTypes";
+import { useSafeTimeout } from "@/lib/hooks/useTimers";
 import {
   ShieldAlert,
   ChevronDown,
@@ -88,6 +89,8 @@ export function WeeklyFragoPaceEditor({
   const [isSaved, setIsSaved] = useState(false);
   const [pmsPushedToast, setPmsPushedToast] = useState(false);
 
+  const scheduleTimeout = useSafeTimeout();
+
   const handlePaceSelect = (tier: PaceTier) => {
     setActiveTab(tier);
     onSwitchPace(domain, tier);
@@ -107,7 +110,7 @@ export function WeeklyFragoPaceEditor({
       pace_plans: pacePlans,
     });
     setIsSaved(true);
-    setTimeout(() => setIsSaved(false), 2000);
+    scheduleTimeout(() => setIsSaved(false), 2000);
   };
 
   const handlePushExecutionTasks = () => {
@@ -124,7 +127,7 @@ export function WeeklyFragoPaceEditor({
 
     onPushToPms(lines, domain, "bottleneck");
     setPmsPushedToast(true);
-    setTimeout(() => setPmsPushedToast(false), 2400);
+    scheduleTimeout(() => setPmsPushedToast(false), 2400);
   };
 
   return (

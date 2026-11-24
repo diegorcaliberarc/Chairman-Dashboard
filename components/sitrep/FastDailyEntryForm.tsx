@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useState, useEffect } from "react";
+import { useSafeTimeout } from "@/lib/hooks/useTimers";
 import {
   ChevronLeft,
   ChevronRight,
@@ -27,6 +28,7 @@ export function FastDailyEntryForm({
   existingLog,
   onSaved,
 }: FastDailyEntryFormProps) {
+  const scheduleTimeout = useSafeTimeout();
   const [weight, setWeight] = useState<string>("");
   const [steps, setSteps] = useState<string>("");
   const [eaten, setEaten] = useState<string>("");
@@ -121,7 +123,7 @@ export function FastDailyEntryForm({
 
       if (!res.ok) throw new Error("Failed to save sitrep log");
       setSavedToast(true);
-      setTimeout(() => setSavedToast(false), 2400);
+      scheduleTimeout(() => setSavedToast(false), 2400);
       onSaved();
     } catch (err) {
       console.error("Save error:", err);

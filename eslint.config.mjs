@@ -232,7 +232,6 @@ const LEGACY_OVERSIZED_ALLOWLIST = [
   "components/circadian/CalendarOpsCommandDeck.tsx",
   "components/circadian/CircadianDialStage.tsx",
   "components/circadian/CircadianEventModal.tsx",
-  "components/command/SundayReviewWizardModal.tsx",
   "components/macro-ops/GengarHydrationCard.tsx",
   "components/macro-ops/QuickMealLogModal.tsx",
   "components/pms/PmsHierarchySidebar.tsx",

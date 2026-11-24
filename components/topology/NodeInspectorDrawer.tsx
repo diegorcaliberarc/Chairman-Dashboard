@@ -2,6 +2,7 @@
 
 import React from "react";
 import Link from "next/link";
+import { useSafeTimeout } from "@/lib/hooks/useTimers";
 import {
   ExternalLink,
   X,
@@ -21,6 +22,7 @@ interface NodeInspectorDrawerProps {
 }
 
 export function NodeInspectorDrawer({ node, onClose }: NodeInspectorDrawerProps) {
+  const scheduleTimeout = useSafeTimeout();
   const [copied, setCopied] = React.useState(false);
 
   if (!node) return null;
@@ -29,7 +31,7 @@ export function NodeInspectorDrawer({ node, onClose }: NodeInspectorDrawerProps)
     if (typeof navigator !== "undefined" && navigator.clipboard) {
       navigator.clipboard.writeText(node.route);
       setCopied(true);
-      setTimeout(() => setCopied(false), 2000);
+      scheduleTimeout(() => setCopied(false), 2000);
     }
   };
 

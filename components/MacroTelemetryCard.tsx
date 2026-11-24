@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useState } from "react";
+import { useSafeTimeout } from "@/lib/hooks/useTimers";
 import {
   Flame,
   Dumbbell,
@@ -61,6 +62,8 @@ export function MacroTelemetryCard({
   const caloriePercent = Math.min(100, Math.round((consumedCalories / calorieTarget) * 100));
   const waterPercent = Math.min(100, Math.round((consumedWaterOz / waterTargetOz) * 100));
 
+  const scheduleTimeout = useSafeTimeout();
+
   const handleSaveBiometrics = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsSaving(true);
@@ -69,7 +72,7 @@ export function MacroTelemetryCard({
       const s = stepsInput ? parseInt(stepsInput, 10) : 0;
       await onUpdateBiometrics(w, s);
       setSaveSuccess(true);
-      setTimeout(() => setSaveSuccess(false), 2200);
+      scheduleTimeout(() => setSaveSuccess(false), 2200);
     } catch (err) {
       console.error(err);
     } finally {

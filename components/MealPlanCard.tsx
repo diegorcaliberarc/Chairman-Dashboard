@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useState } from "react";
+import { useSafeTimeout } from "@/lib/hooks/useTimers";
 import {
   Utensils,
   Check,
@@ -46,6 +47,7 @@ export function MealPlanCard({
   onMealLogged,
   onPlanUpdated,
 }: MealPlanCardProps) {
+  const scheduleTimeout = useSafeTimeout();
   const [loggingPlanId, setLoggingPlanId] = useState<string | null>(null);
   const [successMsg, setSuccessMsg] = useState<string | null>(null);
 
@@ -71,7 +73,7 @@ export function MealPlanCard({
       const data = await res.json();
       setSuccessMsg(`Logged ${data.count} items into today's log!`);
       await onMealLogged();
-      setTimeout(() => setSuccessMsg(null), 3000);
+      scheduleTimeout(() => setSuccessMsg(null), 3000);
     } catch (err: any) {
       console.error(err);
       setSuccessMsg(`Error: ${err.message}`);

@@ -3,6 +3,7 @@
 import React, { useState, useEffect } from "react";
 import { Activity, Moon, Coffee, Save, Check } from "lucide-react";
 import { DailySitrepLog } from "@/lib/commandTypes";
+import { useSafeTimeout } from "@/lib/hooks/useTimers";
 
 interface CnsReadinessBioLogCardProps {
   todayLog: DailySitrepLog | null;
@@ -16,6 +17,7 @@ export function CnsReadinessBioLogCard({
   const recoveryScore = todayLog?.recovery_score ?? 88;
   const sleepHours = todayLog?.sleep_hours ?? 7.8;
 
+  const scheduleTimeout = useSafeTimeout();
   const [notes, setNotes] = useState(todayLog?.notes || "");
   const [isSaving, setIsSaving] = useState(false);
   const [justSaved, setJustSaved] = useState(false);
@@ -30,7 +32,7 @@ export function CnsReadinessBioLogCard({
     try {
       await onUpdateNotes(notes);
       setJustSaved(true);
-      setTimeout(() => setJustSaved(false), 2000);
+      scheduleTimeout(() => setJustSaved(false), 2000);
     } finally {
       setIsSaving(false);
     }

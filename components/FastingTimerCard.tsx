@@ -1,7 +1,8 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useCallback } from "react";
 import { Lock, Unlock, Clock, Zap, AlertCircle } from "lucide-react";
+import { useInterval } from "@/lib/hooks/useTimers";
 
 export function FastingTimerCard() {
   const [now, setNow] = useState(new Date());
@@ -9,8 +10,7 @@ export function FastingTimerCard() {
   const [isFasting, setIsFasting] = useState(false);
   const [nextEventLabel, setNextEventLabel] = useState("");
 
-  useEffect(() => {
-    const tick = () => {
+  const tick = useCallback(() => {
       const current = new Date();
       setNow(current);
 
@@ -48,12 +48,13 @@ export function FastingTimerCard() {
       setTimeRemaining(
         `${h.toString().padStart(2, "0")}:${m.toString().padStart(2, "0")}:${s.toString().padStart(2, "0")}`
       );
-    };
-
-    tick();
-    const interval = setInterval(tick, 1000);
-    return () => clearInterval(interval);
   }, []);
+
+  useEffect(() => {
+    tick();
+  }, [tick]);
+
+  useInterval(tick, 1000);
 
   const totalMinToday = now.getHours() * 60 + now.getMinutes();
   const currentPercent = ((totalMinToday / (24 * 60)) * 100).toFixed(1);

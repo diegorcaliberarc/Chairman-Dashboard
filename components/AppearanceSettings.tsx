@@ -167,17 +167,12 @@ export function AppearanceSettings({ onClose }: { onClose: () => void }) {
   }, []);
 
   // Sync hex input text boxes whenever wheelStops change externally
+  const wheelStop0 = stagedConfig.wheelStops[0].hex;
+  const wheelStop1 = stagedConfig.wheelStops[1].hex;
+  const wheelStop2 = stagedConfig.wheelStops[2].hex;
   useEffect(() => {
-    setHexDrafts([
-      stagedConfig.wheelStops[0].hex,
-      stagedConfig.wheelStops[1].hex,
-      stagedConfig.wheelStops[2].hex,
-    ]);
-  }, [
-    stagedConfig.wheelStops[0].hex,
-    stagedConfig.wheelStops[1].hex,
-    stagedConfig.wheelStops[2].hex,
-  ]);
+    setHexDrafts([wheelStop0, wheelStop1, wheelStop2]);
+  }, [wheelStop0, wheelStop1, wheelStop2]);
 
   // Live real-time DOM preview as the user drags pucks or adjusts physics
   useEffect(() => {
